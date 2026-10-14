@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Imaging;
@@ -111,6 +112,7 @@ public sealed record OutputSettings(
 /// <param name="OpenEditor">Open it in the editor (Phase 5; ignored until the editor exists).</param>
 public sealed record AfterCaptureSettings(bool Save = true, bool CopyToClipboard = true, bool OpenEditor = false)
 {
+    [JsonIgnore]
     public bool DoesAnything => Save || CopyToClipboard || OpenEditor;
 }
 

@@ -12,9 +12,17 @@ public static unsafe partial class Dwmapi
     /// <summary>Non-zero when the window is cloaked (other virtual desktop, suspended UWP app, ...). DWORD.</summary>
     public const uint DwmwaCloaked = 14;
 
+    /// <summary>Dark title bar (Windows 10 20H1+; 19 on the earliest builds that had it).</summary>
+    public const uint DwmwaUseImmersiveDarkMode = 20;
+    public const uint DwmwaUseImmersiveDarkModeBefore20H1 = 19;
+
     /// <returns>HRESULT.</returns>
     [LibraryImport(Dll)]
     public static partial int DwmGetWindowAttribute(nint hwnd, uint attribute, void* value, uint size);
+
+    /// <returns>HRESULT.</returns>
+    [LibraryImport(Dll)]
+    public static partial int DwmSetWindowAttribute(nint hwnd, uint attribute, void* value, uint size);
 }
 
 public static partial class Shcore

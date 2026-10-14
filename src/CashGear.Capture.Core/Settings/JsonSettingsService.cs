@@ -295,7 +295,7 @@ public sealed partial class JsonSettingsService : ISettingsService, IDisposable
     }
 
     private static byte[] Serialize(AppSettings settings) =>
-        JsonSerializer.SerializeToUtf8Bytes(settings, SettingsJsonContext.Default.AppSettings);
+        JsonSerializer.SerializeToUtf8Bytes(settings, SettingsJsonContext.Readable.AppSettings);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Loaded settings from {Path}")]
     private partial void LogLoaded(string path);

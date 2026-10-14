@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -12,4 +13,17 @@ namespace CashGear.Capture.Core.Settings;
     ReadCommentHandling = JsonCommentHandling.Skip,
     AllowTrailingCommas = true)]
 [JsonSerializable(typeof(AppSettings))]
-internal sealed partial class SettingsJsonContext : JsonSerializerContext;
+internal sealed partial class SettingsJsonContext : JsonSerializerContext
+{
+    private static SettingsJsonContext? _readable;
+
+    /// <summary>
+    /// For writing: the file is meant to be read and edited by people, so characters such as '+' in
+    /// <c>Ctrl+PrintScreen</c> are written as-is instead of HTML-safe escapes. Created on first use, after the
+    /// generated <see cref="Default"/> context exists.
+    /// </summary>
+    public static SettingsJsonContext Readable => _readable ??= new(new JsonSerializerOptions(Default.Options)
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    });
+}

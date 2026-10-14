@@ -25,9 +25,6 @@
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="Margin" Value="0,4,0,0" />
     </Style>
-    <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
-      <Setter Property="Margin" Value="0,2" />
-    </Style>
   </Window.Resources>
 
   <DockPanel Margin="16">
@@ -49,9 +46,9 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,4,12,12">
             <TextBlock Style="{StaticResource Section}" Text="After capture" />
-            <CheckBox Content="Save to file" IsChecked="{Binding SaveToFile}" />
-            <CheckBox Content="Copy to clipboard" IsChecked="{Binding CopyToClipboard}" />
-            <CheckBox Content="Open in editor (coming in Phase 5)" IsChecked="{Binding OpenEditor}" IsEnabled="{Binding IsEditorAvailable}" />
+            <CheckBox Margin="0,2" Content="Save to file" IsChecked="{Binding SaveToFile}" />
+            <CheckBox Margin="0,2" Content="Copy to clipboard" IsChecked="{Binding CopyToClipboard}" />
+            <CheckBox Margin="0,2" Content="Open in editor (coming in Phase 5)" IsChecked="{Binding OpenEditor}" IsEnabled="{Binding IsEditorAvailable}" />
 
             <TextBlock Style="{StaticResource Section}" Text="Folder" />
             <Grid>
@@ -117,8 +114,8 @@
             <TextBlock Style="{StaticResource Hint}" Text="The capture delay gives you time to open a menu or hover a tooltip before the screen is taken." />
 
             <TextBlock Style="{StaticResource Section}" Text="Content" />
-            <CheckBox Content="Include the mouse cursor" IsChecked="{Binding IncludeCursor}" />
-            <CheckBox Content="Add a drop shadow to window captures" IsChecked="{Binding IncludeWindowShadow}" />
+            <CheckBox Margin="0,2" Content="Include the mouse cursor" IsChecked="{Binding IncludeCursor}" />
+            <CheckBox Margin="0,2" Content="Add a drop shadow to window captures" IsChecked="{Binding IncludeWindowShadow}" />
 
             <TextBlock Style="{StaticResource Section}" Text="Full screen" />
             <ComboBox ItemsSource="{Binding FullScreenOutputs}" SelectedItem="{Binding FullScreenOutput}" ItemTemplate="{StaticResource EnumItem}"
@@ -175,7 +172,7 @@
       <TabItem Header="General">
         <StackPanel Margin="12,4,12,12">
           <TextBlock Style="{StaticResource Section}" Text="Startup" />
-          <CheckBox Content="Start CashGear Capture when I sign in to Windows" IsChecked="{Binding StartWithWindows}" />
+          <CheckBox Margin="0,2" Content="Start CashGear Capture when I sign in to Windows" IsChecked="{Binding StartWithWindows}" />
 
           <TextBlock Style="{StaticResource Section}" Text="Appearance" />
           <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" ItemTemplate="{StaticResource EnumItem}"

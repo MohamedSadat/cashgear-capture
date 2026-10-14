@@ -34,6 +34,8 @@ public sealed class JsonSettingsServiceTests : IDisposable
         service.Current.Should().Be(new AppSettings());
         File.Exists(_paths.SettingsFile).Should().BeTrue();
         File.ReadAllText(_paths.SettingsFile).Should().Contain("\"backend\": \"Auto\"");
+        File.ReadAllText(_paths.SettingsFile).Should().Contain("\"captureFullScreen\": \"Ctrl+PrintScreen\"", "the file is meant for people: '+' must not be escaped")
+            .And.NotContain("doesAnything");
     }
 
     [Fact]
