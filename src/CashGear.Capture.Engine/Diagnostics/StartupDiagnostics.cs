@@ -1,14 +1,27 @@
+using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Engine.Capture;
 using CashGear.Capture.Interop.Native;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Engine.Diagnostics;
 
 /// <summary>Logs the environment facts that silently break capture when wrong (DPI awareness first of all).</summary>
-public sealed partial class StartupDiagnostics(IMonitorService monitors, ILogger<StartupDiagnostics> logger)
+public interface IStartupDiagnostics
 {
     /// <summary>Call on the UI thread: DPI awareness is reported per thread.</summary>
+    void LogEnvironment();
+}
+
+internal sealed partial class StartupDiagnostics(
+    IMonitorService monitors,
+    ISettingsService settings,
+    ICaptureCapabilities capabilities,
+    CaptureBackendSelector selector,
+    ILogger<StartupDiagnostics> logger) : IStartupDiagnostics
+{
     public void LogEnvironment()
     {
         var perMonitorV2 = User32.AreDpiAwarenessContextsEqual(
@@ -23,6 +36,14 @@ public sealed partial class StartupDiagnostics(IMonitorService monitors, ILogger
         }
 
         LogDisplays();
+
+        var preference = settings.Current.Capture.Backend;
+        LogBackends(
+            preference,
+            selector.ForScreen(preference),
+            selector.ForWindow(preference),
+            capabilities.IsWgcSupported,
+            capabilities.CanDisableWgcBorder);
     }
 
     private void LogDisplays()
@@ -63,4 +84,7 @@ public sealed partial class StartupDiagnostics(IMonitorService monitors, ILogger
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Virtual screen {Bounds} from monitors differs from SM_*VIRTUALSCREEN {System}")]
     private partial void LogVirtualScreenMismatch(PixelRect bounds, PixelRect system);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Capture backend preference {Preference}: screen={Screen}, window={Window} (WGC supported={WgcSupported}, border optional={BorderOptional})")]
+    private partial void LogBackends(CaptureBackend preference, CaptureBackend screen, CaptureBackend window, bool wgcSupported, bool borderOptional);
 }

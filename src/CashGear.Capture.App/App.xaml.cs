@@ -35,7 +35,7 @@ public partial class CaptureApplication : Application
         AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
-        _services.GetRequiredService<StartupDiagnostics>().LogEnvironment();
+        _services.GetRequiredService<IStartupDiagnostics>().LogEnvironment();
         _ = _services.GetRequiredService<ISettingsService>(); // load (or create) settings up front
 
         _tray = _services.GetRequiredService<TrayIconHost>();

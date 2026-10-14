@@ -2,6 +2,7 @@ using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Engine.Capture;
 using CashGear.Capture.Engine.Capture.Gdi;
+using CashGear.Capture.Engine.Capture.Wgc;
 using CashGear.Capture.Engine.Diagnostics;
 using CashGear.Capture.Engine.Display;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,10 +20,13 @@ public static class EngineServiceCollectionExtensions
 
         services.AddSingleton<ICaptureCapabilities, WindowsCaptureCapabilities>();
         services.AddSingleton<CaptureBackendSelector>();
+        services.AddSingleton<WgcInterop>();
+        services.AddSingleton<D3DDeviceManager>();
         services.AddSingleton<IFrameGrabber, GdiFrameGrabber>();
+        services.AddSingleton<IFrameGrabber, WgcFrameGrabber>();
         services.AddSingleton<IScreenCaptureService, ScreenCaptureService>();
 
-        services.AddSingleton<StartupDiagnostics>();
+        services.AddSingleton<IStartupDiagnostics, StartupDiagnostics>();
         return services;
     }
 }
