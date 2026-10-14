@@ -3,7 +3,7 @@
 ## Automated
 
 ```powershell
-dotnet test CashGear.Capture.sln
+dotnet test --solution CashGear.Capture.sln
 ```
 
 Tests tagged `Category=Interactive` need a logged-in, unlocked desktop. They skip themselves when none is available or when `CASHGEAR_SKIP_INTERACTIVE=1`.

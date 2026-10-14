@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Document model + Skia rendering arrive in Phase 5; the WPF SKElement host lives in App. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
+  </ItemGroup>
+
+</Project>

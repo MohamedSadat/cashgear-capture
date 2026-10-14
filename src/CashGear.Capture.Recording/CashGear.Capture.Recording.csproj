@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- WGC frames -> FFmpeg pipeline arrives in Phase 7. -->
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
+    <ProjectReference Include="..\CashGear.Capture.Engine\CashGear.Capture.Engine.csproj" />
+  </ItemGroup>
+
+</Project>

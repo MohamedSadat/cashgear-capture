@@ -21,7 +21,7 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [do
 
 ```powershell
 dotnet build CashGear.Capture.sln
-dotnet test  CashGear.Capture.sln
+dotnet test  --solution CashGear.Capture.sln
 dotnet run --project src/CashGear.Capture.App
 ```
 
