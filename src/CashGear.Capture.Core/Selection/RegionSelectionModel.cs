@@ -19,6 +19,15 @@ public enum SelectionPhase
     Cancelled,
 }
 
+public enum SelectionMode
+{
+    /// <summary>Drag a rectangle, or click a window or monitor.</summary>
+    RegionOrWindow,
+
+    /// <summary>Only windows can be picked; a click on one confirms at once.</summary>
+    WindowOnly,
+}
+
 /// <param name="Bounds">The chosen rectangle in virtual-screen physical pixels.</param>
 /// <param name="Window">The window it was picked from, when it was picked by clicking a window and left unchanged.</param>
 public sealed record RegionSelectionResult(PixelRect Bounds, WindowInfo? Window);
@@ -32,6 +41,8 @@ public sealed record RegionSelectionResult(PixelRect Bounds, WindowInfo? Window)
 /// rectangle spanned by the press and release pixels, both inclusive.</item>
 /// <item>While selected: nudge / resize by keyboard, double-click inside or <see cref="Confirm"/> to finish.</item>
 /// </list>
+/// In <see cref="SelectionMode.WindowOnly"/> there is no dragging and no monitor fallback: clicking a highlighted
+/// window confirms it immediately.
 /// Not thread-safe; drive it from one thread.
 /// </summary>
 public sealed class RegionSelectionModel
@@ -49,7 +60,8 @@ public sealed class RegionSelectionModel
         IReadOnlyList<PixelRect> monitorBounds,
         IReadOnlyList<WindowInfo> windows,
         PixelPoint initialCursor,
-        int dragThreshold = DefaultDragThreshold)
+        int dragThreshold = DefaultDragThreshold,
+        SelectionMode mode = SelectionMode.RegionOrWindow)
     {
         ArgumentNullException.ThrowIfNull(monitorBounds);
         ArgumentNullException.ThrowIfNull(windows);
@@ -64,6 +76,7 @@ public sealed class RegionSelectionModel
         // Topmost first, so the first hit is the visible window.
         _windows = windows.Where(w => !w.IsMinimized && !w.Bounds.IsEmpty).OrderBy(w => w.ZOrder).ToList();
         _dragThreshold = dragThreshold;
+        Mode = mode;
         VirtualBounds = VirtualScreen.GetBounds(_monitors);
         Cursor = Clamp(initialCursor);
         UpdateHover();
@@ -73,6 +86,8 @@ public sealed class RegionSelectionModel
     public event EventHandler? Changed;
 
     public PixelRect VirtualBounds { get; }
+
+    public SelectionMode Mode { get; }
 
     public SelectionPhase Phase { get; private set; } = SelectionPhase.Hovering;
 
@@ -127,6 +142,18 @@ public sealed class RegionSelectionModel
 
         MoveCursor(point);
         _pressed = false;
+
+        if (Mode == SelectionMode.WindowOnly)
+        {
+            if (HoverWindow is not null)
+            {
+                Confirm();
+                return;
+            }
+
+            Raise(); // clicked where there is no window: keep hovering
+            return;
+        }
 
         if (Phase == SelectionPhase.Dragging)
         {
@@ -228,7 +255,8 @@ public sealed class RegionSelectionModel
         Cursor = Clamp(point);
         switch (Phase)
         {
-            case SelectionPhase.Hovering or SelectionPhase.Selected when _pressed && Distance(_anchor, Cursor) > _dragThreshold:
+            case SelectionPhase.Hovering or SelectionPhase.Selected
+                when _pressed && Mode == SelectionMode.RegionOrWindow && Distance(_anchor, Cursor) > _dragThreshold:
                 Phase = SelectionPhase.Dragging;
                 _selectedWindow = null;
                 HoverBounds = PixelRect.Empty;
@@ -266,6 +294,11 @@ public sealed class RegionSelectionModel
             {
                 return (window.Bounds.Intersect(VirtualBounds), window);
             }
+        }
+
+        if (Mode == SelectionMode.WindowOnly)
+        {
+            return (PixelRect.Empty, null);
         }
 
         foreach (var monitor in _monitors)

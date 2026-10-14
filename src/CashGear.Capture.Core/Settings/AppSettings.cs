@@ -1,4 +1,5 @@
 using CashGear.Capture.Core.Capture;
+using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Imaging;
 
 namespace CashGear.Capture.Core.Settings;
@@ -18,12 +19,15 @@ public sealed record AppSettings
 
     public OutputSettings Output { get; init; } = new();
 
+    public HotkeySettings Hotkeys { get; init; } = new();
+
     /// <summary>Replaces missing sections with defaults and clamps out-of-range values.</summary>
     public AppSettings Normalize() => this with
     {
         SchemaVersion = CurrentSchemaVersion,
         Capture = (Capture ?? new CaptureSettings()).Normalize(),
         Output = (Output ?? new OutputSettings()).Normalize(),
+        Hotkeys = (Hotkeys ?? new HotkeySettings()).Normalize(),
     };
 }
 
@@ -45,12 +49,14 @@ public enum FullScreenOutput
 /// <param name="HideDelayMs">How long to wait after hiding the app's own windows before capturing.</param>
 /// <param name="WgcFrameTimeoutMs">How long Windows.Graphics.Capture may take to deliver a frame before falling back to GDI.</param>
 /// <param name="FullScreenOutput">What "Capture Full Screen" writes.</param>
+/// <param name="IncludeWindowShadow">Window captures get a soft drop shadow on a transparent margin.</param>
 public sealed record CaptureSettings(
     CaptureBackend Backend = CaptureBackend.Auto,
     bool IncludeCursor = false,
     int HideDelayMs = CaptureSettings.DefaultHideDelayMs,
     int WgcFrameTimeoutMs = CaptureSettings.DefaultWgcFrameTimeoutMs,
-    FullScreenOutput FullScreenOutput = FullScreenOutput.AllAndEachMonitor)
+    FullScreenOutput FullScreenOutput = FullScreenOutput.AllAndEachMonitor,
+    bool IncludeWindowShadow = false)
 {
     public const int DefaultHideDelayMs = 200;
     public const int DefaultWgcFrameTimeoutMs = 2_000;
@@ -84,4 +90,35 @@ public sealed record OutputSettings(
         Format = Enum.IsDefined(Format) ? Format : ImageFileFormat.Png,
         JpegQuality = Math.Clamp(JpegQuality, 1, 100),
     };
+}
+
+/// <summary>
+/// Global hotkey per capture, as text (see <see cref="HotkeyGesture.TryParse"/>), e.g. <c>Ctrl+Shift+PrintScreen</c>.
+/// A missing entry gets the default; <c>null</c> or <c>""</c> means no hotkey.
+/// </summary>
+public sealed record HotkeySettings(
+    string? CaptureRegion = HotkeySettings.DefaultCaptureRegion,
+    string? CaptureActiveWindow = HotkeySettings.DefaultCaptureActiveWindow,
+    string? CaptureFullScreen = HotkeySettings.DefaultCaptureFullScreen,
+    string? CaptureScrolling = HotkeySettings.DefaultCaptureScrolling)
+{
+    public const string DefaultCaptureRegion = "PrintScreen";
+    public const string DefaultCaptureActiveWindow = "Alt+PrintScreen";
+    public const string DefaultCaptureFullScreen = "Ctrl+PrintScreen";
+    public const string DefaultCaptureScrolling = "Ctrl+Shift+PrintScreen";
+
+    /// <summary>The configured text for an action, or null when it has no hotkey.</summary>
+    public string? For(HotkeyAction action) => action switch
+    {
+        HotkeyAction.CaptureRegion => CaptureRegion,
+        HotkeyAction.CaptureActiveWindow => CaptureActiveWindow,
+        HotkeyAction.CaptureFullScreen => CaptureFullScreen,
+        HotkeyAction.CaptureScrolling => CaptureScrolling,
+        _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
+    };
+
+    public HotkeySettings Normalize() => new(
+        Clean(CaptureRegion), Clean(CaptureActiveWindow), Clean(CaptureFullScreen), Clean(CaptureScrolling));
+
+    private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

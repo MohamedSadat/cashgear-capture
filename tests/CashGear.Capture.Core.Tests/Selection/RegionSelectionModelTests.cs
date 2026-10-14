@@ -339,3 +339,58 @@ public sealed class RegionSelectionModelTests
     private static WindowInfo Window(string title, PixelRect bounds, int zOrder) =>
         new(zOrder + 1, title, "TestClass", 1234, bounds, IsMinimized: false, zOrder);
 }
+
+public sealed class WindowOnlySelectionTests
+{
+    private static readonly PixelRect Primary = new(0, 0, 1920, 1080);
+    private static readonly WindowInfo Editor = new(1, "editor", "C", 1, new PixelRect(100, 100, 800, 600), false, 0);
+
+    [Fact]
+    public void Hover_offers_windows_only()
+    {
+        var model = new RegionSelectionModel([Primary], [Editor], new PixelPoint(1500, 900), mode: SelectionMode.WindowOnly);
+
+        model.HoverWindow.Should().BeNull();
+        model.HoverBounds.IsEmpty.Should().BeTrue("the desktop is not a window target");
+
+        model.PointerMoved(new PixelPoint(200, 200));
+        model.HoverWindow.Should().Be(Editor);
+    }
+
+    [Fact]
+    public void Clicking_a_window_confirms_immediately()
+    {
+        var model = new RegionSelectionModel([Primary], [Editor], new PixelPoint(200, 200), mode: SelectionMode.WindowOnly);
+
+        model.PointerPressed(new PixelPoint(200, 200));
+        model.PointerReleased(new PixelPoint(200, 200));
+
+        model.Phase.Should().Be(SelectionPhase.Confirmed);
+        model.Result.Should().Be(new RegionSelectionResult(Editor.Bounds, Editor));
+    }
+
+    [Fact]
+    public void Dragging_does_not_select_a_region()
+    {
+        var model = new RegionSelectionModel([Primary], [Editor], new PixelPoint(150, 150), mode: SelectionMode.WindowOnly);
+
+        model.PointerPressed(new PixelPoint(150, 150));
+        model.PointerMoved(new PixelPoint(600, 600));
+        model.Phase.Should().Be(SelectionPhase.Hovering);
+        model.PointerReleased(new PixelPoint(600, 600));
+
+        model.Result!.Window.Should().Be(Editor, "the release lands on the window, which is picked");
+    }
+
+    [Fact]
+    public void Clicking_the_desktop_keeps_hovering()
+    {
+        var model = new RegionSelectionModel([Primary], [Editor], new PixelPoint(1500, 900), mode: SelectionMode.WindowOnly);
+
+        model.PointerPressed(new PixelPoint(1500, 900));
+        model.PointerReleased(new PixelPoint(1500, 900));
+
+        model.Phase.Should().Be(SelectionPhase.Hovering);
+        model.Confirm().Should().BeFalse();
+    }
+}

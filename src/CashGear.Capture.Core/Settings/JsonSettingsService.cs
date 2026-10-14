@@ -7,24 +7,41 @@ namespace CashGear.Capture.Core.Settings;
 /// Settings stored as JSON at <see cref="AppPaths.SettingsFile"/>. Loads synchronously on construction
 /// (missing file → defaults written; corrupt file → backed up and replaced with defaults). Writes are
 /// serialized and atomic (temp file + rename) so a crash never leaves a half-written file.
+/// While running it watches the file, so hand edits (e.g. in Notepad) apply live; an invalid edit is logged and
+/// ignored rather than replaced.
 /// </summary>
 public sealed partial class JsonSettingsService : ISettingsService, IDisposable
 {
     private const int WriteAttempts = 3;
+    private static readonly TimeSpan ReloadDebounce = TimeSpan.FromMilliseconds(300);
 
     private readonly string _path;
     private readonly ILogger<JsonSettingsService> _logger;
     private readonly TimeProvider _time;
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly FileSystemWatcher? _watcher;
+    private readonly ITimer? _reloadTimer;
     private AppSettings _current;
+    private volatile bool _disposed;
 
-    public JsonSettingsService(AppPaths paths, ILogger<JsonSettingsService> logger, TimeProvider timeProvider)
+    /// <param name="watchForExternalChanges">Reload when the file is edited outside the app.</param>
+    public JsonSettingsService(
+        AppPaths paths,
+        ILogger<JsonSettingsService> logger,
+        TimeProvider timeProvider,
+        bool watchForExternalChanges = true)
     {
         ArgumentNullException.ThrowIfNull(paths);
         _path = paths.SettingsFile;
         _logger = logger;
         _time = timeProvider;
         _current = LoadOrCreate();
+
+        if (watchForExternalChanges)
+        {
+            _reloadTimer = timeProvider.CreateTimer(_ => _ = ReloadFromDiskAsync(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            _watcher = TryWatch();
+        }
     }
 
     public event EventHandler? Changed;
@@ -68,7 +85,100 @@ public sealed partial class JsonSettingsService : ISettingsService, IDisposable
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
-    public void Dispose() => _gate.Dispose();
+    public void Dispose()
+    {
+        _disposed = true;
+        _watcher?.Dispose();
+        _reloadTimer?.Dispose();
+        _gate.Dispose();
+    }
+
+    private FileSystemWatcher? TryWatch()
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(_path)!;
+            Directory.CreateDirectory(directory);
+            var watcher = new FileSystemWatcher(directory, Path.GetFileName(_path))
+            {
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size | NotifyFilters.CreationTime,
+            };
+
+            // Editors save in bursts (truncate + write, or write temp + rename); debounce to one reload.
+            FileSystemEventHandler onChange = (_, _) => _reloadTimer?.Change(ReloadDebounce, Timeout.InfiniteTimeSpan);
+            watcher.Changed += onChange;
+            watcher.Created += onChange;
+            watcher.Renamed += (_, _) => _reloadTimer?.Change(ReloadDebounce, Timeout.InfiniteTimeSpan);
+            watcher.EnableRaisingEvents = true;
+            return watcher;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            LogWatchFailed(ex, _path);
+            return null;
+        }
+    }
+
+    /// <summary>Reloads after an external edit. Never rewrites the file: a broken edit is the user's to fix.</summary>
+    private async Task ReloadFromDiskAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        var changed = false;
+        try
+        {
+            await _gate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                AppSettings loaded;
+                try
+                {
+                    var bytes = await File.ReadAllBytesAsync(_path).ConfigureAwait(false);
+                    loaded = (JsonSerializer.Deserialize(bytes, SettingsJsonContext.Default.AppSettings)
+                        ?? throw new JsonException("Settings file contains null.")).Normalize();
+                }
+                catch (JsonException ex)
+                {
+                    LogReloadInvalid(ex, _path);
+                    return;
+                }
+                catch (IOException)
+                {
+                    // Still being written; try again shortly.
+                    _reloadTimer?.Change(ReloadDebounce, Timeout.InfiniteTimeSpan);
+                    return;
+                }
+
+                if (loaded != Current)
+                {
+                    Volatile.Write(ref _current, loaded);
+                    changed = true;
+                }
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+            return; // disposed while a reload was pending
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or FileNotFoundException or DirectoryNotFoundException)
+        {
+            LogReloadInvalid(ex, _path);
+            return;
+        }
+
+        if (changed)
+        {
+            LogReloaded(_path);
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
 
     private AppSettings LoadOrCreate()
     {
@@ -172,6 +282,15 @@ public sealed partial class JsonSettingsService : ISettingsService, IDisposable
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Could not write settings file {Path}")]
     private partial void LogWriteFailed(Exception ex, string path);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reloaded settings after an external edit of {Path}")]
+    private partial void LogReloaded(string path);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Ignoring the edit to {Path}: it could not be read as settings; keeping the previous settings")]
+    private partial void LogReloadInvalid(Exception ex, string path);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Cannot watch {Path} for edits; changes made outside the app need a restart")]
+    private partial void LogWatchFailed(Exception ex, string path);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Settings write attempt {Attempt} failed; retrying")]
     private partial void LogWriteRetry(Exception ex, int attempt);

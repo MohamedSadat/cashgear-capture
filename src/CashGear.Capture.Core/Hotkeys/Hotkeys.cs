@@ -11,12 +11,65 @@ public enum HotkeyModifiers
     Win = 0x8,
 }
 
-/// <summary>A global hotkey: modifiers plus a Win32 virtual-key code (e.g. <c>0x2C</c> = PrintScreen).</summary>
+/// <summary>
+/// A global hotkey: modifiers plus a Win32 virtual-key code (e.g. <c>0x2C</c> = PrintScreen). Written in settings
+/// as text such as <c>Ctrl+Shift+PrintScreen</c>; see <see cref="TryParse"/>.
+/// </summary>
 /// <remarks>Deliberately not WPF's <c>KeyGesture</c>: Core has no WPF dependency, and <c>KeyGesture</c> rejects a bare PrintScreen.</remarks>
 public readonly record struct HotkeyGesture(HotkeyModifiers Modifiers, uint VirtualKey)
 {
     public const uint VkSnapshot = 0x2C;
 
+    private static readonly IReadOnlyDictionary<string, uint> KeysByName = BuildKeyNames();
+    private static readonly IReadOnlyDictionary<uint, string> NamesByKey = KeysByName
+        .GroupBy(p => p.Value)
+        .ToDictionary(g => g.Key, g => g.First().Key);
+
+    /// <summary>
+    /// Parses <c>[Ctrl+][Alt+][Shift+][Win+]Key</c>, case-insensitive, any modifier order, with <c>Control</c>,
+    /// <c>Windows</c>, <c>PrtSc</c> and similar aliases. Keys: letters, digits, F1–F24, PrintScreen, Pause,
+    /// Insert, Delete, Home, End, PageUp, PageDown, arrows, Space, Tab, Escape, NumPad0–9, ScrollLock.
+    /// A modifier on its own is not a hotkey.
+    /// </summary>
+    public static bool TryParse(string? text, out HotkeyGesture gesture)
+    {
+        gesture = default;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        var parts = text.Split('+', StringSplitOptions.TrimEntries);
+        if (parts.Any(p => p.Length == 0))
+        {
+            return false; // "Ctrl++" or a trailing '+'
+        }
+
+        var modifiers = HotkeyModifiers.None;
+        foreach (var part in parts[..^1])
+        {
+            var modifier = ParseModifier(part);
+            if (modifier is null || modifiers.HasFlag(modifier.Value))
+            {
+                return false; // unknown or repeated modifier
+            }
+
+            modifiers |= modifier.Value;
+        }
+
+        if (!KeysByName.TryGetValue(parts[^1], out var key))
+        {
+            return false;
+        }
+
+        gesture = new HotkeyGesture(modifiers, key);
+        return true;
+    }
+
+    public static HotkeyGesture Parse(string text) =>
+        TryParse(text, out var gesture) ? gesture : throw new FormatException($"'{text}' is not a valid hotkey.");
+
+    /// <summary>Canonical text, e.g. <c>Ctrl+Shift+PrintScreen</c>; round-trips through <see cref="TryParse"/>.</summary>
     public override string ToString()
     {
         var parts = new List<string>(5);
@@ -24,8 +77,68 @@ public readonly record struct HotkeyGesture(HotkeyModifiers Modifiers, uint Virt
         if (Modifiers.HasFlag(HotkeyModifiers.Alt)) parts.Add("Alt");
         if (Modifiers.HasFlag(HotkeyModifiers.Shift)) parts.Add("Shift");
         if (Modifiers.HasFlag(HotkeyModifiers.Win)) parts.Add("Win");
-        parts.Add(VirtualKey == VkSnapshot ? "PrintScreen" : $"VK 0x{VirtualKey:X2}");
+        parts.Add(NamesByKey.TryGetValue(VirtualKey, out var name) ? name : $"VK 0x{VirtualKey:X2}");
         return string.Join('+', parts);
+    }
+
+    private static HotkeyModifiers? ParseModifier(string text) => text.ToUpperInvariant() switch
+    {
+        "CTRL" or "CONTROL" or "CTL" => HotkeyModifiers.Control,
+        "ALT" => HotkeyModifiers.Alt,
+        "SHIFT" => HotkeyModifiers.Shift,
+        "WIN" or "WINDOWS" or "META" => HotkeyModifiers.Win,
+        _ => null,
+    };
+
+    private static Dictionary<string, uint> BuildKeyNames()
+    {
+        // First name per key is the canonical one used by ToString().
+        var names = new Dictionary<string, uint>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["PrintScreen"] = VkSnapshot,
+            ["PrtSc"] = VkSnapshot,
+            ["PrtScn"] = VkSnapshot,
+            ["PrintScrn"] = VkSnapshot,
+            ["Snapshot"] = VkSnapshot,
+            ["Pause"] = 0x13,
+            ["Space"] = 0x20,
+            ["Tab"] = 0x09,
+            ["Escape"] = 0x1B,
+            ["Esc"] = 0x1B,
+            ["PageUp"] = 0x21,
+            ["PgUp"] = 0x21,
+            ["PageDown"] = 0x22,
+            ["PgDn"] = 0x22,
+            ["End"] = 0x23,
+            ["Home"] = 0x24,
+            ["Left"] = 0x25,
+            ["Up"] = 0x26,
+            ["Right"] = 0x27,
+            ["Down"] = 0x28,
+            ["Insert"] = 0x2D,
+            ["Ins"] = 0x2D,
+            ["Delete"] = 0x2E,
+            ["Del"] = 0x2E,
+            ["ScrollLock"] = 0x91,
+        };
+
+        for (var c = 'A'; c <= 'Z'; c++)
+        {
+            names[c.ToString()] = c;
+        }
+
+        for (var d = 0; d <= 9; d++)
+        {
+            names[d.ToString(System.Globalization.CultureInfo.InvariantCulture)] = (uint)('0' + d);
+            names[$"NumPad{d}"] = (uint)(0x60 + d);
+        }
+
+        for (var f = 1; f <= 24; f++)
+        {
+            names[$"F{f}"] = (uint)(0x70 + f - 1);
+        }
+
+        return names;
     }
 }
 
@@ -37,10 +150,16 @@ public enum HotkeyAction
     CaptureScrolling,
 }
 
-/// <summary>Global hotkey registration (implemented in Phase 3).</summary>
+/// <summary>System-wide hotkeys. Registration and presses happen on the thread that owns the service (the UI thread).</summary>
 public interface IHotkeyService
 {
-    /// <summary>Registers a hotkey. Returns false with a user-facing reason when the key is already taken.</summary>
+    /// <summary>Raised when a registered hotkey is pressed.</summary>
+    event EventHandler<HotkeyAction>? Pressed;
+
+    /// <summary>
+    /// Registers <paramref name="gesture"/> for <paramref name="action"/>, replacing any earlier gesture for that action.
+    /// Returns false with a user-facing reason when the key is already taken (by another app or Windows) or invalid.
+    /// </summary>
     bool TryRegister(HotkeyAction action, HotkeyGesture gesture, out string? error);
 
     void UnregisterAll();
