@@ -87,3 +87,43 @@ Each phase lists the features added, how it was tested, and known limitations.
 - Moving a selection by dragging inside it, and resize handles, are not implemented (keyboard only).
 - Picking a window crops its rectangle from the frozen screen, including anything that overlaps it. True window capture (occluded windows, shadow) is Phase 3.
 - Very large virtual screens (wider or taller than 16384 px) may exceed WPF's texture limit.
+
+## Phase 3 — Window capture + global hotkeys (2026-10-14)
+
+### Added
+- **Window capture** (`CaptureWindowAsync`).
+  - **Backend.** WGC uses `CreateForWindow`, so a window's own content is captured even where other windows cover it. The frame is cropped to the visible window frame (invisible resize borders dropped), and alpha is kept for shaped corners.
+  - **Policy under `Auto`.** A covered or partly off-screen window always uses WGC, as does every window on Windows 11. A fully visible window on Windows 10 is taken from the screen with GDI, so no yellow border flashes. If WGC fails, the screen pixels are used instead.
+  - **Errors.** Minimized and vanished windows get a clear error instead of a capture.
+  - **Options.** Include the cursor; include a synthesized, DPI-scaled drop shadow on a transparent margin (`capture.includeWindowShadow`).
+- **Capture Window** (tray, `--capture-window`) opens the overlay in window-only mode. One click on a window picks it, then the window's own content is captured.
+- **Global hotkeys** (`RegisterHotKey` + `MOD_NOREPEAT` on a message-only window):
+  - Defaults per the spec: PrintScreen → region, Alt+PrintScreen → the window that was in the foreground at the press, Ctrl+PrintScreen → full screen, Ctrl+Shift+PrintScreen → scrolling capture (a "coming in Phase 6" notice for now).
+  - Hotkeys are written as text in `settings.json` (`hotkeys` section; `Ctrl+Shift+PrintScreen`, aliases such as `PrtSc`, `null`/empty to disable).
+  - Invalid text, keys used twice, and keys another app or Windows owns (Win32 error 1409) are logged and reported in one tray notification. The other hotkeys keep working.
+  - Re-registered whenever the settings change. The tray menu shows the active Region and Full Screen hotkeys.
+- **Live settings reload**: `settings.json` is watched (debounced), so edits made through Settings… apply on save. An edit that can't be read is logged and left alone, never overwritten.
+- `RegionSelectionModel` window-only mode; `DropShadow` (box-blur ×3); `IWindowService.GetWindow` / `IsOccluded`.
+
+### Tested
+- 218 automated tests (217 pass, 1 explicit). New:
+  - hotkey text parsing/formatting;
+  - live-reload behaviour (external edit, invalid edit, own writes, opt-out);
+  - drop-shadow geometry;
+  - window-only picking;
+  - window-capture backend policy and fallbacks with fakes;
+  - registrar logic (taken, invalid, duplicate, disabled, live re-apply).
+- New interactive tests:
+  - `RegisterHotKey` round trip via `SendInput`, and a real conflict between two registrations;
+  - WGC capture of a covered test window: the image is exactly its visible frame, the pattern under the cover is reproduced (≥ 99.5% exact), the cover really was on screen, shadow works, and minimized windows error.
+- Manual on the dev machine:
+  - all four hotkeys from another app's foreground: Alt+PrintScreen captured the Notepad window at exactly its frame (1426×575);
+  - Esc closes the PrintScreen overlay;
+  - a live edit to `Win+E` was reported as taken (1409) while the other three stayed registered;
+  - the Capture Window picker captured the clicked window.
+
+### Known limitations
+- Hotkeys are edited in `settings.json` until the settings window (Phase 4).
+- Picking a window still uses the frozen-screen overlay, so it is limited to top-level windows. Child controls and menus are Phase 5+ material.
+- On Windows 10, capturing a covered window with WGC briefly shows the yellow border around that window.
+- The synthesized shadow is a uniform soft shadow, not the exact DWM shadow.

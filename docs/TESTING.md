@@ -20,10 +20,10 @@ dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–2 pass (2026-10-14) |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–3 pass (2026-10-14) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–2 pass (2026-10-14) |
+| Windows 10 22H2 | Phase 0–3 pass (2026-10-14) |
 | Windows 11 23H2+ | not run |
 
 ## Phase 0–1 results (2026-10-14)
@@ -58,6 +58,22 @@ Same machine and layout as above. The overlay is excluded from capture, so it is
 | Region pixels vs the same rect of the window capture: text-pixel IoU 100% aligned, 21–31% at ±1 px | pass |
 
 Note: while Claude's computer-use is active, its "Claude is using your computer" indicator draws an animated, click-through, full-screen glow. That is what made the desktop look "animated" in the Phase 1 WGC tests, and why exact colour comparisons between two live grabs don't hold during such sessions.
+
+## Phase 3 results (2026-10-14)
+
+Same machine and layout. The keys were sent with `SendInput` from a script; the screen-control tool can't press PrintScreen, and the OS delivers injected keys to `RegisterHotKey` exactly like physical ones.
+
+| Check | Result |
+|---|---|
+| Startup: 4 default hotkeys registered, 0 problems | pass |
+| Alt+PrintScreen with Notepad in front → `_window.png` 1426×575 = Notepad's frame (325,487)-(1751,1062), clean content | pass (WGC, because the computer-use indicator counts as covering) |
+| Ctrl+PrintScreen → `_all` 3200×1082 + both monitors | pass |
+| PrintScreen → overlay opens activated; Esc → "Region selection cancelled" | pass |
+| Ctrl+Shift+PrintScreen → scrolling action (Phase 6 notice) | pass |
+| Live edit of settings.json → reloaded and re-registered within ~1 s | pass |
+| Live edit `captureRegion: "Win+E"` → Win32 error 1409 logged, "3 registered, 1 problem" + notification, no crash | pass |
+| `--capture-window` → window-only picker, one click on Notepad → WGC capture 1426×575 | pass |
+| Interactive tests: hotkey round trip via SendInput; conflict between two registrations; WGC through a covering window | pass |
 
 ### Pending: mixed DPI and negative coordinates
 
