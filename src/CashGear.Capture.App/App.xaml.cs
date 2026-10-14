@@ -35,12 +35,14 @@ public partial class CaptureApplication : Application
         AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
-        _services.GetRequiredService<IStartupDiagnostics>().LogEnvironment();
+        var diagnostics = _services.GetRequiredService<IStartupDiagnostics>();
+        diagnostics.LogDpiAwareness(); // per thread, so it must run here on the UI thread
         _ = _services.GetRequiredService<ISettingsService>(); // load (or create) settings up front
 
         _tray = _services.GetRequiredService<TrayIconHost>();
         _tray.Show(_services.GetRequiredService<TrayViewModel>());
         _services.GetRequiredService<UiReadySignal>().SetReady();
+        _ = Task.Run(diagnostics.LogDisplaysAndBackends); // first WinRT probe takes ~1 s; keep it off the UI thread
 
         // If the host stops on its own (e.g. a background service fails), take the UI down with it.
         _services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(ShutdownFromHost);

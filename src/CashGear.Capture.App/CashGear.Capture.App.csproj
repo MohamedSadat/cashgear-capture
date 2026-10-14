@@ -7,6 +7,8 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyTitle>CashGear Capture</AssemblyTitle>
+    <!-- Pinning pooled pixel buffers when handing them to WIC. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- Program.Main owns startup (host first, then WPF), so App.xaml is compiled as a Page, not an ApplicationDefinition. -->
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>

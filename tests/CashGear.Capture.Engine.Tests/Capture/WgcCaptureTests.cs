@@ -17,6 +17,7 @@ namespace CashGear.Capture.Engine.Tests.Capture;
 public sealed class WgcCaptureTests : IDisposable
 {
     private static readonly TimeSpan FrameTimeout = TimeSpan.FromSeconds(3);
+    private const int BorderMargin = 16;
 
     private readonly WindowsCaptureCapabilities _capabilities = new();
     private readonly WgcInterop _interop = new();
@@ -64,10 +65,7 @@ public sealed class WgcCaptureTests : IDisposable
 
         foreach (var monitor in _monitors)
         {
-            using var gdi = await _gdi.CaptureAsync(Request(monitor, monitor.Bounds), Ct);
-            using var wgc = await _wgc.CaptureAsync(Request(monitor, monitor.Bounds), Ct);
-
-            SimilarFraction(gdi, wgc).Should().BeGreaterThanOrEqualTo(0.97, $"WGC and GDI captures of {monitor.DeviceName} should agree");
+            await AssertMatchesGdiAsync(monitor, monitor.Bounds);
         }
     }
 
@@ -79,13 +77,14 @@ public sealed class WgcCaptureTests : IDisposable
         var b = monitor.Bounds;
         var area = new PixelRect(b.X + b.Width / 4, b.Y + b.Height / 3, b.Width / 2, b.Height / 3);
 
-        using var gdi = await _gdi.CaptureAsync(Request(monitor, area), Ct);
-        using var wgc = await _wgc.CaptureAsync(Request(monitor, area), Ct);
+        using (var wgc = await _wgc.CaptureAsync(Request(monitor, area), Ct))
+        {
+            wgc.Width.Should().Be(area.Width);
+            wgc.Height.Should().Be(area.Height);
+            wgc.Metadata.SourceBounds.Should().Be(area);
+        }
 
-        wgc.Width.Should().Be(area.Width);
-        wgc.Height.Should().Be(area.Height);
-        wgc.Metadata.SourceBounds.Should().Be(area);
-        SimilarFraction(gdi, wgc).Should().BeGreaterThanOrEqualTo(0.97);
+        await AssertMatchesGdiAsync(monitor, area);
     }
 
     [Fact]
@@ -156,22 +155,74 @@ public sealed class WgcCaptureTests : IDisposable
 
     private static FrameRequest Request(MonitorInfo monitor, PixelRect area) => new(monitor, area, false, FrameTimeout);
 
-    /// <summary>Fraction of pixels whose B, G and R each differ by at most 2.</summary>
-    private static double SimilarFraction(CapturedImage a, CapturedImage b)
+    /// <summary>
+    /// The desktop is live (clocks, animated wallpapers, streaming text), so the WGC grab is bracketed by two GDI
+    /// grabs and compared only on pixels that did not change between them. Those must match: this catches
+    /// row-pitch, offset and channel-order bugs without needing a static screen.
+    /// </summary>
+    private async Task AssertMatchesGdiAsync(MonitorInfo monitor, PixelRect area)
     {
-        a.Width.Should().Be(b.Width);
-        a.Height.Should().Be(b.Height);
-        var pa = a.Pixels;
-        var pb = b.Pixels;
-        long similar = 0;
-        for (var i = 0; i < pa.Length; i += 4)
+        const int attempts = 5;
+        var lastStable = 0.0;
+        for (var attempt = 1; attempt <= attempts; attempt++)
         {
-            if (Math.Abs(pa[i] - pb[i]) <= 2 && Math.Abs(pa[i + 1] - pb[i + 1]) <= 2 && Math.Abs(pa[i + 2] - pb[i + 2]) <= 2)
+            using var before = await _gdi.CaptureAsync(Request(monitor, area), Ct);
+            using var wgc = await _wgc.CaptureAsync(Request(monitor, area), Ct);
+            using var after = await _gdi.CaptureAsync(Request(monitor, area), Ct);
+
+            var (stable, matching) = CompareOnStablePixels(before, wgc, after);
+            lastStable = stable;
+            if (stable < 0.5)
             {
-                similar++;
+                await Task.Delay(250, Ct); // most of the screen changed during the grab; try again
+                continue;
+            }
+
+            matching.Should().BeGreaterThanOrEqualTo(
+                0.97,
+                $"on {monitor.DeviceName} {area}, WGC should match GDI wherever the screen held still ({stable:P0} of pixels)");
+            return;
+        }
+
+        Assert.Skip($"{monitor.DeviceName} kept changing ({lastStable:P0} stable at best); could not compare WGC with GDI.");
+    }
+
+    /// <summary>
+    /// Returns the fraction of pixels unchanged between <paramref name="before"/> and <paramref name="after"/>, and,
+    /// among those, the fraction where <paramref name="candidate"/> matches too. "Same" means B, G and R each within
+    /// ±2. A margin at the edges is ignored: on Windows 10 the yellow WGC border is drawn on screen around the
+    /// monitor and can still be visible to the next GDI grab.
+    /// </summary>
+    private static (double Stable, double Matching) CompareOnStablePixels(CapturedImage before, CapturedImage candidate, CapturedImage after)
+    {
+        candidate.Width.Should().Be(before.Width);
+        candidate.Height.Should().Be(before.Height);
+        var margin = Math.Min(BorderMargin, Math.Min(before.Width, before.Height) / 4);
+        long total = 0, stable = 0, matching = 0;
+        for (var y = margin; y < before.Height - margin; y++)
+        {
+            var rb = before.GetRow(y);
+            var rc = candidate.GetRow(y);
+            var ra = after.GetRow(y);
+            for (var i = margin * 4; i < (before.Width - margin) * 4; i += 4)
+            {
+                total++;
+                if (!Same(rb, ra, i))
+                {
+                    continue;
+                }
+
+                stable++;
+                if (Same(rb, rc, i))
+                {
+                    matching++;
+                }
             }
         }
 
-        return similar / (double)(pa.Length / 4);
+        return (stable / (double)total, stable == 0 ? 0 : matching / (double)stable);
+
+        static bool Same(Span<byte> x, Span<byte> y, int i) =>
+            Math.Abs(x[i] - y[i]) <= 2 && Math.Abs(x[i + 1] - y[i + 1]) <= 2 && Math.Abs(x[i + 2] - y[i + 2]) <= 2;
     }
 }

@@ -1,0 +1,144 @@
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Media.Imaging;
+using CashGear.Capture.App.Hosting;
+using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Core.Output;
+using Microsoft.Extensions.Logging;
+
+namespace CashGear.Capture.App.Output;
+
+/// <summary>Saves via WIC encoders and copies to the clipboard. Encoding runs on the thread pool; only the clipboard call touches the UI thread.</summary>
+internal sealed partial class WpfOutputService(IUiDispatcher ui, ILogger<WpfOutputService> logger) : IOutputService
+{
+    private const int ClipboardAttempts = 5;
+    private const int ClipboardCantOpen = unchecked((int)0x800401D0); // CLIPBRD_E_CANT_OPEN: another app holds it
+
+    public Task<string?> SaveAsync(CapturedImage image, SaveOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(options);
+        return Task.Run<string?>(() => Save(image, options), ct);
+    }
+
+    public async Task CopyToClipboardAsync(CapturedImage image, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        var payload = await Task.Run(() => ClipboardPayload.Create(image), ct).ConfigureAwait(false);
+
+        await ui.InvokeAsync(async () =>
+        {
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    // copy: true flushes the data so it survives this app exiting.
+                    Clipboard.SetDataObject(payload.ToDataObject(), copy: true);
+                    LogCopied(image.Width, image.Height);
+                    return;
+                }
+                catch (COMException ex) when (ex.HResult == ClipboardCantOpen && attempt < ClipboardAttempts)
+                {
+                    LogClipboardBusy(attempt);
+                    await Task.Delay(50 * attempt, ct);
+                }
+            }
+        }).ConfigureAwait(false);
+    }
+
+    private string Save(CapturedImage image, SaveOptions options)
+    {
+        Directory.CreateDirectory(options.Directory);
+        var bitmap = image.ToBitmapSource();
+        var keepAlpha = image.Metadata.HasTransparency;
+        var baseName = SanitizeFileName(options.FileNameWithoutExtension);
+        var extension = options.Format.FileExtension();
+
+        for (var n = 1; ; n++)
+        {
+            var path = Path.Combine(options.Directory, n == 1 ? baseName + extension : $"{baseName} ({n}){extension}");
+            FileStream stream;
+            try
+            {
+                stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            }
+            catch (IOException) when (File.Exists(path))
+            {
+                continue; // name taken; try the next suffix
+            }
+
+            try
+            {
+                using (stream)
+                {
+                    WpfImaging.Encode(bitmap, options.Format, options.JpegQuality, keepAlpha, stream);
+                }
+
+                LogSaved(path, image.Width, image.Height);
+                return path;
+            }
+            catch
+            {
+                TryDelete(path); // never leave a truncated image behind
+                throw;
+            }
+        }
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var cleaned = string.Concat(name.Select(c => Array.IndexOf(invalid, c) >= 0 ? '_' : c)).Trim().TrimEnd('.');
+        return cleaned.Length == 0 ? "Capture" : cleaned;
+    }
+
+    private void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogDeleteFailed(ex, path);
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Saved {Path} ({Width}x{Height})")]
+    private partial void LogSaved(string path, int width, int height);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Copied {Width}x{Height} image to the clipboard")]
+    private partial void LogCopied(int width, int height);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Clipboard busy (attempt {Attempt}); retrying")]
+    private partial void LogClipboardBusy(int attempt);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not delete partial file {Path}")]
+    private partial void LogDeleteFailed(Exception ex, string path);
+
+    /// <summary>Everything the clipboard needs, prepared off the UI thread.</summary>
+    private sealed record ClipboardPayload(BitmapSource Bitmap, byte[] Png, byte[] Dib)
+    {
+        public static ClipboardPayload Create(CapturedImage image)
+        {
+            var bitmap = image.ToBitmapSource();
+            using var png = new MemoryStream();
+            WpfImaging.Encode(bitmap, ImageFileFormat.Png, 0, keepAlpha: image.Metadata.HasTransparency, png);
+            return new ClipboardPayload(bitmap, png.ToArray(), WpfImaging.ToPackedDib(image));
+        }
+
+        /// <summary>
+        /// Bitmap (CF_BITMAP via WPF), packed DIB for classic apps, and PNG for apps that keep alpha
+        /// (browsers, Office, chat clients).
+        /// </summary>
+        public DataObject ToDataObject()
+        {
+            var data = new DataObject();
+            data.SetImage(Bitmap);
+            data.SetData(DataFormats.Dib, new MemoryStream(Dib), autoConvert: false);
+            data.SetData("PNG", new MemoryStream(Png), autoConvert: false);
+            return data;
+        }
+    }
+}

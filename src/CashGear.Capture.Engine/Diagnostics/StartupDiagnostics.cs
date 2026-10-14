@@ -12,7 +12,10 @@ namespace CashGear.Capture.Engine.Diagnostics;
 public interface IStartupDiagnostics
 {
     /// <summary>Call on the UI thread: DPI awareness is reported per thread.</summary>
-    void LogEnvironment();
+    void LogDpiAwareness();
+
+    /// <summary>Monitors, virtual screen and effective capture backend. Slow on first use (WinRT probing); call off the UI thread.</summary>
+    void LogDisplaysAndBackends();
 }
 
 internal sealed partial class StartupDiagnostics(
@@ -22,28 +25,38 @@ internal sealed partial class StartupDiagnostics(
     CaptureBackendSelector selector,
     ILogger<StartupDiagnostics> logger) : IStartupDiagnostics
 {
-    public void LogEnvironment()
+    public void LogDpiAwareness()
     {
         var perMonitorV2 = User32.AreDpiAwarenessContextsEqual(
             User32.GetThreadDpiAwarenessContext(), User32.DpiAwarenessContextPerMonitorAwareV2);
         if (perMonitorV2)
         {
-            LogDpiAwareness(perMonitorV2);
+            LogDpiAwarenessResult(perMonitorV2);
         }
         else
         {
             LogNotPerMonitorV2();
         }
+    }
 
-        LogDisplays();
+    public void LogDisplaysAndBackends()
+    {
+        try
+        {
+            LogDisplays();
 
-        var preference = settings.Current.Capture.Backend;
-        LogBackends(
-            preference,
-            selector.ForScreen(preference),
-            selector.ForWindow(preference),
-            capabilities.IsWgcSupported,
-            capabilities.CanDisableWgcBorder);
+            var preference = settings.Current.Capture.Backend;
+            LogBackends(
+                preference,
+                selector.ForScreen(preference),
+                selector.ForWindow(preference),
+                capabilities.IsWgcSupported,
+                capabilities.CanDisableWgcBorder);
+        }
+        catch (Exception ex)
+        {
+            LogDiagnosticsFailed(ex);
+        }
     }
 
     private void LogDisplays()
@@ -71,7 +84,7 @@ internal sealed partial class StartupDiagnostics(
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "DPI awareness PerMonitorV2={PerMonitorV2}")]
-    private partial void LogDpiAwareness(bool perMonitorV2);
+    private partial void LogDpiAwarenessResult(bool perMonitorV2);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Process is NOT PerMonitorV2 DPI aware; captures on scaled monitors will be wrong. Check app.manifest.")]
     private partial void LogNotPerMonitorV2();
@@ -84,6 +97,9 @@ internal sealed partial class StartupDiagnostics(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Virtual screen {Bounds} from monitors differs from SM_*VIRTUALSCREEN {System}")]
     private partial void LogVirtualScreenMismatch(PixelRect bounds, PixelRect system);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Startup diagnostics failed")]
+    private partial void LogDiagnosticsFailed(Exception ex);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Capture backend preference {Preference}: screen={Screen}, window={Window} (WGC supported={WgcSupported}, border optional={BorderOptional})")]
     private partial void LogBackends(CaptureBackend preference, CaptureBackend screen, CaptureBackend window, bool wgcSupported, bool borderOptional);
