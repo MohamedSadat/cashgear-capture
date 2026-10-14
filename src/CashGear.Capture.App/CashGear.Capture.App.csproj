@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyTitle>CashGear Capture</AssemblyTitle>
+
+    <!-- Program.Main owns startup (host first, then WPF), so App.xaml is compiled as a Page, not an ApplicationDefinition. -->
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <StartupObject>CashGear.Capture.App.Program</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="H.NotifyIcon.Wpf" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.File" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
+    <ProjectReference Include="..\CashGear.Capture.Engine\CashGear.Capture.Engine.csproj" />
+    <ProjectReference Include="..\CashGear.Capture.Interop\CashGear.Capture.Interop.csproj" />
+  </ItemGroup>
+
+</Project>

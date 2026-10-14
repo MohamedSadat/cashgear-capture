@@ -6,8 +6,8 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 
 | Phase | Scope | State |
 |---|---|---|
-| 0 | Scaffold, tray, DI/logging/settings, single instance | in progress |
-| 1 | Monitor/window enumeration, full-screen capture, save + clipboard | planned |
+| 0 | Scaffold, tray, DI/logging/settings, single instance | done |
+| 1 | Monitor/window enumeration, full-screen capture, save + clipboard | in progress |
 | 2–9 | Region overlay, window capture + hotkeys, settings UI, editor, scrolling capture, recording, OCR, packaging | planned |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
