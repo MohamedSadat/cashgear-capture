@@ -1,4 +1,6 @@
+using CashGear.Capture.Core.Display;
 using CashGear.Capture.Engine.Diagnostics;
+using CashGear.Capture.Engine.Display;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CashGear.Capture.Engine;
@@ -9,6 +11,8 @@ public static class EngineServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddSingleton<IMonitorService, Win32MonitorService>();
+        services.AddSingleton<IWindowService, Win32WindowService>();
         services.AddSingleton<StartupDiagnostics>();
         return services;
     }
