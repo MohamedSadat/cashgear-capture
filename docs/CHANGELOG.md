@@ -127,3 +127,47 @@ Each phase lists the features added, how it was tested, and known limitations.
 - Picking a window still uses the frozen-screen overlay, so it is limited to top-level windows. Child controls and menus are Phase 5+ material.
 - On Windows 10, capturing a covered window with WGC briefly shows the yellow border around that window.
 - The synthesized shadow is a uniform soft shadow, not the exact DWM shadow.
+
+## Phase 4 — Settings window, after-capture actions, file-name templates (2026-10-15)
+
+### Added
+- **After-capture actions** (`afterCapture`): save to file ("auto-save") and/or copy to the clipboard. "Open in editor" is present but disabled until Phase 5. If neither save nor copy is on, the user is told instead of the capture being thrown away.
+- **File-name templates** (`output.fileNameTemplate`, Core `FileNameTemplate`):
+  - Tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss} {counter} {window} {monitor}` per the spec, plus `{kind}`.
+  - Validation: unknown tokens, unbalanced braces, blank.
+  - Sanitizing: invalid characters, doubled separators left by empty tokens, reserved device names, length cap.
+  - `{counter}` is persistent, stored in `%LocalAppData%`, and only advances when the template uses it.
+  - Several files from one full-screen capture get `_{monitor}` appended when the template lacks it.
+  - The default template keeps the old naming style: `Capture_<date>_<time>_<kind>`.
+- **Capture delay** (`capture.delaySeconds`): announced with a notification. Every capture also hides the app's own windows (e.g. Settings) and shows them again afterwards (spec §5.6).
+- **Settings window** (MVVM, CommunityToolkit), Output / Capture / Hotkeys / General tabs:
+  - Folder with Browse/Open; format and JPEG quality; template with a live example and token help.
+  - Capture delay, hide delay, cursor, window shadow, full-screen output, capture method.
+  - **Hotkey recorder:** global hotkeys pause while a box has focus, so PrintScreen can be recorded. Each row shows Active, why the key is taken or invalid, or "Applies when you save".
+  - **Start with Windows** via `HKCU\…\Run`; the registry is the source of truth, so a change in Task Manager is reflected.
+  - **Theme:** System / Light / Dark through WPF's Fluent `ThemeMode`, with the matching DWM dark title bar.
+  - OK / Cancel / Apply and Reset to defaults. Validation blocks saving bad templates, relative folders, no after-capture action, duplicate or invalid hotkeys, and single typing keys as global hotkeys (also refused by the registrar).
+- **Settings schema v2** with a JSON-level migration (`output.copyToClipboard` → `afterCapture.copyToClipboard`). An older file is rewritten once in the new shape. The file is written readably (`Ctrl+PrintScreen`, not `Ctrl\u002BPrintScreen`), and computed values are not stored.
+
+### Tested
+- 288+ automated tests. New:
+  - template expansion, validation and sanitizing;
+  - schema migration (including on load) and the persistent counter;
+  - settings view model: load, preview, every validation rule, OK/Apply/Cancel/Reset, Browse, hotkey status after saving, pause/resume while recording;
+  - registrar suspend/resume and the unsafe-key rule;
+  - Start with Windows against a scratch registry key;
+  - the readable-JSON regression.
+- Manual on the dev machine:
+  - the real v1 settings file migrated to v2;
+  - Settings opened from the tray: changed the folder, JPEG, template and hotkey and turned on Start with Windows → Apply saved them, re-registered the hotkeys and wrote the Run key;
+  - PrintScreen recorded in the hotkey box without taking a screenshot;
+  - Dark theme applied live, with a dark title bar;
+  - after a restart the saved Ctrl+Shift+F9 produced `Shot_0001_fullscreen_all.jpg`, `Shot_0002_monitor_DISPLAY2.jpg`, `Shot_0003_monitor_DISPLAY1.jpg` in the chosen folder;
+  - a capture taken with Settings open did not contain the window, and the window came back;
+  - Reset + Start with Windows off + OK restored the defaults and removed the Run key.
+
+### Known limitations
+- Open-in-editor is disabled until the editor exists (Phase 5); the spec's default ("open editor") becomes the default then.
+- The capture delay shows a notification, not an on-screen countdown (Phase 9).
+- The template has no sub-folder support (`/` and `\` are replaced).
+- `ThemeMode` is marked experimental in .NET 10 WPF (diagnostic WPF0001 suppressed); the tray menu keeps the classic style.

@@ -10,7 +10,8 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 1 | Monitor/window enumeration, full-screen capture, save + clipboard | done (mixed-DPI hardware check pending) |
 | 2 | Region selection overlay (drag, window pick, loupe, keyboard nudge) | done (mixed-DPI hardware check pending) |
 | 3 | Window capture (WGC, occluded windows, optional shadow) + global hotkeys | done |
-| 4–9 | Settings UI + post-capture actions, editor, scrolling capture, recording, OCR, packaging | planned |
+| 4 | Settings window, after-capture actions, file-name templates, capture delay, start with Windows, light/dark | done |
+| 5–9 | Editor, scrolling capture, recording, OCR, packaging | planned |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -48,7 +49,22 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `Ctrl+PrintScreen` | Capture Full Screen |
 | `Ctrl+Shift+PrintScreen` | Scrolling capture (Phase 6) |
 
-Change them in `settings.json` under `hotkeys` (e.g. `"captureRegion": "Ctrl+Shift+F9"`, `null` to disable); Settings… in the tray opens the file, and saved edits apply immediately. Keys another app or Windows already owns are reported in a notification.
+Change them in **Settings › Hotkeys** (click a box and press the keys) or in `settings.json` under `hotkeys`. A key another app or Windows already owns is reported, and a single typing key (e.g. `A`) is refused because it would stop working everywhere else.
+
+## Settings
+
+Tray › **Settings…** opens the settings window (light/dark follows Windows, or choose one):
+
+| Tab | What |
+|---|---|
+| Output | After capture: save to file / copy to clipboard (open in editor arrives with the editor); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
+| Capture | Capture delay, hide delay, cursor, window shadow, full-screen output, capture method |
+| Hotkeys | Record hotkeys; each shows whether it is active |
+| General | Start with Windows, theme, open the settings file |
+
+Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved.
+
+File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
 
 ## Layout
 

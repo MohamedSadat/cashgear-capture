@@ -20,10 +20,10 @@ dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–3 pass (2026-10-14) |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–4 pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–3 pass (2026-10-14) |
+| Windows 10 22H2 | Phase 0–4 pass (2026-10-15) |
 | Windows 11 23H2+ | not run |
 
 ## Phase 0–1 results (2026-10-14)
@@ -74,6 +74,20 @@ Same machine and layout. The keys were sent with `SendInput` from a script; the 
 | Live edit `captureRegion: "Win+E"` → Win32 error 1409 logged, "3 registered, 1 problem" + notification, no crash | pass |
 | `--capture-window` → window-only picker, one click on Notepad → WGC capture 1426×575 | pass |
 | Interactive tests: hotkey round trip via SendInput; conflict between two registrations; WGC through a covering window | pass |
+
+## Phase 4 results (2026-10-15)
+
+| Check | Result |
+|---|---|
+| Existing v1 settings.json → "Upgraded settings … from schema 1 to 2", file rewritten (readable `+`, no computed fields) | pass |
+| Tray › Settings… opens the window (Fluent light); tray menu shows the active hotkeys | pass |
+| Folder, JPEG, template `Shot_{counter}_{kind}`, Full Screen hotkey Ctrl+Shift+F9, Start with Windows, Dark → Apply: settings.json updated, hotkeys re-registered, Run key written | pass |
+| PrintScreen pressed in the Region hotkey box is recorded (hotkeys paused), no screenshot taken | pass |
+| Dark theme applied live with dark title bar and readable checkboxes | pass (after fixing a style that froze light colours) |
+| Restart → Ctrl+Shift+F9 → `Shot_0001_fullscreen_all.jpg` 3200×1082, `Shot_0002_monitor_DISPLAY2.jpg`, `Shot_0003_monitor_DISPLAY1.jpg` in the chosen folder | pass |
+| Settings reopened after restart shows the saved values | pass |
+| Ctrl+PrintScreen with Settings open: the capture shows what is behind the window; the window reappears | pass |
+| Reset to defaults + Start with Windows off + OK → defaults saved, Run key removed | pass |
 
 ### Pending: mixed DPI and negative coordinates
 
