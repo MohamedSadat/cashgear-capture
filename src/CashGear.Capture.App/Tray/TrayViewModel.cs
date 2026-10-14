@@ -1,9 +1,8 @@
-using System.Diagnostics;
 using CashGear.Capture.App.Capture;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
+using CashGear.Capture.App.Settings;
 using CashGear.Capture.Core.Hotkeys;
-using CashGear.Capture.Core.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -15,15 +14,15 @@ public sealed partial class TrayViewModel : ObservableObject
 {
     private readonly CaptureCoordinator _coordinator;
     private readonly IAppLifetime _lifetime;
-    private readonly AppPaths _paths;
     private readonly HotkeyRegistrar _hotkeys;
+    private readonly SettingsWindowService _settingsWindow;
 
-    public TrayViewModel(CaptureCoordinator coordinator, IAppLifetime lifetime, AppPaths paths, HotkeyRegistrar hotkeys)
+    public TrayViewModel(CaptureCoordinator coordinator, IAppLifetime lifetime, HotkeyRegistrar hotkeys, SettingsWindowService settingsWindow)
     {
         _coordinator = coordinator;
         _lifetime = lifetime;
-        _paths = paths;
         _hotkeys = hotkeys;
+        _settingsWindow = settingsWindow;
         _hotkeys.RegistrationsChanged += (_, _) => RefreshHotkeyLabels();
         RefreshHotkeyLabels();
     }
@@ -49,10 +48,8 @@ public sealed partial class TrayViewModel : ObservableObject
     [RelayCommand]
     private Task CaptureFullScreenAsync() => _coordinator.CaptureFullScreenAsync();
 
-    /// <summary>Until the settings window exists (Phase 4), open the JSON file in Notepad (edits apply on save).</summary>
     [RelayCommand]
-    private void OpenSettings() =>
-        Process.Start(new ProcessStartInfo("notepad.exe", $"\"{_paths.SettingsFile}\"") { UseShellExecute = true })?.Dispose();
+    private void OpenSettings() => _settingsWindow.Show();
 
     [RelayCommand]
     private void Exit() => _lifetime.Shutdown();

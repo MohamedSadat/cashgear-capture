@@ -70,4 +70,18 @@ public sealed class HotkeyGestureParsingTests
     public void Blank_hotkeys_normalize_to_disabled() =>
         new HotkeySettings(CaptureRegion: "  ", CaptureScrolling: " Ctrl+F9 ").Normalize()
             .Should().Be(new HotkeySettings(CaptureRegion: null, CaptureScrolling: "Ctrl+F9"));
+
+    [Theory]
+    [InlineData("PrintScreen", true)]
+    [InlineData("F9", true)]
+    [InlineData("F24", true)]
+    [InlineData("Pause", true)]
+    [InlineData("ScrollLock", true)]
+    [InlineData("A", false)]
+    [InlineData("Delete", false)]
+    [InlineData("Space", false)]
+    [InlineData("Ctrl+A", true)]
+    [InlineData("Shift+Delete", true)]
+    public void Single_typing_keys_are_not_safe_as_global_hotkeys(string text, bool safe) =>
+        HotkeyGesture.Parse(text).IsSafeAsGlobalHotkey.Should().Be(safe);
 }

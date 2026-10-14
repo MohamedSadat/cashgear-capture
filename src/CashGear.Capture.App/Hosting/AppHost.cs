@@ -1,7 +1,9 @@
 using CashGear.Capture.App.Capture;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Output;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
+using CashGear.Capture.App.Settings;
 using CashGear.Capture.App.SingleInstance;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core;
@@ -44,6 +46,9 @@ internal static class AppHost
         builder.Services.AddSingleton<IAppLifetime, WpfAppLifetime>();
         builder.Services.AddSingleton<IOutputService, WpfOutputService>();
         builder.Services.AddSingleton<IOwnWindows, WpfOwnWindows>();
+        builder.Services.AddSingleton<IStartupRegistration, RegistryStartupRegistration>();
+        builder.Services.AddSingleton<IFolderPicker, WpfFolderPicker>();
+        builder.Services.AddSingleton<SettingsWindowService>();
         builder.Services.AddSingleton<RegionSelector>();
         builder.Services.AddSingleton<IHotkeyService, Win32HotkeyService>();
         builder.Services.AddSingleton<HotkeyRegistrar>();

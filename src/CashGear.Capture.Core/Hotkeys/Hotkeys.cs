@@ -69,6 +69,13 @@ public readonly record struct HotkeyGesture(HotkeyModifiers Modifiers, uint Virt
     public static HotkeyGesture Parse(string text) =>
         TryParse(text, out var gesture) ? gesture : throw new FormatException($"'{text}' is not a valid hotkey.");
 
+    /// <summary>
+    /// False for a single typing key such as <c>A</c> or <c>Delete</c>: registered globally it would stop working in
+    /// every other app. Keys apps don't type with (PrintScreen, Pause, Scroll Lock, F1–F24) may stand alone.
+    /// </summary>
+    public bool IsSafeAsGlobalHotkey =>
+        Modifiers != HotkeyModifiers.None || VirtualKey is VkSnapshot or 0x13 or 0x91 or (>= 0x70 and <= 0x87);
+
     /// <summary>Canonical text, e.g. <c>Ctrl+Shift+PrintScreen</c>; round-trips through <see cref="TryParse"/>.</summary>
     public override string ToString()
     {

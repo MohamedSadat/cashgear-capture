@@ -20,13 +20,33 @@ public sealed partial class HotkeyRegistrar(
     ILogger<HotkeyRegistrar> logger) : IDisposable
 {
     private readonly Dictionary<HotkeyAction, HotkeyGesture> _active = [];
+    private readonly Dictionary<HotkeyAction, string> _problems = [];
     private HotkeySettings? _applied;
+    private int _suspended;
 
     /// <summary>Raised on the UI thread after the registrations were (re)applied.</summary>
     public event EventHandler? RegistrationsChanged;
 
     /// <summary>The hotkeys currently registered, by action.</summary>
     public IReadOnlyDictionary<HotkeyAction, HotkeyGesture> Active => _active;
+
+    /// <summary>Why an action's configured hotkey is not registered (invalid, duplicate or taken), by action.</summary>
+    public IReadOnlyDictionary<HotkeyAction, string> Problems => _problems;
+
+    /// <summary>
+    /// Releases every hotkey until the result is disposed — e.g. while the settings window records a new key, so
+    /// pressing PrintScreen there records it instead of taking a screenshot. Nested calls are counted. UI thread.
+    /// </summary>
+    public IDisposable Suspend()
+    {
+        if (_suspended++ == 0)
+        {
+            hotkeys.UnregisterAll();
+            LogSuspended();
+        }
+
+        return new Resumer(this);
+    }
 
     /// <summary>Registers the configured hotkeys. Call on the UI thread.</summary>
     public void Start()
@@ -44,16 +64,25 @@ public sealed partial class HotkeyRegistrar(
     private void OnSettingsChanged(object? sender, EventArgs e) =>
         _ = ui.InvokeAsync(() =>
         {
-            if (settings.Current.Hotkeys != _applied)
+            if (settings.Current.Hotkeys != _applied && _suspended == 0)
             {
                 Apply(settings.Current.Hotkeys);
             }
         });
 
-    private void Apply(HotkeySettings config)
+    private void Resume()
+    {
+        if (--_suspended == 0)
+        {
+            Apply(settings.Current.Hotkeys, notify: false);
+        }
+    }
+
+    private void Apply(HotkeySettings config, bool notify = true)
     {
         hotkeys.UnregisterAll();
         _active.Clear();
+        _problems.Clear();
         _applied = config;
 
         var problems = new List<string>();
@@ -67,14 +96,20 @@ public sealed partial class HotkeyRegistrar(
 
             if (!HotkeyGesture.TryParse(text, out var gesture))
             {
-                problems.Add($"{Label(action)}: \"{text}\" is not a valid hotkey.");
+                Problem(action, $"\"{text}\" is not a valid hotkey.");
+                continue;
+            }
+
+            if (!gesture.IsSafeAsGlobalHotkey)
+            {
+                Problem(action, $"{gesture} on its own would block that key in every app; add Ctrl, Alt, Shift or Win.");
                 continue;
             }
 
             var owner = _active.Where(p => p.Value == gesture).Select(p => (HotkeyAction?)p.Key).FirstOrDefault();
             if (owner is { } other)
             {
-                problems.Add($"{Label(action)}: {gesture} is already set for {Label(other)}.");
+                Problem(action, $"{gesture} is already set for {Label(other)}.");
                 continue;
             }
 
@@ -84,12 +119,18 @@ public sealed partial class HotkeyRegistrar(
             }
             else
             {
-                problems.Add($"{Label(action)}: {error}");
+                Problem(action, error ?? $"{gesture} could not be registered.");
             }
         }
 
+        void Problem(HotkeyAction action, string message)
+        {
+            _problems[action] = message;
+            problems.Add($"{Label(action)}: {message}");
+        }
+
         LogApplied(_active.Count, problems.Count);
-        if (problems.Count > 0)
+        if (problems.Count > 0 && notify)
         {
             notifier.Notify(
                 "Some hotkeys are not available",
@@ -111,4 +152,14 @@ public sealed partial class HotkeyRegistrar(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Hotkeys applied: {Registered} registered, {Problems} problem(s)")]
     private partial void LogApplied(int registered, int problems);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Hotkeys suspended")]
+    private partial void LogSuspended();
+
+    private sealed class Resumer(HotkeyRegistrar owner) : IDisposable
+    {
+        private HotkeyRegistrar? _owner = owner;
+
+        public void Dispose() => Interlocked.Exchange(ref _owner, null)?.Resume();
+    }
 }

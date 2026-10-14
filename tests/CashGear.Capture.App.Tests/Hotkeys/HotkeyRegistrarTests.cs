@@ -107,79 +107,60 @@ public sealed class HotkeyRegistrarTests
         registrar.Start();
         return registrar;
     }
+}
 
-    private sealed class FakeHotkeyService : IHotkeyService
+public sealed class HotkeyRegistrarSuspendTests
+{
+    private readonly FakeHotkeyService _hotkeys = new();
+    private readonly MutableSettings _settings = new();
+
+    [Fact]
+    public void Suspend_releases_keys_and_resume_brings_back_the_latest_settings()
     {
-        public event EventHandler<HotkeyAction>? Pressed;
+        using var registrar = Start();
 
-        public HashSet<HotkeyGesture> Taken { get; } = [];
+        var suspension = registrar.Suspend();
+        _hotkeys.Registered.Should().BeEmpty();
 
-        public Dictionary<HotkeyAction, HotkeyGesture> Registered { get; } = [];
+        // A save while suspended is applied on resume, not before.
+        _settings.Update(s => s with { Hotkeys = s.Hotkeys with { CaptureRegion = "Ctrl+F9" } });
+        _hotkeys.Registered.Should().BeEmpty();
 
-        public int RegisterCalls { get; private set; }
-
-        public bool TryRegister(HotkeyAction action, HotkeyGesture gesture, out string? error)
-        {
-            RegisterCalls++;
-            if (Taken.Contains(gesture))
-            {
-                error = $"{gesture} is already used by another app or by Windows.";
-                return false;
-            }
-
-            Registered[action] = gesture;
-            error = null;
-            return true;
-        }
-
-        public void UnregisterAll() => Registered.Clear();
-
-        public void Press(HotkeyAction action) => Pressed?.Invoke(this, action);
+        suspension.Dispose();
+        _hotkeys.Registered[HotkeyAction.CaptureRegion].Should().Be(HotkeyGesture.Parse("Ctrl+F9"));
+        suspension.Dispose(); // idempotent
+        _hotkeys.Registered.Should().HaveCount(4);
     }
 
-    private sealed class FakeNotifier : ITrayNotifier
+    [Fact]
+    public void Nested_suspensions_resume_only_at_the_end()
     {
-        public List<(string Title, string Text, NotificationKind Kind)> Messages { get; } = [];
+        using var registrar = Start();
 
-        public void Notify(string title, string message, NotificationKind kind = NotificationKind.Info) =>
-            Messages.Add((title, message, kind));
+        var outer = registrar.Suspend();
+        var inner = registrar.Suspend();
+        inner.Dispose();
+        _hotkeys.Registered.Should().BeEmpty();
+
+        outer.Dispose();
+        _hotkeys.Registered.Should().HaveCount(4);
     }
 
-    private sealed class MutableSettings : ISettingsService
+    [Fact]
+    public void A_single_typing_key_is_refused()
     {
-        public event EventHandler? Changed;
+        _settings.Current = new AppSettings { Hotkeys = new HotkeySettings(CaptureRegion: "Q") };
 
-        public AppSettings Current { get; set; } = new();
+        using var registrar = Start();
 
-        public void Update(Func<AppSettings, AppSettings> update)
-        {
-            Current = update(Current).Normalize();
-            Changed?.Invoke(this, EventArgs.Empty);
-        }
-
-        public Task SaveAsync(CancellationToken ct = default) => Task.CompletedTask;
-
-        public Task UpdateAsync(Func<AppSettings, AppSettings> update, CancellationToken ct = default)
-        {
-            Update(update);
-            return Task.CompletedTask;
-        }
+        registrar.Active.Should().NotContainKey(HotkeyAction.CaptureRegion);
+        registrar.Problems[HotkeyAction.CaptureRegion].Should().Contain("would block that key in every app");
     }
 
-    private sealed class InlineUiDispatcher : IUiDispatcher
+    private HotkeyRegistrar Start()
     {
-        public bool CheckAccess() => true;
-
-        public Task InvokeAsync(Action action)
-        {
-            action();
-            return Task.CompletedTask;
-        }
-
-        public Task<T> InvokeAsync<T>(Func<T> func) => Task.FromResult(func());
-
-        public Task InvokeAsync(Func<Task> func) => func();
-
-        public Task<T> InvokeAsync<T>(Func<Task<T>> func) => func();
+        var registrar = new HotkeyRegistrar(_hotkeys, _settings, new FakeNotifier(), new InlineUiDispatcher(), NullLogger<HotkeyRegistrar>.Instance);
+        registrar.Start();
+        return registrar;
     }
 }

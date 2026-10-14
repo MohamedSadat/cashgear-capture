@@ -1,0 +1,191 @@
+<Window x:Class="CashGear.Capture.App.Settings.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.Settings"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:SettingsViewModel}"
+        Title="CashGear Capture Settings"
+        Width="680" Height="600" MinWidth="560" MinHeight="500"
+        WindowStartupLocation="CenterScreen">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="Visible" />
+    <local:EnumLabelConverter x:Key="Label" />
+    <DataTemplate x:Key="EnumItem">
+      <TextBlock Text="{Binding Converter={StaticResource Label}}" />
+    </DataTemplate>
+    <Style x:Key="Section" TargetType="TextBlock">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Margin" Value="0,12,0,6" />
+    </Style>
+    <Style x:Key="Hint" TargetType="TextBlock">
+      <Setter Property="Opacity" Value="0.7" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+    <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+      <Setter Property="Margin" Value="0,2" />
+    </Style>
+  </Window.Resources>
+
+  <DockPanel Margin="16">
+    <Grid DockPanel.Dock="Bottom" Margin="0,12,0,0">
+      <Button Content="Reset to defaults" Command="{Binding ResetToDefaultsCommand}" HorizontalAlignment="Left" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button Content="OK" IsDefault="True" Command="{Binding SaveCommand}" MinWidth="90" Margin="0,0,8,0" />
+        <Button Content="Cancel" IsCancel="True" Command="{Binding CancelCommand}" MinWidth="90" Margin="0,0,8,0" />
+        <Button Content="Apply" Command="{Binding ApplyCommand}" MinWidth="90" />
+      </StackPanel>
+    </Grid>
+
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Errors}" Foreground="#D13438" TextWrapping="Wrap" Margin="0,10,0,0"
+               Visibility="{Binding HasErrors, Converter={StaticResource Visible}}" />
+
+    <TabControl>
+      <!-- ============================== Output ============================== -->
+      <TabItem Header="Output">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="12,4,12,12">
+            <TextBlock Style="{StaticResource Section}" Text="After capture" />
+            <CheckBox Content="Save to file" IsChecked="{Binding SaveToFile}" />
+            <CheckBox Content="Copy to clipboard" IsChecked="{Binding CopyToClipboard}" />
+            <CheckBox Content="Open in editor (coming in Phase 5)" IsChecked="{Binding OpenEditor}" IsEnabled="{Binding IsEditorAvailable}" />
+
+            <TextBlock Style="{StaticResource Section}" Text="Folder" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="FolderBox" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Capture folder" />
+              <Button Grid.Column="1" Content="Browse…" Command="{Binding BrowseFolderCommand}" Margin="8,0,0,0" />
+              <Button Grid.Column="2" Content="Open" Command="{Binding OpenCaptureFolderCommand}" Margin="8,0,0,0" />
+            </Grid>
+            <TextBlock Style="{StaticResource Hint}">
+              <Run Text="Empty means the default:" />
+              <Run Text="{Binding DefaultFolder, Mode=OneWay}" />
+            </TextBlock>
+
+            <TextBlock Style="{StaticResource Section}" Text="Format" />
+            <StackPanel Orientation="Horizontal">
+              <ComboBox ItemsSource="{Binding Formats}" SelectedItem="{Binding Format}" ItemTemplate="{StaticResource EnumItem}" MinWidth="160"
+                        AutomationProperties.Name="Image format" />
+              <TextBlock Text="JPEG quality" VerticalAlignment="Center" Margin="20,0,8,0"
+                         Visibility="{Binding IsJpeg, Converter={StaticResource Visible}}" />
+              <Slider Minimum="1" Maximum="100" Value="{Binding JpegQuality}" Width="160" VerticalAlignment="Center"
+                      IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="JPEG quality"
+                      Visibility="{Binding IsJpeg, Converter={StaticResource Visible}}" />
+              <TextBlock Text="{Binding JpegQuality}" VerticalAlignment="Center" Margin="8,0,0,0" MinWidth="28"
+                         Visibility="{Binding IsJpeg, Converter={StaticResource Visible}}" />
+            </StackPanel>
+
+            <TextBlock Style="{StaticResource Section}" Text="File name" />
+            <TextBox Text="{Binding FileNameTemplate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="File name template" />
+            <TextBlock Style="{StaticResource Hint}">
+              <Run Text="Example:" />
+              <Run Text="{Binding FileNamePreview, Mode=OneWay}" FontWeight="SemiBold" />
+            </TextBlock>
+            <ItemsControl ItemsSource="{Binding TokenHelp}" Margin="0,8,0,0" Opacity="0.7" FontFamily="Consolas" FontSize="12" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ============================== Capture ============================== -->
+      <TabItem Header="Capture">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="12,4,12,12">
+            <TextBlock Style="{StaticResource Section}" Text="Timing" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+              </Grid.RowDefinitions>
+              <TextBlock Text="Capture delay" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding DelayChoices}" SelectedItem="{Binding DelaySeconds}" ItemStringFormat="{}{0} s"
+                        HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="Capture delay" />
+              <TextBlock Grid.Row="1" Text="Wait for app windows to hide" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding HideDelayChoices}" SelectedItem="{Binding HideDelayMs}" ItemStringFormat="{}{0} ms"
+                        HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="Hide delay" />
+            </Grid>
+            <TextBlock Style="{StaticResource Hint}" Text="The capture delay gives you time to open a menu or hover a tooltip before the screen is taken." />
+
+            <TextBlock Style="{StaticResource Section}" Text="Content" />
+            <CheckBox Content="Include the mouse cursor" IsChecked="{Binding IncludeCursor}" />
+            <CheckBox Content="Add a drop shadow to window captures" IsChecked="{Binding IncludeWindowShadow}" />
+
+            <TextBlock Style="{StaticResource Section}" Text="Full screen" />
+            <ComboBox ItemsSource="{Binding FullScreenOutputs}" SelectedItem="{Binding FullScreenOutput}" ItemTemplate="{StaticResource EnumItem}"
+                      HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Full screen output" />
+
+            <TextBlock Style="{StaticResource Section}" Text="Capture method" />
+            <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" ItemTemplate="{StaticResource EnumItem}"
+                      HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Capture method" />
+            <TextBlock Style="{StaticResource Hint}" Text="Automatic avoids the yellow capture border on Windows 10 and still captures covered windows correctly." />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ============================== Hotkeys ============================== -->
+      <TabItem Header="Hotkeys">
+        <StackPanel Margin="12,4,12,12">
+          <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,8"
+                     Text="Click a box and press the keys. Backspace clears it. Hotkeys are paused while a box is selected, so PrintScreen can be recorded." />
+          <ItemsControl ItemsSource="{Binding Hotkeys}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type local:HotkeyRowViewModel}">
+                <Grid Margin="0,4">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200" />
+                    <ColumnDefinition Width="220" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                  <local:HotkeyBox Grid.Column="1" GestureText="{Binding Text}" AutomationProperties.Name="{Binding Label}"
+                                   GotKeyboardFocus="OnHotkeyBoxGotFocus" LostKeyboardFocus="OnHotkeyBoxLostFocus" />
+                  <Button Grid.Column="2" Content="Clear" Command="{Binding ClearCommand}" Margin="8,0,0,0" />
+                  <TextBlock Grid.Column="3" Text="{Binding Status}" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap">
+                    <TextBlock.Style>
+                      <Style TargetType="TextBlock">
+                        <Setter Property="Opacity" Value="0.75" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding HasProblem}" Value="True">
+                            <Setter Property="Foreground" Value="#D13438" />
+                            <Setter Property="Opacity" Value="1" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </TextBlock.Style>
+                  </TextBlock>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </TabItem>
+
+      <!-- ============================== General ============================== -->
+      <TabItem Header="General">
+        <StackPanel Margin="12,4,12,12">
+          <TextBlock Style="{StaticResource Section}" Text="Startup" />
+          <CheckBox Content="Start CashGear Capture when I sign in to Windows" IsChecked="{Binding StartWithWindows}" />
+
+          <TextBlock Style="{StaticResource Section}" Text="Appearance" />
+          <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" ItemTemplate="{StaticResource EnumItem}"
+                    HorizontalAlignment="Left" MinWidth="220" AutomationProperties.Name="Theme" />
+
+          <TextBlock Style="{StaticResource Section}" Text="Advanced" />
+          <Button Content="Open settings file" Command="{Binding OpenSettingsFileCommand}" HorizontalAlignment="Left" />
+          <TextBlock Style="{StaticResource Hint}" Text="Edits saved in the file apply immediately." />
+        </StackPanel>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>
