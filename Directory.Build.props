@@ -1,0 +1,25 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Single source of truth for the Windows TFM. Keep the 4th revision at .0 (CsWinRT 2.x projection). -->
+    <CashGearWindowsTfm>net10.0-windows10.0.22621.0</CashGearWindowsTfm>
+    <CashGearMinWindowsVersion>10.0.19041.0</CashGearMinWindowsVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
+    <Company>CashGear</Company>
+    <Product>CashGear Capture</Product>
+    <Version>0.1.0</Version>
+
+    <!-- A new security advisory on a package must never break the build. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+  </PropertyGroup>
+
+</Project>
