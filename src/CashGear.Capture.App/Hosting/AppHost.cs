@@ -43,6 +43,7 @@ internal static class AppHost
         builder.Services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
         builder.Services.AddSingleton<IAppLifetime, WpfAppLifetime>();
         builder.Services.AddSingleton<IOutputService, WpfOutputService>();
+        builder.Services.AddSingleton<IOwnWindows, WpfOwnWindows>();
         builder.Services.AddSingleton<RegionSelector>();
         builder.Services.AddSingleton<IHotkeyService, Win32HotkeyService>();
         builder.Services.AddSingleton<HotkeyRegistrar>();
