@@ -30,6 +30,9 @@ internal sealed class InstanceCommandDispatcher(
             case InstanceCommand.CaptureRegion:
                 return ui.InvokeAsync(() => tray.CaptureRegionCommand.ExecuteAsync(null));
 
+            case InstanceCommand.CaptureWindow:
+                return ui.InvokeAsync(() => tray.CaptureWindowCommand.ExecuteAsync(null));
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(command), command, null);
         }

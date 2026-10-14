@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Threading;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.SingleInstance;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Instance;
@@ -41,6 +42,10 @@ public partial class CaptureApplication : Application
 
         _tray = _services.GetRequiredService<TrayIconHost>();
         _tray.Show(_services.GetRequiredService<TrayViewModel>());
+
+        // After the tray icon exists, so conflict notifications have somewhere to show.
+        _services.GetRequiredService<HotkeyRegistrar>().Start();
+        _services.GetRequiredService<HotkeyRouter>().Start();
         _services.GetRequiredService<UiReadySignal>().SetReady();
         _ = Task.Run(diagnostics.LogDisplaysAndBackends); // first WinRT probe takes ~1 s; keep it off the UI thread
 

@@ -15,9 +15,9 @@
 
     <tb:TaskbarIcon.ContextMenu>
       <ContextMenu>
-        <MenuItem Header="Capture _Region" Command="{Binding CaptureRegionCommand}" />
+        <MenuItem Header="Capture _Region" Command="{Binding CaptureRegionCommand}" InputGestureText="{Binding RegionHotkey}" />
         <MenuItem Header="Capture _Window" Command="{Binding CaptureWindowCommand}" />
-        <MenuItem Header="Capture _Full Screen" Command="{Binding CaptureFullScreenCommand}" />
+        <MenuItem Header="Capture _Full Screen" Command="{Binding CaptureFullScreenCommand}" InputGestureText="{Binding FullScreenHotkey}" />
         <Separator />
         <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" />
         <Separator />

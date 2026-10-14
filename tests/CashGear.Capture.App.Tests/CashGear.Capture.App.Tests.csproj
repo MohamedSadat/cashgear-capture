@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Compile Include="..\CashGear.Capture.Engine.Tests\InteractiveDesktop.cs" Link="InteractiveDesktop.cs" />
+    <Compile Include="..\CashGear.Capture.Engine.Tests\Capture\Fakes.cs" Link="Capture\EngineFakes.cs" />
   </ItemGroup>
 
 </Project>

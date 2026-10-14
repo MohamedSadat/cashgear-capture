@@ -6,6 +6,7 @@ using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
+using CashGear.Capture.Core.Selection;
 using CashGear.Capture.Core.Settings;
 using Microsoft.Extensions.Logging;
 
@@ -111,7 +112,7 @@ public sealed partial class CaptureCoordinator
         var windows = _windows.GetVisibleWindows();
         using var frozen = await _capture.CaptureAllMonitorsAsync(ct).ConfigureAwait(false);
 
-        var selection = await _ui.InvokeAsync(() => _regionSelector.SelectAsync(frozen, displays, windows, ct)).ConfigureAwait(false);
+        var selection = await _ui.InvokeAsync(() => _regionSelector.SelectAsync(frozen, displays, windows, ct: ct)).ConfigureAwait(false);
         if (selection is null)
         {
             return; // cancelled by the user; nothing to report
@@ -135,6 +136,63 @@ public sealed partial class CaptureCoordinator
         var path = await SaveAsync(image, name, current.Output, ct).ConfigureAwait(false);
         await DeliverAsync(image, [path], current.Output, ct).ConfigureAwait(false);
     });
+
+    /// <summary>
+    /// Lets the user pick a window on the overlay, then captures that window's own content (WGC sees it even
+    /// where other windows cover it).
+    /// </summary>
+    public Task CaptureWindowAsync(CancellationToken ct = default) => RunAsync(async current =>
+    {
+        await WaitForOwnUiToHideAsync(current, ct).ConfigureAwait(false);
+
+        var displays = _monitors.GetMonitors();
+        var windows = _windows.GetVisibleWindows();
+        RegionSelectionResult? selection;
+        using (var frozen = await _capture.CaptureAllMonitorsAsync(ct).ConfigureAwait(false))
+        {
+            selection = await _ui.InvokeAsync(
+                () => _regionSelector.SelectAsync(frozen, displays, windows, SelectionMode.WindowOnly, ct)).ConfigureAwait(false);
+        }
+
+        if (selection?.Window is not { } window)
+        {
+            return; // cancelled by the user
+        }
+
+        // Let the overlay leave the screen before a screen-based capture of a fully visible window.
+        await WaitForOwnUiToHideAsync(current, ct).ConfigureAwait(false);
+        await CaptureWindowCoreAsync(window.Handle, current, ct).ConfigureAwait(false);
+    });
+
+    /// <summary>Captures the window that was in the foreground when the hotkey was pressed.</summary>
+    public Task CaptureActiveWindowAsync(nint hwnd, CancellationToken ct = default) => RunAsync(async current =>
+    {
+        if (hwnd == 0 || _windows.GetWindow(hwnd) is not { } window || IsShell(window))
+        {
+            _notifier.Notify("Capture Active Window", "There is no active window to capture. Click a window first.");
+            return;
+        }
+
+        // No delay: none of our UI is involved, and the user expects the window exactly as it was.
+        await CaptureWindowCoreAsync(window.Handle, current, ct).ConfigureAwait(false);
+    });
+
+    private async Task CaptureWindowCoreAsync(nint hwnd, AppSettings current, CancellationToken ct)
+    {
+        var options = new CaptureWindowOptions
+        {
+            IncludeCursor = current.Capture.IncludeCursor,
+            IncludeShadow = current.Capture.IncludeWindowShadow,
+        };
+        using var image = await _capture.CaptureWindowAsync(hwnd, options, ct).ConfigureAwait(false);
+
+        var path = await SaveAsync(image, BaseName(image) + "_window", current.Output, ct).ConfigureAwait(false);
+        await DeliverAsync(image, [path], current.Output, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>The desktop and taskbars are "active" when nothing else is; they are not windows to capture.</summary>
+    private static bool IsShell(WindowInfo window) =>
+        window.ClassName is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd";
 
     private async Task RunAsync(Func<AppSettings, Task> capture)
     {

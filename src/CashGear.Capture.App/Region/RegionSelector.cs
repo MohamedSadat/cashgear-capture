@@ -27,13 +27,14 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
         CapturedImage frozen,
         IReadOnlyList<MonitorInfo> monitors,
         IReadOnlyList<WindowInfo> windows,
+        SelectionMode mode = SelectionMode.RegionOrWindow,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(frozen);
         var dispatcher = Dispatcher.CurrentDispatcher;
         var displays = monitors.DistinctBy(m => m.Bounds).ToList();
         var bounds = displays.Select(m => m.Bounds).ToList();
-        var model = new RegionSelectionModel(bounds, windows, CursorPosition());
+        var model = new RegionSelectionModel(bounds, windows, CursorPosition(), mode: mode);
         var completion = new TaskCompletionSource<RegionSelectionResult?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var virtualBounds = model.VirtualBounds;
