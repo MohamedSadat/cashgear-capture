@@ -9,6 +9,8 @@ public enum InstanceCommand
     Exit,
 
     CaptureFullScreen,
+
+    CaptureRegion,
 }
 
 /// <summary>Maps command-line switches and pipe messages to <see cref="InstanceCommand"/>.</summary>
@@ -17,9 +19,10 @@ public static class InstanceCommandParser
     private const string ExitWire = "exit";
     private const string CaptureFullScreenWire = "capture-fullscreen";
     private const string ActivateWire = "activate";
+    private const string CaptureRegionWire = "capture-region";
 
     /// <summary>
-    /// The first recognised switch wins (<c>--exit</c>, <c>--capture-fullscreen</c>; <c>-</c> or <c>/</c>
+    /// The first recognised switch wins (<c>--exit</c>, <c>--capture-fullscreen</c>, <c>--capture-region</c>; <c>-</c> or <c>/</c>
     /// prefixes also accepted). No recognised switch means <see cref="InstanceCommand.Activate"/>.
     /// </summary>
     public static InstanceCommand FromArgs(IReadOnlyList<string> args)
@@ -41,6 +44,7 @@ public static class InstanceCommandParser
         InstanceCommand.Activate => ActivateWire,
         InstanceCommand.Exit => ExitWire,
         InstanceCommand.CaptureFullScreen => CaptureFullScreenWire,
+        InstanceCommand.CaptureRegion => CaptureRegionWire,
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
     };
 
@@ -56,6 +60,9 @@ public static class InstanceCommandParser
                 return true;
             case CaptureFullScreenWire:
                 command = InstanceCommand.CaptureFullScreen;
+                return true;
+            case CaptureRegionWire:
+                command = InstanceCommand.CaptureRegion;
                 return true;
             default:
                 command = default;

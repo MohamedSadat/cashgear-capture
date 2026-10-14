@@ -24,8 +24,7 @@ public sealed partial class TrayViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void CaptureRegion() =>
-        _notifier.Notify("Capture Region", "Region capture is coming in Phase 2.");
+    private Task CaptureRegionAsync() => _coordinator.CaptureRegionAsync();
 
     [RelayCommand]
     private void CaptureWindow() =>

@@ -13,6 +13,7 @@ public sealed class InstanceCommandTests
     [InlineData(new[] { "--unknown", "-capture-fullscreen" }, InstanceCommand.CaptureFullScreen)]
     [InlineData(new[] { "--exit", "--capture-fullscreen" }, InstanceCommand.Exit)]
     [InlineData(new[] { "--activate" }, InstanceCommand.Activate)]
+    [InlineData(new[] { "--capture-region" }, InstanceCommand.CaptureRegion)]
     public void FromArgs(string[] args, InstanceCommand expected) =>
         InstanceCommandParser.FromArgs(args).Should().Be(expected);
 
@@ -20,6 +21,7 @@ public sealed class InstanceCommandTests
     [InlineData(InstanceCommand.Activate)]
     [InlineData(InstanceCommand.Exit)]
     [InlineData(InstanceCommand.CaptureFullScreen)]
+    [InlineData(InstanceCommand.CaptureRegion)]
     public void Wire_format_round_trips(InstanceCommand command)
     {
         InstanceCommandParser.TryParseWire(InstanceCommandParser.ToWire(command) + "\r\n", out var parsed).Should().BeTrue();

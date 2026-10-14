@@ -24,8 +24,11 @@ internal sealed class InstanceCommandDispatcher(
                 return Task.CompletedTask;
 
             case InstanceCommand.CaptureFullScreen:
-                // Through the command so the tray item is disabled while it runs.
+                // Through the commands so the tray items are disabled while they run.
                 return ui.InvokeAsync(() => tray.CaptureFullScreenCommand.ExecuteAsync(null));
+
+            case InstanceCommand.CaptureRegion:
+                return ui.InvokeAsync(() => tray.CaptureRegionCommand.ExecuteAsync(null));
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(command), command, null);

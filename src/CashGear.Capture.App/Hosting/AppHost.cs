@@ -1,5 +1,6 @@
 using CashGear.Capture.App.Capture;
 using CashGear.Capture.App.Output;
+using CashGear.Capture.App.Region;
 using CashGear.Capture.App.SingleInstance;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core;
@@ -40,6 +41,7 @@ internal static class AppHost
         builder.Services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
         builder.Services.AddSingleton<IAppLifetime, WpfAppLifetime>();
         builder.Services.AddSingleton<IOutputService, WpfOutputService>();
+        builder.Services.AddSingleton<RegionSelector>();
         builder.Services.AddSingleton<CaptureCoordinator>();
         builder.Services.AddSingleton<UiReadySignal>();
         builder.Services.AddSingleton<TrayIconHost>();

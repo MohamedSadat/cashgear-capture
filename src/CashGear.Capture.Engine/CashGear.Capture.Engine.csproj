@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="CashGear.Capture.Engine.Tests" />
+    <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
   </ItemGroup>
 
 </Project>

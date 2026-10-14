@@ -28,6 +28,13 @@ public static unsafe partial class User32
 
     public const uint DesktopSwitchDesktop = 0x100;
 
+    public static readonly nint HwndTopmost = -1;
+    public const uint SwpNoActivate = 0x0010;
+    public const uint SwpNoOwnerZOrder = 0x0200;
+
+    /// <summary><c>ASFW_ANY</c>: any process may take the foreground.</summary>
+    public const uint AsfwAny = 0xFFFFFFFF;
+
     /// <summary><c>DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2</c>.</summary>
     public static readonly nint DpiAwarenessContextPerMonitorAwareV2 = -4;
 
@@ -106,6 +113,25 @@ public static unsafe partial class User32
 
     [LibraryImport(Dll)]
     public static partial nint GetAncestor(nint hwnd, uint flags);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetWindowPos(nint hwnd, nint insertAfter, int x, int y, int width, int height, uint flags);
+
+    /// <summary>Lets another process (e.g. the already-running instance) bring a window to the foreground.</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool AllowSetForegroundWindow(uint processId);
+
+    // --- Cursor position (physical pixels for a per-monitor-aware thread) ----------------------------
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetCursorPos(POINT* point);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetCursorPos(int x, int y);
 
     // --- Screen DC / cursor --------------------------------------------------------------------------
 

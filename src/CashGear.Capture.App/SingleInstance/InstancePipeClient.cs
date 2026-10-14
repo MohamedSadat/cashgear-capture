@@ -2,6 +2,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Text;
 using CashGear.Capture.Core.Instance;
+using CashGear.Capture.Interop.Native;
 using Serilog;
 
 namespace CashGear.Capture.App.SingleInstance;
@@ -13,6 +14,10 @@ internal static class InstancePipeClient
     {
         try
         {
+            // This launch came from the user, so it may hand foreground rights on: the running instance needs them
+            // to activate the region overlay for keyboard input.
+            User32.AllowSetForegroundWindow(User32.AsfwAny);
+
             using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.CurrentUserOnly);
             client.Connect(timeout);
             using (var writer = new StreamWriter(client, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), leaveOpen: true))

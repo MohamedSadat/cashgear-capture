@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <!-- Same PerMonitorV2 manifest as the app: overlay geometry is only meaningful in physical pixels. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CashGear.Capture.App\CashGear.Capture.App.csproj" />
+    <ProjectReference Include="..\..\src\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
+    <ProjectReference Include="..\..\src\CashGear.Capture.Engine\CashGear.Capture.Engine.csproj" />
+    <ProjectReference Include="..\..\src\CashGear.Capture.Interop\CashGear.Capture.Interop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\CashGear.Capture.Engine.Tests\InteractiveDesktop.cs" Link="InteractiveDesktop.cs" />
+  </ItemGroup>
+
+</Project>

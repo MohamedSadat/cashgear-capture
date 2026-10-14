@@ -25,6 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Engine\CashGear.Capture.Engine.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Interop\CashGear.Capture.Interop.csproj" />

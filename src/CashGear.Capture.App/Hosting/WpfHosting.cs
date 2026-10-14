@@ -26,6 +26,9 @@ public interface IUiDispatcher
 
     /// <summary>Runs an async delegate on the UI thread and completes when the delegate's task completes.</summary>
     Task InvokeAsync(Func<Task> func);
+
+    /// <inheritdoc cref="InvokeAsync(Func{Task})"/>
+    Task<T> InvokeAsync<T>(Func<Task<T>> func);
 }
 
 internal sealed class WpfUiDispatcher : IUiDispatcher
@@ -41,6 +44,8 @@ internal sealed class WpfUiDispatcher : IUiDispatcher
     public Task<T> InvokeAsync<T>(Func<T> func) => Dispatcher.InvokeAsync(func).Task;
 
     public Task InvokeAsync(Func<Task> func) => Dispatcher.InvokeAsync(func).Task.Unwrap();
+
+    public Task<T> InvokeAsync<T>(Func<Task<T>> func) => Dispatcher.InvokeAsync(func).Task.Unwrap();
 }
 
 /// <summary>Requests an orderly application shutdown.</summary>
