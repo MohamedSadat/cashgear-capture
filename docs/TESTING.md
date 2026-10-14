@@ -20,10 +20,10 @@ dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–1 pass (2026-10-14) |
-| Dual monitor, mixed DPI (100% + 150%) | **pending** — see below |
-| Monitor left of primary (negative X) | **pending** — see below |
-| Windows 10 22H2 | Phase 0–1 pass (2026-10-14) |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–2 pass (2026-10-14) |
+| Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
+| Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
+| Windows 10 22H2 | Phase 0–2 pass (2026-10-14) |
 | Windows 11 23H2+ | not run |
 
 ## Phase 0–1 results (2026-10-14)
@@ -44,6 +44,21 @@ Machine: Windows 10 Pro 22H2 (19045); `\\.\DISPLAY2` primary 1920×1080 at (0,0)
 | `capture.backend = Wgc` → captured via WGC, same dimensions | pass |
 | `capture.wgcFrameTimeoutMs = 1` → WGC timeout logged per monitor, GDI fallback | pass |
 
+## Phase 2 results (2026-10-14)
+
+Same machine and layout as above. The overlay is excluded from capture, so it is invisible in screenshots and screen recordings; the checks below use the app's debug log and the saved files.
+
+| Check | Result |
+|---|---|
+| Overlay test (`RegionOverlayWindowTests`): window rect = virtual screen (0,0 3200×1082); screen→canvas mapping exact on both monitors; frozen image shown 1:1 (excluding taskbars while the test runner is not foreground) | pass, 3 runs |
+| Overlay opened from the tray: activated, covers 3200×1082; a click on the taskbar strip at (1358,1059) reaches the overlay | pass |
+| Esc cancels; no file written | pass |
+| Click on maximized Notepad → `_window.png` 1920×1040 = its DWM frame (0,0)-(1920,1040) | pass (after skipping click-through windows) |
+| Drag (13,40)→(527,132), Right ×2, Shift+Down → (15,40 515×94), file 515×94 | pass |
+| Region pixels vs the same rect of the window capture: text-pixel IoU 100% aligned, 21–31% at ±1 px | pass |
+
+Note: while Claude's computer-use is active, its "Claude is using your computer" indicator draws an animated, click-through, full-screen glow. That is what made the desktop look "animated" in the Phase 1 WGC tests, and why exact colour comparisons between two live grabs don't hold during such sessions.
+
 ### Pending: mixed DPI and negative coordinates
 
 These need display-setting changes, so they are left for a manual run:
@@ -52,5 +67,6 @@ These need display-setting changes, so they are left for a manual run:
 2. Check the log: DISPLAY1 shows `dpi=120` / `dpi=144` with unchanged physical bounds.
 3. Capture Full Screen: `DISPLAY1.png` must still be 1280×1024 and `_all.png` 3200×1082.
 4. Drag DISPLAY1 to the left of the primary. Restart, capture again: the log shows DISPLAY1 at a negative X, and the images keep the same sizes with DISPLAY1 on the left of `_all.png`.
-5. Run `dotnet test --solution CashGear.Capture.sln` in each layout (the interactive tests re-derive expectations from the live layout).
-6. Restore the original layout.
+5. Run `dotnet test --solution CashGear.Capture.sln` in each layout. The interactive tests re-derive expectations from the live layout; `RegionOverlayWindowTests` checks overlay placement, pixel mapping and 1:1 display on every monitor.
+6. Capture Region from the tray: drag a rectangle that crosses from one monitor onto the other, then click a window on the 150% monitor. Check the logged rectangle and the file size, then check that the loupe and label look the same size on both monitors.
+7. Restore the original layout.

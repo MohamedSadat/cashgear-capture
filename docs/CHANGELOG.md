@@ -48,3 +48,42 @@ Each phase lists the features added, how it was tested, and known limitations.
 - File names follow a fixed pattern until the template engine (Phase 4); settings changes need a restart until the settings window (Phase 4).
 - Mixed-DPI and negative-coordinate layouts are covered by unit tests but not yet checked on real hardware (steps in TESTING.md).
 - Default output folder is `Pictures\CashGear Capture`, which is OneDrive-synced on machines with folder backup enabled.
+
+## Phase 2 — Region selection overlay (2026-10-14)
+
+### Added
+- **Capture Region** (tray and `--capture-region`): waits the hide delay, snapshots the window list, freezes all monitors with one capture, shows the overlay, and crops the selection from the frozen image (pixel-exact, no second capture). Saved as `Capture_<timestamp>_region` or `_window`, copied to the clipboard like full-screen captures.
+- **`RegionSelectionModel`** (Core, UI-free, physical virtual-screen pixels):
+  - hover highlights the topmost window under the cursor, or the monitor when there is none; click picks it;
+  - drag selects a rectangle including both corner pixels;
+  - while selected: arrows nudge 1 px, Shift+arrows resize, Ctrl ×10; Enter or double-click inside confirms; Enter while hovering captures the highlighted target; Esc or right-click cancels;
+  - everything is clamped to the virtual screen, so negative coordinates work.
+- **Overlay window**: one borderless, opaque, topmost window spanning the virtual screen, showing the frozen image with a dim mask, the lit selection and a frame drawn outside it, crosshair guides, a W×H label (plus window title while hovering), and a nearest-neighbour loupe with coordinates and `#RRGGBB`. Before a selection exists, arrow keys move the mouse by 1 px. Chrome is sized for the DPI of the monitor it is drawn on.
+  - Content lives in a physical-pixel canvas (`LayoutTransform` = 1/DPI), so input and drawing are in device pixels at any DPI mix. All DIP↔pixel conversions go through `DpiHelper`.
+  - The HWND is placed with `SetWindowPos` on the exact virtual-screen rectangle and re-placed after `WM_DPICHANGED`; placement is verified after the first render.
+  - Excluded from capture via `WDA_EXCLUDEFROMCAPTURE` (works because the window is not layered).
+  - Closes and cancels if the display layout changes.
+- Later launches call `AllowSetForegroundWindow` before forwarding a command, so the running instance can activate the overlay.
+- Window enumeration skips click-through (`WS_EX_TRANSPARENT`) windows, which are never meaningful targets.
+
+### Deviations from the spec
+- **One spanning window instead of one per monitor.** A non-active topmost window stays under its monitor's taskbar. With per-monitor windows only the active one ever gets above its taskbar. One activated full-screen window gets above every taskbar. The physical-pixel canvas removes the DPI issue that made the spec prefer per-monitor windows.
+- **No `AllowsTransparency`.** The frozen screenshot is the background, so the window can be opaque. That is faster than a layered window and lets display affinity work.
+- **A drag doesn't capture on release.** The selection stays adjustable until Enter or a double-click, as the spec's nudge/resize/Enter list implies.
+
+### Tested
+- 154 automated tests (153 pass, 1 explicit). New: 25 `RegionSelectionModel` tests (negative coordinates, spanning windows, click vs drag, inclusive corners, clamping, nudge/resize, confirm/cancel). New App.Tests:
+  - `DpiHelper` unit tests;
+  - an interactive end-to-end overlay test. It covers the exact virtual-screen rectangle, maps every probed screen pixel on every monitor to itself, and shows the frozen image 1:1: at least 99% exact, and better than either one-pixel shift.
+- Manual on the dev machine (overlay opened from the tray, so activated):
+  - a click on the taskbar strip reached the overlay, so the overlay covers the taskbar;
+  - Esc cancels with no file;
+  - clicking maximized Notepad captured exactly its frame (0,0 1920×1040);
+  - a drag from (13,40) to (527,132), then Right ×2 and Shift+Down, captured (15,40 515×94). Its text pixels line up 100% with the same rectangle of the window capture, and only 21–31% at any one-pixel shift.
+
+### Known limitations
+- Mixed DPI (100% + 150%) and a monitor left of the primary are covered by the model tests and the overlay test's live-layout checks, but not yet run on such a layout (see TESTING.md).
+- If the app can't take the foreground (e.g. `--capture-region` from a background process), the overlay opens inactive. The taskbar then stays on top and keyboard input waits for the first click.
+- Moving a selection by dragging inside it, and resize handles, are not implemented (keyboard only).
+- Picking a window crops its rectangle from the frozen screen, including anything that overlaps it. True window capture (occluded windows, shadow) is Phase 3.
+- Very large virtual screens (wider or taller than 16384 px) may exceed WPF's texture limit.
