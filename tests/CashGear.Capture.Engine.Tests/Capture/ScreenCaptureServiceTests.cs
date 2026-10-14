@@ -172,9 +172,11 @@ public sealed class ScreenCaptureServiceTests
         };
         var service = new ScreenCaptureService(
             new FakeMonitorService(Layout.Secondary, Layout.Primary),
+            new FakeWindowService(),
             FakeSettingsService.With(CaptureBackend.Gdi),
             new CaptureBackendSelector(FakeCapabilities.Windows10),
             [gdi],
+            [],
             pool,
             TimeProvider.System,
             NullLogger<ScreenCaptureService>.Instance);
@@ -189,8 +191,8 @@ public sealed class ScreenCaptureServiceTests
     public void Gdi_grabber_is_required()
     {
         var act = () => new ScreenCaptureService(
-            new FakeMonitorService(), FakeSettingsService.With(CaptureBackend.Auto),
-            new CaptureBackendSelector(FakeCapabilities.Windows10), [_wgc], ArrayPool<byte>.Shared,
+            new FakeMonitorService(), new FakeWindowService(), FakeSettingsService.With(CaptureBackend.Auto),
+            new CaptureBackendSelector(FakeCapabilities.Windows10), [_wgc], [], ArrayPool<byte>.Shared,
             TimeProvider.System, NullLogger<ScreenCaptureService>.Instance);
 
         act.Should().Throw<ArgumentException>();
@@ -200,9 +202,11 @@ public sealed class ScreenCaptureServiceTests
         CaptureBackend preference, ICaptureCapabilities capabilities, Core.Display.MonitorInfo[]? monitors = null) =>
         new(
             new FakeMonitorService(monitors ?? [Layout.Secondary, Layout.Primary]),
+            new FakeWindowService(),
             FakeSettingsService.With(preference),
             new CaptureBackendSelector(capabilities),
             [_gdi, _wgc],
+            [],
             ArrayPool<byte>.Shared,
             TimeProvider.System,
             NullLogger<ScreenCaptureService>.Instance);

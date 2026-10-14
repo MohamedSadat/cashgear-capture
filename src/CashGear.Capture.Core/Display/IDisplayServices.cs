@@ -17,4 +17,13 @@ public interface IWindowService
 
     /// <summary>The top-level window under a virtual-screen point, or null.</summary>
     WindowInfo? WindowFromPoint(PixelPoint point);
+
+    /// <summary>Describes any top-level window (this process's included), or null when the handle is not a live window.</summary>
+    WindowInfo? GetWindow(nint hwnd);
+
+    /// <summary>
+    /// True when any visible window above <paramref name="hwnd"/> in the z-order (tool and click-through windows
+    /// included, this process's windows excluded) overlaps its frame — i.e. a screen grab would not show it whole.
+    /// </summary>
+    bool IsOccluded(nint hwnd);
 }

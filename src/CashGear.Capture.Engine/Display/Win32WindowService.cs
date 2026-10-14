@@ -13,6 +13,7 @@ public sealed unsafe class Win32WindowService : IWindowService
 {
     private const int MaxClassName = 256;
     private const int MaxTitle = 512;
+    private const int MaxZOrderWalk = 10_000; // guards against a z-order that keeps changing under us
 
     public IReadOnlyList<WindowInfo> GetVisibleWindows()
     {
@@ -48,6 +49,44 @@ public sealed unsafe class Win32WindowService : IWindowService
         return TryDescribe(root == 0 ? hwnd : root, zOrder: 0);
     }
 
+    public WindowInfo? GetWindow(nint hwnd) =>
+        hwnd != 0 && User32.IsWindow(hwnd) ? TryDescribe(hwnd, zOrder: 0, includeOwnProcess: true) : null;
+
+    public bool IsOccluded(nint hwnd)
+    {
+        var target = GetFrameBounds(hwnd);
+        if (target.IsEmpty)
+        {
+            return false;
+        }
+
+        var own = (uint)Environment.ProcessId;
+        var above = User32.GetWindow(hwnd, User32.GwHwndPrev);
+        for (var i = 0; above != 0 && i < MaxZOrderWalk; i++, above = User32.GetWindow(above, User32.GwHwndPrev))
+        {
+            // Unlike pickable windows, anything that draws counts here: tool windows (the taskbar), click-through
+            // overlays, topmost HUDs.
+            if (!User32.IsWindowVisible(above) || User32.IsIconic(above) || IsCloaked(above))
+            {
+                continue;
+            }
+
+            uint processId;
+            User32.GetWindowThreadProcessId(above, &processId);
+            if (processId == own)
+            {
+                continue;
+            }
+
+            if (GetFrameBounds(above).IntersectsWith(target))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static bool IsCandidate(nint hwnd)
     {
         if (!User32.IsWindowVisible(hwnd) || IsCloaked(hwnd))
@@ -64,11 +103,11 @@ public sealed unsafe class Win32WindowService : IWindowService
         return !isToolWindow && !isClickThrough;
     }
 
-    private static WindowInfo? TryDescribe(nint hwnd, int zOrder)
+    private static WindowInfo? TryDescribe(nint hwnd, int zOrder, bool includeOwnProcess = false)
     {
         uint processId;
         User32.GetWindowThreadProcessId(hwnd, &processId);
-        if (processId == 0 || processId == (uint)Environment.ProcessId)
+        if (processId == 0 || (!includeOwnProcess && processId == (uint)Environment.ProcessId))
         {
             return null;
         }

@@ -23,7 +23,9 @@ public static class EngineServiceCollectionExtensions
         services.AddSingleton<WgcInterop>();
         services.AddSingleton<D3DDeviceManager>();
         services.AddSingleton<IFrameGrabber, GdiFrameGrabber>();
-        services.AddSingleton<IFrameGrabber, WgcFrameGrabber>();
+        services.AddSingleton<WgcFrameGrabber>();
+        services.AddSingleton<IFrameGrabber>(sp => sp.GetRequiredService<WgcFrameGrabber>());
+        services.AddSingleton<IWindowGrabber>(sp => sp.GetRequiredService<WgcFrameGrabber>());
         services.AddSingleton<IScreenCaptureService, ScreenCaptureService>();
 
         services.AddSingleton<IStartupDiagnostics, StartupDiagnostics>();

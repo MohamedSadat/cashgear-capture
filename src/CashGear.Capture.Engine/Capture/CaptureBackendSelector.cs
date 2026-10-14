@@ -45,8 +45,9 @@ internal sealed class WindowsCaptureCapabilities : ICaptureCapabilities
 /// Turns the user's <see cref="CaptureBackend"/> preference into the backend to use.
 /// <para>
 /// <see cref="CaptureBackend.Auto"/> avoids the yellow WGC border for screen captures: monitors and regions
-/// use WGC only where the border can be switched off (Windows 11), GDI otherwise. Window captures prefer WGC
-/// because only WGC sees occluded windows.
+/// use WGC only where the border can be switched off (Windows 11), GDI otherwise. Window captures need WGC when
+/// something covers the window (only WGC sees its own content); a fully visible window on Windows 10 is taken
+/// from the screen with GDI instead, so no border flashes around it.
 /// </para>
 /// </summary>
 internal sealed class CaptureBackendSelector(ICaptureCapabilities capabilities)
@@ -58,6 +59,12 @@ internal sealed class CaptureBackendSelector(ICaptureCapabilities capabilities)
         _ => capabilities.IsWgcSupported && capabilities.CanDisableWgcBorder ? CaptureBackend.Wgc : CaptureBackend.Gdi,
     };
 
-    public CaptureBackend ForWindow(CaptureBackend preference) =>
-        preference == CaptureBackend.Gdi || !capabilities.IsWgcSupported ? CaptureBackend.Gdi : CaptureBackend.Wgc;
+    /// <param name="unobstructed">The window is fully on screen and nothing covers it.</param>
+    public CaptureBackend ForWindow(CaptureBackend preference, bool unobstructed) => preference switch
+    {
+        _ when !capabilities.IsWgcSupported => CaptureBackend.Gdi,
+        CaptureBackend.Gdi => CaptureBackend.Gdi,
+        CaptureBackend.Wgc => CaptureBackend.Wgc,
+        _ => capabilities.CanDisableWgcBorder || !unobstructed ? CaptureBackend.Wgc : CaptureBackend.Gdi,
+    };
 }

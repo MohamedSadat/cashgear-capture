@@ -1,6 +1,9 @@
 using System.Buffers;
 using CashGear.Capture.Core.Capture;
+using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Engine.Display;
+using CashGear.Capture.Interop.Native;
 using Microsoft.Extensions.Logging;
 using Vortice.Direct3D11;
 using Windows.Foundation;
@@ -10,9 +13,10 @@ using Windows.Graphics.DirectX;
 namespace CashGear.Capture.Engine.Capture.Wgc;
 
 /// <summary>
-/// Single-frame Windows.Graphics.Capture grab: start a session on the monitor, take the first frame, copy it
-/// through a CPU-readable staging texture, tear everything down. Grabs are serialized (one shared device).
-/// On Windows 10 the session shows a yellow border while it runs; Windows 11 lets us switch it off.
+/// Single-frame Windows.Graphics.Capture grab of a monitor or a window: start a session, take the first frame,
+/// copy the wanted part through a CPU-readable staging texture, tear everything down. Grabs are serialized (one
+/// shared device). On Windows 10 the session shows a yellow border while it runs; Windows 11 lets us switch it off.
+/// Window grabs see the window's own content even where other windows cover it.
 /// </summary>
 internal sealed partial class WgcFrameGrabber(
     WgcInterop interop,
@@ -20,7 +24,7 @@ internal sealed partial class WgcFrameGrabber(
     ICaptureCapabilities capabilities,
     ArrayPool<byte> pool,
     TimeProvider time,
-    ILogger<WgcFrameGrabber> logger) : IFrameGrabber, IDisposable
+    ILogger<WgcFrameGrabber> logger) : IFrameGrabber, IWindowGrabber, IDisposable
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Task<bool>? _borderlessAccess;
@@ -29,17 +33,107 @@ internal sealed partial class WgcFrameGrabber(
 
     // Run entirely on the thread pool: WinRT objects must not be created on the caller's (possibly STA UI) thread.
     public Task<CapturedImage> CaptureAsync(FrameRequest request, CancellationToken ct) =>
-        Task.Run(() => CaptureCoreAsync(request, ct), ct);
+        Task.Run(() => CaptureMonitorAreaAsync(request, ct), ct);
+
+    public Task<CapturedImage> CaptureWindowAsync(WindowRequest request, CancellationToken ct) =>
+        Task.Run(() => CaptureWindowCoreAsync(request, ct), ct);
 
     public void Dispose() => _gate.Dispose();
 
-    private async Task<CapturedImage> CaptureCoreAsync(FrameRequest request, CancellationToken ct)
+    private Task<CapturedImage> CaptureMonitorAreaAsync(FrameRequest request, CancellationToken ct)
     {
         if (request.Area.IsEmpty || !request.Monitor.Bounds.Contains(request.Area))
         {
             throw new ArgumentException($"Area {request.Area} is not inside monitor {request.Monitor.Bounds}.", nameof(request));
         }
 
+        return GrabAsync(
+            () => interop.CreateItemForMonitor(request.Monitor.Handle),
+            request.Monitor.ShortName,
+            request.IncludeCursor,
+            request.FrameTimeout,
+            content =>
+            {
+                // The texture origin is the monitor's top-left.
+                var crop = VirtualScreen.ToLocal(request.Area, request.Monitor.Bounds);
+                if (!new PixelRect(0, 0, content.Width, content.Height).Contains(crop))
+                {
+                    // Typically a resolution change between enumeration and capture.
+                    throw new CaptureException($"WGC frame {content.Width}x{content.Height} does not cover {request.Area} on {request.Monitor.ShortName}.");
+                }
+
+                return (crop, request.ToMetadata(Backend, time));
+            },
+            keepAlpha: false,
+            ct);
+    }
+
+    private Task<CapturedImage> CaptureWindowCoreAsync(WindowRequest request, CancellationToken ct)
+    {
+        var window = request.Window;
+        return GrabAsync(
+            () => interop.CreateItemForWindow(window.Handle),
+            $"window \"{window.Title}\"",
+            request.IncludeCursor,
+            request.FrameTimeout,
+            content =>
+            {
+                var crop = WindowCrop(window.Handle, content);
+                var metadata = new CaptureMetadata
+                {
+                    Kind = CaptureKind.Window,
+                    SourceBounds = new PixelRect(window.Bounds.X, window.Bounds.Y, crop.Width, crop.Height),
+                    Dpi = request.Dpi,
+                    CapturedAt = time.GetLocalNow(),
+                    Backend = Backend,
+                    MonitorName = request.MonitorName,
+                    WindowTitle = window.Title,
+                };
+                return (crop, metadata);
+            },
+            keepAlpha: true, // Windows 11 rounded corners come through transparent
+            ct);
+    }
+
+    /// <summary>
+    /// The part of a window frame to keep: the visible frame (DWM extended frame bounds), without the invisible
+    /// resize borders, whichever of the two rectangles the capture item happens to report.
+    /// </summary>
+    private unsafe PixelRect WindowCrop(nint hwnd, PixelSize content)
+    {
+        var all = new PixelRect(0, 0, content.Width, content.Height);
+        RECT windowRect;
+        RECT frameRect;
+        if (!User32.GetWindowRect(hwnd, &windowRect)
+            || Dwmapi.DwmGetWindowAttribute(hwnd, Dwmapi.DwmwaExtendedFrameBounds, &frameRect, (uint)sizeof(RECT)) < 0)
+        {
+            return all;
+        }
+
+        var outer = windowRect.ToPixelRect();
+        var frame = frameRect.ToPixelRect();
+        if (content.Width == outer.Width && content.Height == outer.Height && outer.Contains(frame))
+        {
+            return VirtualScreen.ToLocal(frame, outer);
+        }
+
+        if (content.Width != frame.Width || content.Height != frame.Height)
+        {
+            LogUnexpectedWindowSize(content.Width, content.Height, outer, frame);
+        }
+
+        return all;
+    }
+
+    private async Task<CapturedImage> GrabAsync(
+        Func<GraphicsCaptureItem> createItem,
+        string target,
+        bool includeCursor,
+        TimeSpan frameTimeout,
+        Func<PixelSize, (PixelRect Crop, CaptureMetadata Metadata)> describe,
+        bool keepAlpha,
+        CancellationToken ct)
+    {
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
@@ -47,7 +141,18 @@ internal sealed partial class WgcFrameGrabber(
             var resources = devices.Acquire();
             try
             {
-                return await GrabAsync(request, resources, borderless, ct).ConfigureAwait(false);
+                var item = createItem();
+                using var framePool = Direct3D11CaptureFramePool.CreateFreeThreaded(
+                    resources.WinRtDevice, DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, item.Size);
+                using var session = framePool.CreateCaptureSession(item);
+                session.IsCursorCaptureEnabled = includeCursor;
+                if (borderless && OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
+                {
+                    TryDisableBorder(session);
+                }
+
+                using var frame = await WaitForFrameAsync(framePool, session, target, frameTimeout, ct).ConfigureAwait(false);
+                return CopyFrame(frame, describe, keepAlpha, resources);
             }
             catch
             {
@@ -61,18 +166,9 @@ internal sealed partial class WgcFrameGrabber(
         }
     }
 
-    private async Task<CapturedImage> GrabAsync(FrameRequest request, D3DResources resources, bool borderless, CancellationToken ct)
+    private static async Task<Direct3D11CaptureFrame> WaitForFrameAsync(
+        Direct3D11CaptureFramePool framePool, GraphicsCaptureSession session, string target, TimeSpan timeout, CancellationToken ct)
     {
-        var item = interop.CreateItemForMonitor(request.Monitor.Handle);
-        using var framePool = Direct3D11CaptureFramePool.CreateFreeThreaded(
-            resources.WinRtDevice, DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, item.Size);
-        using var session = framePool.CreateCaptureSession(item);
-        session.IsCursorCaptureEnabled = request.IncludeCursor;
-        if (borderless && OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
-        {
-            TryDisableBorder(session);
-        }
-
         var arrived = new TaskCompletionSource<Direct3D11CaptureFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
         TypedEventHandler<Direct3D11CaptureFramePool, object> onFrame = (sender, _) =>
         {
@@ -87,25 +183,19 @@ internal sealed partial class WgcFrameGrabber(
         try
         {
             session.StartCapture();
-            Direct3D11CaptureFrame captured;
             try
             {
-                captured = await arrived.Task.WaitAsync(request.FrameTimeout, ct).ConfigureAwait(false);
+                return await arrived.Task.WaitAsync(timeout, ct).ConfigureAwait(false);
             }
             catch (TimeoutException)
             {
                 DisposeIfCompleted(arrived);
-                throw new TimeoutException($"No WGC frame for {request.Monitor.ShortName} within {request.FrameTimeout.TotalMilliseconds:0} ms.");
+                throw new TimeoutException($"No WGC frame for {target} within {timeout.TotalMilliseconds:0} ms.");
             }
             catch
             {
                 DisposeIfCompleted(arrived);
                 throw;
-            }
-
-            using (captured)
-            {
-                return CopyFrame(captured, request, resources);
             }
         }
         finally
@@ -114,21 +204,21 @@ internal sealed partial class WgcFrameGrabber(
         }
     }
 
-    private unsafe CapturedImage CopyFrame(Direct3D11CaptureFrame frame, FrameRequest request, D3DResources resources)
+    private unsafe CapturedImage CopyFrame(
+        Direct3D11CaptureFrame frame,
+        Func<PixelSize, (PixelRect Crop, CaptureMetadata Metadata)> describe,
+        bool keepAlpha,
+        D3DResources resources)
     {
         using var texture = WgcInterop.GetTexture(frame.Surface);
         var description = texture.Description;
-
-        // The area relative to the monitor's top-left, which is the texture origin.
-        var offsetX = request.Area.X - request.Monitor.Bounds.X;
-        var offsetY = request.Area.Y - request.Monitor.Bounds.Y;
-        var contentWidth = Math.Min(frame.ContentSize.Width, (int)description.Width);
-        var contentHeight = Math.Min(frame.ContentSize.Height, (int)description.Height);
-        if (offsetX + request.Area.Width > contentWidth || offsetY + request.Area.Height > contentHeight)
+        var content = new PixelSize(
+            Math.Min(frame.ContentSize.Width, (int)description.Width),
+            Math.Min(frame.ContentSize.Height, (int)description.Height));
+        var (crop, metadata) = describe(content);
+        if (crop.IsEmpty || !new PixelRect(0, 0, content.Width, content.Height).Contains(crop))
         {
-            // Typically a resolution change between enumeration and capture.
-            throw new CaptureException(
-                $"WGC frame {contentWidth}x{contentHeight} does not cover {request.Area} on {request.Monitor.ShortName}.");
+            throw new CaptureException($"Nothing to copy: {crop} is not inside the {content.Width}x{content.Height} frame.");
         }
 
         var stagingDescription = description with
@@ -144,30 +234,68 @@ internal sealed partial class WgcFrameGrabber(
         using var staging = resources.Device.CreateTexture2D(stagingDescription);
         resources.Context.CopyResource(staging, texture);
 
-        var image = CapturedImage.Allocate(request.Area.Width, request.Area.Height, request.ToMetadata(Backend, time), pool, clear: false);
+        var image = CapturedImage.Allocate(crop.Width, crop.Height, metadata, pool, clear: false);
         try
         {
             var mapped = resources.Context.Map(staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
             try
             {
                 var rowPitch = (int)mapped.RowPitch;
-                var rowBytes = request.Area.Width * CapturedImage.BytesPerPixel;
-                var start = (byte*)mapped.DataPointer + (offsetY * rowPitch) + (offsetX * CapturedImage.BytesPerPixel);
-                var source = new ReadOnlySpan<byte>(start, (rowPitch * (request.Area.Height - 1)) + rowBytes);
-                PixelBuffer.CopyRows(source, rowPitch, image.Pixels, image.Stride, rowBytes, request.Area.Height);
+                var rowBytes = crop.Width * CapturedImage.BytesPerPixel;
+                var start = (byte*)mapped.DataPointer + (crop.Y * rowPitch) + (crop.X * CapturedImage.BytesPerPixel);
+                var source = new ReadOnlySpan<byte>(start, (rowPitch * (crop.Height - 1)) + rowBytes);
+                PixelBuffer.CopyRows(source, rowPitch, image.Pixels, image.Stride, rowBytes, crop.Height);
             }
             finally
             {
                 resources.Context.Unmap(staging, 0);
             }
 
-            PixelBuffer.ForceOpaque(image.Pixels); // desktop frames are opaque; make it explicit like GDI
+            NormalizeAlpha(image, keepAlpha);
             return image;
         }
         catch
         {
             image.Dispose();
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Desktop frames are opaque. Window frames carry real alpha only at shaped edges (Windows 11 corners); if
+    /// most of a window comes back transparent, its alpha is meaningless (legacy redirection surfaces) and is
+    /// forced opaque too.
+    /// </summary>
+    private static void NormalizeAlpha(CapturedImage image, bool keepAlpha)
+    {
+        var pixels = image.Pixels;
+        if (!keepAlpha)
+        {
+            PixelBuffer.ForceOpaque(pixels);
+            return;
+        }
+
+        long transparent = 0, partial = 0;
+        for (var i = 3; i < pixels.Length; i += 4)
+        {
+            if (pixels[i] == 0)
+            {
+                transparent++;
+            }
+            else if (pixels[i] != 255)
+            {
+                partial++;
+            }
+        }
+
+        var total = (long)image.Width * image.Height;
+        if (transparent * 2 > total)
+        {
+            PixelBuffer.ForceOpaque(pixels);
+        }
+        else if (transparent + partial > 0)
+        {
+            image.Metadata = image.Metadata with { HasTransparency = true };
         }
     }
 
@@ -224,4 +352,10 @@ internal sealed partial class WgcFrameGrabber(
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Could not disable the WGC capture border")]
     private partial void LogBorderlessAccessFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "WGC window frame is {Width}x{Height}, matching neither the window rect {Outer} nor the visible frame {Frame}; keeping it whole")]
+    private partial void LogUnexpectedWindowSize(int width, int height, PixelRect outer, PixelRect frame);
 }
+
+/// <summary>A width and height in pixels.</summary>
+internal readonly record struct PixelSize(int Width, int Height);

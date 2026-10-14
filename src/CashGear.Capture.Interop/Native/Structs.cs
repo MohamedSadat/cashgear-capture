@@ -100,6 +100,47 @@ public struct CURSORINFO
     public static unsafe CURSORINFO Create() => new() { cbSize = (uint)sizeof(CURSORINFO) };
 }
 
+/// <summary><c>INPUT</c> (keyboard or mouse); 40 bytes on x64 because of the union.</summary>
+[StructLayout(LayoutKind.Explicit)]
+public struct INPUT
+{
+    [FieldOffset(0)]
+    public uint type;
+
+    [FieldOffset(8)]
+    public KEYBDINPUT ki;
+
+    [FieldOffset(8)]
+    public MOUSEINPUT mi;
+
+    public static INPUT Key(ushort virtualKey, bool up) => new()
+    {
+        type = User32.InputKeyboard,
+        ki = new KEYBDINPUT { wVk = virtualKey, dwFlags = up ? User32.KeyEventFKeyUp : 0 },
+    };
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct KEYBDINPUT
+{
+    public ushort wVk;
+    public ushort wScan;
+    public uint dwFlags;
+    public uint time;
+    public nint dwExtraInfo;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct MOUSEINPUT
+{
+    public int dx;
+    public int dy;
+    public uint mouseData;
+    public uint dwFlags;
+    public uint time;
+    public nint dwExtraInfo;
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct ICONINFO
 {

@@ -10,32 +10,39 @@ namespace CashGear.Capture.Engine.Capture;
 
 /// <summary>
 /// Picks a backend per the settings, falls back from WGC to GDI on failure, and composes multi-monitor
-/// captures. Every capture is made per monitor and blitted into a canvas in virtual-screen space; canvas
-/// areas no monitor covers stay fully transparent.
+/// captures. Every screen capture is made per monitor and blitted into a canvas in virtual-screen space; canvas
+/// areas no monitor covers stay fully transparent. Window captures use the window's own content (WGC) or, when it
+/// is fully visible and WGC would flash its border, the screen pixels under its frame.
 /// </summary>
 internal sealed partial class ScreenCaptureService : IScreenCaptureService
 {
     private readonly IMonitorService _monitors;
+    private readonly IWindowService _windows;
     private readonly ISettingsService _settings;
     private readonly CaptureBackendSelector _selector;
     private readonly IReadOnlyDictionary<CaptureBackend, IFrameGrabber> _grabbers;
+    private readonly IWindowGrabber? _windowGrabber;
     private readonly ArrayPool<byte> _pool;
     private readonly TimeProvider _time;
     private readonly ILogger<ScreenCaptureService> _logger;
 
     public ScreenCaptureService(
         IMonitorService monitors,
+        IWindowService windows,
         ISettingsService settings,
         CaptureBackendSelector selector,
         IEnumerable<IFrameGrabber> grabbers,
+        IEnumerable<IWindowGrabber> windowGrabbers,
         ArrayPool<byte> pool,
         TimeProvider time,
         ILogger<ScreenCaptureService> logger)
     {
         _monitors = monitors;
+        _windows = windows;
         _settings = settings;
         _selector = selector;
         _grabbers = grabbers.ToDictionary(g => g.Backend);
+        _windowGrabber = windowGrabbers.FirstOrDefault();
         _pool = pool;
         _time = time;
         _logger = logger;
@@ -49,7 +56,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
     public Task<CapturedImage> CaptureMonitorAsync(MonitorInfo monitor, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(monitor);
-        return CaptureAreaAsync(monitor, monitor.Bounds, ScreenBackend(), ct);
+        return CaptureAreaAsync(monitor, monitor.Bounds, ScreenBackend(), _settings.Current.Capture.IncludeCursor, ct);
     }
 
     public Task<CapturedImage> CaptureAllMonitorsAsync(CancellationToken ct = default)
@@ -61,7 +68,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         }
 
         var bounds = VirtualScreen.GetBounds(monitors.Select(m => m.Bounds));
-        return ComposeAsync(bounds, CaptureKind.AllMonitors, monitors, ct);
+        return ComposeAsync(bounds, CaptureKind.AllMonitors, monitors, ScreenBackend(), _settings.Current.Capture.IncludeCursor, ct);
     }
 
     public Task<CapturedImage> CaptureRegionAsync(PixelRect region, CancellationToken ct = default)
@@ -71,16 +78,99 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
             throw new ArgumentException("Region is empty.", nameof(region));
         }
 
-        return ComposeAsync(region, CaptureKind.Region, _monitors.GetMonitors(), ct);
+        return ComposeAsync(region, CaptureKind.Region, _monitors.GetMonitors(), ScreenBackend(), _settings.Current.Capture.IncludeCursor, ct);
     }
 
-    public Task<CapturedImage> CaptureWindowAsync(nint hwnd, CaptureWindowOptions options, CancellationToken ct = default) =>
-        throw new NotSupportedException("Window capture arrives in Phase 3.");
+    public async Task<CapturedImage> CaptureWindowAsync(nint hwnd, CaptureWindowOptions options, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        var window = _windows.GetWindow(hwnd) ?? throw new CaptureException("That window no longer exists.");
+        if (window.IsMinimized)
+        {
+            throw new CaptureException($"\"{Describe(window)}\" is minimized. Restore it, then capture again.");
+        }
+
+        var monitors = _monitors.GetMonitors();
+        var onScreen = Covered(window.Bounds, monitors) == window.Bounds.Area;
+        var unobstructed = onScreen && !_windows.IsOccluded(hwnd);
+        var backend = _selector.ForWindow(_settings.Current.Capture.Backend, unobstructed);
+        var host = monitors
+            .OrderByDescending(m => m.Bounds.Intersect(window.Bounds).Area)
+            .FirstOrDefault(m => m.Bounds.IntersectsWith(window.Bounds));
+
+        CapturedImage image;
+        if (backend == CaptureBackend.Wgc && _windowGrabber is not null)
+        {
+            try
+            {
+                var timeout = TimeSpan.FromMilliseconds(_settings.Current.Capture.WgcFrameTimeoutMs);
+                image = await _windowGrabber.CaptureWindowAsync(
+                    new WindowRequest(window, options.IncludeCursor, timeout, host?.Scale ?? DpiScale.Identity, host?.ShortName), ct)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // The screen pixels are the best we can do; covered parts will show what covers them.
+                LogWindowFallback(ex, Describe(window));
+                image = await CaptureWindowFromScreenAsync(window, monitors, options.IncludeCursor, ct).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            image = await CaptureWindowFromScreenAsync(window, monitors, options.IncludeCursor, ct).ConfigureAwait(false);
+        }
+
+        LogWindowCaptured(Describe(window), image.Width, image.Height, image.Metadata.Backend, unobstructed);
+        if (!options.IncludeShadow)
+        {
+            return image;
+        }
+
+        using (image)
+        {
+            var scale = host?.Scale.ScaleX ?? 1;
+            return DropShadow.Apply(
+                image,
+                (int)Math.Round(DropShadow.DefaultRadius * scale),
+                (int)Math.Round(DropShadow.DefaultOffsetY * scale),
+                DropShadow.DefaultOpacity,
+                _pool);
+        }
+    }
+
+    private async Task<CapturedImage> CaptureWindowFromScreenAsync(
+        WindowInfo window, IReadOnlyList<MonitorInfo> monitors, bool includeCursor, CancellationToken ct)
+    {
+        var virtualBounds = VirtualScreen.GetBounds(monitors.Select(m => m.Bounds));
+        var area = window.Bounds.Intersect(virtualBounds);
+        if (area.IsEmpty)
+        {
+            throw new CaptureException($"\"{Describe(window)}\" is off screen.");
+        }
+
+        var image = await ComposeAsync(area, CaptureKind.Window, monitors, ScreenBackend(), includeCursor, ct).ConfigureAwait(false);
+        image.Metadata = image.Metadata with { WindowTitle = window.Title };
+        return image;
+    }
+
+    private static long Covered(PixelRect rect, IReadOnlyList<MonitorInfo> monitors) =>
+        monitors.Select(m => m.Bounds).Distinct().Sum(b => b.Intersect(rect).Area);
+
+    private static string Describe(WindowInfo window) => window.Title.Length > 0 ? window.Title : window.ClassName;
 
     private CaptureBackend ScreenBackend() => _selector.ForScreen(_settings.Current.Capture.Backend);
 
     private async Task<CapturedImage> ComposeAsync(
-        PixelRect target, CaptureKind kind, IReadOnlyList<MonitorInfo> monitors, CancellationToken ct)
+        PixelRect target,
+        CaptureKind kind,
+        IReadOnlyList<MonitorInfo> monitors,
+        CaptureBackend backend,
+        bool includeCursor,
+        CancellationToken ct)
     {
         // Mirrored monitors share bounds; capture each distinct area once.
         var parts = monitors
@@ -93,7 +183,6 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
             throw new CaptureException($"{target} is not on any monitor.");
         }
 
-        var backend = ScreenBackend();
         var metadata = new CaptureMetadata
         {
             Kind = kind,
@@ -112,7 +201,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
             long covered = 0;
             foreach (var (monitor, area) in parts)
             {
-                using var part = await CaptureAreaAsync(monitor, area, backend, ct).ConfigureAwait(false);
+                using var part = await CaptureAreaAsync(monitor, area, backend, includeCursor, ct).ConfigureAwait(false);
                 var local = VirtualScreen.ToLocal(area, target);
                 PixelCompositor.Blit(part, canvas, local.X, local.Y);
                 used.Add(part.Metadata.Backend);
@@ -135,10 +224,10 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
     }
 
     private async Task<CapturedImage> CaptureAreaAsync(
-        MonitorInfo monitor, PixelRect area, CaptureBackend backend, CancellationToken ct)
+        MonitorInfo monitor, PixelRect area, CaptureBackend backend, bool includeCursor, CancellationToken ct)
     {
         var options = _settings.Current.Capture;
-        var request = new FrameRequest(monitor, area, options.IncludeCursor, TimeSpan.FromMilliseconds(options.WgcFrameTimeoutMs));
+        var request = new FrameRequest(monitor, area, includeCursor, TimeSpan.FromMilliseconds(options.WgcFrameTimeoutMs));
 
         if (backend == CaptureBackend.Wgc && _grabbers.TryGetValue(CaptureBackend.Wgc, out var wgc))
         {
@@ -158,6 +247,12 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
 
         return await _grabbers[CaptureBackend.Gdi].CaptureAsync(request, ct).ConfigureAwait(false);
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Window capture of \"{Window}\" via Windows.Graphics.Capture failed; using the screen pixels under it")]
+    private partial void LogWindowFallback(Exception ex, string window);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Captured window \"{Window}\" {Width}x{Height} via {Backend} (unobstructed: {Unobstructed})")]
+    private partial void LogWindowCaptured(string window, int width, int height, CaptureBackend backend, bool unobstructed);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Windows.Graphics.Capture failed for {Monitor}; falling back to GDI")]
     private partial void LogFallback(Exception ex, string monitor);

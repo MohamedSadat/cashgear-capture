@@ -36,6 +36,18 @@ public static unsafe partial class User32
     /// <summary><c>ASFW_ANY</c>: any process may take the foreground.</summary>
     public const uint AsfwAny = 0xFFFFFFFF;
 
+    public const uint GwHwndPrev = 3;
+
+    public const int WmHotkey = 0x0312;
+
+    /// <summary><c>MOD_NOREPEAT</c>: holding the keys down does not repeat the hotkey.</summary>
+    public const uint ModNoRepeat = 0x4000;
+
+    public const int ErrorHotkeyAlreadyRegistered = 1409;
+
+    public const uint InputKeyboard = 1;
+    public const uint KeyEventFKeyUp = 0x0002;
+
     /// <summary><c>DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2</c>.</summary>
     public static readonly nint DpiAwarenessContextPerMonitorAwareV2 = -4;
 
@@ -114,6 +126,27 @@ public static unsafe partial class User32
 
     [LibraryImport(Dll)]
     public static partial nint GetAncestor(nint hwnd, uint flags);
+
+    /// <summary>Walks the z-order (<see cref="GwHwndPrev"/> = the window above).</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial nint GetWindow(nint hwnd, uint command);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool ClientToScreen(nint hwnd, POINT* point);
+
+    // --- Hotkeys and synthetic input -----------------------------------------------------------------
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool RegisterHotKey(nint hwnd, int id, uint modifiers, uint virtualKey);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool UnregisterHotKey(nint hwnd, int id);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial uint SendInput(uint count, INPUT* inputs, int size);
 
     [LibraryImport(Dll, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

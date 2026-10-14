@@ -105,9 +105,11 @@ public sealed class WgcCaptureTests : IDisposable
         RequireWgc();
         var service = new ScreenCaptureService(
             new Win32MonitorService(NullLogger<Win32MonitorService>.Instance),
+            new Win32WindowService(),
             FakeSettingsService.With(CaptureBackend.Wgc),
             new CaptureBackendSelector(_capabilities),
             [_gdi, _wgc],
+            [_wgc],
             ArrayPool<byte>.Shared,
             TimeProvider.System,
             NullLogger<ScreenCaptureService>.Instance);

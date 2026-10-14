@@ -10,6 +10,23 @@ namespace CashGear.Capture.Engine.Capture;
 /// <param name="FrameTimeout">How long a frame-based backend may wait for a frame.</param>
 internal readonly record struct FrameRequest(MonitorInfo Monitor, PixelRect Area, bool IncludeCursor, TimeSpan FrameTimeout);
 
+/// <param name="Window">The window to capture (its handle and visible frame bounds).</param>
+/// <param name="Dpi">Scale of the monitor the window is mostly on (metadata only).</param>
+internal readonly record struct WindowRequest(
+    WindowInfo Window,
+    bool IncludeCursor,
+    TimeSpan FrameTimeout,
+    DpiScale Dpi,
+    string? MonitorName);
+
+/// <summary>A backend that can capture a window's own content, even where other windows cover it.</summary>
+internal interface IWindowGrabber
+{
+    /// <summary>Returns the window's visible frame with <see cref="CaptureKind.Window"/> metadata.</summary>
+    /// <exception cref="TimeoutException">No frame arrived within <see cref="WindowRequest.FrameTimeout"/>.</exception>
+    Task<CapturedImage> CaptureWindowAsync(WindowRequest request, CancellationToken ct);
+}
+
 /// <summary>One capture backend. Captures (part of) a single monitor.</summary>
 internal interface IFrameGrabber
 {

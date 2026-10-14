@@ -19,15 +19,21 @@ internal sealed class WgcInterop : IDisposable
     private readonly Lazy<IObjectReference> _itemFactory = new(
         () => ActivationFactory.Get(GraphicsCaptureItemClass, InteropGuids.IGraphicsCaptureItemInterop));
 
-    public GraphicsCaptureItem CreateItemForMonitor(nint monitor)
+    public GraphicsCaptureItem CreateItemForMonitor(nint monitor) =>
+        CreateItem((interop, iid) => (interop.CreateForMonitor(monitor, iid, out var item), item), "CreateForMonitor");
+
+    /// <summary>A capture item for a top-level window; fails for invalid, child or some system windows.</summary>
+    public GraphicsCaptureItem CreateItemForWindow(nint window) =>
+        CreateItem((interop, iid) => (interop.CreateForWindow(window, iid, out var item), item), "CreateForWindow");
+
+    private GraphicsCaptureItem CreateItem(Func<IGraphicsCaptureItemInterop, Guid, (int Hr, nint Item)> create, string operation)
     {
         var interop = GeneratedCom.Wrap<IGraphicsCaptureItemInterop>(_itemFactory.Value.ThisPtr);
         nint item = 0;
         try
         {
-            GeneratedCom.ThrowIfFailed(
-                interop.CreateForMonitor(monitor, InteropGuids.IGraphicsCaptureItem, out item),
-                "IGraphicsCaptureItemInterop.CreateForMonitor");
+            (var hr, item) = create(interop, InteropGuids.IGraphicsCaptureItem);
+            GeneratedCom.ThrowIfFailed(hr, "IGraphicsCaptureItemInterop." + operation);
             return GraphicsCaptureItem.FromAbi(item); // takes its own reference
         }
         finally

@@ -105,3 +105,48 @@ internal sealed class CountingPool : ArrayPool<byte>
 
     public override void Return(byte[] array, bool clearArray = false) => Interlocked.Increment(ref _returned);
 }
+
+internal sealed class FakeWindowService(params WindowInfo[] windows) : IWindowService
+{
+    public HashSet<nint> Occluded { get; } = [];
+
+    public IReadOnlyList<WindowInfo> GetVisibleWindows() => windows;
+
+    public nint GetForegroundWindow() => windows.FirstOrDefault()?.Handle ?? 0;
+
+    public WindowInfo? WindowFromPoint(PixelPoint point) => windows.FirstOrDefault(w => w.Bounds.Contains(point));
+
+    public WindowInfo? GetWindow(nint hwnd) => windows.FirstOrDefault(w => w.Handle == hwnd);
+
+    public bool IsOccluded(nint hwnd) => Occluded.Contains(hwnd);
+}
+
+/// <summary>Paints the window's frame bounds in BGRA (0x77, 0x77, 0x77, 255), or runs <see cref="Behavior"/>.</summary>
+internal sealed class FakeWindowGrabber : IWindowGrabber
+{
+    public List<WindowRequest> Requests { get; } = [];
+
+    public Func<WindowRequest, CapturedImage?>? Behavior { get; set; }
+
+    public Task<CapturedImage> CaptureWindowAsync(WindowRequest request, CancellationToken ct)
+    {
+        Requests.Add(request);
+        if (Behavior?.Invoke(request) is { } custom)
+        {
+            return Task.FromResult(custom);
+        }
+
+        var bounds = request.Window.Bounds;
+        var image = CapturedImage.Allocate(
+            bounds.Width,
+            bounds.Height,
+            new CaptureMetadata { Kind = CaptureKind.Window, SourceBounds = bounds, Backend = CaptureBackend.Wgc, WindowTitle = request.Window.Title });
+        image.Pixels.Fill(0x77);
+        for (var i = 3; i < image.ByteLength; i += 4)
+        {
+            image.Pixels[i] = 255;
+        }
+
+        return Task.FromResult(image);
+    }
+}

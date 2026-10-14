@@ -49,7 +49,8 @@ internal sealed partial class StartupDiagnostics(
             LogBackends(
                 preference,
                 selector.ForScreen(preference),
-                selector.ForWindow(preference),
+                selector.ForWindow(preference, unobstructed: false),
+                selector.ForWindow(preference, unobstructed: true),
                 capabilities.IsWgcSupported,
                 capabilities.CanDisableWgcBorder);
         }
@@ -101,6 +102,6 @@ internal sealed partial class StartupDiagnostics(
     [LoggerMessage(Level = LogLevel.Warning, Message = "Startup diagnostics failed")]
     private partial void LogDiagnosticsFailed(Exception ex);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Capture backend preference {Preference}: screen={Screen}, window={Window} (WGC supported={WgcSupported}, border optional={BorderOptional})")]
-    private partial void LogBackends(CaptureBackend preference, CaptureBackend screen, CaptureBackend window, bool wgcSupported, bool borderOptional);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Capture backend preference {Preference}: screen={Screen}, covered window={CoveredWindow}, visible window={VisibleWindow} (WGC supported={WgcSupported}, border optional={BorderOptional})")]
+    private partial void LogBackends(CaptureBackend preference, CaptureBackend screen, CaptureBackend coveredWindow, CaptureBackend visibleWindow, bool wgcSupported, bool borderOptional);
 }

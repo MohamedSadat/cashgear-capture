@@ -52,9 +52,11 @@ public sealed class GdiCaptureTests
         var monitors = _monitors.GetMonitors();
         var service = new ScreenCaptureService(
             _monitors,
+            new FakeWindowService(),
             FakeSettingsService.With(CaptureBackend.Gdi),
             new CaptureBackendSelector(FakeCapabilities.Windows10),
             [_gdi],
+            [],
             ArrayPool<byte>.Shared,
             TimeProvider.System,
             NullLogger<ScreenCaptureService>.Instance);
