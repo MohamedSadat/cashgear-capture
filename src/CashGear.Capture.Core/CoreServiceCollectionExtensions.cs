@@ -1,4 +1,5 @@
 using System.Buffers;
+using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -16,6 +17,7 @@ public static class CoreServiceCollectionExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton(ArrayPool<byte>.Shared);
         services.AddSingleton<ISettingsService, JsonSettingsService>();
+        services.AddSingleton<ICaptureCounter, FileCaptureCounter>();
         return services;
     }
 }

@@ -1,6 +1,7 @@
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Core.Output;
 
 namespace CashGear.Capture.Core.Settings;
 
@@ -11,7 +12,8 @@ namespace CashGear.Capture.Core.Settings;
 /// <summary>User settings, persisted as JSON. Immutable; change via <see cref="ISettingsService.UpdateAsync"/>.</summary>
 public sealed record AppSettings
 {
-    public const int CurrentSchemaVersion = 1;
+    /// <summary>2: <c>output.copyToClipboard</c> moved to <c>afterCapture</c> (see <see cref="SettingsMigration"/>).</summary>
+    public const int CurrentSchemaVersion = 2;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
@@ -19,7 +21,11 @@ public sealed record AppSettings
 
     public OutputSettings Output { get; init; } = new();
 
+    public AfterCaptureSettings AfterCapture { get; init; } = new();
+
     public HotkeySettings Hotkeys { get; init; } = new();
+
+    public AppearanceSettings Appearance { get; init; } = new();
 
     /// <summary>Replaces missing sections with defaults and clamps out-of-range values.</summary>
     public AppSettings Normalize() => this with
@@ -27,7 +33,9 @@ public sealed record AppSettings
         SchemaVersion = CurrentSchemaVersion,
         Capture = (Capture ?? new CaptureSettings()).Normalize(),
         Output = (Output ?? new OutputSettings()).Normalize(),
+        AfterCapture = AfterCapture ?? new AfterCaptureSettings(),
         Hotkeys = (Hotkeys ?? new HotkeySettings()).Normalize(),
+        Appearance = (Appearance ?? new AppearanceSettings()).Normalize(),
     };
 }
 
@@ -50,18 +58,21 @@ public enum FullScreenOutput
 /// <param name="WgcFrameTimeoutMs">How long Windows.Graphics.Capture may take to deliver a frame before falling back to GDI.</param>
 /// <param name="FullScreenOutput">What "Capture Full Screen" writes.</param>
 /// <param name="IncludeWindowShadow">Window captures get a soft drop shadow on a transparent margin.</param>
+/// <param name="DelaySeconds">Wait this long before every capture (time to open a menu or hover a tooltip).</param>
 public sealed record CaptureSettings(
     CaptureBackend Backend = CaptureBackend.Auto,
     bool IncludeCursor = false,
     int HideDelayMs = CaptureSettings.DefaultHideDelayMs,
     int WgcFrameTimeoutMs = CaptureSettings.DefaultWgcFrameTimeoutMs,
     FullScreenOutput FullScreenOutput = FullScreenOutput.AllAndEachMonitor,
-    bool IncludeWindowShadow = false)
+    bool IncludeWindowShadow = false,
+    int DelaySeconds = 0)
 {
     public const int DefaultHideDelayMs = 200;
     public const int DefaultWgcFrameTimeoutMs = 2_000;
     public const int MaxHideDelayMs = 5_000;
     public const int MaxFrameTimeoutMs = 30_000;
+    public const int MaxDelaySeconds = 60;
 
     public CaptureSettings Normalize() => this with
     {
@@ -69,18 +80,19 @@ public sealed record CaptureSettings(
         HideDelayMs = Math.Clamp(HideDelayMs, 0, MaxHideDelayMs),
         WgcFrameTimeoutMs = Math.Clamp(WgcFrameTimeoutMs, 1, MaxFrameTimeoutMs),
         FullScreenOutput = Enum.IsDefined(FullScreenOutput) ? FullScreenOutput : FullScreenOutput.AllAndEachMonitor,
+        DelaySeconds = Math.Clamp(DelaySeconds, 0, MaxDelaySeconds),
     };
 }
 
 /// <param name="Folder">Folder for saved captures; null means <see cref="AppPaths.DefaultCaptureDirectory"/>. Environment variables are expanded.</param>
 /// <param name="Format">File format for saved captures.</param>
 /// <param name="JpegQuality">1–100.</param>
-/// <param name="CopyToClipboard">Also put the capture on the clipboard.</param>
+/// <param name="FileNameTemplate">File name without extension; see <see cref="Output.FileNameTemplate"/> for the tokens.</param>
 public sealed record OutputSettings(
     string? Folder = null,
     ImageFileFormat Format = ImageFileFormat.Png,
     int JpegQuality = OutputSettings.DefaultJpegQuality,
-    bool CopyToClipboard = true)
+    string FileNameTemplate = Output.FileNameTemplate.Default)
 {
     public const int DefaultJpegQuality = 90;
 
@@ -89,7 +101,30 @@ public sealed record OutputSettings(
         Folder = string.IsNullOrWhiteSpace(Folder) ? null : Folder.Trim(),
         Format = Enum.IsDefined(Format) ? Format : ImageFileFormat.Png,
         JpegQuality = Math.Clamp(JpegQuality, 1, 100),
+        FileNameTemplate = string.IsNullOrWhiteSpace(FileNameTemplate) ? Output.FileNameTemplate.Default : FileNameTemplate.Trim(),
     };
+}
+
+/// <summary>What happens to a capture. Any combination; with none selected the capture is discarded (and the user told).</summary>
+/// <param name="Save">Write it to the capture folder ("auto-save").</param>
+/// <param name="CopyToClipboard">Put it on the clipboard.</param>
+/// <param name="OpenEditor">Open it in the editor (Phase 5; ignored until the editor exists).</param>
+public sealed record AfterCaptureSettings(bool Save = true, bool CopyToClipboard = true, bool OpenEditor = false)
+{
+    public bool DoesAnything => Save || CopyToClipboard || OpenEditor;
+}
+
+public enum AppTheme
+{
+    /// <summary>Follow the Windows app theme (light or dark).</summary>
+    System,
+    Light,
+    Dark,
+}
+
+public sealed record AppearanceSettings(AppTheme Theme = AppTheme.System)
+{
+    public AppearanceSettings Normalize() => this with { Theme = Enum.IsDefined(Theme) ? Theme : AppTheme.System };
 }
 
 /// <summary>
@@ -114,6 +149,16 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureActiveWindow => CaptureActiveWindow,
         HotkeyAction.CaptureFullScreen => CaptureFullScreen,
         HotkeyAction.CaptureScrolling => CaptureScrolling,
+        _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
+    };
+
+    /// <summary>A copy with one action's hotkey replaced.</summary>
+    public HotkeySettings With(HotkeyAction action, string? text) => action switch
+    {
+        HotkeyAction.CaptureRegion => this with { CaptureRegion = text },
+        HotkeyAction.CaptureActiveWindow => this with { CaptureActiveWindow = text },
+        HotkeyAction.CaptureFullScreen => this with { CaptureFullScreen = text },
+        HotkeyAction.CaptureScrolling => this with { CaptureScrolling = text },
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 

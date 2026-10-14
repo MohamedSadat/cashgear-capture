@@ -47,7 +47,10 @@ public sealed class JsonSettingsServiceTests : IDisposable
         defaults.Capture.FullScreenOutput.Should().Be(FullScreenOutput.AllAndEachMonitor);
         defaults.Output.Format.Should().Be(ImageFileFormat.Png);
         defaults.Output.JpegQuality.Should().Be(90);
-        defaults.Output.CopyToClipboard.Should().BeTrue();
+        defaults.AfterCapture.Should().Be(new AfterCaptureSettings(Save: true, CopyToClipboard: true, OpenEditor: false));
+        defaults.Output.FileNameTemplate.Should().Be(CashGear.Capture.Core.Output.FileNameTemplate.Default);
+        defaults.Appearance.Theme.Should().Be(AppTheme.System);
+        defaults.Capture.DelaySeconds.Should().Be(0);
         defaults.Output.Folder.Should().BeNull();
     }
 

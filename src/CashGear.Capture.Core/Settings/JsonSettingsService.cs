@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Core.Settings;
@@ -137,8 +138,7 @@ public sealed partial class JsonSettingsService : ISettingsService, IDisposable
                 try
                 {
                     var bytes = await File.ReadAllBytesAsync(_path).ConfigureAwait(false);
-                    loaded = (JsonSerializer.Deserialize(bytes, SettingsJsonContext.Default.AppSettings)
-                        ?? throw new JsonException("Settings file contains null.")).Normalize();
+                    loaded = Parse(bytes, out _);
                 }
                 catch (JsonException ex)
                 {
@@ -185,18 +185,31 @@ public sealed partial class JsonSettingsService : ISettingsService, IDisposable
         if (!File.Exists(_path))
         {
             var defaults = new AppSettings();
-            TryWriteDefaults(defaults);
+            TryWrite(defaults);
             LogCreatedDefaults(_path);
             return defaults;
         }
 
         try
         {
-            using var stream = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            var loaded = JsonSerializer.Deserialize(stream, SettingsJsonContext.Default.AppSettings)
-                ?? throw new JsonException("Settings file contains null.");
+            byte[] bytes;
+            using (var stream = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var buffer = new MemoryStream())
+            {
+                stream.CopyTo(buffer);
+                bytes = buffer.ToArray();
+            }
+
+            var loaded = Parse(bytes, out var fromVersion);
             LogLoaded(_path);
-            return loaded.Normalize();
+            if (fromVersion < AppSettings.CurrentSchemaVersion)
+            {
+                // Rewrite once in the current shape so the file matches what the app (and the user) sees.
+                LogMigrated(_path, fromVersion, AppSettings.CurrentSchemaVersion);
+                TryWrite(loaded);
+            }
+
+            return loaded;
         }
         catch (JsonException ex)
         {
@@ -213,7 +226,7 @@ public sealed partial class JsonSettingsService : ISettingsService, IDisposable
             }
 
             var defaults = new AppSettings();
-            TryWriteDefaults(defaults);
+            TryWrite(defaults);
             return defaults;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -224,13 +237,13 @@ public sealed partial class JsonSettingsService : ISettingsService, IDisposable
         }
     }
 
-    private void TryWriteDefaults(AppSettings defaults)
+    private void TryWrite(AppSettings settings)
     {
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
             var temp = _path + ".tmp";
-            File.WriteAllBytes(temp, Serialize(defaults));
+            File.WriteAllBytes(temp, Serialize(settings));
             File.Move(temp, _path, overwrite: true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -262,11 +275,33 @@ public sealed partial class JsonSettingsService : ISettingsService, IDisposable
         }
     }
 
+    /// <summary>Parses settings JSON, upgrading older schemas first (see <see cref="SettingsMigration"/>).</summary>
+    /// <exception cref="JsonException">Not a JSON object, or not readable as settings.</exception>
+    internal static AppSettings Parse(byte[] json, out int fromVersion)
+    {
+        var node = JsonNode.Parse(
+            json,
+            new JsonNodeOptions { PropertyNameCaseInsensitive = true },
+            new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        if (node is not JsonObject root)
+        {
+            throw new JsonException("Settings file is not a JSON object.");
+        }
+
+        fromVersion = SettingsMigration.Upgrade(root);
+        var settings = root.Deserialize(SettingsJsonContext.Default.AppSettings)
+            ?? throw new JsonException("Settings file contains null.");
+        return settings.Normalize();
+    }
+
     private static byte[] Serialize(AppSettings settings) =>
         JsonSerializer.SerializeToUtf8Bytes(settings, SettingsJsonContext.Default.AppSettings);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Loaded settings from {Path}")]
     private partial void LogLoaded(string path);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Upgraded settings {Path} from schema {From} to {To}")]
+    private partial void LogMigrated(string path, int from, int to);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "No settings file; created defaults at {Path}")]
     private partial void LogCreatedDefaults(string path);
