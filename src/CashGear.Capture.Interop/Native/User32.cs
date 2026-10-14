@@ -14,6 +14,7 @@ public static unsafe partial class User32
     public const int GwlExStyle = -20;
     public const long WsExToolWindow = 0x80;
     public const long WsExAppWindow = 0x40000;
+    public const long WsExTransparent = 0x20;
 
     public const uint GaRoot = 2;
 

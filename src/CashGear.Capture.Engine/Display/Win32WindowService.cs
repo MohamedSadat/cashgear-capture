@@ -6,7 +6,8 @@ namespace CashGear.Capture.Engine.Display;
 
 /// <summary>
 /// Top-level window enumeration. Skips the shell (desktop) window, invisible, cloaked (other virtual desktop,
-/// suspended UWP) and tool windows, empty windows, and this process's own windows (overlays, tray menu).
+/// suspended UWP), click-through and tool windows, empty windows, and this process's own windows (overlays,
+/// tray menu).
 /// </summary>
 public sealed unsafe class Win32WindowService : IWindowService
 {
@@ -56,7 +57,11 @@ public sealed unsafe class Win32WindowService : IWindowService
 
         var exStyle = (long)User32.GetWindowLongPtrW(hwnd, User32.GwlExStyle);
         var isToolWindow = (exStyle & User32.WsExToolWindow) != 0 && (exStyle & User32.WsExAppWindow) == 0;
-        return !isToolWindow;
+
+        // Click-through windows (full-screen indicators, HUDs, game overlays) can't be clicked and are never what
+        // the user means; WindowFromPoint skips them too.
+        var isClickThrough = (exStyle & User32.WsExTransparent) != 0;
+        return !isToolWindow && !isClickThrough;
     }
 
     private static WindowInfo? TryDescribe(nint hwnd, int zOrder)

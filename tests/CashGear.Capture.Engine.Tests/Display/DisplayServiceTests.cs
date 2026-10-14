@@ -82,6 +82,9 @@ public sealed class DisplayServiceTests
             w.ClassName.Should().NotBeNullOrEmpty();
         });
         windows.Should().NotContain(w => w.Handle == User32.GetShellWindow());
+        windows.Should().NotContain(
+            w => ((long)User32.GetWindowLongPtrW(w.Handle, User32.GwlExStyle) & User32.WsExTransparent) != 0,
+            "click-through windows are not pickable");
     }
 
     [Fact]
