@@ -23,6 +23,11 @@
     <PackageVersion Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
 
+  <ItemGroup Label="Editor">
+    <PackageVersion Include="SkiaSharp" Version="4.153.1" />
+    <PackageVersion Include="SkiaSharp.Views.WPF" Version="4.153.1" />
+  </ItemGroup>
+
   <ItemGroup Label="Tests">
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.2" />

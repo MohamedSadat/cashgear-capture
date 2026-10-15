@@ -1,10 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Document model + Skia rendering arrive in Phase 5; the WPF SKElement host lives in App. -->
+  <!-- Document model, annotations, undo/redo and Skia rendering. No WPF: the SKElement host lives in App. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CashGear.Capture.Editor.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
