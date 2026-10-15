@@ -29,6 +29,8 @@ public sealed class EnumLabelConverter : IValueConverter
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value switch
     {
         ImageFileFormat.Png => "PNG (lossless)",
+        Core.Recording.RecordingEncoder.Auto => "Hardware when available (recommended)",
+        Core.Recording.RecordingEncoder.Software => "Software (x264)",
         ImageFileFormat.Jpeg => "JPEG",
         ImageFileFormat.Bmp => "BMP",
         CaptureBackend.Auto => "Automatic (recommended)",

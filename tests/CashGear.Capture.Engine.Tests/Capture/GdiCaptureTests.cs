@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace CashGear.Capture.Engine.Tests.Capture;
 
 [Trait("Category", InteractiveDesktop.Category)]
+[Collection(DesktopCollection.Name)]
 public sealed class GdiCaptureTests
 {
     private readonly Win32MonitorService _monitors = new(NullLogger<Win32MonitorService>.Instance);

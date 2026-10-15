@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="CashGear.Capture.Engine.Tests" />
+    <!-- The recorder runs its own WGC session on the same interop and device helpers. -->
+    <InternalsVisibleTo Include="CashGear.Capture.Recording" />
     <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
   </ItemGroup>
 

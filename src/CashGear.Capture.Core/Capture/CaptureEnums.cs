@@ -23,4 +23,7 @@ public enum CaptureKind
 
     /// <summary>A scrolling area stitched from several frames (taller than the screen).</summary>
     Scrolling,
+
+    /// <summary>A screen recording (an MP4 file).</summary>
+    Recording,
 }

@@ -34,6 +34,10 @@ public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows,
             case HotkeyAction.CaptureScrolling:
                 Run(tray.CaptureScrollingCommand.ExecuteAsync(null));
                 break;
+
+            case HotkeyAction.Record:
+                Run(tray.ToggleRecordingCommand.ExecuteAsync(null));
+                break;
         }
     }
 

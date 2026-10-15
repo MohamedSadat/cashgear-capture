@@ -7,6 +7,7 @@ using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
+using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -45,8 +46,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         HotkeyRegistrar hotkeys,
         IStartupRegistration startup,
         IFolderPicker folderPicker,
-        ILogger<SettingsViewModel> logger)
+        ILogger<SettingsViewModel> logger,
+        IFfmpeg? ffmpeg = null)
     {
+        FfmpegStatus = ffmpeg?.Path is { } found
+            ? "ffmpeg: " + found
+            : $"ffmpeg.exe was not found, so recording is unavailable. Put it in {ffmpeg?.ExpectedPath ?? "the app's ffmpeg folder"}.";
+        IsFfmpegMissing = ffmpeg?.Path is null;
         _settings = settings;
         _paths = paths;
         _hotkeys = hotkeys;
@@ -91,6 +97,15 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<int> ScrollSettleChoices { get; } = [100, 250, 500, 1000];
 
+    public IReadOnlyList<int> FrameRates { get; } = RecordingSettings.FrameRates;
+
+    public IReadOnlyList<RecordingEncoder> Encoders { get; } = Enum.GetValues<RecordingEncoder>();
+
+    /// <summary>Where ffmpeg is, or why recording is unavailable.</summary>
+    public string FfmpegStatus { get; }
+
+    public bool IsFfmpegMissing { get; }
+
     public IReadOnlyList<int> ScrollMaxHeightChoices { get; } = [10_000, 20_000, 40_000, 60_000];
 
     public IReadOnlyList<string> TokenHelp { get; } =
@@ -130,6 +145,22 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private int _hideDelayMs;
+
+    [ObservableProperty]
+    private int _recordingFps;
+
+    /// <summary>15 (best) to 35 (smallest).</summary>
+    [ObservableProperty]
+    private int _recordingQuality;
+
+    [ObservableProperty]
+    private bool _recordingIncludeCursor;
+
+    [ObservableProperty]
+    private bool _recordingShowClicks;
+
+    [ObservableProperty]
+    private RecordingEncoder _recordingEncoder;
 
     /// <summary>Scrolling capture: pause after each scroll.</summary>
     [ObservableProperty]
@@ -296,6 +327,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         AfterCapture = new AfterCaptureSettings(SaveToFile, CopyToClipboard, OpenEditor),
         Hotkeys = Hotkeys.Aggregate(current.Hotkeys, (h, row) => h.With(row.Action, row.SettingText)),
         Appearance = new AppearanceSettings(Theme),
+        Recording = new RecordingSettings(RecordingFps, RecordingQuality, RecordingIncludeCursor, RecordingShowClicks, RecordingEncoder),
     };
 
     private void Load(AppSettings s, bool startWithWindows)
@@ -310,6 +342,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         DelaySeconds = s.Capture.DelaySeconds;
         HideDelayMs = s.Capture.HideDelayMs;
         ScrollSettleMs = s.Capture.ScrollSettleMs;
+        RecordingFps = s.Recording.Fps;
+        RecordingQuality = s.Recording.Quality;
+        RecordingIncludeCursor = s.Recording.IncludeCursor;
+        RecordingShowClicks = s.Recording.ShowClicks;
+        RecordingEncoder = s.Recording.Encoder;
         ScrollMaxHeight = s.Capture.ScrollMaxHeight;
         IncludeCursor = s.Capture.IncludeCursor;
         IncludeWindowShadow = s.Capture.IncludeWindowShadow;

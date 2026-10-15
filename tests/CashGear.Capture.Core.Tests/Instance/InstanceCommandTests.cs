@@ -16,6 +16,7 @@ public sealed class InstanceCommandTests
     [InlineData(new[] { "--capture-region" }, InstanceCommand.CaptureRegion)]
     [InlineData(new[] { "--capture-window" }, InstanceCommand.CaptureWindow)]
     [InlineData(new[] { "--capture-scrolling" }, InstanceCommand.CaptureScrolling)]
+    [InlineData(new[] { "--record" }, InstanceCommand.Record)]
     public void FromArgs(string[] args, InstanceCommand expected) =>
         InstanceCommandParser.FromArgs(args).Should().Be(expected);
 
@@ -26,6 +27,7 @@ public sealed class InstanceCommandTests
     [InlineData(InstanceCommand.CaptureRegion)]
     [InlineData(InstanceCommand.CaptureWindow)]
     [InlineData(InstanceCommand.CaptureScrolling)]
+    [InlineData(InstanceCommand.Record)]
     public void Wire_format_round_trips(InstanceCommand command)
     {
         InstanceCommandParser.TryParseWire(InstanceCommandParser.ToWire(command) + "\r\n", out var parsed).Should().BeTrue();

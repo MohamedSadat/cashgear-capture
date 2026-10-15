@@ -24,6 +24,7 @@ namespace CashGear.Capture.App.Tests.Region;
 /// To cover mixed DPI or a monitor at negative coordinates, change the display settings and run again.
 /// </summary>
 [Trait("Category", InteractiveDesktop.Category)]
+[Collection(DesktopCollection.Name)]
 public sealed class RegionOverlayWindowTests
 {
     private readonly Win32MonitorService _monitorService = new(NullLogger<Win32MonitorService>.Instance);

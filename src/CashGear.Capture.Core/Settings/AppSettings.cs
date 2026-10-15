@@ -28,6 +28,8 @@ public sealed record AppSettings
 
     public AppearanceSettings Appearance { get; init; } = new();
 
+    public RecordingSettings Recording { get; init; } = new();
+
     /// <summary>Replaces missing sections with defaults and clamps out-of-range values.</summary>
     public AppSettings Normalize() => this with
     {
@@ -37,6 +39,7 @@ public sealed record AppSettings
         AfterCapture = AfterCapture ?? new AfterCaptureSettings(),
         Hotkeys = (Hotkeys ?? new HotkeySettings()).Normalize(),
         Appearance = (Appearance ?? new AppearanceSettings()).Normalize(),
+        Recording = (Recording ?? new RecordingSettings()).Normalize(),
     };
 }
 
@@ -135,6 +138,31 @@ public enum AppTheme
     Dark,
 }
 
+/// <summary>Screen recording.</summary>
+/// <param name="Fps">Frames per second: 15, 30 or 60.</param>
+/// <param name="Quality">Constant quality, 15 (best, biggest) to 35 (smallest); 23 is a good balance.</param>
+/// <param name="IncludeCursor">Show the mouse pointer.</param>
+/// <param name="ShowClicks">Draw a circle where the mouse is clicked.</param>
+/// <param name="Encoder">Hardware encoding when available, or always software.</param>
+public sealed record RecordingSettings(
+    int Fps = 30,
+    int Quality = RecordingSettings.DefaultQuality,
+    bool IncludeCursor = true,
+    bool ShowClicks = true,
+    Recording.RecordingEncoder Encoder = Recording.RecordingEncoder.Auto)
+{
+    public const int DefaultQuality = 23;
+
+    public static IReadOnlyList<int> FrameRates { get; } = [15, 30, 60];
+
+    public RecordingSettings Normalize() => this with
+    {
+        Fps = FrameRates.MinBy(f => Math.Abs(f - Fps)),
+        Quality = Math.Clamp(Quality, Recording.FfmpegArguments.MinQuality, Recording.FfmpegArguments.MaxQuality),
+        Encoder = Enum.IsDefined(Encoder) ? Encoder : Recording.RecordingEncoder.Auto,
+    };
+}
+
 public sealed record AppearanceSettings(AppTheme Theme = AppTheme.System)
 {
     public AppearanceSettings Normalize() => this with { Theme = Enum.IsDefined(Theme) ? Theme : AppTheme.System };
@@ -148,12 +176,14 @@ public sealed record HotkeySettings(
     string? CaptureRegion = HotkeySettings.DefaultCaptureRegion,
     string? CaptureActiveWindow = HotkeySettings.DefaultCaptureActiveWindow,
     string? CaptureFullScreen = HotkeySettings.DefaultCaptureFullScreen,
-    string? CaptureScrolling = HotkeySettings.DefaultCaptureScrolling)
+    string? CaptureScrolling = HotkeySettings.DefaultCaptureScrolling,
+    string? Record = HotkeySettings.DefaultRecord)
 {
     public const string DefaultCaptureRegion = "PrintScreen";
     public const string DefaultCaptureActiveWindow = "Alt+PrintScreen";
     public const string DefaultCaptureFullScreen = "Ctrl+PrintScreen";
     public const string DefaultCaptureScrolling = "Ctrl+Shift+PrintScreen";
+    public const string DefaultRecord = "Shift+PrintScreen";
 
     /// <summary>The configured text for an action, or null when it has no hotkey.</summary>
     public string? For(HotkeyAction action) => action switch
@@ -162,6 +192,7 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureActiveWindow => CaptureActiveWindow,
         HotkeyAction.CaptureFullScreen => CaptureFullScreen,
         HotkeyAction.CaptureScrolling => CaptureScrolling,
+        HotkeyAction.Record => Record,
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
@@ -172,11 +203,12 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureActiveWindow => this with { CaptureActiveWindow = text },
         HotkeyAction.CaptureFullScreen => this with { CaptureFullScreen = text },
         HotkeyAction.CaptureScrolling => this with { CaptureScrolling = text },
+        HotkeyAction.Record => this with { Record = text },
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
     public HotkeySettings Normalize() => new(
-        Clean(CaptureRegion), Clean(CaptureActiveWindow), Clean(CaptureFullScreen), Clean(CaptureScrolling));
+        Clean(CaptureRegion), Clean(CaptureActiveWindow), Clean(CaptureFullScreen), Clean(CaptureScrolling), Clean(Record));
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

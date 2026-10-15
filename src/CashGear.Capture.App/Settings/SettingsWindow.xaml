@@ -148,6 +148,63 @@
         </ScrollViewer>
       </TabItem>
 
+      <!-- ============================== Recording ============================== -->
+      <TabItem Header="Recording">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="12,4,12,12">
+            <TextBlock Style="{StaticResource Section}" Text="Video" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+              </Grid.RowDefinitions>
+              <TextBlock Text="Frames per second" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding FrameRates}" SelectedItem="{Binding RecordingFps}" ItemStringFormat="{}{0} fps"
+                        HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="Frames per second" />
+              <TextBlock Grid.Row="1" VerticalAlignment="Center" Margin="0,10,0,0">
+                <Run Text="Quality:" />
+                <Run Text="{Binding RecordingQuality, Mode=OneWay}" />
+              </TextBlock>
+              <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,10,0,0">
+                <TextBlock DockPanel.Dock="Left" Text="Best" Opacity="0.7" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBlock DockPanel.Dock="Right" Text="Smallest" Opacity="0.7" VerticalAlignment="Center" Margin="8,0,0,0" />
+                <Slider Minimum="15" Maximum="35" Value="{Binding RecordingQuality}" IsSnapToTickEnabled="True" TickFrequency="1"
+                        AutomationProperties.Name="Quality" />
+              </DockPanel>
+              <TextBlock Grid.Row="2" Text="Encoder" VerticalAlignment="Center" Margin="0,10,0,0" />
+              <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Encoders}" SelectedItem="{Binding RecordingEncoder}" ItemTemplate="{StaticResource EnumItem}"
+                        HorizontalAlignment="Left" MinWidth="260" Margin="0,10,0,0" AutomationProperties.Name="Encoder" />
+            </Grid>
+            <TextBlock Style="{StaticResource Hint}" Text="23 is a good balance. Hardware encoding (NVIDIA, Intel, AMD) uses little CPU; it is tried first and x264 is used when it doesn't work on this PC." />
+
+            <TextBlock Style="{StaticResource Section}" Text="Mouse" />
+            <CheckBox Margin="0,2" Content="Show the mouse pointer" IsChecked="{Binding RecordingIncludeCursor}" />
+            <CheckBox Margin="0,2" Content="Highlight mouse clicks" IsChecked="{Binding RecordingShowClicks}" />
+
+            <TextBlock Style="{StaticResource Section}" Text="ffmpeg" />
+            <TextBlock Text="{Binding FfmpegStatus}" TextWrapping="Wrap">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="Opacity" Value="0.75" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFfmpegMissing}" Value="True">
+                      <Setter Property="Foreground" Value="#D13438" />
+                      <Setter Property="Opacity" Value="1" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Style="{StaticResource Hint}" Text="Start and stop a recording from the tray or with the recording hotkey. Recordings are saved as MP4 in the capture folder." />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
       <!-- ============================== Hotkeys ============================== -->
       <TabItem Header="Hotkeys">
         <StackPanel Margin="12,4,12,12">

@@ -20,6 +20,8 @@
         <MenuItem Header="Capture _Full Screen" Command="{Binding CaptureFullScreenCommand}" InputGestureText="{Binding FullScreenHotkey}" />
         <MenuItem Header="_Scrolling Capture" Command="{Binding CaptureScrollingCommand}" InputGestureText="{Binding ScrollingHotkey}" />
         <Separator />
+        <MenuItem Header="{Binding RecordText}" Command="{Binding ToggleRecordingCommand}" InputGestureText="{Binding RecordHotkey}" />
+        <Separator />
         <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" />
         <Separator />
         <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />

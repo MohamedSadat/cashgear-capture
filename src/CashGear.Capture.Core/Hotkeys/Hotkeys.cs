@@ -155,6 +155,9 @@ public enum HotkeyAction
     CaptureActiveWindow,
     CaptureFullScreen,
     CaptureScrolling,
+
+    /// <summary>Start a screen recording, or stop the one running.</summary>
+    Record,
 }
 
 /// <summary>System-wide hotkeys. Registration and presses happen on the thread that owns the service (the UI thread).</summary>

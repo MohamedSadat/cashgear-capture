@@ -29,9 +29,15 @@
     <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
   </ItemGroup>
 
+  <!-- Screen recording runs ffmpeg\ffmpeg.exe next to the app. tools\get-ffmpeg.ps1 puts a pinned build in tools\ffmpeg. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\ffmpeg.exe')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\*" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Editor\CashGear.Capture.Editor.csproj" />
+    <ProjectReference Include="..\CashGear.Capture.Recording\CashGear.Capture.Recording.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Engine\CashGear.Capture.Engine.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Interop\CashGear.Capture.Interop.csproj" />
   </ItemGroup>

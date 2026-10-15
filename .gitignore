@@ -487,3 +487,6 @@ ffmpeg/
 # Test runner output
 TestResults/
 *.trx
+
+# ffmpeg for local builds (downloaded by tools/get-ffmpeg.ps1, not committed)
+/tools/ffmpeg/

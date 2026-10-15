@@ -45,3 +45,13 @@ internal static class InteractiveDesktop
         return true;
     }
 }
+
+/// <summary>
+/// Tests that capture the screen or put windows on it run one at a time: a Windows.Graphics.Capture session draws a
+/// yellow border on Windows 10, and a test window would show up in another test's pixels.
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class DesktopCollection
+{
+    public const string Name = "Desktop";
+}

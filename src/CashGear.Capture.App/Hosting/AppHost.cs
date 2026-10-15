@@ -3,6 +3,7 @@ using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Recording;
 using CashGear.Capture.App.Region;
 using CashGear.Capture.App.Scrolling;
 using CashGear.Capture.App.Settings;
@@ -14,6 +15,7 @@ using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Interaction;
 using CashGear.Capture.Engine;
+using CashGear.Capture.Recording;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -44,6 +46,7 @@ internal static class AppHost
 
         builder.Services.AddCaptureCore(paths);
         builder.Services.AddCaptureEngine();
+        builder.Services.AddScreenRecording();
 
         builder.Services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
         builder.Services.AddSingleton<IAppLifetime, WpfAppLifetime>();
@@ -56,6 +59,7 @@ internal static class AppHost
         builder.Services.AddSingleton<IScrollPlatform, Win32ScrollPlatform>();
         builder.Services.AddSingleton<ScrollTargetFinder>();
         builder.Services.AddSingleton<ScrollingCaptureService>();
+        builder.Services.AddSingleton<RecordingController>();
         builder.Services.AddSingleton<ToolStyleMemory>();
         builder.Services.AddSingleton<EditorWindowService>();
         builder.Services.AddSingleton<IEditorLauncher>(sp => sp.GetRequiredService<EditorWindowService>());

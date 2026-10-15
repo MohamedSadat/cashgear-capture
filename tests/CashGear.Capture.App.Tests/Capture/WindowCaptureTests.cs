@@ -25,6 +25,7 @@ namespace CashGear.Capture.App.Tests.Capture;
 /// On Windows 10 a yellow border flashes around the test window — expected.
 /// </summary>
 [Trait("Category", InteractiveDesktop.Category)]
+[Collection(DesktopCollection.Name)]
 public sealed class WindowCaptureTests : IDisposable
 {
     private const int PatternWidth = 420;

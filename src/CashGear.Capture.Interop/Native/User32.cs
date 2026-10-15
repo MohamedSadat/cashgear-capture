@@ -53,6 +53,8 @@ public static unsafe partial class User32
     public const int WheelDelta = 120;
 
     public const int VkEscape = 0x1B;
+    public const int VkLButton = 0x01;
+    public const int VkRButton = 0x02;
 
     /// <summary><c>DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2</c>.</summary>
     public static readonly nint DpiAwarenessContextPerMonitorAwareV2 = -4;

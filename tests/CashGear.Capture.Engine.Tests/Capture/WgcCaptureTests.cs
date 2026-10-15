@@ -14,6 +14,7 @@ namespace CashGear.Capture.Engine.Tests.Capture;
 
 /// <summary>Real Windows.Graphics.Capture grabs. On Windows 10 a yellow border flashes around each monitor — expected.</summary>
 [Trait("Category", InteractiveDesktop.Category)]
+[Collection(DesktopCollection.Name)]
 public sealed class WgcCaptureTests : IDisposable
 {
     private static readonly TimeSpan FrameTimeout = TimeSpan.FromSeconds(3);

@@ -4,6 +4,7 @@ using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
+using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -51,7 +52,7 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Backend.Should().Be(CaptureBackend.Gdi);
         vm.Theme.Should().Be(AppTheme.Dark);
         vm.StartWithWindows.Should().BeTrue();
-        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen");
+        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen");
         vm.HasErrors.Should().BeFalse();
     }
 
@@ -251,6 +252,24 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Recording_settings_are_loaded_and_saved()
+    {
+        _settings.Current = _settings.Current with { Recording = new RecordingSettings(15, 28, false, false, RecordingEncoder.Software) };
+        using var vm = Create();
+        vm.RecordingFps.Should().Be(15);
+        vm.RecordingQuality.Should().Be(28);
+        vm.RecordingEncoder.Should().Be(RecordingEncoder.Software);
+        vm.IsFfmpegMissing.Should().BeTrue("this view model was given no ffmpeg");
+
+        vm.RecordingFps = 60;
+        vm.RecordingQuality = 20;
+        vm.RecordingShowClicks = true;
+        await vm.ApplyCommand.ExecuteAsync(null);
+
+        _settings.Current.Recording.Should().Be(new RecordingSettings(60, 20, false, true, RecordingEncoder.Software));
+    }
+
+    [Fact]
     public void Recording_a_hotkey_pauses_global_hotkeys_until_done()
     {
         using var vm = Create();
@@ -261,7 +280,7 @@ public sealed class SettingsViewModelTests : IDisposable
         _hotkeyService.Registered.Should().BeEmpty();
 
         vm.EndHotkeyRecording();
-        _hotkeyService.Registered.Should().HaveCount(4);
+        _hotkeyService.Registered.Should().HaveCount(5);
     }
 
     [Fact]
@@ -272,7 +291,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         vm.Dispose();
 
-        _hotkeyService.Registered.Should().HaveCount(4);
+        _hotkeyService.Registered.Should().HaveCount(5);
     }
 
     private SettingsViewModel Create() =>

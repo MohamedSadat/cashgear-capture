@@ -1,0 +1,25 @@
+<Window x:Class="CashGear.Capture.App.Recording.RecordingToolbarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.Recording"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:RecordingToolbarViewModel}"
+        Title="Recording" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="None"
+        Topmost="True" ShowInTaskbar="False" ShowActivated="False" BorderThickness="1" BorderBrush="#60808080">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="Visible" />
+  </Window.Resources>
+  <Border Padding="10,6" MouseLeftButtonDown="OnDrag" Background="Transparent" ToolTip="Drag to move">
+    <StackPanel Orientation="Horizontal">
+      <Ellipse Width="12" Height="12" Fill="#E81123" VerticalAlignment="Center" Margin="0,0,8,0"
+               Visibility="{Binding IsRecordingNow, Converter={StaticResource Visible}}" />
+      <Rectangle Width="12" Height="12" Fill="#808080" VerticalAlignment="Center" Margin="0,0,8,0"
+                 Visibility="{Binding IsPaused, Converter={StaticResource Visible}}" />
+      <TextBlock Text="{Binding ElapsedText}" FontSize="15" FontFamily="Segoe UI Semibold" VerticalAlignment="Center" MinWidth="48" />
+      <Button Content="{Binding PauseText}" Command="{Binding PauseCommand}" Margin="12,0,6,0" MinWidth="80" Focusable="False" />
+      <Button Content="Stop" Command="{Binding StopCommand}" MinWidth="70" Focusable="False" ToolTip="Stop and save (or press the recording hotkey)" />
+    </StackPanel>
+  </Border>
+</Window>

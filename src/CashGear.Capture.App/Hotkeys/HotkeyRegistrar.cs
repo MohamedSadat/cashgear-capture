@@ -147,6 +147,7 @@ public sealed partial class HotkeyRegistrar(
         HotkeyAction.CaptureActiveWindow => "Capture Active Window",
         HotkeyAction.CaptureFullScreen => "Capture Full Screen",
         HotkeyAction.CaptureScrolling => "Scrolling Capture",
+        HotkeyAction.Record => "Record Screen (again to stop)",
         _ => action.ToString(),
     };
 
