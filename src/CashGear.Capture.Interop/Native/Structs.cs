@@ -118,6 +118,13 @@ public struct INPUT
         type = User32.InputKeyboard,
         ki = new KEYBDINPUT { wVk = virtualKey, dwFlags = up ? User32.KeyEventFKeyUp : 0 },
     };
+
+    /// <summary>Mouse wheel at the cursor; positive delta scrolls up (120 per notch).</summary>
+    public static INPUT Wheel(int delta) => new()
+    {
+        type = User32.InputMouse,
+        mi = new MOUSEINPUT { mouseData = unchecked((uint)delta), dwFlags = User32.MouseEventFWheel },
+    };
 }
 
 [StructLayout(LayoutKind.Sequential)]

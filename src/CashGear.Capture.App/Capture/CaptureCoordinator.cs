@@ -2,6 +2,7 @@ using System.IO;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Region;
+using CashGear.Capture.App.Scrolling;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
@@ -33,6 +34,8 @@ public sealed partial class CaptureCoordinator
     private readonly RegionSelector _regionSelector;
     private readonly ICaptureCounter _counter;
     private readonly IEditorLauncher _editor;
+    private readonly ScrollingCaptureService _scrolling;
+    private readonly IScrollPlatform _scrollPlatform;
     private readonly TimeProvider _time;
     private readonly ILogger<CaptureCoordinator> _logger;
 
@@ -49,6 +52,8 @@ public sealed partial class CaptureCoordinator
         RegionSelector regionSelector,
         ICaptureCounter counter,
         IEditorLauncher editor,
+        ScrollingCaptureService scrolling,
+        IScrollPlatform scrollPlatform,
         TimeProvider time,
         ILogger<CaptureCoordinator> logger)
     {
@@ -64,6 +69,8 @@ public sealed partial class CaptureCoordinator
         _regionSelector = regionSelector;
         _counter = counter;
         _editor = editor;
+        _scrolling = scrolling;
+        _scrollPlatform = scrollPlatform;
         _time = time;
         _logger = logger;
     }
@@ -180,6 +187,55 @@ public sealed partial class CaptureCoordinator
         await Task.Delay(TimeSpan.FromMilliseconds(current.Capture.HideDelayMs), _time, ct).ConfigureAwait(false);
         await CaptureWindowCoreAsync(window.Handle, current, hidden, ct).ConfigureAwait(false);
     });
+
+    /// <summary>
+    /// Lets the user pick a window (the click also points at the part that scrolls), then scrolls it from where it is
+    /// down to the bottom and stitches one tall image.
+    /// </summary>
+    public Task CaptureScrollingAsync(CancellationToken ct = default) => RunAsync(async current =>
+    {
+        using var hidden = await PrepareAsync(current, hideOwnUi: true, ct).ConfigureAwait(false);
+
+        var displays = _monitors.GetMonitors();
+        var windows = _windows.GetVisibleWindows();
+        RegionSelectionResult? selection;
+        using (var frozen = await _capture.CaptureAllMonitorsAsync(ct).ConfigureAwait(false))
+        {
+            selection = await _ui.InvokeAsync(
+                () => _regionSelector.SelectAsync(frozen, displays, windows, SelectionMode.WindowOnly, ct)).ConfigureAwait(false);
+        }
+
+        if (selection?.Window is not { } window)
+        {
+            return; // cancelled by the user
+        }
+
+        // The overlay has just closed under the click, so the mouse is still on the part the user pointed at.
+        var result = await _scrolling.CaptureAsync(window, _scrollPlatform.CursorPosition, ct).ConfigureAwait(false);
+        if (result is null)
+        {
+            return; // Esc or Cancel
+        }
+
+        using var image = result.Image;
+        if (Explain(result) is { } explanation)
+        {
+            var kind = result.Reason is ScrollStopReason.MaxHeight or ScrollStopReason.ReachedEnd ? NotificationKind.Info : NotificationKind.Warning;
+            _notifier.Notify("Scrolling capture", explanation, kind);
+        }
+
+        await DeliverAsync(image, [image], current, hidden, ct).ConfigureAwait(false);
+    });
+
+    /// <summary>Why a scrolling capture ended, when it is worth telling (null when it simply reached the bottom).</summary>
+    private static string? Explain(ScrollingResult result) => result.Reason switch
+    {
+        ScrollStopReason.ReachedEnd when result.Frames == 1 => "Nothing scrolled, so only the visible part was captured.",
+        ScrollStopReason.MaxHeight => $"Stopped at the height limit ({result.Image.Height} px). It can be raised in Settings > Capture.",
+        ScrollStopReason.LostTrack => $"Stopped early at {result.Image.Height} px: the next part did not line up with the last (the page may change as it scrolls).",
+        ScrollStopReason.Resized => $"Stopped at {result.Image.Height} px: the window changed size.",
+        _ => null,
+    };
 
     /// <summary>Captures the window that was in the foreground when the hotkey was pressed.</summary>
     public Task CaptureActiveWindowAsync(nint hwnd, CancellationToken ct = default) => RunAsync(async current =>

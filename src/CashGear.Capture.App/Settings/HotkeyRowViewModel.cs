@@ -11,7 +11,7 @@ public sealed partial class HotkeyRowViewModel : ObservableObject
     public HotkeyRowViewModel(HotkeyAction action, string? text)
     {
         Action = action;
-        Label = HotkeyRegistrar.Label(action) + (action == HotkeyAction.CaptureScrolling ? " (Phase 6)" : string.Empty);
+        Label = HotkeyRegistrar.Label(action);
         _text = text ?? string.Empty;
     }
 

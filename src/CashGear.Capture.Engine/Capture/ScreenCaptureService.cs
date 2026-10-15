@@ -71,14 +71,17 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         return ComposeAsync(bounds, CaptureKind.AllMonitors, monitors, ScreenBackend(), _settings.Current.Capture.IncludeCursor, ct);
     }
 
-    public Task<CapturedImage> CaptureRegionAsync(PixelRect region, CancellationToken ct = default)
+    public Task<CapturedImage> CaptureRegionAsync(PixelRect region, CancellationToken ct = default) =>
+        CaptureRegionAsync(region, _settings.Current.Capture.IncludeCursor, ct);
+
+    public Task<CapturedImage> CaptureRegionAsync(PixelRect region, bool includeCursor, CancellationToken ct = default)
     {
         if (region.IsEmpty)
         {
             throw new ArgumentException("Region is empty.", nameof(region));
         }
 
-        return ComposeAsync(region, CaptureKind.Region, _monitors.GetMonitors(), ScreenBackend(), _settings.Current.Capture.IncludeCursor, ct);
+        return ComposeAsync(region, CaptureKind.Region, _monitors.GetMonitors(), ScreenBackend(), includeCursor, ct);
     }
 
     public async Task<CapturedImage> CaptureWindowAsync(nint hwnd, CaptureWindowOptions options, CancellationToken ct = default)

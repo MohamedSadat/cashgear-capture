@@ -20,4 +20,7 @@ public enum CaptureKind
     AllMonitors,
     Window,
     Region,
+
+    /// <summary>A scrolling area stitched from several frames (taller than the screen).</summary>
+    Scrolling,
 }

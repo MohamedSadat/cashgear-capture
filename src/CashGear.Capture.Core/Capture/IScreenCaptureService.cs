@@ -21,4 +21,7 @@ public interface IScreenCaptureService
     Task<CapturedImage> CaptureWindowAsync(nint hwnd, CaptureWindowOptions options, CancellationToken ct = default);
 
     Task<CapturedImage> CaptureRegionAsync(PixelRect region, CancellationToken ct = default);
+
+    /// <summary>As <see cref="CaptureRegionAsync(PixelRect, CancellationToken)"/>, choosing whether the cursor is drawn (regardless of the setting).</summary>
+    Task<CapturedImage> CaptureRegionAsync(PixelRect region, bool includeCursor, CancellationToken ct = default);
 }

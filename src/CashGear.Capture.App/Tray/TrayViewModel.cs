@@ -42,6 +42,9 @@ public sealed partial class TrayViewModel : ObservableObject
     [ObservableProperty]
     private string _fullScreenHotkey = string.Empty;
 
+    [ObservableProperty]
+    private string _scrollingHotkey = string.Empty;
+
     [RelayCommand]
     private Task CaptureRegionAsync() => _coordinator.CaptureRegionAsync();
 
@@ -55,6 +58,10 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [RelayCommand]
     private Task CaptureFullScreenAsync() => _coordinator.CaptureFullScreenAsync();
+
+    /// <summary>Pick a window, then scroll it to the bottom and stitch one tall image.</summary>
+    [RelayCommand]
+    private Task CaptureScrollingAsync() => _coordinator.CaptureScrollingAsync();
 
     [RelayCommand]
     private void OpenSettings() => _settingsWindow.Show();
@@ -73,6 +80,7 @@ public sealed partial class TrayViewModel : ObservableObject
     {
         RegionHotkey = Label(HotkeyAction.CaptureRegion);
         FullScreenHotkey = Label(HotkeyAction.CaptureFullScreen);
+        ScrollingHotkey = Label(HotkeyAction.CaptureScrolling);
     }
 
     private string Label(HotkeyAction action) =>

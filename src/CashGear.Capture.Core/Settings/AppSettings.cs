@@ -60,6 +60,8 @@ public enum FullScreenOutput
 /// <param name="FullScreenOutput">What "Capture Full Screen" writes.</param>
 /// <param name="IncludeWindowShadow">Window captures get a soft drop shadow on a transparent margin.</param>
 /// <param name="DelaySeconds">Wait this long before every capture (time to open a menu or hover a tooltip).</param>
+/// <param name="ScrollSettleMs">Scrolling capture: how long to let the page settle after each scroll before capturing.</param>
+/// <param name="ScrollMaxHeight">Scrolling capture: stop once the stitched image is this tall (pixels).</param>
 public sealed record CaptureSettings(
     CaptureBackend Backend = CaptureBackend.Auto,
     bool IncludeCursor = false,
@@ -67,9 +69,16 @@ public sealed record CaptureSettings(
     int WgcFrameTimeoutMs = CaptureSettings.DefaultWgcFrameTimeoutMs,
     FullScreenOutput FullScreenOutput = FullScreenOutput.AllAndEachMonitor,
     bool IncludeWindowShadow = false,
-    int DelaySeconds = 0)
+    int DelaySeconds = 0,
+    int ScrollSettleMs = CaptureSettings.DefaultScrollSettleMs,
+    int ScrollMaxHeight = CaptureSettings.DefaultScrollMaxHeight)
 {
     public const int DefaultHideDelayMs = 200;
+    public const int DefaultScrollSettleMs = 250;
+    public const int DefaultScrollMaxHeight = 20_000;
+    public const int MaxScrollSettleMs = 5_000;
+    public const int MinScrollMaxHeight = 2_000;
+    public const int MaxScrollMaxHeight = 60_000;
     public const int DefaultWgcFrameTimeoutMs = 2_000;
     public const int MaxHideDelayMs = 5_000;
     public const int MaxFrameTimeoutMs = 30_000;
@@ -82,6 +91,8 @@ public sealed record CaptureSettings(
         WgcFrameTimeoutMs = Math.Clamp(WgcFrameTimeoutMs, 1, MaxFrameTimeoutMs),
         FullScreenOutput = Enum.IsDefined(FullScreenOutput) ? FullScreenOutput : FullScreenOutput.AllAndEachMonitor,
         DelaySeconds = Math.Clamp(DelaySeconds, 0, MaxDelaySeconds),
+        ScrollSettleMs = Math.Clamp(ScrollSettleMs, 0, MaxScrollSettleMs),
+        ScrollMaxHeight = Math.Clamp(ScrollMaxHeight, MinScrollMaxHeight, MaxScrollMaxHeight),
     };
 }
 

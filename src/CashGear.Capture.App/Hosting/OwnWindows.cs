@@ -1,5 +1,6 @@
 using System.Windows;
 using CashGear.Capture.App.Region;
+using CashGear.Capture.App.Scrolling;
 
 namespace CashGear.Capture.App.Hosting;
 
@@ -16,7 +17,7 @@ internal sealed class WpfOwnWindows(IUiDispatcher ui) : IOwnWindows
     {
         var hidden = Application.Current.Windows
             .OfType<Window>()
-            .Where(w => w.IsVisible && w is not RegionOverlayWindow)
+            .Where(w => w.IsVisible && w is not (RegionOverlayWindow or ScrollProgressWindow))
             .ToList();
         foreach (var window in hidden)
         {

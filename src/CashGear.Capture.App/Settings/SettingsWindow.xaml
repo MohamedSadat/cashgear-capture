@@ -121,6 +121,25 @@
             <ComboBox ItemsSource="{Binding FullScreenOutputs}" SelectedItem="{Binding FullScreenOutput}" ItemTemplate="{StaticResource EnumItem}"
                       HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Full screen output" />
 
+            <TextBlock Style="{StaticResource Section}" Text="Scrolling capture" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+              </Grid.RowDefinitions>
+              <TextBlock Text="Wait after each scroll" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding ScrollSettleChoices}" SelectedItem="{Binding ScrollSettleMs}" ItemStringFormat="{}{0} ms"
+                        HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="Wait after each scroll" />
+              <TextBlock Grid.Row="1" Text="Stop at a height of" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding ScrollMaxHeightChoices}" SelectedItem="{Binding ScrollMaxHeight}" ItemStringFormat="{}{0:N0} px"
+                        HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="Maximum height" />
+            </Grid>
+            <TextBlock Style="{StaticResource Hint}" Text="Pick a window, then click where it scrolls. It is scrolled from where it is down to the bottom; Esc cancels. Allow more time for pages that load as they scroll." />
+
             <TextBlock Style="{StaticResource Section}" Text="Capture method" />
             <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" ItemTemplate="{StaticResource EnumItem}"
                       HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Capture method" />

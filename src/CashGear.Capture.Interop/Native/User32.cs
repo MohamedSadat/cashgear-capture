@@ -48,6 +48,12 @@ public static unsafe partial class User32
     public const uint InputKeyboard = 1;
     public const uint KeyEventFKeyUp = 0x0002;
 
+    public const uint InputMouse = 0;
+    public const uint MouseEventFWheel = 0x0800;
+    public const int WheelDelta = 120;
+
+    public const int VkEscape = 0x1B;
+
     /// <summary><c>DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2</c>.</summary>
     public static readonly nint DpiAwarenessContextPerMonitorAwareV2 = -4;
 
@@ -166,6 +172,19 @@ public static unsafe partial class User32
     [LibraryImport(Dll, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool SetCursorPos(int x, int y);
+
+    /// <summary>High bit set while the key is down (whichever app has the focus).</summary>
+    [LibraryImport(Dll)]
+    public static partial short GetAsyncKeyState(int virtualKey);
+
+    [LibraryImport(Dll)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetForegroundWindow(nint hwnd);
+
+    /// <summary>The client area in client coordinates (top-left is 0,0); combine with <see cref="ClientToScreen"/>.</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetClientRect(nint hwnd, RECT* rect);
 
     // --- Screen DC / cursor --------------------------------------------------------------------------
 

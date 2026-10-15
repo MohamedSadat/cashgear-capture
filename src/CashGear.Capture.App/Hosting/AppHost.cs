@@ -4,6 +4,7 @@ using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
+using CashGear.Capture.App.Scrolling;
 using CashGear.Capture.App.Settings;
 using CashGear.Capture.App.SingleInstance;
 using CashGear.Capture.App.Tray;
@@ -52,6 +53,9 @@ internal static class AppHost
         builder.Services.AddSingleton<IFolderPicker, WpfFolderPicker>();
         builder.Services.AddSingleton<SettingsWindowService>();
         builder.Services.AddSingleton<RegionSelector>();
+        builder.Services.AddSingleton<IScrollPlatform, Win32ScrollPlatform>();
+        builder.Services.AddSingleton<ScrollTargetFinder>();
+        builder.Services.AddSingleton<ScrollingCaptureService>();
         builder.Services.AddSingleton<ToolStyleMemory>();
         builder.Services.AddSingleton<EditorWindowService>();
         builder.Services.AddSingleton<IEditorLauncher>(sp => sp.GetRequiredService<EditorWindowService>());

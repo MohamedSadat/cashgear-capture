@@ -14,6 +14,7 @@ public sealed class FileNameTemplateTests
         Expand(FileNameTemplate.Default, CaptureKind.Monitor, "DISPLAY1").Should().Be("Capture_2026-03-07_09-05-04_monitor");
         Expand(FileNameTemplate.Default, CaptureKind.Region).Should().Be("Capture_2026-03-07_09-05-04_region");
         Expand(FileNameTemplate.Default, CaptureKind.Window, window: "Notepad").Should().Be("Capture_2026-03-07_09-05-04_window");
+        Expand(FileNameTemplate.Default, CaptureKind.Scrolling).Should().Be("Capture_2026-03-07_09-05-04_scrolling");
     }
 
     [Fact]

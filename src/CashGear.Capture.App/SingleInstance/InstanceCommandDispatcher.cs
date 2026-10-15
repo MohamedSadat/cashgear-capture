@@ -31,6 +31,9 @@ internal sealed class InstanceCommandDispatcher(
             case InstanceCommand.CaptureWindow:
                 return ui.InvokeAsync(() => tray.CaptureWindowCommand.ExecuteAsync(null));
 
+            case InstanceCommand.CaptureScrolling:
+                return ui.InvokeAsync(() => tray.CaptureScrollingCommand.ExecuteAsync(null));
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(command), command, null);
         }

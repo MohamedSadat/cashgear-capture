@@ -89,6 +89,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<int> HideDelayChoices { get; } = [0, 100, 200, 300, 500, 1000];
 
+    public IReadOnlyList<int> ScrollSettleChoices { get; } = [100, 250, 500, 1000];
+
+    public IReadOnlyList<int> ScrollMaxHeightChoices { get; } = [10_000, 20_000, 40_000, 60_000];
+
     public IReadOnlyList<string> TokenHelp { get; } =
         Templates.Tokens.Select(t => $"{t.Token}  {t.Description}").ToList();
 
@@ -126,6 +130,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private int _hideDelayMs;
+
+    /// <summary>Scrolling capture: pause after each scroll.</summary>
+    [ObservableProperty]
+    private int _scrollSettleMs;
+
+    /// <summary>Scrolling capture: stop at this height.</summary>
+    [ObservableProperty]
+    private int _scrollMaxHeight;
 
     [ObservableProperty]
     private bool _includeCursor;
@@ -271,6 +283,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             FullScreenOutput = FullScreenOutput,
             IncludeWindowShadow = IncludeWindowShadow,
             DelaySeconds = DelaySeconds,
+            ScrollSettleMs = ScrollSettleMs,
+            ScrollMaxHeight = ScrollMaxHeight,
         },
         Output = current.Output with
         {
@@ -295,6 +309,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         OpenEditor = s.AfterCapture.OpenEditor;
         DelaySeconds = s.Capture.DelaySeconds;
         HideDelayMs = s.Capture.HideDelayMs;
+        ScrollSettleMs = s.Capture.ScrollSettleMs;
+        ScrollMaxHeight = s.Capture.ScrollMaxHeight;
         IncludeCursor = s.Capture.IncludeCursor;
         IncludeWindowShadow = s.Capture.IncludeWindowShadow;
         Backend = s.Capture.Backend;

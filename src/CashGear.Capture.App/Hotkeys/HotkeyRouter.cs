@@ -8,7 +8,7 @@ namespace CashGear.Capture.App.Hotkeys;
 /// Turns hotkey presses into captures, through the tray commands so a capture already running is not stacked.
 /// Runs on the UI thread (where <c>WM_HOTKEY</c> arrives).
 /// </summary>
-public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows, TrayViewModel tray, ITrayNotifier notifier) : IDisposable
+public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows, TrayViewModel tray) : IDisposable
 {
     public void Start() => hotkeys.Pressed += OnPressed;
 
@@ -32,7 +32,7 @@ public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows,
                 break;
 
             case HotkeyAction.CaptureScrolling:
-                notifier.Notify("Scrolling capture", "Scrolling capture is coming in Phase 6.");
+                Run(tray.CaptureScrollingCommand.ExecuteAsync(null));
                 break;
         }
     }
