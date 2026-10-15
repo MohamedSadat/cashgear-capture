@@ -12,7 +12,8 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 3 | Window capture (WGC, occluded windows, optional shadow) + global hotkeys | done |
 | 4 | Settings window, after-capture actions, file-name templates, capture delay, start with Windows, light/dark | done |
 | 5 | Editor: annotations, crop/rotate/resize/border/shadow, undo/redo, zoom/pan, save/copy | done |
-| 6–9 | Scrolling capture, recording, OCR, packaging | planned |
+| 6 | Scrolling capture: UI Automation or mouse-wheel scrolling, exact row stitching | done |
+| 7–9 | Recording, OCR, packaging | planned |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -39,6 +40,7 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `--capture-fullscreen` | Capture every monitor plus the stitched virtual screen |
 | `--capture-region` | Open the region overlay (drag a rectangle or click a window, Enter to capture, Esc to cancel) |
 | `--capture-window` | Open the window picker (click a window to capture its own content) |
+| `--capture-scrolling` | Open the window picker, then scroll the clicked window to the bottom and stitch one tall image |
 | `--exit` | Shut the running instance down |
 
 ## Hotkeys
@@ -48,7 +50,7 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `PrintScreen` | Capture Region |
 | `Alt+PrintScreen` | Capture the active window |
 | `Ctrl+PrintScreen` | Capture Full Screen |
-| `Ctrl+Shift+PrintScreen` | Scrolling capture (Phase 6) |
+| `Ctrl+Shift+PrintScreen` | Scrolling capture |
 
 Change them in **Settings › Hotkeys** (click a box and press the keys) or in `settings.json` under `hotkeys`. A key another app or Windows already owns is reported, and a single typing key (e.g. `A`) is refused because it would stop working everywhere else.
 
@@ -59,13 +61,21 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 | Tab | What |
 |---|---|
 | Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
-| Capture | Capture delay, hide delay, cursor, window shadow, full-screen output, capture method |
+| Capture | Capture delay, hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
 | Hotkeys | Record hotkeys; each shows whether it is active |
 | General | Start with Windows, theme, open the settings file |
 
 Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved.
 
-File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
+File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window, scrolling), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
+
+## Scrolling capture
+
+Tray › **Scrolling Capture** (or `Ctrl+Shift+PrintScreen`): click the window on the picker, pointing at the part that scrolls. It is scrolled from where it is now down to the bottom, and the frames are stitched into one image that then goes to the editor, the folder or the clipboard as usual. Scroll to the top first to capture everything.
+
+- Apps with UI Automation scrolling (Notepad, most Windows apps) are scrolled directly; others (Chrome, here) with the mouse wheel. The mouse goes back where it was afterwards.
+- A small progress window (left out of the capture) shows the progress. **Finish now** keeps what has been captured; **Esc** or **Cancel** abandons it.
+- Toolbars and status bars that don't scroll appear once; the scrollbar is cut off.
 
 ## Editor
 

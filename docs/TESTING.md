@@ -20,10 +20,10 @@ dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–5 pass (2026-10-15) |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–6 pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–5 pass (2026-10-15) |
+| Windows 10 22H2 | Phase 0–6 pass (2026-10-15) |
 | Windows 11 23H2+ | not run |
 
 ## Phase 0–1 results (2026-10-14)
@@ -107,6 +107,19 @@ Same machine and layout. The keys were sent with `SendInput` from a script; the 
 | Blur drawn over a rectangle leaves the rectangle visible | pass (after fixing: blur was drawn over it) |
 | Closing with changes asks; Cancel keeps the window. `--exit` with changes asks; No discards and the app exits | pass |
 | A second capture with an editor open: the open editor isn't in the shot, the new editor opens in front and active | pass (after fixing: the old editor came back on top) |
+
+## Phase 6 results (2026-10-15)
+
+Test documents: 240 bars whose lengths repeat 1–40 units, so the order of bar lengths in the result shows any duplicated or missing line. A script measures every bar in the stitched image.
+
+| Check | Result |
+|---|---|
+| Notepad, 240-bar document, picked on the overlay: UI Automation "Text Editor" document found, scrolled 342 px per step, 25 frames, ReachedEnd | pass |
+| Notepad result 868 × 8,664: 240 bars in order (1…40), all 18 rows, spacing 36 rows ×239; scrollbar (16 px) cut off | pass |
+| Chrome guest window, 240-bar page with a sticky header: no UI Automation scroll element → client area + mouse wheel; 1 notch measured 100 px, then 400 px steps; 14 frames, ReachedEnd | pass |
+| Chrome result 971 × 5,423: 240 bars in order, all 12 rows, spacing 22 rows ×239; browser toolbar and sticky header once at the top | pass |
+| Progress window visible during the capture, display affinity 0x11 (excluded from capture) | pass |
+| Esc during a capture: "cancelled by the user", no file written, progress window closed, pointer restored | pass |
 
 ### Pending: mixed DPI and negative coordinates
 

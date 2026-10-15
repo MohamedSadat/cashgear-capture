@@ -244,3 +244,50 @@ Each phase lists the features added, how it was tested, and known limitations.
 - Remembered tool styles last until the app exits; they are not saved in `settings.json`.
 - Tilt-wheel (horizontal wheel) scrolling isn't supported; use Shift+wheel.
 - Editors don't switch theme while open; theme changes apply to editors opened afterwards.
+
+## Phase 6 — Scrolling capture (2026-10-15)
+
+### Added
+- **Scrolling capture** (tray › Scrolling Capture, `Ctrl+Shift+PrintScreen`, `--capture-scrolling`).
+  - Pick a window on the overlay, clicking the part that scrolls. The window is brought to the front and captured, scrolled, left to settle and captured again, down to the bottom. The stitched image then goes through the usual after-capture actions (editor, save as `…_scrolling`, clipboard).
+- **Scrolling target** (`ScrollTargetFinder`):
+  - From the clicked point, UI Automation is walked up to the first element with a vertical `ScrollPattern`, and that element's rectangle is captured. In Notepad it's the "Text Editor" document.
+  - If there is none, the window's client area is captured and the mouse wheel is used (Chrome here).
+- **Scrolling**:
+  - `ScrollPattern.SetScrollPercent` moves about 60% of a view per step and reports the bottom itself. If it fails, or claims to scroll while nothing moves, the mouse wheel takes over.
+  - The wheel (SendInput, over the area's right edge to avoid hover effects) starts with one notch, measures how far a notch scrolls, then turns enough notches for about 60% of a view. The pointer is put back afterwards.
+- **Settling**: after each scroll, a pause (`capture.scrollSettleMs`, default 250 ms). A frame is then taken once two captures 80 ms apart agree, so smooth scrolling and repaints have finished. The cursor is never drawn into the frames.
+- **Stitching** in Core (`RowSignature`, `Overlap`, `ScrollStitcher`):
+  - Every row gets a 64-bit fingerprint. The shift between two frames is the one where the most detailed rows agree and the fewest disagree, so repeated lines can't win over the true shift. Blank rows never decide, and a band on the right (the scrollbar) is ignored.
+  - Fixed bands (toolbars above, status bars below) appear once: the top from the first frame, the bottom from the last.
+  - A scrollbar thumb that moves between frames is cut off the result.
+- **Stops**:
+  - Normal ends: the bottom (nothing moved), **Finish now**, the height limit (`capture.scrollMaxHeight`, default 20,000 px; 300 frames at most), a frame that doesn't line up, or a resized window. Anything unusual is explained in a notification.
+  - **Esc** (polled globally, since the scrolled window has the focus) or **Cancel** abandons the capture.
+- **Progress window**: shows the parts and height so far, and which method scrolls. It is topmost, never takes the focus, is left out of every capture (`WDA_EXCLUDEFROMCAPTURE`), and sits in a corner of the monitor away from the wheel point.
+- Settings › Capture › Scrolling capture: wait after each scroll, and the height limit. `{kind}` gains `scrolling`.
+
+### Deviations
+- **No OpenCV**: frames are lined up by exact row fingerprints in managed code, not OpenCvSharp `MatchTemplate`. Screen captures are pixel-exact, so exact matching gives the scroll distance to the pixel, without the duplicated or missing rows a best-correlation match can produce. It is fast (about 1 million row comparisons per frame) and avoids a large native dependency. Template matching would only help for blurry or rescaled input, which a screen capture never is.
+- **Fixed bands**: detected from where the scrolled content stops matching. A misjudged blank row can't shift the result, because the same bottom band is applied to every frame.
+- **Test fixtures** are generated in code (a deterministic synthetic page with text-like lines, repeated lines, toolbar, status bar and moving scrollbar), not stored as images in `tests/Fixtures`.
+- **Scroll step**: about 60% of the view per step (the spec says about 70%), for more overlap.
+- **Starting point**: the capture starts from the current scroll position; it does not scroll to the top first.
+
+### Tested
+- 422 automated tests (421 pass, 1 explicit). New:
+  - stitcher: 70% steps, uneven steps and a short last step, toolbar + status bar + scrollbar, repeated lines, line-aligned scrolling with blank rows, caret blink, too far a scroll, resize, blank frames, metadata, fingerprints, offset search;
+  - capture loop with a fake window: to the bottom, a scroller that knows the end, Finish now, height limit, fallback when automation doesn't move, losing track, settling during smooth scrolling, cancel;
+  - wheel calibration;
+  - `--capture-scrolling` and the `scrolling` file-name kind.
+- Manual on the dev machine:
+  - Notepad with a 240-bar test document: UI Automation scrolling, 25 frames, 8,664 px. Every bar in order, every bar 18 rows, constant 36-row spacing (nothing duplicated or missing), scrollbar cut off.
+  - Chrome (guest window) with a 240-bar test page and a sticky header: the client area with the mouse wheel (100 px per notch measured, then 400 px steps), 14 frames, 5,423 px. Every bar in order, every bar 12 rows, constant 22-row spacing. Browser toolbar and sticky header once at the top.
+  - The progress window was up during the capture and excluded from capture (affinity 0x11). Esc cancelled with nothing saved, and the window closed.
+
+### Known limitations
+- Vertical scrolling only.
+- The window is captured from the screen, so it must stay visible while it scrolls.
+- With the mouse wheel the whole client area is captured, so a browser's toolbar is included (once, at the top). The pointer moves during the capture.
+- Content that changes while scrolling (animations, lazy loading, elements that appear only after scrolling) can stop the capture early ("didn't line up") or show up in more than one part.
+- Frames are kept in memory until they are stitched (bounded by the height limit).
