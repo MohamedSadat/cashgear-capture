@@ -37,9 +37,13 @@ internal sealed class WpfOwnWindows(IUiDispatcher ui) : IOwnWindows
 
             _ = ui.InvokeAsync(() =>
             {
+                // Without activation: a capture may just have opened an editor, which should stay in front.
                 foreach (var window in windows.Where(w => Application.Current.Windows.OfType<Window>().Contains(w)))
                 {
+                    var activates = window.ShowActivated;
+                    window.ShowActivated = false;
                     window.Show();
+                    window.ShowActivated = activates;
                 }
             });
         }

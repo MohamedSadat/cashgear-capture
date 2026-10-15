@@ -8,7 +8,6 @@ namespace CashGear.Capture.App.SingleInstance;
 internal sealed class InstanceCommandDispatcher(
     IUiDispatcher ui,
     ITrayNotifier notifier,
-    IAppLifetime lifetime,
     TrayViewModel tray)
 {
     public Task DispatchAsync(InstanceCommand command)
@@ -20,8 +19,7 @@ internal sealed class InstanceCommandDispatcher(
                 return Task.CompletedTask;
 
             case InstanceCommand.Exit:
-                lifetime.Shutdown();
-                return Task.CompletedTask;
+                return ui.InvokeAsync(() => tray.ExitCommand.ExecuteAsync(null)); // editors ask about unsaved changes first
 
             case InstanceCommand.CaptureFullScreen:
                 // Through the commands so the tray items are disabled while they run.

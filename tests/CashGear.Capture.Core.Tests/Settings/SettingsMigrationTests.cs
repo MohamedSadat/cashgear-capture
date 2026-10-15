@@ -36,6 +36,18 @@ public sealed class SettingsMigrationTests : IDisposable
     }
 
     [Fact]
+    public void A_version_1_file_keeps_saving_and_copying_without_the_editor()
+    {
+        var root = (JsonObject)JsonNode.Parse("""{ "schemaVersion": 1, "output": { "format": "Png" } }""")!;
+
+        SettingsMigration.Upgrade(root);
+
+        root["afterCapture"]!["save"]!.GetValue<bool>().Should().BeTrue();
+        root["afterCapture"]!["copyToClipboard"]!.GetValue<bool>().Should().BeTrue();
+        root["afterCapture"]!["openEditor"]!.GetValue<bool>().Should().BeFalse("version 1 had no editor; the new default must not switch it on");
+    }
+
+    [Fact]
     public void Missing_schema_version_counts_as_1_and_keys_match_case_insensitively()
     {
         var root = (JsonObject)JsonNode.Parse("""{ "Output": { "CopyToClipboard": false } }""")!;

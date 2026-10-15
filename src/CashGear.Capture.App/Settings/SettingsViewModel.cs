@@ -152,9 +152,6 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public bool IsJpeg => Format == ImageFileFormat.Jpeg;
 
-    /// <summary>The editor arrives in Phase 5; until then its checkbox is disabled.</summary>
-    public bool IsEditorAvailable => false;
-
     /// <summary>What a region capture would be called, e.g. <c>Capture_2026-03-07_14-30-05_region.png</c>.</summary>
     public string FileNamePreview =>
         Templates.TryValidate(FileNameTemplate, out _)
@@ -188,6 +185,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     partial void OnSaveToFileChanged(bool value) => Revalidate();
 
     partial void OnCopyToClipboardChanged(bool value) => Revalidate();
+
+    partial void OnOpenEditorChanged(bool value) => Revalidate();
 
     [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task SaveAsync()
@@ -327,9 +326,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             }
         }
 
-        if (!SaveToFile && !CopyToClipboard)
+        if (!SaveToFile && !CopyToClipboard && !OpenEditor)
         {
-            errors.Add("After capture: choose \"Save to file\", \"Copy to clipboard\" or both.");
+            errors.Add("After capture: choose at least one of \"Open in the editor\", \"Save to file\" and \"Copy to clipboard\".");
         }
 
         errors.AddRange(ValidateHotkeys());

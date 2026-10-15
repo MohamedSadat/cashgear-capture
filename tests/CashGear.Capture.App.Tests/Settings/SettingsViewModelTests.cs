@@ -104,10 +104,11 @@ public sealed class SettingsViewModelTests : IDisposable
 
         vm.SaveToFile = false;
         vm.CopyToClipboard = false;
+        vm.OpenEditor = false;
 
         vm.Errors.Should().Contain("After capture");
-        vm.CopyToClipboard = true;
-        vm.HasErrors.Should().BeFalse();
+        vm.OpenEditor = true;
+        vm.HasErrors.Should().BeFalse("opening the editor alone is enough");
     }
 
     [Fact]
@@ -144,6 +145,7 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.OutputFolder = @"D:\Shots";
         vm.Format = ImageFileFormat.Bmp;
         vm.FileNameTemplate = "shot_{counter}";
+        vm.SaveToFile = true;
         vm.CopyToClipboard = false;
         vm.DelaySeconds = 5;
         vm.HideDelayMs = 500;
@@ -157,7 +159,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         var s = _settings.Current;
         s.Output.Should().Be(new OutputSettings(@"D:\Shots", ImageFileFormat.Bmp, 90, "shot_{counter}"));
-        s.AfterCapture.Should().Be(new AfterCaptureSettings(Save: true, CopyToClipboard: false));
+        s.AfterCapture.Should().Be(new AfterCaptureSettings(Save: true, CopyToClipboard: false, OpenEditor: true));
         s.Capture.DelaySeconds.Should().Be(5);
         s.Capture.HideDelayMs.Should().Be(500);
         s.Capture.IncludeWindowShadow.Should().BeTrue();

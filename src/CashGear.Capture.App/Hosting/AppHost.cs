@@ -1,4 +1,5 @@
 using CashGear.Capture.App.Capture;
+using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
@@ -10,6 +11,7 @@ using CashGear.Capture.Core;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Editor.Interaction;
 using CashGear.Capture.Engine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -50,6 +52,9 @@ internal static class AppHost
         builder.Services.AddSingleton<IFolderPicker, WpfFolderPicker>();
         builder.Services.AddSingleton<SettingsWindowService>();
         builder.Services.AddSingleton<RegionSelector>();
+        builder.Services.AddSingleton<ToolStyleMemory>();
+        builder.Services.AddSingleton<EditorWindowService>();
+        builder.Services.AddSingleton<IEditorLauncher>(sp => sp.GetRequiredService<EditorWindowService>());
         builder.Services.AddSingleton<IHotkeyService, Win32HotkeyService>();
         builder.Services.AddSingleton<HotkeyRegistrar>();
         builder.Services.AddSingleton<HotkeyRouter>();

@@ -17,21 +17,19 @@ public static class SettingsMigration
 
         if (version < 2)
         {
-            // v2: output.copyToClipboard -> afterCapture.copyToClipboard
-            if (Property(root, "output") is JsonObject output && Remove(output, "copyToClipboard") is { } copy)
+            // v2: output.copyToClipboard -> afterCapture.copyToClipboard. Version 1 always saved, copied unless told
+            // not to, and had no editor: spell that out, so newer defaults (open the editor) don't change what an
+            // old file does.
+            var copy = Property(root, "output") is JsonObject output ? Remove(output, "copyToClipboard") : null;
+            if (Property(root, "afterCapture") is not JsonObject after)
             {
-                var after = Property(root, "afterCapture") as JsonObject;
-                if (after is null)
-                {
-                    after = [];
-                    root["afterCapture"] = after;
-                }
-
-                if (Property(after, "copyToClipboard") is null)
-                {
-                    after["copyToClipboard"] = copy;
-                }
+                after = [];
+                root["afterCapture"] = after;
             }
+
+            SetIfMissing(after, "save", JsonValue.Create(true));
+            SetIfMissing(after, "copyToClipboard", copy ?? JsonValue.Create(true));
+            SetIfMissing(after, "openEditor", JsonValue.Create(false));
         }
 
         return version;
@@ -39,6 +37,14 @@ public static class SettingsMigration
 
     private static JsonNode? Property(JsonObject obj, string name) =>
         obj.FirstOrDefault(p => string.Equals(p.Key, name, StringComparison.OrdinalIgnoreCase)).Value;
+
+    private static void SetIfMissing(JsonObject obj, string name, JsonNode value)
+    {
+        if (Property(obj, name) is null)
+        {
+            obj[name] = value;
+        }
+    }
 
     private static JsonNode? Remove(JsonObject obj, string name)
     {

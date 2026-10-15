@@ -1,0 +1,42 @@
+<Window x:Class="CashGear.Capture.App.Editor.ResizeImageWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.Editor"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:ResizeImageViewModel}"
+        Title="Resize image" SizeToContent="WidthAndHeight" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+  <StackPanel Margin="20" MinWidth="300">
+    <TextBlock Margin="0,0,0,12" Opacity="0.75">
+      <Run Text="Now" />
+      <Run Text="{Binding Original.Width, Mode=OneWay}" /><Run Text=" × " /><Run Text="{Binding Original.Height, Mode=OneWay}" />
+      <Run Text="pixels. Annotations are scaled with the image." />
+    </TextBlock>
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition />
+      </Grid.RowDefinitions>
+      <TextBlock Text="Width" VerticalAlignment="Center" Margin="0,0,12,0" />
+      <TextBox x:Name="WidthBox" Grid.Column="1" Text="{Binding Width, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Width" />
+      <TextBlock Grid.Row="1" Text="Height" VerticalAlignment="Center" Margin="0,8,12,0" />
+      <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Height, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" AutomationProperties.Name="Height" />
+    </Grid>
+    <CheckBox Content="Keep proportions" IsChecked="{Binding KeepProportions}" Margin="0,10,0,0" />
+    <WrapPanel Margin="0,10,0,0">
+      <Button Content="25%" Command="{Binding SetPercentCommand}" CommandParameter="25" Margin="0,0,6,0" />
+      <Button Content="50%" Command="{Binding SetPercentCommand}" CommandParameter="50" Margin="0,0,6,0" />
+      <Button Content="200%" Command="{Binding SetPercentCommand}" CommandParameter="200" />
+    </WrapPanel>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+      <Button Content="OK" IsDefault="True" MinWidth="90" Margin="0,0,8,0" Click="OnOk" IsEnabled="{Binding IsValid}" />
+      <Button Content="Cancel" IsCancel="True" MinWidth="90" />
+    </StackPanel>
+  </StackPanel>
+</Window>

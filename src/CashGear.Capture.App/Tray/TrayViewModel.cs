@@ -1,4 +1,5 @@
 using CashGear.Capture.App.Capture;
+using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Settings;
@@ -16,13 +17,20 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly IAppLifetime _lifetime;
     private readonly HotkeyRegistrar _hotkeys;
     private readonly SettingsWindowService _settingsWindow;
+    private readonly EditorWindowService _editors;
 
-    public TrayViewModel(CaptureCoordinator coordinator, IAppLifetime lifetime, HotkeyRegistrar hotkeys, SettingsWindowService settingsWindow)
+    public TrayViewModel(
+        CaptureCoordinator coordinator,
+        IAppLifetime lifetime,
+        HotkeyRegistrar hotkeys,
+        SettingsWindowService settingsWindow,
+        EditorWindowService editors)
     {
         _coordinator = coordinator;
         _lifetime = lifetime;
         _hotkeys = hotkeys;
         _settingsWindow = settingsWindow;
+        _editors = editors;
         _hotkeys.RegistrationsChanged += (_, _) => RefreshHotkeyLabels();
         RefreshHotkeyLabels();
     }
@@ -51,8 +59,15 @@ public sealed partial class TrayViewModel : ObservableObject
     [RelayCommand]
     private void OpenSettings() => _settingsWindow.Show();
 
+    /// <summary>Closes the editors first (each asks about unsaved changes); keeping one open cancels the exit.</summary>
     [RelayCommand]
-    private void Exit() => _lifetime.Shutdown();
+    private async Task ExitAsync()
+    {
+        if (await _editors.CloseAllAsync())
+        {
+            _lifetime.Shutdown();
+        }
+    }
 
     private void RefreshHotkeyLabels()
     {

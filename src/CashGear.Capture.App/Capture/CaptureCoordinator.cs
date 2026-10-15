@@ -1,4 +1,5 @@
 using System.IO;
+using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Region;
 using CashGear.Capture.App.Tray;
@@ -15,7 +16,7 @@ namespace CashGear.Capture.App.Capture;
 
 /// <summary>
 /// Runs a capture end to end: hide our own windows, wait the capture delay, capture, then do the configured
-/// after-capture actions (save under the file-name template, copy to the clipboard) and notify.
+/// after-capture actions (save under the file-name template, copy to the clipboard, open the editor) and notify.
 /// Failures are reported to the user here rather than thrown.
 /// </summary>
 public sealed partial class CaptureCoordinator
@@ -31,6 +32,7 @@ public sealed partial class CaptureCoordinator
     private readonly IOwnWindows _ownWindows;
     private readonly RegionSelector _regionSelector;
     private readonly ICaptureCounter _counter;
+    private readonly IEditorLauncher _editor;
     private readonly TimeProvider _time;
     private readonly ILogger<CaptureCoordinator> _logger;
 
@@ -46,6 +48,7 @@ public sealed partial class CaptureCoordinator
         IOwnWindows ownWindows,
         RegionSelector regionSelector,
         ICaptureCounter counter,
+        IEditorLauncher editor,
         TimeProvider time,
         ILogger<CaptureCoordinator> logger)
     {
@@ -60,6 +63,7 @@ public sealed partial class CaptureCoordinator
         _ownWindows = ownWindows;
         _regionSelector = regionSelector;
         _counter = counter;
+        _editor = editor;
         _time = time;
         _logger = logger;
     }
@@ -67,7 +71,7 @@ public sealed partial class CaptureCoordinator
     /// <summary>
     /// Captures every monitor once and keeps, per <see cref="CaptureSettings.FullScreenOutput"/>, the stitched
     /// virtual-screen image and/or one image per monitor (cropped from the same capture, so all files show the
-    /// same instant). The stitched image goes to the clipboard.
+    /// same instant). The stitched image goes to the clipboard and the editor.
     /// </summary>
     public Task CaptureFullScreenAsync(CancellationToken ct = default) => RunAsync(async current =>
     {
@@ -209,12 +213,12 @@ public sealed partial class CaptureCoordinator
     private async Task RunAsync(Func<AppSettings, Task> capture)
     {
         var current = _settings.Current;
-        if (!current.AfterCapture.Save && !current.AfterCapture.CopyToClipboard)
+        if (!current.AfterCapture.DoesAnything)
         {
-            // Opening the editor is not available yet (Phase 5), so the capture would just be thrown away.
+            // The capture would just be thrown away.
             _notifier.Notify(
                 "Nothing to do with the capture",
-                "Turn on \"Save to file\" or \"Copy to clipboard\" in Settings › After capture.",
+                "Turn on \"Open in the editor\", \"Save to file\" or \"Copy to clipboard\" in Settings › After capture.",
                 NotificationKind.Warning);
             return;
         }
@@ -265,11 +269,11 @@ public sealed partial class CaptureCoordinator
     }
 
     /// <summary>
-    /// Saves <paramref name="files"/> (if saving is on) under the file-name template, copies
-    /// <paramref name="clipboardImage"/> (if copying is on), and tells the user what happened.
+    /// Saves <paramref name="files"/> (if saving is on) under the file-name template, copies <paramref name="primary"/>
+    /// (if copying is on) and opens it in the editor (if that is on), else tells the user what happened.
     /// </summary>
     private async Task DeliverAsync(
-        CapturedImage clipboardImage, IReadOnlyList<CapturedImage> files, AppSettings current, CancellationToken ct)
+        CapturedImage primary, IReadOnlyList<CapturedImage> files, AppSettings current, CancellationToken ct)
     {
         var after = current.AfterCapture;
         var saved = new List<string>();
@@ -288,7 +292,20 @@ public sealed partial class CaptureCoordinator
 
         if (after.CopyToClipboard)
         {
-            await _output.CopyToClipboardAsync(clipboardImage, ct).ConfigureAwait(false);
+            await _output.CopyToClipboardAsync(primary, ct).ConfigureAwait(false);
+        }
+
+        if (after.OpenEditor)
+        {
+            // The editor shows the result, so no notification. If the image was saved, Ctrl+S in the editor updates that file.
+            string? savedAs = null;
+            for (var i = 0; i < saved.Count; i++)
+            {
+                savedAs = ReferenceEquals(files[i], primary) ? saved[i] : savedAs;
+            }
+
+            await _editor.OpenAsync(primary, savedAs, ct).ConfigureAwait(false);
+            return;
         }
 
         _notifier.Notify(saved.Count > 0 ? "Capture saved" : "Capture copied", Summary(saved, after.CopyToClipboard));

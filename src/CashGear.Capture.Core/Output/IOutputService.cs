@@ -16,6 +16,12 @@ public interface IOutputService
     /// <summary>Encodes and writes the image. Returns the full path written, or null if the user cancelled.</summary>
     Task<string?> SaveAsync(CapturedImage image, SaveOptions options, CancellationToken ct = default);
 
+    /// <summary>
+    /// Encodes and writes the image to exactly <paramref name="path"/>, replacing an existing file. The old file is
+    /// only replaced once the new one is complete, so a failure never leaves a half-written image behind.
+    /// </summary>
+    Task SaveToFileAsync(CapturedImage image, string path, ImageFileFormat format, int jpegQuality, CancellationToken ct = default);
+
     /// <summary>Puts the image on the clipboard (encoding happens off the UI thread).</summary>
     Task CopyToClipboardAsync(CapturedImage image, CancellationToken ct = default);
 }

@@ -22,6 +22,13 @@ internal sealed partial class WpfOutputService(IUiDispatcher ui, ILogger<WpfOutp
         return Task.Run<string?>(() => Save(image, options), ct);
     }
 
+    public Task SaveToFileAsync(CapturedImage image, string path, ImageFileFormat format, int jpegQuality, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        return Task.Run(() => SaveToFile(image, Path.GetFullPath(path), format, jpegQuality), ct);
+    }
+
     public async Task CopyToClipboardAsync(CapturedImage image, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(image);
@@ -83,6 +90,30 @@ internal sealed partial class WpfOutputService(IUiDispatcher ui, ILogger<WpfOutp
                 TryDelete(path); // never leave a truncated image behind
                 throw;
             }
+        }
+    }
+
+    /// <summary>Writes a hidden temporary file next to the target, then swaps it in, so the old file survives a failed save.</summary>
+    private void SaveToFile(CapturedImage image, string path, ImageFileFormat format, int jpegQuality)
+    {
+        var directory = Path.GetDirectoryName(path) ?? throw new ArgumentException($"\"{path}\" is not a file path.", nameof(path));
+        Directory.CreateDirectory(directory);
+        var bitmap = image.ToBitmapSource();
+        var temporary = Path.Combine(directory, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                WpfImaging.Encode(bitmap, format, jpegQuality, image.Metadata.HasTransparency, stream);
+            }
+
+            File.Move(temporary, path, overwrite: true);
+            LogSaved(path, image.Width, image.Height);
+        }
+        catch
+        {
+            TryDelete(temporary);
+            throw;
         }
     }
 

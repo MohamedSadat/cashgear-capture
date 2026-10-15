@@ -46,9 +46,9 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,4,12,12">
             <TextBlock Style="{StaticResource Section}" Text="After capture" />
+            <CheckBox Margin="0,2" Content="Open in the editor" IsChecked="{Binding OpenEditor}" />
             <CheckBox Margin="0,2" Content="Save to file" IsChecked="{Binding SaveToFile}" />
             <CheckBox Margin="0,2" Content="Copy to clipboard" IsChecked="{Binding CopyToClipboard}" />
-            <CheckBox Margin="0,2" Content="Open in editor (coming in Phase 5)" IsChecked="{Binding OpenEditor}" IsEnabled="{Binding IsEditorAvailable}" />
 
             <TextBlock Style="{StaticResource Section}" Text="Folder" />
             <Grid>

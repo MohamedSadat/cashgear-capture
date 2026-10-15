@@ -109,8 +109,8 @@ public sealed record OutputSettings(
 /// <summary>What happens to a capture. Any combination; with none selected the capture is discarded (and the user told).</summary>
 /// <param name="Save">Write it to the capture folder ("auto-save").</param>
 /// <param name="CopyToClipboard">Put it on the clipboard.</param>
-/// <param name="OpenEditor">Open it in the editor (Phase 5; ignored until the editor exists).</param>
-public sealed record AfterCaptureSettings(bool Save = true, bool CopyToClipboard = true, bool OpenEditor = false)
+/// <param name="OpenEditor">Open it in the editor (the spec's default action).</param>
+public sealed record AfterCaptureSettings(bool Save = false, bool CopyToClipboard = false, bool OpenEditor = true)
 {
     [JsonIgnore]
     public bool DoesAnything => Save || CopyToClipboard || OpenEditor;
