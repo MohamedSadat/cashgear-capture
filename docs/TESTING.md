@@ -22,10 +22,10 @@ dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–7 pass (2026-10-15) |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–8 pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–7 pass (2026-10-15) |
+| Windows 10 22H2 | Phase 0–8 pass (2026-10-15) |
 | Windows 11 23H2+ | not run |
 
 ## Phase 0–1 results (2026-10-14)
@@ -137,6 +137,22 @@ ffmpeg 9.0.2 (Gyan essentials, SHA-256 checked). Encoder probe on this PC: NVENC
 | Region recording with three scripted clicks: yellow highlight under the pointer just after a click; pointer recorded | pass |
 | Toolbar Stop saved the recording (7.1 s, 214 frames, 0 dropped) and the notification appeared | pass |
 | `--exit` while idle: app and ffmpeg gone | pass |
+
+## Phase 8 results (2026-10-15)
+
+- OCR languages installed in Windows: `ar-SA`, `de-DE`, `en-US`.
+- Display languages: en-US, ar-EG, de-DE. Automatic therefore reads with en-US, ar-SA and de-DE.
+
+The sample was a Notepad window (default font, 100% scaling) with two English lines, a blank line and two Arabic lines. The OCR language was Automatic. Each check ran `--capture-text`, dragged the area, pressed Enter, then read the clipboard.
+
+| Check | Result |
+|---|---|
+| Hotkeys at startup: `Ctrl+Alt+PrintScreen` registered for CaptureText, 6 registered, 0 problems | pass |
+| English area (2 lines): text matches exactly, 103 characters | pass |
+| Arabic area (2 lines): words in reading order. Line 1 exact; line 2 has one letter wrong ("إعلاق" for "إغلاق") | pass (readable) |
+| English + Arabic area: English exact, blank line, Arabic as above, 182 characters. English lines from en-US, Arabic lines from ar-SA | pass (readable) |
+| Notepad's blinking cursor next to a word garbles that word (cursor after "Monday." gave "I%nday.l"). An area whose edge cut 1 px into the leftmost Arabic word garbled that word. Both were exact with the cursor moved away and a small margin. | noted (Known limitations) |
+| Settings unchanged; app exited with `--exit` | pass |
 
 ### Pending: mixed DPI and negative coordinates
 

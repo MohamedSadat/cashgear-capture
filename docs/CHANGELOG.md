@@ -349,3 +349,45 @@ Each phase lists the features added, how it was tested, and known limitations.
 - Hardware encoders are untested here, since none works on this PC. They are only used after a successful test encode, so a failing one falls back to x264.
 - x264 uses the CPU. At 60 fps on large areas a slow PC may skip frames; the notification says so.
 - The click highlight samples the mouse once per frame.
+
+## Phase 8 — Capture Text (OCR) (2026-10-15)
+
+### Added
+- **Capture Text** (tray › Capture Text, `Ctrl+Alt+PrintScreen`, `--capture-text`). You select an area on the usual overlay (drag, or click a window or monitor, then Enter). The text in it is recognized with Windows OCR (`Windows.Media.Ocr`) and copied to the clipboard as Unicode text. A notification shows the first lines, the line count and the language used. An area with no text gives a warning, and the clipboard is left alone. Capture Text ignores the after-capture actions: no image is saved or opened.
+- **Text layout**: lines are joined with line breaks, and a gap taller than about one line starts a new paragraph (blank line).
+- **Right-to-left lines**: Windows OCR returns the words of an Arabic or Hebrew line in on-screen left-to-right order. The words are put back into reading order (right to left), and runs of English words or numbers inside the line keep their own order.
+- **Languages** (Settings › General › Capture Text (OCR)): **Automatic** (default), or any language Windows has OCR for (`OcrEngine.AvailableRecognizerLanguages`). If a chosen language is later removed from Windows, it stays selected and shows as "(not installed)", and Capture Text says how to add it back.
+- **Automatic**:
+  - Reads the area once for each of your Windows display languages that has OCR installed (exact tag, else the same base language, e.g. `ar-EG` → `ar-SA`), up to three.
+  - Each line written in a language's own script (Arabic, Hebrew, Cyrillic, Greek, Asian scripts) is taken from that language's engine. The other lines come from your first Latin-script language. Lines are matched by position.
+  - So a mixed English/Arabic area comes out right in both languages, which no single Windows OCR language manages.
+- **Small areas are read at 2×** (bilinear) when that stays within Windows OCR's limits (10,000 px side, about 2 megapixels before scaling). Large ones are scaled down to fit. Word positions are reported in the original pixels.
+- `IOutputService.CopyTextToClipboardAsync` uses the same retry as image copies when another app holds the clipboard.
+
+### Deviations
+- **Automatic language mode** in addition to the language list the spec asks for. A single Windows OCR language can't read English and Arabic together: the English engine skips the Arabic, and the Arabic engine misreads Latin letters ("P1ease", ".nday"). The spec's acceptance ("a region of English and Arabic text") needs both.
+- The default hotkey is `Ctrl+Alt+PrintScreen`, the free PrintScreen combination. The spec doesn't name one.
+
+### Fixed during development
+- Arabic lines came out in reverse word order (Windows gives visual order). Now in reading order.
+- Automatic first chose one whole result, so a mixed area got the English lines from the Arabic engine, with errors. It now merges line by line.
+
+### Tested
+- 478 automated tests (477 pass, 1 explicit). New:
+  - line and paragraph assembly;
+  - right-to-left word order, with English inside an Arabic line;
+  - automatic merging: Arabic only, English only, mixed lines, Arabic as the main language;
+  - script per language tag, notification preview, bilinear scaler, OCR settings, the hotkey and `--capture-text`;
+  - real Windows OCR on rendered text: English (2 lines), Arabic (`ar-SA`, reading order), Automatic picking the right language, a blank image is empty, an uninstalled language is refused with a hint, scale rules.
+- Manual on the dev machine: Windows OCR has `ar-SA`, `de-DE` and `en-US` installed, and the display languages are en-US, ar-EG and de-DE. The sample was two English lines and two Arabic lines in Notepad, captured with `--capture-text` and Automatic:
+  - English area: exact.
+  - Arabic area: correct words in reading order. One letter differs: "إعلاق" for "إغلاق" (a dot the Arabic engine misses).
+  - Both: English exact, a blank line, then the Arabic as above (182 characters, reported as English + Arabic).
+  - Hotkey `Ctrl+Alt+PrintScreen` registered with the other five.
+
+### Known limitations
+- Quality is Windows OCR's. Arabic dots are sometimes misread, as above. Handwriting and vertical text aren't supported.
+- Something drawn across a word, such as a blinking text cursor, can spoil that word. Here Notepad's cursor beside "Monday." gave "I%nday.l". So can an area edge that cuts into a word: leave a small margin.
+- An Arabic line containing English words is read by the Arabic engine, which is weaker on the English words.
+- Only languages installed for Windows OCR can be used. Automatic tries at most three of your display languages.
+- No layout beyond lines and paragraphs: columns and tables come out line by line, top to bottom.

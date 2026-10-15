@@ -14,7 +14,8 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 5 | Editor: annotations, crop/rotate/resize/border/shadow, undo/redo, zoom/pan, save/copy | done |
 | 6 | Scrolling capture: UI Automation or mouse-wheel scrolling, exact row stitching | done |
 | 7 | Screen recording to MP4 (ffmpeg, H.264), pause, click highlights, toolbar | done |
-| 8–9 | OCR, packaging | planned |
+| 8 | Capture Text: Windows OCR to the clipboard, English + Arabic in one area | done |
+| 9 | Polish, packaging | planned |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -44,6 +45,7 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `--capture-window` | Open the window picker (click a window to capture its own content) |
 | `--capture-scrolling` | Open the window picker, then scroll the clicked window to the bottom and stitch one tall image |
 | `--record` | Start a screen recording (pick the area), or stop the one running |
+| `--capture-text` | Pick an area and copy the text in it (OCR) to the clipboard |
 | `--exit` | Shut the running instance down |
 
 ## Hotkeys
@@ -55,6 +57,7 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `Ctrl+PrintScreen` | Capture Full Screen |
 | `Ctrl+Shift+PrintScreen` | Scrolling capture |
 | `Shift+PrintScreen` | Start a screen recording / stop it |
+| `Ctrl+Alt+PrintScreen` | Capture Text (OCR) |
 
 Change them in **Settings › Hotkeys** (click a box and press the keys) or in `settings.json` under `hotkeys`. A key another app or Windows already owns is reported, and a single typing key (e.g. `A`) is refused because it would stop working everywhere else.
 
@@ -68,7 +71,7 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 | Capture | Capture delay, hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
 | Recording | Frames per second (15/30/60), quality, encoder (hardware when available, or x264), pointer, click highlights, where ffmpeg is |
 | Hotkeys | Record hotkeys; each shows whether it is active |
-| General | Start with Windows, theme, open the settings file |
+| General | Start with Windows, text recognition language (Automatic or one installed language), theme, open the settings file |
 
 Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved.
 
@@ -89,6 +92,14 @@ Tray › **Record Screen…** (or `Shift+PrintScreen`): drag the area to record,
 - One monitor at a time (Windows.Graphics.Capture); an area that spans two is limited to the monitor holding its centre. On Windows 10 Windows draws a yellow border around the recorded monitor.
 - The encoder is chosen by trying them: NVIDIA, Intel or AMD hardware when it works, otherwise x264 on the CPU.
 - The video has a constant frame rate; when the screen is still, the same picture repeats. If encoding falls behind, frames are skipped and the notification says how many.
+
+## Capture Text
+
+Tray › **Capture Text** (or `Ctrl+Alt+PrintScreen`): drag around the text, or click a window, and press Enter. The text is read with Windows OCR and copied to the clipboard. A notification shows the start of the text and the language used. Nothing is saved, and the image isn't opened in the editor.
+
+- **Automatic** (the default) reads the area once with each of your Windows languages that has OCR, and takes every line from the language that matches its script. So English and Arabic lines in the same area both come out right. Arabic is given in reading order (right to left).
+- To choose one language, use **Settings › General**. The list shows the OCR languages Windows has. To add one, go to Windows Settings › Time & language › Language, choose the language › Options › Optical character recognition.
+- Lines are separated by line breaks, and paragraphs by a blank line. Leave a small margin around the text, and keep text cursors away from it: anything that touches a word can spoil it.
 
 ## Editor
 
