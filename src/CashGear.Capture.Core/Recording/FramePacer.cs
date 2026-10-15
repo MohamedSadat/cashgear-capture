@@ -27,13 +27,16 @@ public sealed class FramePacer
     /// <summary>The recording time the next frame belongs at.</summary>
     public TimeSpan NextFrameTime => TimeSpan.FromSeconds((double)(Written + Dropped) / Fps);
 
+    /// <summary>How many frames are due (written or dropped) by recording time <paramref name="elapsed"/>: frame 0 is due at once.</summary>
+    public static long Due(TimeSpan elapsed, int fps) => (long)Math.Floor(elapsed.TotalSeconds * fps) + 1;
+
     /// <summary>
     /// What to do at recording time <paramref name="elapsed"/>: null to write a frame now, or how long to wait for
     /// the next one. Skips (and counts) frames when too far behind.
     /// </summary>
     public TimeSpan? Next(TimeSpan elapsed)
     {
-        var due = (long)Math.Floor(elapsed.TotalSeconds * Fps) + 1; // frame 0 is due at once
+        var due = Due(elapsed, Fps);
         var produced = Written + Dropped;
         if (due <= produced)
         {

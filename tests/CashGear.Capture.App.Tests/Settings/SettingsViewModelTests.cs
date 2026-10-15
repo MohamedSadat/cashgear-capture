@@ -270,6 +270,41 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Sound_settings_list_the_microphones_and_are_saved()
+    {
+        var audio = new FakeAudioDevices(new AudioDevice("{mic-1}", "Microphone (H5)"), new AudioDevice("{mic-2}", "Line In"));
+        using var vm = Create(audio);
+
+        vm.RecordSystemAudio.Should().BeTrue("system audio is on by default");
+        vm.Microphones.Select(m => m.Label).Should().Equal("None", "Default microphone (Windows setting)", "Microphone (H5)", "Line In");
+        vm.RecordingMicrophone!.Id.Should().BeNull("no microphone by default");
+        vm.SpeakersStatus.Should().Contain("Speakers (Realtek)");
+
+        vm.RecordSystemAudio = false;
+        vm.RecordingMicrophone = vm.Microphones.Single(m => m.Label == "Microphone (H5)");
+        await vm.ApplyCommand.ExecuteAsync(null);
+
+        _settings.Current.Recording.SystemAudio.Should().BeFalse();
+        _settings.Current.Recording.Microphone.Should().Be("{mic-1}");
+    }
+
+    [Fact]
+    public async Task A_microphone_that_is_not_connected_stays_chosen()
+    {
+        _settings.Current = _settings.Current with { Recording = new RecordingSettings(Microphone: "{unplugged}") };
+        using var vm = Create(new FakeAudioDevices(new AudioDevice("{mic-1}", "Microphone (H5)")) { HasSpeakers = false });
+
+        vm.RecordingMicrophone!.Id.Should().Be("{unplugged}");
+        vm.RecordingMicrophone.Label.Should().Contain("not connected");
+        vm.Microphones.Should().Contain(vm.RecordingMicrophone);
+        vm.SpeakersStatus.Should().StartWith("No sound output device");
+
+        vm.RecordingQuality = 30;
+        await vm.ApplyCommand.ExecuteAsync(null);
+        _settings.Current.Recording.Microphone.Should().Be("{unplugged}", "only choosing another microphone replaces it");
+    }
+
+    [Fact]
     public void Recording_a_hotkey_pauses_global_hotkeys_until_done()
     {
         using var vm = Create();
@@ -319,6 +354,15 @@ public sealed class SettingsViewModelTests : IDisposable
         _settings.Current.Updates.FeedUrl.Should().Be(@"\\server\capture-releases", "the address is only edited in the file and must survive");
     }
 
-    private SettingsViewModel Create() =>
-        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance);
+    private SettingsViewModel Create(IAudioDevices? audio = null) =>
+        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance, audio: audio);
+
+    private sealed class FakeAudioDevices(params AudioDevice[] microphones) : IAudioDevices
+    {
+        public bool HasSpeakers { get; init; } = true;
+
+        public IReadOnlyList<AudioDevice> Microphones() => microphones;
+
+        public AudioDevice? Speakers() => HasSpeakers ? new AudioDevice("{out}", "Speakers (Realtek)") : null;
+    }
 }

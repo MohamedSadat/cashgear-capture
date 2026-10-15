@@ -186,6 +186,20 @@
             <CheckBox Margin="0,2" Content="Show the mouse pointer" IsChecked="{Binding RecordingIncludeCursor}" />
             <CheckBox Margin="0,2" Content="Highlight mouse clicks" IsChecked="{Binding RecordingShowClicks}" />
 
+            <TextBlock Style="{StaticResource Section}" Text="Sound" />
+            <CheckBox Margin="0,2" Content="Record system audio (what you hear)" IsChecked="{Binding RecordSystemAudio}" />
+            <Grid Margin="0,8,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="Microphone" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding Microphones}" SelectedItem="{Binding RecordingMicrophone}" DisplayMemberPath="Label"
+                        HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Microphone" />
+            </Grid>
+            <TextBlock Style="{StaticResource Hint}" Text="{Binding SpeakersStatus}" />
+            <TextBlock Style="{StaticResource Hint}" Text="Sound is saved in the MP4 as AAC, mixed when both are on. Pause pauses the sound too. Without a sound device the video is recorded without sound, and the notification says so." />
+
             <TextBlock Style="{StaticResource Section}" Text="ffmpeg" />
             <TextBlock Text="{Binding FfmpegStatus}" TextWrapping="Wrap">
               <TextBlock.Style>

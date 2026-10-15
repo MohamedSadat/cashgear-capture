@@ -52,7 +52,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         ILogger<SettingsViewModel> logger,
         IFfmpeg? ffmpeg = null,
         IOcrService? ocr = null,
-        UpdateService? updates = null)
+        UpdateService? updates = null,
+        IAudioDevices? audio = null)
     {
         _updates = updates;
         _context = SynchronizationContext.Current;
@@ -62,6 +63,15 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             ? "ffmpeg: " + found
             : $"ffmpeg.exe was not found, so recording is unavailable. Put it in {ffmpeg?.ExpectedPath ?? "the app's ffmpeg folder"}.";
         IsFfmpegMissing = ffmpeg?.Path is null;
+        Microphones =
+        [
+            new MicrophoneChoice(null, "None"),
+            new MicrophoneChoice(RecordingSettings.DefaultMicrophone, "Default microphone (Windows setting)"),
+            .. (audio?.Microphones() ?? []).Select(m => new MicrophoneChoice(m.Id, m.Name)),
+        ];
+        SpeakersStatus = audio?.Speakers() is { } speakers
+            ? $"System audio is what plays on {speakers.Name}, the default output device."
+            : "No sound output device was found; recordings will have no system audio until one is connected.";
         _settings = settings;
         _paths = paths;
         _hotkeys = hotkeys;
@@ -131,6 +141,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>Where ffmpeg is, or why recording is unavailable.</summary>
     public string FfmpegStatus { get; }
 
+    /// <summary>None, the Windows default and each microphone connected (plus a saved one that isn't).</summary>
+    public ObservableCollection<MicrophoneChoice> Microphones { get; }
+
+    /// <summary>Which device system audio comes from.</summary>
+    public string SpeakersStatus { get; }
+
     public bool IsFfmpegMissing { get; }
 
     public IReadOnlyList<int> ScrollMaxHeightChoices { get; } = [10_000, 20_000, 40_000, 60_000];
@@ -191,6 +207,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private RecordingEncoder _recordingEncoder;
+
+    [ObservableProperty]
+    private bool _recordSystemAudio;
+
+    [ObservableProperty]
+    private MicrophoneChoice? _recordingMicrophone;
 
     /// <summary>Scrolling capture: pause after each scroll.</summary>
     [ObservableProperty]
@@ -386,7 +408,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         AfterCapture = new AfterCaptureSettings(SaveToFile, CopyToClipboard, OpenEditor),
         Hotkeys = Hotkeys.Aggregate(current.Hotkeys, (h, row) => h.With(row.Action, row.SettingText)),
         Appearance = new AppearanceSettings(Theme),
-        Recording = new RecordingSettings(RecordingFps, RecordingQuality, RecordingIncludeCursor, RecordingShowClicks, RecordingEncoder),
+        Recording = new RecordingSettings(
+            RecordingFps, RecordingQuality, RecordingIncludeCursor, RecordingShowClicks, RecordingEncoder, RecordSystemAudio, RecordingMicrophone?.Id),
         Ocr = new OcrSettings(OcrLanguage?.Tag),
         History = new HistorySettings(HistorySize?.Value ?? current.History.MaxItems),
         Updates = current.Updates with { CheckAutomatically = CheckForUpdates },
@@ -412,6 +435,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         RecordingIncludeCursor = s.Recording.IncludeCursor;
         RecordingShowClicks = s.Recording.ShowClicks;
         RecordingEncoder = s.Recording.Encoder;
+        RecordSystemAudio = s.Recording.SystemAudio;
+        // A microphone that isn't connected now stays selected (and saved) rather than silently becoming None.
+        RecordingMicrophone = Microphones.FirstOrDefault(m => string.Equals(m.Id, s.Recording.Microphone, StringComparison.OrdinalIgnoreCase));
+        if (RecordingMicrophone is null)
+        {
+            RecordingMicrophone = new MicrophoneChoice(s.Recording.Microphone, "The microphone chosen before (not connected)");
+            Microphones.Add(RecordingMicrophone);
+        }
         ScrollMaxHeight = s.Capture.ScrollMaxHeight;
         IncludeCursor = s.Capture.IncludeCursor;
         IncludeWindowShadow = s.Capture.IncludeWindowShadow;

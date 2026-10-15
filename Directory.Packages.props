@@ -24,6 +24,10 @@
     <PackageVersion Include="Vortice.DXGI" Version="3.8.3" />
   </ItemGroup>
 
+  <ItemGroup Label="Recording">
+    <PackageVersion Include="NAudio.Wasapi" Version="3.1.0" />
+  </ItemGroup>
+
   <ItemGroup Label="Editor">
     <PackageVersion Include="SkiaSharp" Version="4.153.1" />
     <PackageVersion Include="SkiaSharp.Views.WPF" Version="4.153.1" />

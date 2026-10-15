@@ -5,11 +5,15 @@ namespace CashGear.Capture.Core.Recording;
 /// <summary>
 /// ffmpeg command lines for recording: raw BGRA frames on stdin at a constant frame rate, encoded to H.264 in an MP4
 /// that starts playing before it has fully downloaded (<c>+faststart</c>). One quality number drives every encoder.
+/// Sound, when there is any, comes as a second input: 48 kHz stereo float on a named pipe, encoded to AAC.
 /// </summary>
 public static class FfmpegArguments
 {
     public const int MinQuality = 15;
     public const int MaxQuality = 35;
+
+    /// <summary>AAC bit rate for the sound.</summary>
+    public const string AudioBitrate = "160k";
 
     public static string Name(VideoEncoder encoder) => encoder switch
     {
@@ -28,7 +32,9 @@ public static class FfmpegArguments
     /// <summary>H.264 in 4:2:0 needs even dimensions: drop an odd last column or row.</summary>
     public static (int Width, int Height) EvenSize(int width, int height) => (width & ~1, height & ~1);
 
-    public static IReadOnlyList<string> Record(int width, int height, int fps, int quality, VideoEncoder encoder, string output)
+    /// <param name="audioPipe">The named pipe (<c>\\.\pipe\…</c>) the sound arrives on, or null for a video without sound.</param>
+    public static IReadOnlyList<string> Record(
+        int width, int height, int fps, int quality, VideoEncoder encoder, string output, string? audioPipe = null)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 2);
         ArgumentOutOfRangeException.ThrowIfLessThan(height, 2);
@@ -47,8 +53,21 @@ public static class FfmpegArguments
             "-video_size", $"{width}x{height}",
             "-framerate", fps.ToString(CultureInfo.InvariantCulture),
             "-i", "pipe:0",
-            "-c:v", Name(encoder),
         };
+
+        if (audioPipe is not null)
+        {
+            args.AddRange(
+            [
+                "-f", "f32le",
+                "-ar", AudioMixer.SampleRate.ToString(CultureInfo.InvariantCulture),
+                "-ch_layout", "stereo",
+                "-i", audioPipe,
+                "-map", "0:v:0", "-map", "1:a:0",
+            ]);
+        }
+
+        args.AddRange(["-c:v", Name(encoder)]);
 
         args.AddRange(encoder switch
         {
@@ -63,9 +82,13 @@ public static class FfmpegArguments
         [
             "-pix_fmt", encoder == VideoEncoder.QuickSync ? "nv12" : "yuv420p",
             "-g", (fps * 2).ToString(CultureInfo.InvariantCulture), // a keyframe every 2 s: quick seeking
-            "-movflags", "+faststart",
-            "-y", output,
         ]);
+        if (audioPipe is not null)
+        {
+            args.AddRange(["-c:a", "aac", "-b:a", AudioBitrate]);
+        }
+
+        args.AddRange(["-movflags", "+faststart", "-y", output]);
         return args;
     }
 

@@ -29,6 +29,12 @@ public sealed record OcrLanguageChoice(string? Tag, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>An entry of the microphone list: a device ID, <see cref="RecordingSettings.DefaultMicrophone"/>, or null for none.</summary>
+public sealed record MicrophoneChoice(string? Id, string Label)
+{
+    public override string ToString() => Label;
+}
+
 /// <summary>A number with a label, e.g. how many captures the history keeps.</summary>
 public sealed record CountChoice(int Value, string Label)
 {

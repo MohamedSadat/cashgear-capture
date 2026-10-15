@@ -17,3 +17,4 @@ SkiaSharp - MIT License - https://github.com/mono/SkiaSharp
   Skia - BSD 3-Clause License - https://skia.org
 Vortice.Windows (Direct3D 11 / DXGI bindings) - MIT License - https://github.com/amerkoleci/Vortice.Windows
 Velopack (installer and updates) - MIT License - https://github.com/velopack/velopack
+NAudio (NAudio.Core, NAudio.Wasapi: Windows sound device access for recording sound) - MIT License - https://github.com/naudio/NAudio

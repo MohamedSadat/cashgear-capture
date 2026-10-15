@@ -13,9 +13,15 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace CashGear.Capture.App.Recording;
 
-/// <summary>The recording toolbar's state: elapsed time (refreshed a few times a second), pause and stop.</summary>
+/// <summary>
+/// The recording toolbar's state: elapsed time and sound level (refreshed a few times a second), what sound is
+/// recorded, the microphone's mute, pause and stop.
+/// </summary>
 public sealed partial class RecordingToolbarViewModel : ObservableObject
 {
+    /// <summary>The level meter shows −60 dB (empty) to 0 dB (full).</summary>
+    private const double MeterRangeDb = 60;
+
     private readonly IScreenRecorder _recorder;
     private readonly Action _togglePause;
     private readonly Action _stop;
@@ -25,6 +31,9 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
         _recorder = recorder;
         _togglePause = togglePause;
         _stop = stop;
+        var sound = recorder.Sound;
+        HasSound = sound != RecordingSound.None;
+        HasMicrophone = sound.HasFlag(RecordingSound.Microphone);
         Refresh();
     }
 
@@ -35,21 +44,60 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsRecordingNow), nameof(PauseText))]
     private bool _isPaused;
 
+    /// <summary>The loudest recent sound, 0 (silence or below −60 dB) to 1.</summary>
+    [ObservableProperty]
+    private double _soundLevel;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MicrophoneText))]
+    private bool _microphoneMuted;
+
+    /// <summary>Why sound that was asked for is missing (shown as the tooltip of a crossed-out speaker).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSoundMissing), nameof(SoundToolTip))]
+    private string? _soundNote;
+
     public bool IsRecordingNow => !IsPaused;
 
     public string PauseText => IsPaused ? "Resume" : "Pause";
+
+    public bool HasSound { get; }
+
+    public bool HasMicrophone { get; }
+
+    public bool IsSoundMissing => SoundNote is not null && !HasSound;
+
+    public string MicrophoneText => MicrophoneMuted ? "Unmute mic" : "Mute mic";
+
+    public string SoundToolTip => HasSound
+        ? "Recording " + RecordingController.SoundText(_recorder.Sound) + (SoundNote is null ? string.Empty : ". " + SoundNote)
+        : SoundNote ?? "No sound";
+
+    /// <summary>A peak sample (0–1) as a meter position on a decibel scale.</summary>
+    public static double MeterLevel(float peak) =>
+        peak <= 0 ? 0 : Math.Clamp(1 + (20 * Math.Log10(peak) / MeterRangeDb), 0, 1);
 
     /// <summary>Reads the recorder's clock and state.</summary>
     public void Refresh()
     {
         ElapsedText = RecordingController.Duration(_recorder.Elapsed);
         IsPaused = _recorder.IsPaused;
+        SoundLevel = HasSound ? MeterLevel(_recorder.TakeSoundLevel()) : 0;
+        MicrophoneMuted = _recorder.MicrophoneMuted;
+        SoundNote = _recorder.SoundNote;
     }
 
     [RelayCommand]
     private void Pause()
     {
         _togglePause();
+        Refresh();
+    }
+
+    [RelayCommand]
+    private void ToggleMicrophone()
+    {
+        _recorder.MicrophoneMuted = !_recorder.MicrophoneMuted;
         Refresh();
     }
 

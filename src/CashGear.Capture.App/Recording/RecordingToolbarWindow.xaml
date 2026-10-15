@@ -18,6 +18,18 @@
       <Rectangle Width="12" Height="12" Fill="#808080" VerticalAlignment="Center" Margin="0,0,8,0"
                  Visibility="{Binding IsPaused, Converter={StaticResource Visible}}" />
       <TextBlock Text="{Binding ElapsedText}" FontSize="15" FontFamily="Segoe UI Semibold" VerticalAlignment="Center" MinWidth="48" />
+      <!-- Sound: a speaker and a level meter, or a crossed-out speaker when sound was asked for but isn't available. -->
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0" ToolTip="{Binding SoundToolTip}"
+                  Visibility="{Binding HasSound, Converter={StaticResource Visible}}">
+        <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0" />
+        <ProgressBar Width="44" Height="6" Minimum="0" Maximum="1" Value="{Binding SoundLevel, Mode=OneWay}" VerticalAlignment="Center"
+                     AutomationProperties.Name="Sound level" />
+      </StackPanel>
+      <TextBlock Text="&#xE74F;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="10,0,0,0" Opacity="0.7"
+                 ToolTip="{Binding SoundToolTip}" Visibility="{Binding IsSoundMissing, Converter={StaticResource Visible}}" />
+      <Button Content="{Binding MicrophoneText}" Command="{Binding ToggleMicrophoneCommand}" Margin="12,0,0,0" MinWidth="90" Focusable="False"
+              ToolTip="Silence the microphone in the recording (system audio keeps recording)"
+              Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
       <Button Content="{Binding PauseText}" Command="{Binding PauseCommand}" Margin="12,0,6,0" MinWidth="80" Focusable="False" />
       <Button Content="Stop" Command="{Binding StopCommand}" MinWidth="70" Focusable="False" ToolTip="Stop and save (or press the recording hotkey)" />
     </StackPanel>

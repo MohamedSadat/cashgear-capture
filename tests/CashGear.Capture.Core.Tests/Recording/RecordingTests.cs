@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Hotkeys;
@@ -111,6 +112,17 @@ public sealed class FfmpegArgumentsTests
     }
 
     [Fact]
+    public void Sound_comes_in_as_a_second_input_on_a_named_pipe_and_goes_out_as_aac()
+    {
+        var args = FfmpegArguments.Record(1920, 1080, 30, 23, VideoEncoder.X264, @"C:\out\rec.mp4", @"\\.\pipe\cashgear-rec-1");
+
+        string.Join(' ', args).Should().Be(
+            "-hide_banner -nostats -loglevel warning -f rawvideo -pixel_format bgra -video_size 1920x1080 -framerate 30 -i pipe:0 " +
+            @"-f f32le -ar 48000 -ch_layout stereo -i \\.\pipe\cashgear-rec-1 -map 0:v:0 -map 1:a:0 " +
+            @"-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -g 60 -c:a aac -b:a 160k -movflags +faststart -y C:\out\rec.mp4");
+    }
+
+    [Fact]
     public void Hardware_is_preferred_unless_software_is_chosen()
     {
         FfmpegArguments.Preference(RecordingEncoder.Auto).Should().Equal(VideoEncoder.Nvenc, VideoEncoder.QuickSync, VideoEncoder.Amf, VideoEncoder.X264);
@@ -189,12 +201,35 @@ public sealed class RecordingSettingsTests
     [Fact]
     public void Defaults_and_normalizing()
     {
-        new RecordingSettings().Should().Be(new RecordingSettings(30, 23, true, true, RecordingEncoder.Auto));
+        new RecordingSettings().Should().Be(new RecordingSettings(30, 23, true, true, RecordingEncoder.Auto, SystemAudio: true, Microphone: null));
 
         var odd = new RecordingSettings(Fps: 50, Quality: 3, Encoder: (RecordingEncoder)9).Normalize();
         odd.Fps.Should().Be(60, "the nearest supported rate");
         odd.Quality.Should().Be(FfmpegArguments.MinQuality);
         odd.Encoder.Should().Be(RecordingEncoder.Auto);
+    }
+
+    [Fact]
+    public void A_blank_microphone_means_none_and_an_id_is_trimmed()
+    {
+        new RecordingSettings(Microphone: "  ").Normalize().Microphone.Should().BeNull();
+        new RecordingSettings(Microphone: " {0.0.1.00000000}.{abc} ").Normalize().Microphone.Should().Be("{0.0.1.00000000}.{abc}");
+        new RecordingSettings(Microphone: RecordingSettings.DefaultMicrophone).Normalize().Microphone.Should().Be("default");
+    }
+
+    [Fact]
+    public void A_settings_file_from_before_sound_records_system_audio_and_no_microphone()
+    {
+        var settings = JsonSerializer.Deserialize("""{ "recording": { "fps": 15, "quality": 25 } }""", SettingsJsonContext.Default.AppSettings)!.Normalize();
+
+        settings.Recording.Fps.Should().Be(15);
+        settings.Recording.SystemAudio.Should().BeTrue();
+        settings.Recording.Microphone.Should().BeNull();
+
+        var saved = JsonSerializer.Serialize(settings with { Recording = settings.Recording with { SystemAudio = false, Microphone = "default" } }, SettingsJsonContext.Default.AppSettings);
+        var back = JsonSerializer.Deserialize(saved, SettingsJsonContext.Default.AppSettings)!.Normalize();
+        back.Recording.SystemAudio.Should().BeFalse();
+        back.Recording.Microphone.Should().Be("default");
     }
 
     [Fact]

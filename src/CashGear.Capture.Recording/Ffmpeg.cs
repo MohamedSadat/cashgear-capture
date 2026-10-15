@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using CashGear.Capture.Core.Recording;
 using Microsoft.Extensions.Logging;
 
@@ -158,7 +160,11 @@ internal sealed partial class FfmpegProcess : IDisposable
             LogMessage(e.Data);
         };
         process.BeginErrorReadLine();
+        Exited = process.WaitForExitAsync();
     }
+
+    /// <summary>Completes when ffmpeg has quit, for whatever reason.</summary>
+    public Task Exited { get; }
 
     /// <summary>The last things ffmpeg said (for an error message).</summary>
     public string Messages
@@ -194,7 +200,14 @@ internal sealed partial class FfmpegProcess : IDisposable
     public void Write(ReadOnlySpan<byte> frame) => _input.Write(frame);
 
     /// <summary>Ends the input so ffmpeg finishes the file, and waits for it. Returns ffmpeg's exit code.</summary>
-    public async Task<int> FinishAsync(TimeSpan timeout)
+    public Task<int> FinishAsync(TimeSpan timeout)
+    {
+        CloseInput();
+        return WaitForExitAsync(timeout);
+    }
+
+    /// <summary>Ends the video input: ffmpeg flushes the encoder and, once every input has ended, finishes the file.</summary>
+    public void CloseInput()
     {
         try
         {
@@ -204,7 +217,11 @@ internal sealed partial class FfmpegProcess : IDisposable
         {
             // ffmpeg already gone; its exit code tells the rest
         }
+    }
 
+    /// <summary>Waits for ffmpeg to quit (killing it after <paramref name="timeout"/>) and returns its exit code.</summary>
+    public async Task<int> WaitForExitAsync(TimeSpan timeout)
+    {
         using var cts = new CancellationTokenSource(timeout);
         try
         {
@@ -232,4 +249,42 @@ internal sealed partial class FfmpegProcess : IDisposable
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "ffmpeg: {Message}")]
     private partial void LogMessage(string message);
+}
+
+/// <summary>
+/// The named pipe the recording's sound goes to ffmpeg on (its second input), as raw 48 kHz stereo float. It is
+/// created before ffmpeg starts, so ffmpeg can open it, which it does after reading the first video frame. Only the
+/// current user can connect.
+/// </summary>
+internal sealed class FfmpegAudioPipe : IDisposable
+{
+    private const int BufferBytes = 256 * 1024;
+
+    private readonly NamedPipeServerStream _pipe;
+
+    public FfmpegAudioPipe()
+    {
+        var name = "cashgear-rec-" + Guid.NewGuid().ToString("N");
+        Path = @"\\.\pipe\" + name;
+        _pipe = new NamedPipeServerStream(
+            name, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly, 0, BufferBytes);
+    }
+
+    /// <summary>The pipe's path for ffmpeg's <c>-i</c>.</summary>
+    public string Path { get; }
+
+    /// <summary>Waits for ffmpeg to open the pipe.</summary>
+    public void WaitForConnection(CancellationToken ct) => _pipe.WaitForConnectionAsync(ct).GetAwaiter().GetResult();
+
+    /// <summary>Writes sound; blocks while ffmpeg isn't reading. Throws <see cref="IOException"/> if ffmpeg has quit.</summary>
+    public void Write(ReadOnlySpan<float> samples) => _pipe.Write(MemoryMarshal.AsBytes(samples));
+
+    /// <summary>Waits until ffmpeg has read everything written, then closes the pipe, which ends the sound input.</summary>
+    public void Finish()
+    {
+        _pipe.WaitForPipeDrain();
+        _pipe.Dispose();
+    }
+
+    public void Dispose() => _pipe.Dispose();
 }

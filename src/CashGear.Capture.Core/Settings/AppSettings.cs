@@ -153,14 +153,21 @@ public enum AppTheme
 /// <param name="IncludeCursor">Show the mouse pointer.</param>
 /// <param name="ShowClicks">Draw a circle where the mouse is clicked.</param>
 /// <param name="Encoder">Hardware encoding when available, or always software.</param>
+/// <param name="SystemAudio">Record what the PC plays (the default output device).</param>
+/// <param name="Microphone">The microphone to record: null for none, <see cref="DefaultMicrophone"/> for the Windows default, or a device ID.</param>
 public sealed record RecordingSettings(
     int Fps = 30,
     int Quality = RecordingSettings.DefaultQuality,
     bool IncludeCursor = true,
     bool ShowClicks = true,
-    Recording.RecordingEncoder Encoder = Recording.RecordingEncoder.Auto)
+    Recording.RecordingEncoder Encoder = Recording.RecordingEncoder.Auto,
+    bool SystemAudio = true,
+    string? Microphone = null)
 {
     public const int DefaultQuality = 23;
+
+    /// <summary><see cref="Microphone"/> value for "whichever microphone Windows uses by default".</summary>
+    public const string DefaultMicrophone = "default";
 
     public static IReadOnlyList<int> FrameRates { get; } = [15, 30, 60];
 
@@ -169,6 +176,7 @@ public sealed record RecordingSettings(
         Fps = FrameRates.MinBy(f => Math.Abs(f - Fps)),
         Quality = Math.Clamp(Quality, Recording.FfmpegArguments.MinQuality, Recording.FfmpegArguments.MaxQuality),
         Encoder = Enum.IsDefined(Encoder) ? Encoder : Recording.RecordingEncoder.Auto,
+        Microphone = string.IsNullOrWhiteSpace(Microphone) ? null : Microphone.Trim(),
     };
 }
 

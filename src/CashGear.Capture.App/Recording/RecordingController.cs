@@ -121,7 +121,7 @@ public sealed partial class RecordingController
             var recording = current.Recording;
             var options = new RecordingOptions(
                 monitor, area, recording.Fps, recording.Quality, recording.IncludeCursor, recording.ShowClicks, recording.Encoder,
-                OutputPath(current, monitor, title));
+                OutputPath(current, monitor, title), recording.SystemAudio, recording.Microphone);
             await _recorder.StartAsync(options, ct).ConfigureAwait(false);
             await _ui.InvokeAsync(() => ShowToolbar(monitor, current.Appearance.Theme)).ConfigureAwait(false);
         }
@@ -152,7 +152,7 @@ public sealed partial class RecordingController
             _notifier.Notify(
                 "Recording saved",
                 Summary(result),
-                result.DropRate > DropWarning ? NotificationKind.Warning : NotificationKind.Info,
+                result.DropRate > DropWarning || result.SoundNote is not null ? NotificationKind.Warning : NotificationKind.Info,
                 onClick: () => _shell.ShowInFolder(result.Path));
         }
         catch (Exception ex) when (ex is CaptureException or IOException or InvalidOperationException)
@@ -178,14 +178,29 @@ public sealed partial class RecordingController
         }
     }
 
-    /// <summary>"1:05 · 12.3 MB in D:\Videos" (plus a note if frames were dropped).</summary>
+    /// <summary>"1:05 · 12.3 MB · libx264 · system sound in D:\Videos" (plus notes about missing sound or dropped frames).</summary>
     public static string Summary(RecordingResult result)
     {
-        var text = $"{Path.GetFileName(result.Path)}\n{Duration(result.Duration)} · {result.FileBytes / 1048576.0:0.0} MB · {FfmpegArguments.Name(result.Encoder)}\nin {Path.GetDirectoryName(result.Path)}";
+        var sound = result.Sound == RecordingSound.None ? string.Empty : " · " + SoundText(result.Sound);
+        var text = $"{Path.GetFileName(result.Path)}\n{Duration(result.Duration)} · {result.FileBytes / 1048576.0:0.0} MB · {FfmpegArguments.Name(result.Encoder)}{sound}\nin {Path.GetDirectoryName(result.Path)}";
+        if (result.SoundNote is { } note)
+        {
+            text += "\n" + note;
+        }
+
         return result.DropRate > DropWarning
             ? text + $"\n{result.DropRate:P0} of the frames were skipped because encoding couldn't keep up. A lower frame rate or a smaller area helps."
             : text;
     }
+
+    /// <summary>"system sound", "microphone", "system sound + microphone" or "no sound".</summary>
+    public static string SoundText(RecordingSound sound) => sound switch
+    {
+        RecordingSound.System => "system sound",
+        RecordingSound.Microphone => "microphone",
+        RecordingSound.System | RecordingSound.Microphone => "system sound + microphone",
+        _ => "no sound",
+    };
 
     public static string Duration(TimeSpan duration) =>
         duration.TotalHours >= 1 ? duration.ToString(@"h\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture)
