@@ -391,3 +391,77 @@ Each phase lists the features added, how it was tested, and known limitations.
 - An Arabic line containing English words is read by the Arabic engine, which is weaker on the English words.
 - Only languages installed for Windows OCR can be used. Automatic tries at most three of your display languages.
 - No layout beyond lines and paragraphs: columns and tables come out line by line, top to bottom.
+
+## Phase 9 — Polish + packaging (2026-10-15)
+
+### Added
+- **Capture history**:
+  - The last 20 captures are kept, newest first (Settings › General: off, 10, 20, 50 or 100), including ones that were only copied or opened in the editor. Each is a PNG copy (or a file copy of the PNG just saved) plus a 240×160 thumbnail, in `%LocalAppData%\CashGear\Capture\history`.
+  - Tray › **Recent Captures** shows the last 8 with thumbnails; a click opens one in the editor. If it was saved and the file still exists, Ctrl+S updates that file.
+  - Tray › **Capture History…** shows all of them, with Open in Editor, Copy, Show in Folder, Save As… (PNG copied, JPEG/BMP converted), Remove and Clear History. Enter, Delete, Ctrl+C and double-click also work.
+  - Lowering the limit removes the oldest straight away. Files the list doesn't name, and entries whose file is gone, are cleaned up when the history is read.
+- **Delayed capture**:
+  - Tray › **Capture Delay**: no delay, 3, 5 or 10 seconds (Settings › Capture also offers 1, 2, 15 and 30). The menu shows the current delay.
+  - During the delay a countdown sits in the bottom-right corner of the monitor with the pointer. It never takes the focus, so a menu or tooltip opened for the capture stays open. It is left out of captures and has a **Cancel** button. It replaces the "Capturing in N seconds" balloon.
+- **Theme follows Windows while running**: with "Use the Windows setting", open windows switch when Windows switches between light and dark apps. Changing the theme setting re-themes every open window, not just Settings. Title bars and the editor's canvas follow too.
+- **Clickable notifications**: clicking "Capture saved" or "Recording saved" shows the file in Explorer. Clicking "Update ready" restarts into the update. The notification says "(click to show)".
+- **App icon**: a blue rounded square with white viewfinder corners, drawn by `tools\make-icon.ps1` at 16–256 px (the small sizes pixel-snapped). It is used by the exe, every window, the tray (at the notification area's size instead of the generated "CG"), the installer and Apps & Features.
+- **Installer** (Velopack 1.2.161):
+  - `tools\package.ps1` publishes the app self-contained for win-x64 as a single-file exe. WPF's and SkiaSharp's native DLLs sit beside it, with `ffmpeg\` and `THIRD-PARTY-NOTICES.txt`.
+  - It then packs `CashGear.Capture-win-Setup.exe`, a portable zip, and full + delta update packages with `releases.win.json`.
+  - Setup installs per user, with no admin rights, to `%LocalAppData%\CashGear.Capture`. It adds Start menu and desktop shortcuts and an Apps & Features entry, then starts the app. The first start shows where the tray icon is and the region hotkey.
+- **Updates**:
+  - Installed copies check a release feed: an https address or a folder, set when packaging (`-UpdateFeedUrl`) or by `updates.feedUrl` in settings.json.
+  - The first check runs a minute after start, then daily; Settings › General can turn this off, and its **Check now** button checks immediately.
+  - A newer version downloads in the background (as a delta when possible). The tray then offers **Restart to Update (x.y.z)**. Otherwise it's installed the next time the app starts, and after the restart a notification says so.
+  - Settings shows the version and the last result.
+- **Code-signing hook**: `-SignParams` (signtool arguments), `-SignTemplate` (any command) or `-AzureTrustedSignFile`, also read from `CASHGEAR_SIGN_PARAMS`, `CASHGEAR_SIGN_TEMPLATE` or `CASHGEAR_AZURE_SIGN_FILE`. Velopack then signs the app's binaries, the updater and Setup.exe. Without one, the build warns that it is unsigned.
+- **Uninstall** (Apps & Features):
+  - The running copy is asked to exit: a recording is saved, and editors ask about unsaved changes. Whatever still runs from the installation after 20 s is stopped.
+  - The start-with-Windows entry is removed, but only if it starts the uninstalled copy.
+  - Settings, logs, history and captures are kept.
+- Version **1.0.0**.
+
+### Fixed during development
+- **Two captures could run at once.** A command-line switch or hotkey arriving during another capture's countdown or selection opened a second overlay on top of the first, because `ExecuteAsync` ignores the commands' disabled state. Now one capture runs at a time, and a request in the meantime is ignored and logged. The region selector also never opens a second overlay, which covers a recording's area pick too.
+- **Uninstalling left the app running** with its files half removed. Velopack's own check for running copies didn't recognise it ("0 matched directory" with the app running from `current\`). The uninstall hook now stops it (see above).
+- The history store deleted the files it had just written the first time it was used: reading the list removes unlisted files. Found by the unit tests.
+- "Show in folder" uses the shell's `SHOpenFolderAndSelectItems`, which reuses an open window on the folder, instead of starting `explorer /select`.
+
+### Deviations
+- **Velopack rather than MSIX.** MSIX can't be installed without a trusted signing certificate, which would mean adding a certificate to the machine's trust store. Velopack installs per user without admin rights, works unsigned until a certificate is supplied, and brings delta updates (the spec allows either).
+- **"Single file where possible"**: the app is one exe (152 MB: managed code and the .NET runtime). WPF's and SkiaSharp's native DLLs (about 20 MB) stay next to it, rather than being unpacked to `%TEMP%` on every start. ffmpeg is a separate program.
+- **Notifications are the tray icon's.** Windows 10/11 show them as toasts, and clicks come back through the icon without the app registering a toast identity.
+- **ffmpeg ships in the installer**: a GPL build, run as a separate program, with its licence and a notice. `-NoFfmpeg` leaves it out. ffprobe, only used by the tests, is no longer copied next to the app, which saves 100 MB.
+
+### Tested
+- 511 automated tests (510 pass, 1 explicit). New:
+  - history store: newest first, copying instead of re-encoding, trimming on add and when the limit is lowered, off, remove and clear, survives a restart, cleanup, broken or tampered list;
+  - thumbnail sizes and the area-averaging shrink (alpha-weighted, strided);
+  - PNG read back pixel for pixel; history actions: open with or without the saved file, Save As copy or convert, errors reported;
+  - History window: selection kept, neighbour selected after removal, confirmed clear;
+  - "when" labels;
+  - update flow: unavailable without an installation or feed, settings feed wins, quiet automatic checks, download → ready → click → restart, failures, pending at start-up;
+  - theme service: follows Windows and the setting;
+  - uninstall removes only our own start-with-Windows entry;
+  - settings: history size and update checks.
+- Manual on this PC (Windows 10 22H2, not a fresh machine; see TESTING.md):
+  - Built Setup.exe; installed 1.0.0 and confirmed the first-run start, shortcuts and Apps & Features entry.
+  - Tray menu, Capture Delay and the countdown (3-2-1, excluded from capture, never focused), Cancel, and a second request ignored.
+  - Recent Captures and Capture History, and opening one in the editor.
+  - Settings › General.
+  - Update 1.0.0 → 1.0.1 through Check now and Restart to Update.
+  - Start with Windows: the Run key points to the installed exe, and running that command starts the app.
+  - Uninstall while running: the app exited in 0.1 s, nothing kept running, and the folder, shortcuts, entry and Run key were gone.
+  - Clicking a "Capture saved" notification opened the capture folder.
+
+### Known limitations
+- Not yet installed on a fresh Windows 10 or on Windows 11: there is no Windows Sandbox or virtual machine on this PC. Starting at sign-in was checked by running the Run-key command, not by signing out. Steps are in TESTING.md.
+- Unsigned until a certificate is supplied. A downloaded Setup.exe gets SmartScreen's "Windows protected your PC".
+- No update address is built in by default: package with `-UpdateFeedUrl` and host the contents of `artifacts\releases` there.
+- The download is about 118 MB and the installation about 275 MB, since .NET, WPF and ffmpeg are included.
+- Uninstalling keeps user data: `%AppData%\CashGear\Capture`, `%LocalAppData%\CashGear\Capture` (logs, history) and saved captures. Velopack also leaves its logs in `%LocalAppData%\velopack`, and shows its own "Uninstall Complete" dialog.
+- In the OneDrive-synced capture folder here, Explorer opened the folder but did not keep the new file selected (with `explorer /select` and with the shell call alike).
+- Windows doesn't show notification banners while it considers a full-screen app to be in front ("busy"); they go to the Action Center instead.
+- Theme switching with Windows was checked by unit tests (with a simulated Windows theme), not by switching this PC's theme.
+- Recordings are not in the history.

@@ -15,11 +15,17 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 6 | Scrolling capture: UI Automation or mouse-wheel scrolling, exact row stitching | done |
 | 7 | Screen recording to MP4 (ffmpeg, H.264), pause, click highlights, toolbar | done |
 | 8 | Capture Text: Windows OCR to the clipboard, English + Arabic in one area | done |
-| 9 | Polish, packaging | planned |
+| 9 | Capture history, delayed capture with countdown, live light/dark, clickable notifications, installer + updates (Velopack) | done (fresh Windows 10/11 install pending) |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
-## Requirements
+## Install
+
+Run `CashGear.Capture-win-Setup.exe`. No administrator rights are needed: the app installs for the current user in `%LocalAppData%\CashGear.Capture`, adds Start menu and desktop shortcuts, and starts. Look for its icon in the notification area (under ^ if Windows hides it). It brings its own .NET runtime and ffmpeg. Remove it from Settings › Apps (Apps & Features); a running copy is closed first.
+
+Until the build is signed, Windows SmartScreen may say "Windows protected your PC" for a downloaded Setup.exe (More info › Run anyway).
+
+## Requirements (building)
 
 - Windows 10 2004 (build 19041) or later, x64
 - .NET SDK 10.0.401+ (pinned in `global.json`)
@@ -34,6 +40,19 @@ dotnet run --project src/CashGear.Capture.App
 ```
 
 Interactive capture tests need a logged-in desktop; set `CASHGEAR_SKIP_INTERACTIVE=1` to skip them (e.g. on CI).
+
+### Installer, signing and updates
+
+```powershell
+powershell -File tools\package.ps1                       # version from Directory.Build.props
+powershell -File tools\package.ps1 -Version 1.0.1 -UpdateFeedUrl https://downloads.example.com/capture
+```
+
+- **Output.** The script publishes the app self-contained (win-x64, single-file exe plus WPF's and SkiaSharp's native DLLs, `ffmpeg\`, `THIRD-PARTY-NOTICES.txt`). Velopack (`vpk`, a local dotnet tool pinned in `dotnet-tools.json`) then writes `artifactseleases\`: `CashGear.Capture-win-Setup.exe`, a portable zip, the full and delta `.nupkg` files and `releases.win.json`. Keep that folder between releases; deltas are made against the previous version in it.
+- **Updates.** `-UpdateFeedUrl` builds in where installed copies look for updates: an https address or a shared folder holding the contents of `artifactseleases`. It can be overridden by `updates.feedUrl` in settings.json. Without one, the app doesn't check. Installed copies check a minute after start and then daily (Settings › General can turn that off or check now), download in the background, and offer tray › **Restart to Update**. A downloaded update is otherwise installed at the next start.
+- **Signing.** Pass `-SignParams "/a /fd sha256 /tr http://timestamp.digicert.com /td sha256 /f cert.pfx /p …"` (signtool arguments), `-SignTemplate "<any command with {{file}}>"` or `-AzureTrustedSignFile metadata.json`. A build server can set `CASHGEAR_SIGN_PARAMS`, `CASHGEAR_SIGN_TEMPLATE` or `CASHGEAR_AZURE_SIGN_FILE` instead. The app's binaries, the updater and Setup.exe are all signed.
+- **Leaving ffmpeg out.** `-NoFfmpeg` packages without it; recording then explains what is missing. ffmpeg is a GPL build run as a separate program; its licence ships in `ffmpeg\LICENSE`.
+- **Icon.** `tools\make-icon.ps1` redraws `src\CashGear.Capture.App\Assets\app.ico`.
 
 The app starts hidden in the system tray. Command-line switches forward to the running instance:
 
@@ -68,14 +87,28 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 | Tab | What |
 |---|---|
 | Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
-| Capture | Capture delay, hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
+| Capture | Capture delay (also in the tray), hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
 | Recording | Frames per second (15/30/60), quality, encoder (hardware when available, or x264), pointer, click highlights, where ffmpeg is |
 | Hotkeys | Record hotkeys; each shows whether it is active |
-| General | Start with Windows, text recognition language (Automatic or one installed language), theme, open the settings file |
+| General | Start with Windows, text recognition language (Automatic or one installed language), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file |
 
 Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved.
 
 File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window, scrolling, recording), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
+
+## Delayed capture
+
+Tray › **Capture Delay** › 3, 5 or 10 seconds (Settings › Capture has more). Every capture then counts down in a small box in the bottom-right corner first. Open the menu or hover the tooltip you want in the shot meanwhile. The box doesn't take the focus, so they stay open, and it is never in the capture. **Cancel** stops the capture. The menu shows the current delay; choose "No delay" to turn it off.
+
+## Capture history
+
+The last 20 captures are kept (Settings › General: off to 100), even ones that were only copied or edited.
+
+- Tray › **Recent Captures** shows the newest with thumbnails; click one to open it in the editor.
+- Tray › **Capture History…** shows them all: Open in Editor (double-click or Enter), Copy (Ctrl+C), Show in Folder, Save As…, Remove (Delete) and Clear History.
+- The copies live in `%LocalAppData%\CashGear\Capture\history`; removing them never touches the files you saved.
+
+Clicking a "Capture saved" or "Recording saved" notification shows the file in Explorer.
 
 ## Scrolling capture
 
@@ -141,6 +174,8 @@ src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enume
 src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom (net10.0, no WPF)
 src/CashGear.Capture.Recording  Screen recording: WGC frames -> ffmpeg (H.264 MP4)
 tools/get-ffmpeg.ps1            Downloads the pinned ffmpeg build into tools/ffmpeg (not committed)
+tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
+tools/make-icon.ps1             Draws the app icon
 src/CashGear.Capture.App        WPF app: tray, windows, view models, output
 tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, App)
 ```
@@ -152,3 +187,5 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | Settings | `%AppData%\CashGear\Capture\settings.json` |
 | Logs | `%LocalAppData%\CashGear\Capture\logs\` |
 | Captures (default) | `Pictures\CashGear Capture\` |
+| Capture history | `%LocalAppData%\CashGear\Capture\history\` |
+| Installed app (Setup.exe) | `%LocalAppData%\CashGear.Capture\` (removed by uninstall; the rows above are kept) |

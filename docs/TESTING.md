@@ -22,11 +22,11 @@ dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–8 pass (2026-10-15) |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–8 pass (2026-10-15) |
-| Windows 11 23H2+ | not run |
+| Windows 10 22H2 | Phase 0–9 pass on the development PC (2026-10-15); fresh install **pending** |
+| Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
 
@@ -153,6 +153,43 @@ The sample was a Notepad window (default font, 100% scaling) with two English li
 | English + Arabic area: English exact, blank line, Arabic as above, 182 characters. English lines from en-US, Arabic lines from ar-SA | pass (readable) |
 | Notepad's blinking cursor next to a word garbles that word (cursor after "Monday." gave "I%nday.l"). An area whose edge cut 1 px into the leftmost Arabic word garbled that word. Both were exact with the cursor moved away and a small margin. | noted (Known limitations) |
 | Settings unchanged; app exited with `--exit` | pass |
+
+## Phase 9 results (2026-10-15)
+
+Installer built with `tools\package.ps1`: Setup.exe 118.5 MB, full package 111.3 MB, delta 1.0.0 → 1.0.1 under 0.1 MB, unsigned. The update feed was a local folder (`-UpdateFeedUrl`). This is the development PC, not a fresh machine; the app is self-contained, so the .NET installed here isn't used.
+
+| Check | Result |
+|---|---|
+| Setup.exe (no admin prompt): `%LocalAppData%\CashGear.Capture\current\`, Start menu + desktop shortcuts, Apps & Features "CashGear Capture 1.0.0 / CashGear", app started (log: "first run after install") | pass |
+| Tray: new icon, Capture Delay ▸ (No delay ✓ / 3 / 5 / 10 s), Recent Captures (disabled while empty), Capture History…; no update item | pass |
+| Capture Delay › 3 seconds → settings.json `delaySeconds: 3`, menu reads "Capture Delay (3 s)" | pass |
+| Countdown (sampled every 250 ms): bottom-right of the primary work area, 16 px margins; 3 → 2 → 1; display affinity 0x11 (excluded from capture); WS_EX_NOACTIVATE; never the foreground window; closed before the capture | pass |
+| Cancel on the countdown: "Capture cancelled", no files | pass |
+| A second `--capture-fullscreen` during the countdown: "A capture is already in progress; the new request was ignored" | pass |
+| Recent Captures: 4 captures with thumbnails and "Today 11:34 AM · Full screen · 3200 × 1082" | pass |
+| Capture History window: 4 thumbnails, buttons; Open in Editor opened the capture with its saved file | pass |
+| Settings › General: Capture history (20 captures), Updates: "Version 1.0.0", automatic checks on, "You have the latest version (1.0.0)" | pass |
+| 1.0.1 packed into the feed; Check now → "Update 1.0.1 downloaded" (delta), "Version 1.0.1 is ready"; tray shows "Restart to Update (1.0.1)" | pass |
+| Restart to Update: 1.0.0 shut down cleanly, Velopack applied the update, 1.0.1 started ("updated to 1.0.1"); Apps & Features shows 1.0.1; no update item afterwards | pass |
+| Start with Windows (Settings): Run value `"…\CashGear.Capture\current\CashGear.Capture.App.exe"`; with the app closed, running that command started it | pass (sign-in itself not tried) |
+| Uninstall from Apps & Features' command with the app running: the hook asked it to exit (gone in 0.1 s), no process left, install folder, shortcuts, Apps & Features entry and Run value removed; settings kept | pass (failed before the hook fix: Velopack didn't see the running app) |
+| Clicking "Capture saved" (development build) opened the capture folder in Explorer | pass |
+| The new file selected in that Explorer window | not in this OneDrive folder (see Known limitations) |
+| Theme following a Windows light/dark switch | unit tests only (this PC's theme wasn't changed) |
+
+Notes:
+- While a screen-control session is active, Windows reports the user as "busy" (full screen), so notification banners go to the Action Center without showing.
+- The countdown and the region overlay are excluded from screen capture, so they can't be checked from screenshots; the countdown was checked through its window and UI Automation instead.
+
+### Pending: install on a fresh Windows 10 22H2 and Windows 11
+
+Needs a machine or VM (or Windows Sandbox) without the development tools:
+
+1. Copy `CashGear.Capture-win-Setup.exe` over, run it, and accept SmartScreen's "More info › Run anyway" (the build is unsigned).
+2. The app starts and says where it is. The tray icon (under ^) opens the menu.
+3. Take a region capture (PrintScreen) and a full-screen capture, record 5 s, and use Capture Text. Then check Capture History and the editor.
+4. Settings › General › Start with Windows, then sign out and back in: the tray icon appears.
+5. Apps & Features › CashGear Capture › Uninstall with the app running. Task Manager shows no CashGear Capture or ffmpeg, `%LocalAppData%\CashGear.Capture` is gone, and the app doesn't start at the next sign-in.
 
 ### Pending: mixed DPI and negative coordinates
 
