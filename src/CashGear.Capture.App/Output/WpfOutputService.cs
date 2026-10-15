@@ -33,26 +33,42 @@ internal sealed partial class WpfOutputService(IUiDispatcher ui, ILogger<WpfOutp
     {
         ArgumentNullException.ThrowIfNull(image);
         var payload = await Task.Run(() => ClipboardPayload.Create(image), ct).ConfigureAwait(false);
-
-        await ui.InvokeAsync(async () =>
-        {
-            for (var attempt = 1; ; attempt++)
-            {
-                try
-                {
-                    // copy: true flushes the data so it survives this app exiting.
-                    Clipboard.SetDataObject(payload.ToDataObject(), copy: true);
-                    LogCopied(image.Width, image.Height);
-                    return;
-                }
-                catch (COMException ex) when (ex.HResult == ClipboardCantOpen && attempt < ClipboardAttempts)
-                {
-                    LogClipboardBusy(attempt);
-                    await Task.Delay(50 * attempt, ct);
-                }
-            }
-        }).ConfigureAwait(false);
+        await SetClipboardAsync(payload.ToDataObject, ct).ConfigureAwait(false);
+        LogCopied(image.Width, image.Height);
     }
+
+    public async Task CopyTextToClipboardAsync(string text, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        await SetClipboardAsync(
+            () =>
+            {
+                var data = new DataObject();
+                data.SetText(text, TextDataFormat.UnicodeText);
+                return data;
+            },
+            ct).ConfigureAwait(false);
+        LogCopiedText(text.Length);
+    }
+
+    /// <summary>Sets the clipboard on the UI thread, retrying while another app holds it open.</summary>
+    private Task SetClipboardAsync(Func<DataObject> data, CancellationToken ct) => ui.InvokeAsync(async () =>
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                // copy: true flushes the data so it survives this app exiting.
+                Clipboard.SetDataObject(data(), copy: true);
+                return;
+            }
+            catch (COMException ex) when (ex.HResult == ClipboardCantOpen && attempt < ClipboardAttempts)
+            {
+                LogClipboardBusy(attempt);
+                await Task.Delay(50 * attempt, ct);
+            }
+        }
+    });
 
     private string Save(CapturedImage image, SaveOptions options)
     {
@@ -141,6 +157,9 @@ internal sealed partial class WpfOutputService(IUiDispatcher ui, ILogger<WpfOutp
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Copied {Width}x{Height} image to the clipboard")]
     private partial void LogCopied(int width, int height);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Copied {Characters} characters of text to the clipboard")]
+    private partial void LogCopiedText(int characters);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Clipboard busy (attempt {Attempt}); retrying")]
     private partial void LogClipboardBusy(int attempt);

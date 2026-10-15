@@ -56,6 +56,9 @@ public sealed partial class TrayViewModel : ObservableObject
     [ObservableProperty]
     private string _recordHotkey = string.Empty;
 
+    [ObservableProperty]
+    private string _textHotkey = string.Empty;
+
     /// <summary>The recording menu item: start one, or stop the one running.</summary>
     public string RecordText => _recording.IsRecording ? "Stop _Recording" : "Re_cord Screen…";
 
@@ -72,6 +75,10 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [RelayCommand]
     private Task CaptureFullScreenAsync() => _coordinator.CaptureFullScreenAsync();
+
+    /// <summary>Select an area and copy the text in it (OCR).</summary>
+    [RelayCommand]
+    private Task CaptureTextAsync() => _coordinator.CaptureTextAsync();
 
     /// <summary>Pick a window, then scroll it to the bottom and stitch one tall image.</summary>
     [RelayCommand]
@@ -104,6 +111,7 @@ public sealed partial class TrayViewModel : ObservableObject
         FullScreenHotkey = Label(HotkeyAction.CaptureFullScreen);
         ScrollingHotkey = Label(HotkeyAction.CaptureScrolling);
         RecordHotkey = Label(HotkeyAction.Record);
+        TextHotkey = Label(HotkeyAction.CaptureText);
     }
 
     private string Label(HotkeyAction action) =>

@@ -38,6 +38,10 @@ public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows,
             case HotkeyAction.Record:
                 Run(tray.ToggleRecordingCommand.ExecuteAsync(null));
                 break;
+
+            case HotkeyAction.CaptureText:
+                Run(tray.CaptureTextCommand.ExecuteAsync(null));
+                break;
         }
     }
 

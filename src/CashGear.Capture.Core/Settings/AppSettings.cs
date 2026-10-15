@@ -30,6 +30,8 @@ public sealed record AppSettings
 
     public RecordingSettings Recording { get; init; } = new();
 
+    public OcrSettings Ocr { get; init; } = new();
+
     /// <summary>Replaces missing sections with defaults and clamps out-of-range values.</summary>
     public AppSettings Normalize() => this with
     {
@@ -40,6 +42,7 @@ public sealed record AppSettings
         Hotkeys = (Hotkeys ?? new HotkeySettings()).Normalize(),
         Appearance = (Appearance ?? new AppearanceSettings()).Normalize(),
         Recording = (Recording ?? new RecordingSettings()).Normalize(),
+        Ocr = (Ocr ?? new OcrSettings()).Normalize(),
     };
 }
 
@@ -163,6 +166,13 @@ public sealed record RecordingSettings(
     };
 }
 
+/// <summary>Capture Text (OCR).</summary>
+/// <param name="Language">The language to recognize (a Windows OCR language tag such as <c>ar-SA</c>), or null to choose automatically.</param>
+public sealed record OcrSettings(string? Language = null)
+{
+    public OcrSettings Normalize() => this with { Language = string.IsNullOrWhiteSpace(Language) ? null : Language.Trim() };
+}
+
 public sealed record AppearanceSettings(AppTheme Theme = AppTheme.System)
 {
     public AppearanceSettings Normalize() => this with { Theme = Enum.IsDefined(Theme) ? Theme : AppTheme.System };
@@ -177,13 +187,15 @@ public sealed record HotkeySettings(
     string? CaptureActiveWindow = HotkeySettings.DefaultCaptureActiveWindow,
     string? CaptureFullScreen = HotkeySettings.DefaultCaptureFullScreen,
     string? CaptureScrolling = HotkeySettings.DefaultCaptureScrolling,
-    string? Record = HotkeySettings.DefaultRecord)
+    string? Record = HotkeySettings.DefaultRecord,
+    string? CaptureText = HotkeySettings.DefaultCaptureText)
 {
     public const string DefaultCaptureRegion = "PrintScreen";
     public const string DefaultCaptureActiveWindow = "Alt+PrintScreen";
     public const string DefaultCaptureFullScreen = "Ctrl+PrintScreen";
     public const string DefaultCaptureScrolling = "Ctrl+Shift+PrintScreen";
     public const string DefaultRecord = "Shift+PrintScreen";
+    public const string DefaultCaptureText = "Ctrl+Alt+PrintScreen";
 
     /// <summary>The configured text for an action, or null when it has no hotkey.</summary>
     public string? For(HotkeyAction action) => action switch
@@ -193,6 +205,7 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureFullScreen => CaptureFullScreen,
         HotkeyAction.CaptureScrolling => CaptureScrolling,
         HotkeyAction.Record => Record,
+        HotkeyAction.CaptureText => CaptureText,
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
@@ -204,11 +217,12 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureFullScreen => this with { CaptureFullScreen = text },
         HotkeyAction.CaptureScrolling => this with { CaptureScrolling = text },
         HotkeyAction.Record => this with { Record = text },
+        HotkeyAction.CaptureText => this with { CaptureText = text },
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
     public HotkeySettings Normalize() => new(
-        Clean(CaptureRegion), Clean(CaptureActiveWindow), Clean(CaptureFullScreen), Clean(CaptureScrolling), Clean(Record));
+        Clean(CaptureRegion), Clean(CaptureActiveWindow), Clean(CaptureFullScreen), Clean(CaptureScrolling), Clean(Record), Clean(CaptureText));
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

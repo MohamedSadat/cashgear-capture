@@ -250,6 +250,11 @@
           <TextBlock Style="{StaticResource Section}" Text="Startup" />
           <CheckBox Margin="0,2" Content="Start CashGear Capture when I sign in to Windows" IsChecked="{Binding StartWithWindows}" />
 
+          <TextBlock Style="{StaticResource Section}" Text="Capture Text (OCR)" />
+          <ComboBox ItemsSource="{Binding OcrLanguages}" SelectedItem="{Binding OcrLanguage}" DisplayMemberPath="Label"
+                    HorizontalAlignment="Left" MinWidth="320" AutomationProperties.Name="Text recognition language" />
+          <TextBlock Style="{StaticResource Hint}" Text="Automatic tries each of your Windows languages and keeps the best result, so Arabic and English both work. More languages: Windows Settings › Time &amp; language › Language › (language) › Options › Optical character recognition." />
+
           <TextBlock Style="{StaticResource Section}" Text="Appearance" />
           <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" ItemTemplate="{StaticResource EnumItem}"
                     HorizontalAlignment="Left" MinWidth="220" AutomationProperties.Name="Theme" />

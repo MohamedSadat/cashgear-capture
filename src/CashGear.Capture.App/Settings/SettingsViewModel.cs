@@ -6,6 +6,7 @@ using CashGear.Capture.App.Platform;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Core.Ocr;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
@@ -47,8 +48,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IStartupRegistration startup,
         IFolderPicker folderPicker,
         ILogger<SettingsViewModel> logger,
-        IFfmpeg? ffmpeg = null)
+        IFfmpeg? ffmpeg = null,
+        IOcrService? ocr = null)
     {
+        OcrLanguages = [new OcrLanguageChoice(null, "Automatic (your Windows languages)"),
+            .. (ocr?.AvailableLanguages ?? []).Select(l => new OcrLanguageChoice(l.Tag, $"{l.DisplayName} — {l.NativeName}"))];
         FfmpegStatus = ffmpeg?.Path is { } found
             ? "ffmpeg: " + found
             : $"ffmpeg.exe was not found, so recording is unavailable. Put it in {ffmpeg?.ExpectedPath ?? "the app's ffmpeg folder"}.";
@@ -101,6 +105,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<RecordingEncoder> Encoders { get; } = Enum.GetValues<RecordingEncoder>();
 
+    /// <summary>"Automatic" and each language Windows can recognize.</summary>
+    public IReadOnlyList<OcrLanguageChoice> OcrLanguages { get; }
+
     /// <summary>Where ffmpeg is, or why recording is unavailable.</summary>
     public string FfmpegStatus { get; }
 
@@ -145,6 +152,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private int _hideDelayMs;
+
+    [ObservableProperty]
+    private OcrLanguageChoice? _ocrLanguage;
 
     [ObservableProperty]
     private int _recordingFps;
@@ -328,6 +338,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Hotkeys = Hotkeys.Aggregate(current.Hotkeys, (h, row) => h.With(row.Action, row.SettingText)),
         Appearance = new AppearanceSettings(Theme),
         Recording = new RecordingSettings(RecordingFps, RecordingQuality, RecordingIncludeCursor, RecordingShowClicks, RecordingEncoder),
+        Ocr = new OcrSettings(OcrLanguage?.Tag),
     };
 
     private void Load(AppSettings s, bool startWithWindows)
@@ -342,6 +353,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         DelaySeconds = s.Capture.DelaySeconds;
         HideDelayMs = s.Capture.HideDelayMs;
         ScrollSettleMs = s.Capture.ScrollSettleMs;
+        // A language set by hand but not installed still shows (and is kept) rather than silently becoming Automatic.
+        OcrLanguage = OcrLanguages.FirstOrDefault(l => string.Equals(l.Tag, s.Ocr.Language, StringComparison.OrdinalIgnoreCase))
+            ?? new OcrLanguageChoice(s.Ocr.Language, s.Ocr.Language + " (not installed)");
         RecordingFps = s.Recording.Fps;
         RecordingQuality = s.Recording.Quality;
         RecordingIncludeCursor = s.Recording.IncludeCursor;

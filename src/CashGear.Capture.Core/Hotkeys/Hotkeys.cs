@@ -158,6 +158,9 @@ public enum HotkeyAction
 
     /// <summary>Start a screen recording, or stop the one running.</summary>
     Record,
+
+    /// <summary>Select an area and copy the text in it (OCR).</summary>
+    CaptureText,
 }
 
 /// <summary>System-wide hotkeys. Registration and presses happen on the thread that owns the service (the UI thread).</summary>

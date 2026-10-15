@@ -24,4 +24,7 @@ public interface IOutputService
 
     /// <summary>Puts the image on the clipboard (encoding happens off the UI thread).</summary>
     Task CopyToClipboardAsync(CapturedImage image, CancellationToken ct = default);
+
+    /// <summary>Puts text on the clipboard (Unicode).</summary>
+    Task CopyTextToClipboardAsync(string text, CancellationToken ct = default);
 }

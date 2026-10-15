@@ -8,6 +8,7 @@ using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Core.Ocr;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Selection;
 using CashGear.Capture.Core.Settings;
@@ -36,6 +37,7 @@ public sealed partial class CaptureCoordinator
     private readonly IEditorLauncher _editor;
     private readonly ScrollingCaptureService _scrolling;
     private readonly IScrollPlatform _scrollPlatform;
+    private readonly IOcrService _ocr;
     private readonly TimeProvider _time;
     private readonly ILogger<CaptureCoordinator> _logger;
 
@@ -54,6 +56,7 @@ public sealed partial class CaptureCoordinator
         IEditorLauncher editor,
         ScrollingCaptureService scrolling,
         IScrollPlatform scrollPlatform,
+        IOcrService ocr,
         TimeProvider time,
         ILogger<CaptureCoordinator> logger)
     {
@@ -71,6 +74,7 @@ public sealed partial class CaptureCoordinator
         _editor = editor;
         _scrolling = scrolling;
         _scrollPlatform = scrollPlatform;
+        _ocr = ocr;
         _time = time;
         _logger = logger;
     }
@@ -237,6 +241,40 @@ public sealed partial class CaptureCoordinator
         _ => null,
     };
 
+    /// <summary>
+    /// Capture Text: the user selects an area (or clicks a window) on the frozen screen, the text in it is
+    /// recognized (Windows OCR, in the configured language or automatically), and the text goes to the clipboard.
+    /// Nothing is saved and the after-capture actions don't apply.
+    /// </summary>
+    public Task CaptureTextAsync(CancellationToken ct = default) => RunAsync(
+        async current =>
+        {
+            using var hidden = await PrepareAsync(current, hideOwnUi: true, ct).ConfigureAwait(false);
+
+            var displays = _monitors.GetMonitors();
+            var windows = _windows.GetVisibleWindows();
+            using var frozen = await _capture.CaptureAllMonitorsAsync(ct).ConfigureAwait(false);
+            var selection = await _ui.InvokeAsync(() => _regionSelector.SelectAsync(frozen, displays, windows, ct: ct)).ConfigureAwait(false);
+            if (selection is null)
+            {
+                return; // cancelled by the user
+            }
+
+            using var image = frozen.Crop(VirtualScreen.ToLocal(selection.Bounds, frozen.Metadata.SourceBounds));
+            var result = await _ocr.RecognizeAsync(image, current.Ocr.Language, ct).ConfigureAwait(false);
+            var language = _ocr.AvailableLanguages.FirstOrDefault(l => l.Tag == result.LanguageTag)?.DisplayName ?? result.LanguageTag;
+            if (result.IsEmpty)
+            {
+                _notifier.Notify("Capture Text", $"No text was found in the selected area ({language}).", NotificationKind.Warning);
+                return;
+            }
+
+            await _output.CopyTextToClipboardAsync(result.Text, ct).ConfigureAwait(false);
+            var lines = result.Text.Split("\r\n").Count(l => l.Length > 0);
+            _notifier.Notify("Text copied", $"{OcrText.Preview(result.Text)}\n{lines} line{(lines == 1 ? string.Empty : "s")} · {language}");
+        },
+        producesImage: false);
+
     /// <summary>Captures the window that was in the foreground when the hotkey was pressed.</summary>
     public Task CaptureActiveWindowAsync(nint hwnd, CancellationToken ct = default) => RunAsync(async current =>
     {
@@ -266,10 +304,11 @@ public sealed partial class CaptureCoordinator
     private static bool IsShell(WindowInfo window) =>
         window.ClassName is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd";
 
-    private async Task RunAsync(Func<AppSettings, Task> capture)
+    /// <param name="producesImage">False for Capture Text, which copies text and ignores the after-capture actions.</param>
+    private async Task RunAsync(Func<AppSettings, Task> capture, bool producesImage = true)
     {
         var current = _settings.Current;
-        if (!current.AfterCapture.DoesAnything)
+        if (producesImage && !current.AfterCapture.DoesAnything)
         {
             // The capture would just be thrown away.
             _notifier.Notify(

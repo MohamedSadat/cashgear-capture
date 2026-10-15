@@ -23,6 +23,12 @@ internal sealed class WpfFolderPicker : IFolderPicker
     }
 }
 
+/// <summary>An entry of the OCR language list: a Windows OCR language tag, or null for automatic.</summary>
+public sealed record OcrLanguageChoice(string? Tag, string Label)
+{
+    public override string ToString() => Label;
+}
+
 /// <summary>Friendly names for the enums shown in the settings window.</summary>
 public sealed class EnumLabelConverter : IValueConverter
 {

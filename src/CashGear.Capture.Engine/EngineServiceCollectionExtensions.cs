@@ -29,6 +29,7 @@ public static class EngineServiceCollectionExtensions
         services.AddSingleton<IScreenCaptureService, ScreenCaptureService>();
 
         services.AddSingleton<IStartupDiagnostics, StartupDiagnostics>();
+        services.AddSingleton<Core.Ocr.IOcrService, Ocr.WindowsOcrService>();
         return services;
     }
 }

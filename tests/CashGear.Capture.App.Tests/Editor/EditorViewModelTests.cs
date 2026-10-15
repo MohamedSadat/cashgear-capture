@@ -284,6 +284,14 @@ internal sealed class FakeOutputService : IOutputService
         return Task.CompletedTask;
     }
 
+    public List<string> CopiedText { get; } = [];
+
+    public Task CopyTextToClipboardAsync(string text, CancellationToken ct = default)
+    {
+        CopiedText.Add(text);
+        return Task.CompletedTask;
+    }
+
     /// <summary>Whether any pixel is strongly red (the default annotation colour), i.e. annotations were burned in.</summary>
     private static bool HasRed(CapturedImage image)
     {

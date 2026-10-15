@@ -52,7 +52,7 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Backend.Should().Be(CaptureBackend.Gdi);
         vm.Theme.Should().Be(AppTheme.Dark);
         vm.StartWithWindows.Should().BeTrue();
-        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen");
+        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen");
         vm.HasErrors.Should().BeFalse();
     }
 
@@ -280,7 +280,7 @@ public sealed class SettingsViewModelTests : IDisposable
         _hotkeyService.Registered.Should().BeEmpty();
 
         vm.EndHotkeyRecording();
-        _hotkeyService.Registered.Should().HaveCount(5);
+        _hotkeyService.Registered.Should().HaveCount(6);
     }
 
     [Fact]
@@ -291,7 +291,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         vm.Dispose();
 
-        _hotkeyService.Registered.Should().HaveCount(5);
+        _hotkeyService.Registered.Should().HaveCount(6);
     }
 
     private SettingsViewModel Create() =>

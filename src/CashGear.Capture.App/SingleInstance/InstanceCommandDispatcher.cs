@@ -37,6 +37,9 @@ internal sealed class InstanceCommandDispatcher(
             case InstanceCommand.Record:
                 return ui.InvokeAsync(() => tray.ToggleRecordingCommand.ExecuteAsync(null));
 
+            case InstanceCommand.CaptureText:
+                return ui.InvokeAsync(() => tray.CaptureTextCommand.ExecuteAsync(null));
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(command), command, null);
         }

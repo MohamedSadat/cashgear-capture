@@ -19,6 +19,7 @@
         <MenuItem Header="Capture _Window" Command="{Binding CaptureWindowCommand}" />
         <MenuItem Header="Capture _Full Screen" Command="{Binding CaptureFullScreenCommand}" InputGestureText="{Binding FullScreenHotkey}" />
         <MenuItem Header="_Scrolling Capture" Command="{Binding CaptureScrollingCommand}" InputGestureText="{Binding ScrollingHotkey}" />
+        <MenuItem Header="Capture _Text" Command="{Binding CaptureTextCommand}" InputGestureText="{Binding TextHotkey}" />
         <Separator />
         <MenuItem Header="{Binding RecordText}" Command="{Binding ToggleRecordingCommand}" InputGestureText="{Binding RecordHotkey}" />
         <Separator />
