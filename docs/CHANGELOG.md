@@ -527,9 +527,10 @@ Lifts Phase 7's "No audio" limitation.
 
 ### Fixed during development
 - A packet delivered late was placed at its arrival time. The original check rejected Windows' timestamp when it was more than 200 ms from arrival. In one real-sound test run, a beep captured during a pause landed just after Resume. Windows' timestamp is now kept unless it is missing, more than 200 ms in the future, or more than 5 s old.
+- Stop could freeze for good, in about 1 in 20 real-sound test runs. The screen capture was released while holding its lock; a frame arriving at that moment waited for the lock, and the release waited for the frame. This was there before sound too (since Phase 7). The capture is now released outside the lock, and Stop closes ffmpeg's video input before releasing it. See TESTING.md.
 
 ### Tested
-- **545 automated tests** (543 pass, 2 explicit). New:
+- **546 automated tests** (544 pass, 2 explicit). New:
   - recording clock: pauses, sound mapped to recording samples, packets split at Pause and Resume, nothing from a pause, before the start or after the stop;
   - mixer:
     - jittery timestamps make no gaps;
@@ -548,6 +549,7 @@ Lifts Phase 7's "No audio" limitation.
     - loopback-like tone bursts at 0.5 s and 3.0 s around a 1.5 s pause land at 0.5 s and 1.5 s (±50 ms);
     - sound asked for but unavailable gives a video-only file and a note;
     - real system audio with nothing playing still gives a full-length sound track.
+  - releasing the screen capture while a frame's callback waits for its lock returns (it used to freeze Stop);
   - Explicit: real beeps played through the default device while recording 10 s with a pause land where they were played (±30 ms).
 - **Manual on this PC** (see TESTING.md). The default output device is the ZOOM H5's headphone output, and the microphone is its input (USB).
   - 10 s of a region with beeps and a pause from the toolbar.
@@ -560,4 +562,3 @@ Lifts Phase 7's "No audio" limitation.
 - When encoding falls far behind and frames are dropped, the same span of sound is left out, so the sound skips with the picture.
 - Hardware encoders are untested with sound here (none works on this PC).
 - If Windows' privacy settings block desktop apps from the microphone, the microphone isn't recorded (the notification says how to allow it).
-- One unexplained hang in about 20 runs of the explicit real-sound test, before the test had timeouts and logging. The test stopped at the start, with ffmpeg idle and an empty file, and didn't recur in later logged runs (see TESTING.md). In the app, Stop has 60 s timeouts and then ends ffmpeg.

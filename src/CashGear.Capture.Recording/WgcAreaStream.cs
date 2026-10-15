@@ -120,17 +120,20 @@ internal sealed partial class WgcAreaStream : IDisposable
                 return;
             }
 
-            _disposed = true;
-            if (_pool is not null)
-            {
-                _pool.FrameArrived -= OnFrameArrived;
-            }
-
-            _session?.Dispose();
-            _pool?.Dispose();
-            _staging?.Dispose();
-            _devices.Dispose();
+            _disposed = true; // a frame that arrives from now on is ignored, without touching anything below
         }
+
+        // Not under the lock: releasing the staging texture waits for a frame callback that is running, and that
+        // callback may be waiting for the lock (it froze Stop, about once in 20 recordings).
+        if (_pool is not null)
+        {
+            _pool.FrameArrived -= OnFrameArrived;
+        }
+
+        _session?.Dispose();
+        _pool?.Dispose();
+        _staging?.Dispose();
+        _devices.Dispose();
     }
 
     private void Start(WgcInterop interop, MonitorInfo monitor, bool includeCursor)

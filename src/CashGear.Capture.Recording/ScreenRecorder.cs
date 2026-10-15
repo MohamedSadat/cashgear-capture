@@ -453,8 +453,8 @@ internal sealed partial class ScreenRecorder(
 
             LogStopStep($"video writer done, {_pacer.Written} frames");
             EndTimerPeriod();
-            _stream.Dispose();
             _process.CloseInput(); // the encoder flushes, so ffmpeg takes the rest of the sound too
+            _stream.Dispose();
             if (!await JoinAsync(_soundWriter, timeout).ConfigureAwait(false))
             {
                 _process.Dispose();

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using CashGear.Capture.App.Recording;
 using CashGear.Capture.Core.Geometry;
@@ -461,6 +462,98 @@ public sealed class ScreenRecorderTests : IDisposable
 
         var stopIdle = () => recorder.StopAsync(ct);
         await stopIdle.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    /// <summary>
+    /// Stop used to freeze about once in 20 recordings: a frame arrived while the capture was being released, its
+    /// callback waited for the stream's lock, and the release, made inside that lock, waited for the callback. Here the
+    /// lock is held until the release and then a frame's callback are both waiting for it.
+    /// </summary>
+    [Fact(Timeout = 60_000)]
+    public async Task Releasing_the_capture_while_a_frame_waits_returns()
+    {
+        InteractiveDesktop.Require();
+        var monitor = new Win32MonitorService(NullLogger<Win32MonitorService>.Instance).GetMonitors().First(m => m.IsPrimary);
+        var area = new PixelRect(monitor.Bounds.X + 100, monitor.Bounds.Y + 100, 320, 240);
+        var ct = TestContext.Current.CancellationToken;
+        await StaDispatcher.RunAsync(async () =>
+        {
+            var square = RepaintingSquare(area.X + 20, area.Y + 20, monitor.Scale.ScaleX);
+            try
+            {
+                var frame = new byte[area.Width * area.Height * 4];
+                for (var round = 0; round < 3; round++)
+                {
+                    var stream = await WgcAreaStream.StartAsync(_interop, monitor, area, includeCursor: false, _loggers, ct);
+                    var first = stream.CopyLatest(frame);
+                    await Task.Delay(200, ct);
+                    stream.CopyLatest(frame).Should().BeGreaterThan(first, "frames keep arriving");
+
+                    var returned = await Task.Run(() => ReleaseWhileAFrameWaits(stream), ct);
+                    returned.Should().BeTrue($"release {round} returns");
+                }
+            }
+            finally
+            {
+                square.Close();
+            }
+        });
+    }
+
+    /// <summary>
+    /// Releases <paramref name="stream"/> on another thread while this one holds the stream's lock, so the release
+    /// waits for the lock first and the next frame's callback waits behind it. True if the release returns.
+    /// </summary>
+    private static bool ReleaseWhileAFrameWaits(WgcAreaStream stream)
+    {
+        var gate = Gate(stream);
+        var release = new Thread(stream.Dispose) { IsBackground = true };
+        Monitor.Enter(gate);
+        try
+        {
+            release.Start();
+            while (release.IsAlive && !release.ThreadState.HasFlag(System.Threading.ThreadState.WaitSleepJoin))
+            {
+                Thread.Yield();
+            }
+
+            Thread.Sleep(200); // the next frame's callback now waits for the lock too, behind the release
+        }
+        finally
+        {
+            Monitor.Exit(gate);
+        }
+
+        return release.Join(TimeSpan.FromSeconds(5));
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_gate")]
+    private static extern ref object Gate(WgcAreaStream stream);
+
+    /// <summary>A 24 px square (in physical pixels at <paramref name="x"/>, <paramref name="y"/>) that changes between two nearly equal greys on every screen refresh.</summary>
+    private static System.Windows.Window RepaintingSquare(int x, int y, double scale)
+    {
+        var greys = new[] { System.Windows.Media.Color.FromRgb(128, 128, 128), System.Windows.Media.Color.FromRgb(129, 129, 129) }
+            .Select(c => new System.Windows.Media.SolidColorBrush(c))
+            .ToArray();
+        var window = new System.Windows.Window
+        {
+            WindowStyle = System.Windows.WindowStyle.None,
+            ResizeMode = System.Windows.ResizeMode.NoResize,
+            ShowInTaskbar = false,
+            ShowActivated = false,
+            Topmost = true,
+            Left = x / scale,
+            Top = y / scale,
+            Width = 24 / scale,
+            Height = 24 / scale,
+        };
+        var n = 0;
+        EventHandler repaint = (_, _) => window.Background = greys[n++ & 1];
+        System.Windows.Media.CompositionTarget.Rendering += repaint;
+        window.Closed += (_, _) => System.Windows.Media.CompositionTarget.Rendering -= repaint;
+        window.Show();
+        return window;
     }
 
     [Fact(Timeout = 60_000)]

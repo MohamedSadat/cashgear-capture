@@ -203,16 +203,24 @@ Same PC: Windows 10 22H2, two monitors at 100%, x264 (no hardware encoder works 
 | System audio + H5 microphone (by device ID in settings.json, applied live), 8 s: toolbar showed **Mute mic**; muted from 3.0 s to 5.25 s. Room noise from the microphone at −45 to −55 dBFS, exact silence between beeps while muted, video and sound both 8.467 s | pass |
 | System audio off, no microphone: only the h264 stream, as before | pass |
 | 60 s of the whole primary monitor (1920×1080) with system audio: 1,814 frames, 0 dropped, constant 30 fps, video and sound both 60.467 s, 20 beeps exactly 1.000 s apart | pass |
-| Explicit test `Real_sound_played_while_recording_lands_where_it_was_played` (10 s, pause, beeps through the default device): beep spacing kept within 30 ms across the pause | pass in 20 of about 21 runs; see below |
+| Explicit test `Real_sound_played_while_recording_lands_where_it_was_played` (10 s, pause, beeps through the default device): beep spacing kept within 30 ms across the pause | before the fix below, pass in 20 of about 21 runs (one froze at Stop); after it, 50 of 50 |
 | Settings file restored from a backup, test recordings sent to the Recycle Bin, installed copy started again | done |
 
 Notes on the explicit real-sound test:
 - Twelve consecutive runs with logging (`CASHGEAR_TEST_LOG`) all passed with 481,600 sound frames (301 × 1,600), and no late, overflowed or skipped frames.
 - Before that, one run found a beep captured during the pause just after Resume. It was a packet delivered late and placed at its arrival time; fixed by keeping Windows' timestamp.
-- Another run hung at the start, before the test had a timeout: ffmpeg idle with an empty file, the test never reaching Stop. It didn't happen again, and the cause is unknown.
-  - The sound tests now have timeouts.
-  - `CASHGEAR_TEST_LOG=<file>` logs every step of the recorder: sound pipe opened, progress every 5 s, each step of Stop.
-  - The app logs the same at Debug level.
+- Another run hung before the test had a timeout. It looked like a hang at the start (ffmpeg idle, an empty file), but it was Stop freezing. A looped run froze the same way on 2026-10-15, with logs:
+  - `WgcAreaStream.Dispose` released the capture while holding the stream's lock. When Windows delivered a frame at that moment, the frame's callback waited for the lock, and releasing the staging texture (inside the lock) waited for the callback.
+  - Stop froze there, before it closed ffmpeg's video input and before any of its 60 s timeouts, so nothing ended it. ffmpeg waited for more video and held back the last 0.5 s of sound, so the sound writer waited in `WaitForPipeDrain`.
+  - The freeze didn't depend on sound: a recording without sound could freeze at Stop the same way.
+  - The empty file was misleading. Windows can list a stale size for a file another process has open: the looped run's file stayed listed at 48 bytes for its whole freeze. Once the test host was killed, ffmpeg finished the file normally.
+  - Fixed: `Dispose` only marks the stream disposed under the lock (a frame arriving after that is ignored) and releases everything outside it. Stop also closes ffmpeg's video input before releasing the capture.
+  - `Releasing_the_capture_while_a_frame_waits_returns` reproduces the freeze on demand. It holds the stream's lock until the release, and then a frame's callback, are both waiting for it. The old code froze in 3 of 3 runs; the fix passed 5 of 5.
+  - After the fix, 50 looped runs of the explicit test all passed, the longest in 16.6 s. All had 481,600 sound frames; in two, under 2 ms of sound arrived late.
+- Runs fail on beep timing while something else plays on the default output device (a decoded peak of 0.0147 instead of the beeps' 0.0022).
+- The sound tests have timeouts. To follow a run:
+  - `CASHGEAR_TEST_LOG=<file>` logs every step of the recorder: sound pipe opened, progress every 5 s, each step of Stop. The app logs the same at Debug level.
+  - `FFREPORT` makes ffmpeg write a debug report. Escape the drive's colon, for example `file=C\:/Temp/ff-%t.log:level=48`.
 
 ```powershell
 $env:CASHGEAR_TEST_LOG = "$env:TEMP\recorder-test.log"
