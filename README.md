@@ -13,7 +13,8 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 4 | Settings window, after-capture actions, file-name templates, capture delay, start with Windows, light/dark | done |
 | 5 | Editor: annotations, crop/rotate/resize/border/shadow, undo/redo, zoom/pan, save/copy | done |
 | 6 | Scrolling capture: UI Automation or mouse-wheel scrolling, exact row stitching | done |
-| 7–9 | Recording, OCR, packaging | planned |
+| 7 | Screen recording to MP4 (ffmpeg, H.264), pause, click highlights, toolbar | done |
+| 8–9 | OCR, packaging | planned |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -21,6 +22,7 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [do
 
 - Windows 10 2004 (build 19041) or later, x64
 - .NET SDK 10.0.401+ (pinned in `global.json`)
+- For screen recording: ffmpeg. Run `tools\get-ffmpeg.ps1` once (it downloads a pinned, checksum-verified build into the git-ignored `tools\ffmpeg`); the build copies it next to the app as `ffmpeg\`. Without it everything else works and recording says what is missing.
 
 ## Build, test, run
 
@@ -41,6 +43,7 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `--capture-region` | Open the region overlay (drag a rectangle or click a window, Enter to capture, Esc to cancel) |
 | `--capture-window` | Open the window picker (click a window to capture its own content) |
 | `--capture-scrolling` | Open the window picker, then scroll the clicked window to the bottom and stitch one tall image |
+| `--record` | Start a screen recording (pick the area), or stop the one running |
 | `--exit` | Shut the running instance down |
 
 ## Hotkeys
@@ -51,6 +54,7 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `Alt+PrintScreen` | Capture the active window |
 | `Ctrl+PrintScreen` | Capture Full Screen |
 | `Ctrl+Shift+PrintScreen` | Scrolling capture |
+| `Shift+PrintScreen` | Start a screen recording / stop it |
 
 Change them in **Settings › Hotkeys** (click a box and press the keys) or in `settings.json` under `hotkeys`. A key another app or Windows already owns is reported, and a single typing key (e.g. `A`) is refused because it would stop working everywhere else.
 
@@ -62,12 +66,13 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 |---|---|
 | Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
 | Capture | Capture delay, hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
+| Recording | Frames per second (15/30/60), quality, encoder (hardware when available, or x264), pointer, click highlights, where ffmpeg is |
 | Hotkeys | Record hotkeys; each shows whether it is active |
 | General | Start with Windows, theme, open the settings file |
 
 Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved.
 
-File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window, scrolling), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
+File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window, scrolling, recording), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
 
 ## Scrolling capture
 
@@ -76,6 +81,14 @@ Tray › **Scrolling Capture** (or `Ctrl+Shift+PrintScreen`): click the window o
 - Apps with UI Automation scrolling (Notepad, most Windows apps) are scrolled directly; others (Chrome, here) with the mouse wheel. The mouse goes back where it was afterwards.
 - A small progress window (left out of the capture) shows the progress. **Finish now** keeps what has been captured; **Esc** or **Cancel** abandons it.
 - Toolbars and status bars that don't scroll appear once; the scrollbar is cut off.
+
+## Screen recording
+
+Tray › **Record Screen…** (or `Shift+PrintScreen`): drag the area to record, or click a window or a monitor, and press Enter. A small toolbar at the top of the screen shows the time and has **Pause** and **Stop**; it is never in the video. Stop (or the hotkey again) saves an MP4 (H.264) to the capture folder and says how long and how big it is.
+
+- One monitor at a time (Windows.Graphics.Capture); an area that spans two is limited to the monitor holding its centre. On Windows 10 Windows draws a yellow border around the recorded monitor.
+- The encoder is chosen by trying them: NVIDIA, Intel or AMD hardware when it works, otherwise x264 on the CPU.
+- The video has a constant frame rate; when the screen is still, the same picture repeats. If encoding falls behind, frames are skipped and the notification says how many.
 
 ## Editor
 
@@ -115,7 +128,8 @@ src/CashGear.Capture.Core       Models, interfaces, settings, pixel math (net10.
 src/CashGear.Capture.Interop    All P/Invoke + COM declarations
 src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enumeration
 src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom (net10.0, no WPF)
-src/CashGear.Capture.Recording  Screen recording (Phase 7)
+src/CashGear.Capture.Recording  Screen recording: WGC frames -> ffmpeg (H.264 MP4)
+tools/get-ffmpeg.ps1            Downloads the pinned ffmpeg build into tools/ffmpeg (not committed)
 src/CashGear.Capture.App        WPF app: tray, windows, view models, output
 tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, App)
 ```

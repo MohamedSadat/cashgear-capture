@@ -291,3 +291,61 @@ Each phase lists the features added, how it was tested, and known limitations.
 - With the mouse wheel the whole client area is captured, so a browser's toolbar is included (once, at the top). The pointer moves during the capture.
 - Content that changes while scrolling (animations, lazy loading, elements that appear only after scrolling) can stop the capture early ("didn't line up") or show up in more than one part.
 - Frames are kept in memory until they are stitched (bounded by the height limit).
+
+## Phase 7 — Screen recording (2026-10-15)
+
+### Added
+- **Screen recording to MP4** (tray › Record Screen…, `Shift+PrintScreen`, `--record`; the same again stops it).
+  - Pick an area on the overlay: drag, or click a window or monitor, then Enter. Recording runs until Stop.
+  - The file goes to the capture folder, named by the template (`{kind}` = `recording`), as `.mp4`.
+- **Capture** (`WgcAreaStream`):
+  - A continuous Windows.Graphics.Capture session on the area's monitor, with its own D3D11 device, so screenshots taken meanwhile don't wait.
+  - Each frame Windows delivers is cropped on the GPU (`CopySubresourceRegion` into a staging texture the size of the area) and kept as "the latest picture".
+  - The pointer is included unless turned off.
+- **Encoding** (`FfmpegProcess`): raw BGRA frames go to `ffmpeg.exe` on standard input, and come out as H.264 (`yuv420p`, a keyframe every 2 s) in an MP4 with `+faststart`.
+- **Encoder choice** (`FfmpegService`): NVENC, then Quick Sync, then AMF, then x264. Each is tested once with a real 0.2 s encode, since listed doesn't mean working. One quality number (x264 CRF scale) maps to each encoder's constant-quality mode.
+- **Constant frame rate** (`FramePacer`):
+  - A writer thread writes a frame every 1/fps of recording time, repeating the picture when the screen hasn't changed. The system timer is set to 1 ms while recording.
+  - If ffmpeg falls more than half a second behind, the missed frames are skipped and counted.
+  - **Pause** stops the clock, so the video continues seamlessly after it.
+- **Click highlights** (`ClickHighlighter`): a translucent yellow (left) or red (right) circle under the pointer while a button is down, fading over 350 ms. Clicks shorter than a frame still show.
+- **Recording toolbar**: elapsed time, Pause/Resume and Stop. It is excluded from capture, so it is never in the video or in screenshots. It never takes the focus, sits at the top centre of the monitor, and can be dragged.
+- **Saved notification**: name, duration, size and encoder, with a warning if more than 5% of frames were skipped. Exiting the app first stops and saves a running recording.
+- **Settings › Recording**: 15/30/60 fps, quality 15–35 (default 23), encoder (hardware when available / software), pointer, click highlights, and where ffmpeg is or what is missing.
+- **ffmpeg**:
+  - Looked for in `ffmpeg\` next to the app (then on the PATH). If it's missing, recording explains where to put it, and the rest of the app works.
+  - `tools\get-ffmpeg.ps1` downloads a pinned build (Gyan "essentials" 9.0.2), checks its SHA-256, and keeps ffmpeg.exe, ffprobe.exe and the LICENSE in the git-ignored `tools\ffmpeg`. The build copies them next to the app and the App tests.
+
+### Deviations
+- **No FFMpegCore**: ffmpeg is started directly with `Process` and fed on standard input.
+  - Its pipe source uses named pipes and pulls frames from an enumerator.
+  - The recorder needs the opposite: it pushes frames on its own clock and uses the blocking write to notice when encoding falls behind.
+  - Encoder probing and a clean finish (close stdin, wait for the MP4 to be finalized) are a few lines either way.
+- **ffmpeg isn't committed**: the build used is GPL, because it includes x264. How it ships with the app is a packaging decision (Phase 9).
+- **No audio**: optional in the spec.
+
+### Fixed during development
+- A failed start left the recorder "recording" with ffmpeg waiting for frames; a failed start now cleans up after itself.
+- The interactive tests that capture the screen now run one at a time. A recording test's Windows 10 capture border landed in the overlay test's pixel comparison.
+
+### Tested
+- 449 automated tests (448 pass, 1 explicit). New:
+  - frame pacing: grid, catching up, dropping when far behind, a minute of steady writing = 1,800 frames;
+  - ffmpeg arguments for each encoder, even sizes, quality clamp, probe;
+  - click highlight drawing, fading, short clicks, right button, edges;
+  - recording settings, hotkey and file-name kind, `--record`;
+  - ffmpeg service with the real ffmpeg: Software gives x264, Auto gives a working encoder, missing ffmpeg;
+  - real recordings: 2 s at 30 fps gives H.264 320×240 with about 60 frames (ffprobe agrees with the count), pause left out, double start and stop refused;
+  - notification text; settings round trip.
+- Manual on the dev machine (GTX 1650 with driver 457.51, so NVENC fails — "Cannot load cuMemAllocAsync" — and so do Quick Sync and AMF; x264 was chosen):
+  - 60 s of the whole primary monitor at 1920×1080, 30 fps, with a full-screen animation changing every frame: 1,853 frames, **0 dropped**, 1 repeated, constant 30 fps, H.264 High, 61.8 s, 15.8 MB (about 2 Mbit/s).
+  - The app's memory stayed at 212–239 MB private for the whole minute.
+  - The toolbar was visible, excluded from capture, and absent from the video.
+  - A region recording with three clicks showed the highlight under the pointer; the toolbar's Stop button saved it (7.1 s, 214 frames, 0 dropped).
+
+### Known limitations
+- One monitor per recording. On Windows 10 Windows draws a yellow border around the recorded monitor (it can only be turned off on Windows 11).
+- No audio.
+- Hardware encoders are untested here, since none works on this PC. They are only used after a successful test encode, so a failing one falls back to x264.
+- x264 uses the CPU. At 60 fps on large areas a slow PC may skip frames; the notification says so.
+- The click highlight samples the mouse once per frame.

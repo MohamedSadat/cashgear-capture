@@ -8,6 +8,8 @@ dotnet test --solution CashGear.Capture.sln
 
 Tests tagged `Category=Interactive` need a logged-in, unlocked desktop. They skip themselves when none is available or when `CASHGEAR_SKIP_INTERACTIVE=1`. On Windows 10 the WGC tests flash a yellow border around each monitor — expected.
 
+The recording tests use the real ffmpeg from `tools\ffmpeg` (run `tools\get-ffmpeg.ps1`) and skip without it. Tests that capture the screen run one at a time (a Windows 10 capture border would otherwise show up in another test's pixels); the region-overlay pixel test can also fail while another app draws over the screen (for example a "using your computer" indicator).
+
 The WGC leak soak test is explicit:
 
 ```powershell
@@ -20,10 +22,10 @@ dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–6 pass (2026-10-15) |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–7 pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–6 pass (2026-10-15) |
+| Windows 10 22H2 | Phase 0–7 pass (2026-10-15) |
 | Windows 11 23H2+ | not run |
 
 ## Phase 0–1 results (2026-10-14)
@@ -120,6 +122,21 @@ Test documents: 240 bars whose lengths repeat 1–40 units, so the order of bar 
 | Chrome result 971 × 5,423: 240 bars in order, all 12 rows, spacing 22 rows ×239; browser toolbar and sticky header once at the top | pass |
 | Progress window visible during the capture, display affinity 0x11 (excluded from capture) | pass |
 | Esc during a capture: "cancelled by the user", no file written, progress window closed, pointer restored | pass |
+
+## Phase 7 results (2026-10-15)
+
+ffmpeg 9.0.2 (Gyan essentials, SHA-256 checked). Encoder probe on this PC: NVENC no (driver 457.51: "Cannot load cuMemAllocAsync"), Quick Sync no, AMF no, x264 yes.
+
+| Check | Result |
+|---|---|
+| `--record`, drag (0,0)–(1919,1079), Enter → recording DISPLAY2 1920×1080 at 30 fps with libx264, quality 23 | pass |
+| Toolbar visible at the top centre during recording, display affinity 0x11 (excluded from capture), not in the video | pass |
+| 60 s with a full-screen animation changing every frame: 1,853 frames written, 0 dropped (0.0%), 1 repeated | pass (≤ 5% drops required) |
+| ffprobe: h264 High, 1920×1080, r_frame_rate = avg_frame_rate = 30/1, 1,853 frames, 61.8 s, 2.0 Mbit/s, 15.8 MB | pass |
+| App memory every 5 s: private 212–239 MB, working set 236–259 MB, no growth | pass (flat) |
+| Region recording with three scripted clicks: yellow highlight under the pointer just after a click; pointer recorded | pass |
+| Toolbar Stop saved the recording (7.1 s, 214 frames, 0 dropped) and the notification appeared | pass |
+| `--exit` while idle: app and ffmpeg gone | pass |
 
 ### Pending: mixed DPI and negative coordinates
 
