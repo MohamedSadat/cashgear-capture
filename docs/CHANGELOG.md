@@ -171,3 +171,76 @@ Each phase lists the features added, how it was tested, and known limitations.
 - The capture delay shows a notification, not an on-screen countdown (Phase 9).
 - The template has no sub-folder support (`/` and `\` are replaced).
 - `ThemeMode` is marked experimental in .NET 10 WPF (diagnostic WPF0001 suppressed); the tray menu keeps the classic style.
+
+## Phase 5 — Editor (2026-10-15)
+
+### Added
+- **Editor window** (`EditorWindow`, SkiaSharp `SKElement`): toolbar, properties panel and status bar.
+  - Every capture opens in its own editor when **Open in the editor** is on. That is now the default after-capture action, per the spec. The editor's title shows the saved file's name, if any.
+  - The canvas draws in physical pixels. At 100% one image pixel is one screen pixel, and the screen shows exactly the pixels that get exported (tested pixel for pixel).
+- **Annotations** in `CashGear.Capture.Editor` (no WPF): arrow, line, rectangle, ellipse, freehand pen, highlight, text, step number, blur and pixelate.
+  - Each kind has `Render(SKCanvas)`, `HitTest(SKPoint)`, `Bounds`, grips for resizing, and a transform for whole-image edits.
+  - Annotations are immutable records with a stable id. Editing is non-destructive: they stay vector objects until save or copy flattens them.
+- **Properties panel**:
+  - Settings: colour palette plus hex, fill, line width, opacity, font family, size and bold, blur/pixel strength.
+  - It edits the selected annotation, or the style for the next one. The last style used is remembered per tool (for example, yellow highlighter, red arrows).
+- **Tools**:
+  - Select, move, resize and delete, nudge with the arrow keys, bring to front / send to back.
+  - Crop with an adjustable frame.
+  - **Image** menu: rotate 90° left/right, resize (keeping proportions, or 25/50/200%), border (thickness, colour), drop shadow (the same shadow as window captures).
+- **Undo/redo** through commands (`IEditorCommand` with `Do`/`Undo`): add, delete, change, reorder, and whole-image edits that keep the annotations aligned.
+  - Slider drags and arrow-key nudges merge into one step.
+  - Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z.
+- **Zoom and pan**:
+  - Zoom: Ctrl+wheel at the mouse, Ctrl+=/−, Fit (Ctrl+0; never enlarges past 100%), 100% (Ctrl+1).
+  - Pan: wheel and Shift+wheel, middle-drag, Space+drag.
+  - Fitting follows window resizes until you zoom yourself.
+- **Output**:
+  - Ctrl+S overwrites the capture's own file in its format. The new file is written to a temporary file first, so a failed save never damages the old one (`IOutputService.SaveToFileAsync`). An unsaved capture asks where to save, suggesting the capture folder and a template name.
+  - Ctrl+Shift+S saves as PNG, JPEG or BMP, chosen by the extension.
+  - Ctrl+C copies the flattened image (PNG, DIB, bitmap).
+- **Closing safely**: closing an editor with unsaved changes asks Save / Don't save / Cancel. Tray › Exit and `--exit` close every editor first, and choosing Cancel keeps the app running.
+
+### Deviations
+- **Blur and pixelate** blur the screenshot only. They are always drawn beneath the other annotations, so they never hide an arrow or a label: they hide content, not marks.
+- **After-capture default**: the spec's "open editor" default only applies to new or reset settings. A version 1 settings file is migrated to keep doing what it did (save, copy, no editor). Existing version 2 files keep their explicit values: turn on **Open in the editor** in Settings.
+- **Annotations left outside a crop** are removed with it (undo brings them back).
+- **Text** stays upright when the image is rotated (its box moves with the content).
+- **Package**: `SkiaSharp.Views.WPF` brings OpenTK assemblies (for its OpenGL element), even though the editor uses the CPU `SKElement`.
+
+### Fixed during testing
+- A blur drawn over a shape covered the shape's edge.
+- After a capture, an older editor came back on top of the new one.
+- A narrow editor window wrapped its toolbar onto two rows.
+
+### Tested
+- 399 automated tests (398 pass, 1 explicit). New:
+  - Editor (98):
+    - hit-testing and grips for every annotation kind;
+    - undo/redo, merging, the saved marker and image ownership;
+    - crop, rotate, resize, border and shadow, applied to pixels and annotations;
+    - rendering: opacity, highlighter, blur, pixelate, text, effects under shapes;
+    - the export matching the 100% view pixel for pixel;
+    - viewport zoom, fit and pan;
+    - editing session gestures: draw, move, resize, Esc, text, step numbers, crop, styles, nudge, z-order, cursors.
+  - Editor view model (13): save over the capture file, first save and Save As, cancel, close prompts, copy, panel styles, tool memory, crop.
+  - The version-1 migration keeps auto-save and the clipboard on, without the editor.
+- Manual on the dev machine:
+  - a full-screen and a region capture opened in the editor;
+  - drew every annotation kind with the toolbar keys;
+  - moved and undid; changed zoom (100%, Ctrl+wheel, Fit, Ctrl+0/1) and panned (wheel, middle-drag, Space+drag);
+  - cropped (Enter), rotated, added a shadow, resized to 593 × 356 and added a border, undoing each;
+  - Ctrl+S replaced the auto-saved PNG with the edited 1186 × 711 image, leaving no temporary file;
+  - Save As wrote a real JPEG;
+  - Ctrl+C put the 1186 × 711 image on the clipboard;
+  - typed two-line text, finished it by clicking away, then edited it with a double-click;
+  - closing with changes and `--exit` both asked first: Cancel kept the window, No discarded the changes and exited;
+  - a capture taken with an editor open didn't include that editor, and the new editor opened in front.
+
+### Known limitations
+- One selection at a time; annotations can't be copied or pasted.
+- While text is typed, a WPF text box stands in for the final rendering, so line spacing may shift slightly when typing ends.
+- Undo history isn't capped. Each whole-image edit keeps a copy of the image (about 14 MB for 3200 × 1082).
+- Remembered tool styles last until the app exits; they are not saved in `settings.json`.
+- Tilt-wheel (horizontal wheel) scrolling isn't supported; use Shift+wheel.
+- Editors don't switch theme while open; theme changes apply to editors opened afterwards.

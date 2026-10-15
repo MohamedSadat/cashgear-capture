@@ -20,10 +20,10 @@ dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–4 pass (2026-10-15) |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–5 pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–4 pass (2026-10-15) |
+| Windows 10 22H2 | Phase 0–5 pass (2026-10-15) |
 | Windows 11 23H2+ | not run |
 
 ## Phase 0–1 results (2026-10-14)
@@ -88,6 +88,25 @@ Same machine and layout. The keys were sent with `SendInput` from a script; the 
 | Settings reopened after restart shows the saved values | pass |
 | Ctrl+PrintScreen with Settings open: the capture shows what is behind the window; the window reappears | pass |
 | Reset to defaults + Start with Windows off + OK → defaults saved, Run key removed | pass |
+
+## Phase 5 results (2026-10-15)
+
+| Check | Result |
+|---|---|
+| `--capture-fullscreen` with Open in the editor + Save → the editor opens on the 3200×1082 image, titled with the saved file name, fitted at 44.6%; the gap between monitors shows as a checkerboard | pass |
+| Arrow, rectangle, ellipse, text, step numbers 1–2, blur, highlight, pixelate and pen, picked with the toolbar keys (A, R, E, T, N, B, H, X, D) | pass |
+| Select tool: move a rectangle, Ctrl+Z restores it; panel shows the selected annotation's style | pass |
+| 100% button / Ctrl+1, Ctrl+wheel (real input: 44.6% → 66.7% at the mouse), Fit / Ctrl+0; pan with wheel, middle-drag, Space+drag (no shape drawn) | pass |
+| Crop: frame with dimmed surroundings and size label (1186 × 711), Enter applies and returns to Select | pass |
+| Image menu: rotate right (711 × 1186), add shadow (1236 × 761), resize to 593 × 356 (height follows width), blue 4 px border (1194 × 719); each undone | pass |
+| Ctrl+S overwrites the auto-saved PNG with the edited 1186 × 711 image (annotations present); no temporary file left | pass |
+| Save As `edited_copy.jpg` → valid JPEG, title follows | pass |
+| Ctrl+C → clipboard has the 1186 × 711 image as Bitmap, DIB and PNG | pass |
+| Text: two lines typed in place, committed by clicking away; double-click with Select edits it | pass |
+| Region capture (PrintScreen, drag, Enter) opens a 726 × 463 editor | pass |
+| Blur drawn over a rectangle leaves the rectangle visible | pass (after fixing: blur was drawn over it) |
+| Closing with changes asks; Cancel keeps the window. `--exit` with changes asks; No discards and the app exits | pass |
+| A second capture with an editor open: the open editor isn't in the shot, the new editor opens in front and active | pass (after fixing: the old editor came back on top) |
 
 ### Pending: mixed DPI and negative coordinates
 

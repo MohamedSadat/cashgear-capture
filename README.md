@@ -11,7 +11,8 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 2 | Region selection overlay (drag, window pick, loupe, keyboard nudge) | done (mixed-DPI hardware check pending) |
 | 3 | Window capture (WGC, occluded windows, optional shadow) + global hotkeys | done |
 | 4 | Settings window, after-capture actions, file-name templates, capture delay, start with Windows, light/dark | done |
-| 5–9 | Editor, scrolling capture, recording, OCR, packaging | planned |
+| 5 | Editor: annotations, crop/rotate/resize/border/shadow, undo/redo, zoom/pan, save/copy | done |
+| 6–9 | Scrolling capture, recording, OCR, packaging | planned |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -57,7 +58,7 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 
 | Tab | What |
 |---|---|
-| Output | After capture: save to file / copy to clipboard (open in editor arrives with the editor); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
+| Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
 | Capture | Capture delay, hide delay, cursor, window shadow, full-screen output, capture method |
 | Hotkeys | Record hotkeys; each shows whether it is active |
 | General | Start with Windows, theme, open the settings file |
@@ -66,13 +67,44 @@ Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the
 
 File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
 
+## Editor
+
+With **Open in the editor** on (the default for new installs), every capture opens in its own editor window. Annotations stay editable objects until you save or copy; then they are burned into the image.
+
+| Tool | Key | Notes |
+|---|---|---|
+| Select | `V` | Click to select, drag to move, grips to resize (Shift keeps proportions); double-click text to edit it |
+| Arrow, Line | `A`, `L` | Shift snaps to 45° |
+| Rectangle, Ellipse | `R`, `E` | Outline colour, fill, line width; Shift for a square or circle |
+| Pen | `D` | Freehand |
+| Highlight | `H` | Highlighter colour multiplied into the image, so text under it stays readable |
+| Text | `T` | Click and type; click outside or press Esc to finish. Font, size, bold, background |
+| Step number | `N` | Each click places the next number |
+| Blur, Pixelate | `B`, `X` | Hides parts of the screenshot; always drawn under the other annotations |
+| Crop | `C` | Drag the area to keep, adjust it, then Enter (Esc cancels) |
+
+The **Image** menu rotates the image left/right, resizes it, and adds a border or a drop shadow.
+
+| Keys | Action |
+|---|---|
+| `Ctrl+Z` / `Ctrl+Y` | Undo / redo (every change, including crop and resize) |
+| `Delete`, arrow keys | Delete or nudge the selection (Shift: 10 px) |
+| `Ctrl+S` | Save. A capture that was already saved is overwritten in place; otherwise you are asked where |
+| `Ctrl+Shift+S` | Save as (PNG, JPEG or BMP, chosen by the extension) |
+| `Ctrl+C` | Copy the image with its annotations |
+| `Ctrl+wheel`, `Ctrl+=` / `Ctrl+-` | Zoom at the mouse / in the centre |
+| `Ctrl+0` / `Ctrl+1` | Fit in the window / 100% |
+| Wheel, `Shift+wheel`, middle-drag, `Space`+drag | Pan |
+
+Closing an editor (or exiting the app) with unsaved changes asks whether to save them.
+
 ## Layout
 
 ```
 src/CashGear.Capture.Core       Models, interfaces, settings, pixel math (net10.0, no WPF/WinRT)
 src/CashGear.Capture.Interop    All P/Invoke + COM declarations
 src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enumeration
-src/CashGear.Capture.Editor     Annotation editor model (Phase 5)
+src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom (net10.0, no WPF)
 src/CashGear.Capture.Recording  Screen recording (Phase 7)
 src/CashGear.Capture.App        WPF app: tray, windows, view models, output
 tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, App)
