@@ -37,6 +37,26 @@ public partial class CaptureApplication : Application
         AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
+        try
+        {
+            Start();
+        }
+        catch (Exception ex)
+        {
+            // Without this, the dispatcher handler below would swallow the failure and leave a half-started app with
+            // no icon, no hotkeys and a hand-off pipe that never answers, i.e. an app that "doesn't open".
+            LogStartupFailed(ex);
+            MessageBox.Show(
+                $"CashGear Capture could not start:\n\n{ex.Message}\n\nDetails are in the log: {_services.GetRequiredService<AppPaths>().LogDirectory}",
+                "CashGear Capture",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Shutdown(1);
+        }
+    }
+
+    private void Start()
+    {
         var diagnostics = _services.GetRequiredService<IStartupDiagnostics>();
         diagnostics.LogDpiAwareness(); // per thread, so it must run here on the UI thread
         _ = _services.GetRequiredService<ISettingsService>(); // load (or create) settings up front
@@ -110,6 +130,9 @@ public partial class CaptureApplication : Application
         LogUnobservedTask(e.Exception);
         e.SetObserved();
     }
+
+    [LoggerMessage(Level = LogLevel.Critical, Message = "Startup failed")]
+    private partial void LogStartupFailed(Exception ex);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "UI started; startup command {Command}")]
     private partial void LogStarted(InstanceCommand command);

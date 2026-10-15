@@ -426,6 +426,7 @@ Each phase lists the features added, how it was tested, and known limitations.
 - **Two captures could run at once.** A command-line switch or hotkey arriving during another capture's countdown or selection opened a second overlay on top of the first, because `ExecuteAsync` ignores the commands' disabled state. Now one capture runs at a time, and a request in the meantime is ignored and logged. The region selector also never opens a second overlay, which covers a recording's area pick too.
 - **Uninstalling left the app running** with its files half removed. Velopack's own check for running copies didn't recognise it ("0 matched directory" with the app running from `current\`). The uninstall hook now stops it (see above).
 - The history store deleted the files it had just written the first time it was used: reading the list removes unlisted files. Found by the unit tests.
+- **The installed app could start without a tray icon** and look as if it never opened. H.NotifyIcon names the icon after the assembly, so a development build and the installed copy shared one icon id, and Windows refuses an id from a second program path while the first file exists. The tray icon now has an id per program file (stable across updates, since the installed copy always runs from `current\`). If Windows still refuses the icon (e.g. the taskbar isn't up yet at sign-in), it retries every 2 s for 2 minutes and says so if it never succeeds; notifications wait for the icon. A failure during start-up now shows a message and exits, instead of leaving a half-started app with no icon, no hotkeys and a hand-off pipe that never answers.
 - "Show in folder" uses the shell's `SHOpenFolderAndSelectItems`, which reuses an open window on the folder, instead of starting `explorer /select`.
 
 ### Deviations
@@ -435,7 +436,7 @@ Each phase lists the features added, how it was tested, and known limitations.
 - **ffmpeg ships in the installer**: a GPL build, run as a separate program, with its licence and a notice. `-NoFfmpeg` leaves it out. ffprobe, only used by the tests, is no longer copied next to the app, which saves 100 MB.
 
 ### Tested
-- 511 automated tests (510 pass, 1 explicit). New:
+- 513 automated tests (512 pass, 1 explicit). New:
   - history store: newest first, copying instead of re-encoding, trimming on add and when the limit is lowered, off, remove and clear, survives a restart, cleanup, broken or tampered list;
   - thumbnail sizes and the area-averaging shrink (alpha-weighted, strided);
   - PNG read back pixel for pixel; history actions: open with or without the saved file, Save As copy or convert, errors reported;

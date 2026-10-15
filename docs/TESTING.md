@@ -174,6 +174,7 @@ Installer built with `tools\package.ps1`: Setup.exe 118.5 MB, full package 111.3
 | Start with Windows (Settings): Run value `"…\CashGear.Capture\current\CashGear.Capture.App.exe"`; with the app closed, running that command started it | pass (sign-in itself not tried) |
 | Uninstall from Apps & Features' command with the app running: the hook asked it to exit (gone in 0.1 s), no process left, install folder, shortcuts, Apps & Features entry and Run value removed; settings kept | pass (failed before the hook fix: Velopack didn't see the running app) |
 | Clicking "Capture saved" (development build) opened the capture folder in Explorer | pass |
+| Installer built from main and run by hand: the app started without a tray icon ("TryCreate failed": the development build had claimed the shared icon id) | fail, fixed: per-path icon id; reinstalled with Setup, icon created on the first attempt, second launch handed off |
 | The new file selected in that Explorer window | not in this OneDrive folder (see Known limitations) |
 | Theme following a Windows light/dark switch | unit tests only (this PC's theme wasn't changed) |
 
