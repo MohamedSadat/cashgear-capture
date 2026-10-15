@@ -107,7 +107,7 @@ public sealed partial class CaptureCoordinator
                 }
             }
 
-            await DeliverAsync(all, files, current, ct).ConfigureAwait(false);
+            await DeliverAsync(all, files, current, hidden, ct).ConfigureAwait(false);
         }
         finally
         {
@@ -151,7 +151,7 @@ public sealed partial class CaptureCoordinator
         };
         LogRegionCaptured(selection.Bounds, image.Metadata.Kind);
 
-        await DeliverAsync(image, [image], current, ct).ConfigureAwait(false);
+        await DeliverAsync(image, [image], current, hidden, ct).ConfigureAwait(false);
     });
 
     /// <summary>
@@ -178,7 +178,7 @@ public sealed partial class CaptureCoordinator
 
         // Let the overlay leave the screen before a screen-based capture of a fully visible window.
         await Task.Delay(TimeSpan.FromMilliseconds(current.Capture.HideDelayMs), _time, ct).ConfigureAwait(false);
-        await CaptureWindowCoreAsync(window.Handle, current, ct).ConfigureAwait(false);
+        await CaptureWindowCoreAsync(window.Handle, current, hidden, ct).ConfigureAwait(false);
     });
 
     /// <summary>Captures the window that was in the foreground when the hotkey was pressed.</summary>
@@ -192,10 +192,10 @@ public sealed partial class CaptureCoordinator
 
         // Our own UI is not involved (and the active window may even be ours), so nothing is hidden.
         using var hidden = await PrepareAsync(current, hideOwnUi: false, ct).ConfigureAwait(false);
-        await CaptureWindowCoreAsync(window.Handle, current, ct).ConfigureAwait(false);
+        await CaptureWindowCoreAsync(window.Handle, current, hidden, ct).ConfigureAwait(false);
     });
 
-    private async Task CaptureWindowCoreAsync(nint hwnd, AppSettings current, CancellationToken ct)
+    private async Task CaptureWindowCoreAsync(nint hwnd, AppSettings current, IDisposable hidden, CancellationToken ct)
     {
         var options = new CaptureWindowOptions
         {
@@ -203,7 +203,7 @@ public sealed partial class CaptureCoordinator
             IncludeShadow = current.Capture.IncludeWindowShadow,
         };
         using var image = await _capture.CaptureWindowAsync(hwnd, options, ct).ConfigureAwait(false);
-        await DeliverAsync(image, [image], current, ct).ConfigureAwait(false);
+        await DeliverAsync(image, [image], current, hidden, ct).ConfigureAwait(false);
     }
 
     /// <summary>The desktop and taskbars are "active" when nothing else is; they are not windows to capture.</summary>
@@ -271,9 +271,11 @@ public sealed partial class CaptureCoordinator
     /// <summary>
     /// Saves <paramref name="files"/> (if saving is on) under the file-name template, copies <paramref name="primary"/>
     /// (if copying is on) and opens it in the editor (if that is on), else tells the user what happened.
+    /// <paramref name="hidden"/> brings our windows back; that happens before the editor opens, so the new editor
+    /// ends up in front of them.
     /// </summary>
     private async Task DeliverAsync(
-        CapturedImage primary, IReadOnlyList<CapturedImage> files, AppSettings current, CancellationToken ct)
+        CapturedImage primary, IReadOnlyList<CapturedImage> files, AppSettings current, IDisposable hidden, CancellationToken ct)
     {
         var after = current.AfterCapture;
         var saved = new List<string>();
@@ -304,6 +306,7 @@ public sealed partial class CaptureCoordinator
                 savedAs = ReferenceEquals(files[i], primary) ? saved[i] : savedAs;
             }
 
+            hidden.Dispose();
             await _editor.OpenAsync(primary, savedAs, ct).ConfigureAwait(false);
             return;
         }

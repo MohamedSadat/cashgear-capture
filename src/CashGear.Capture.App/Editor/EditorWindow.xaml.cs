@@ -20,6 +20,7 @@ public partial class EditorWindow : Window
 {
     private const double PanelWidth = 236;
     private const double ChromeHeight = 150; // toolbar, status bar and title bar, roughly
+    private const double ToolbarWidth = 1180; // narrower and the toolbar wraps onto a second row
 
     private readonly EditorViewModel _viewModel;
     private bool _closeConfirmed;
@@ -224,11 +225,11 @@ public partial class EditorWindow : Window
         Surface.Focus();
     }
 
-    /// <summary>Opens about the size of the image (at 100%), within 90% of the screen.</summary>
+    /// <summary>Opens about the size of the image (at 100%) and wide enough for the toolbar, within 90% of the screen.</summary>
     private void SizeToImage(int imageWidth, int imageHeight)
     {
         var work = SystemParameters.WorkArea;
-        Width = Math.Clamp(imageWidth + PanelWidth + 64, MinWidth, work.Width * 0.9);
+        Width = Math.Clamp(Math.Max(imageWidth + PanelWidth + 90, ToolbarWidth), MinWidth, work.Width * 0.9);
         Height = Math.Clamp(imageHeight + ChromeHeight + 48, MinHeight, work.Height * 0.9);
     }
 }

@@ -97,6 +97,19 @@ public sealed class RenderingTests
     }
 
     [Fact]
+    public void Blur_never_covers_other_annotations_whatever_their_order()
+    {
+        using var image = TestImages.Stripes(100, 100);
+        var line = new LineAnnotation(new AnnotationId(1), TestImages.Red(6), new SKPoint(0, 50), new SKPoint(100, 50));
+        var blur = new BlurAnnotation(new AnnotationId(2), new AnnotationStyle { Strength = 4 }, new SKRect(20, 20, 80, 80));
+
+        using var flat = Flatten(image, line, blur);
+
+        TestImages.Pixel(flat, 50, 50).Should().Be(SKColors.Red, "the line drawn before the blur stays visible");
+        TestImages.Pixel(flat, 50, 30).Red.Should().BeInRange((byte)90, (byte)165, "the screenshot under the blur is blurred");
+    }
+
+    [Fact]
     public void The_cache_reuses_an_effect_until_it_is_no_longer_drawn()
     {
         using var image = TestImages.Stripes(50, 50);

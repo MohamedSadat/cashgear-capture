@@ -1,6 +1,7 @@
 using CashGear.Capture.Editor.Document;
 using CashGear.Capture.Editor.Imaging;
 using CashGear.Capture.Editor.Model;
+using CashGear.Capture.Editor.Rendering;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Interaction;
@@ -86,20 +87,11 @@ public sealed class EditorSession
         Invalidate();
     }
 
-    /// <summary>The topmost annotation at <paramref name="p"/>, if any.</summary>
-    public Annotation? HitTest(SKPoint p, float tolerance)
-    {
-        for (var i = Document.Annotations.Count - 1; i >= 0; i--)
-        {
-            var annotation = Document.Annotations[i];
-            if (annotation.Id != TextEdit?.Existing && annotation.HitTest(p, tolerance))
-            {
-                return annotation;
-            }
-        }
-
-        return null;
-    }
+    /// <summary>The topmost annotation at <paramref name="p"/> as drawn (effects are under everything else), if any.</summary>
+    public Annotation? HitTest(SKPoint p, float tolerance) =>
+        DocumentRenderer.PaintOrder(Document.Annotations)
+            .Reverse()
+            .FirstOrDefault(a => a.Id != TextEdit?.Existing && a.HitTest(p, tolerance));
 
     /// <param name="p">Image pixels.</param>
     /// <param name="tolerance">Hit slack in image pixels (a few screen pixels divided by the zoom).</param>

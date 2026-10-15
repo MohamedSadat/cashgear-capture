@@ -6,7 +6,7 @@ namespace CashGear.Capture.App.Hosting;
 /// <summary>Gets the app's own windows (e.g. Settings) out of the way while a capture is taken.</summary>
 public interface IOwnWindows
 {
-    /// <summary>Hides every visible app window; disposing the result shows them again.</summary>
+    /// <summary>Hides every visible app window; disposing the result (once is enough; again does nothing) shows them again.</summary>
     Task<IDisposable> HideAsync();
 }
 
@@ -28,9 +28,11 @@ internal sealed class WpfOwnWindows(IUiDispatcher ui) : IOwnWindows
 
     private sealed class Restore(IUiDispatcher ui, List<Window> windows) : IDisposable
     {
+        private int _disposed;
+
         public void Dispose()
         {
-            if (windows.Count == 0)
+            if (windows.Count == 0 || Interlocked.Exchange(ref _disposed, 1) == 1)
             {
                 return;
             }

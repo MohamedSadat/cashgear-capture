@@ -178,6 +178,21 @@ public sealed class EditorSessionTests : IDisposable
     }
 
     [Fact]
+    public void Clicks_reach_a_shape_under_a_later_blur_because_blur_is_drawn_beneath_it()
+    {
+        var rect = DrawRectangle(10, 10, 60, 60);
+        _session.Tool = EditorTool.Blur;
+        Drag(0, 0, 100, 100);
+        _session.Tool = EditorTool.Select;
+
+        Click(10, 30);
+
+        _session.SelectedId.Should().Be(rect.Id);
+        Click(30, 30);
+        _session.Selected.Should().BeOfType<BlurAnnotation>("inside the outline only the blur is there");
+    }
+
+    [Fact]
     public void Delete_removes_the_selection_and_undo_restores_it()
     {
         var rect = DrawRectangle(10, 10, 60, 60);
