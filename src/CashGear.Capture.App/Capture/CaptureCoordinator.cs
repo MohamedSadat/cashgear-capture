@@ -262,7 +262,8 @@ public sealed partial class CaptureCoordinator
 
             using var image = frozen.Crop(VirtualScreen.ToLocal(selection.Bounds, frozen.Metadata.SourceBounds));
             var result = await _ocr.RecognizeAsync(image, current.Ocr.Language, ct).ConfigureAwait(false);
-            var language = _ocr.AvailableLanguages.FirstOrDefault(l => l.Tag == result.LanguageTag)?.DisplayName ?? result.LanguageTag;
+            var language = string.Join(" + ", result.LanguageTag.Split('+').Select(
+                tag => _ocr.AvailableLanguages.FirstOrDefault(l => l.Tag == tag)?.DisplayName ?? tag));
             if (result.IsEmpty)
             {
                 _notifier.Notify("Capture Text", $"No text was found in the selected area ({language}).", NotificationKind.Warning);

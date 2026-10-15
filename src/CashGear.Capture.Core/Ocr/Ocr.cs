@@ -101,10 +101,11 @@ public static class OcrText
     public static bool IsRightToLeft(char c) => In(c, Script.Arabic) || In(c, Script.Hebrew);
 
     /// <summary>
-    /// Picks the result to keep when the language was left automatic. Each result came from one installed language
-    /// (the user's own first). A language with its own script (Arabic, Hebrew, Cyrillic, Greek, Asian scripts)
-    /// wins when its result is mostly that script — a Latin-script engine turns such text into nonsense letters.
-    /// Otherwise the first result (the user's main language) is kept.
+    /// Combines the results when the language was left automatic; each came from one installed language, the
+    /// user's main language first. A line written in a language's own script (Arabic, Hebrew, Cyrillic, Greek, Asian
+    /// scripts) is taken from that language's result — a Latin-script engine turns it into nonsense or skips it —
+    /// and the other lines from the first Latin-script language, matched by where they are. So an area with English
+    /// and Arabic lines comes out right in both. The language tag lists what was used, joined by '+'.
     /// </summary>
     public static OcrResult ChooseAutomatic(IReadOnlyList<OcrResult> results)
     {
@@ -114,15 +115,50 @@ public static class OcrText
             throw new ArgumentException("No results to choose from.", nameof(results));
         }
 
-        var bestOwnScript = results
+        var fill = results.FirstOrDefault(r => ScriptOf(r.LanguageTag) == Script.Latin) ?? results[0];
+        var kept = new List<OcrLine>();
+        var used = new List<string>();
+        var ownScript = results
             .Select(r => (Result: r, Script: ScriptOf(r.LanguageTag)))
-            .Where(x => x.Script is not Script.Latin)
-            .Select(x => (x.Result, Letters: CountLetters(x.Result.Text, x.Script), All: CountLetters(x.Result.Text, null)))
-            .Where(x => x.Letters >= 3 && x.Letters >= x.All * 0.3)
-            .OrderByDescending(x => x.Letters)
-            .Select(x => x.Result)
-            .FirstOrDefault();
-        return bestOwnScript ?? results[0];
+            .Where(x => x.Script != Script.Latin)
+            .OrderByDescending(x => CountLetters(x.Result.Text, x.Script));
+        foreach (var (result, script) in ownScript)
+        {
+            var lines = result.Lines.Where(l => IsMostly(l.Text, script) && !kept.Any(k => Overlaps(k, l))).ToList();
+            if (lines.Count > 0)
+            {
+                kept.AddRange(lines);
+                used.Add(result.LanguageTag);
+            }
+        }
+
+        if (kept.Count == 0)
+        {
+            return fill;
+        }
+
+        var others = fill.Lines.Where(l => !kept.Any(k => Overlaps(k, l))).ToList();
+        if (others.Count > 0 && !used.Contains(fill.LanguageTag))
+        {
+            used.Insert(0, fill.LanguageTag);
+        }
+
+        var all = kept.Concat(others).OrderBy(l => l.Bounds.Y).ThenBy(l => l.Bounds.X).ToList();
+        return new OcrResult(Assemble(all), string.Join('+', used), all);
+    }
+
+    /// <summary>Whether a line is written mainly in <paramref name="script"/>.</summary>
+    private static bool IsMostly(string text, Script script)
+    {
+        var own = CountLetters(text, script);
+        return own >= 2 && own * 2 >= CountLetters(text, null);
+    }
+
+    /// <summary>Two lines are the same line of the image when they overlap over half the height of the smaller.</summary>
+    private static bool Overlaps(OcrLine a, OcrLine b)
+    {
+        var overlap = Math.Min(a.Bounds.Bottom, b.Bounds.Bottom) - Math.Max(a.Bounds.Y, b.Bounds.Y);
+        return overlap > 0 && overlap * 2 > Math.Min(a.Bounds.Height, b.Bounds.Height);
     }
 
     /// <summary>A short preview for a notification: the first lines, cut at about <paramref name="max"/> characters.</summary>

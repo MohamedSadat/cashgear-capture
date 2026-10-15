@@ -57,32 +57,55 @@ public sealed class OcrTextTests
         new OcrResult(string.Empty, "en-US", []).IsEmpty.Should().BeTrue();
     }
 
+    private static OcrResult Result(string tag, params OcrLine[] lines) => new(OcrText.Assemble(lines), tag, lines);
+
     [Fact]
     public void Arabic_text_read_by_the_Arabic_engine_beats_the_main_language()
     {
-        var english = new OcrResult("lpl cça+ arsh lgll", "en-US", []); // what a Latin engine makes of Arabic
-        var arabic = new OcrResult("مرحبا بالعالم هذا نص", "ar-SA", []);
+        var english = Result("en-US", Line("lpl cça+ arsh lgll", 0)); // what a Latin engine makes of Arabic
+        var arabic = Result("ar-SA", Line("مرحبا بالعالم هذا نص", 0));
 
-        OcrText.ChooseAutomatic([english, arabic]).Should().BeSameAs(arabic);
+        var chosen = OcrText.ChooseAutomatic([english, arabic]);
+
+        chosen.Text.Should().Be("مرحبا بالعالم هذا نص");
+        chosen.LanguageTag.Should().Be("ar-SA");
     }
 
     [Fact]
     public void Latin_text_keeps_the_main_language_result()
     {
-        var english = new OcrResult("The quick brown fox", "en-US", []);
-        var arabic = new OcrResult("The quick brown fox", "ar-SA", []); // the Arabic engine reads Latin too
+        var english = Result("en-US", Line("The quick brown fox", 0));
+        var arabic = Result("ar-SA", Line("The quick br0wn f0x", 0)); // the Arabic engine reads Latin too, less well
 
         OcrText.ChooseAutomatic([english, arabic]).Should().BeSameAs(english);
         OcrText.ChooseAutomatic([english]).Should().BeSameAs(english);
     }
 
     [Fact]
-    public void Mixed_text_mostly_in_arabic_goes_to_the_arabic_engine()
+    public void English_and_arabic_lines_each_come_from_their_own_language()
     {
-        var english = new OcrResult("Invoice lpl cça", "en-US", []);
-        var arabic = new OcrResult("Invoice فاتورة رقم ١٢٣ للعميل", "ar-SA", []);
+        var english = Result("en-US",
+            Line("Invoice 2026 was sent on Monday.", 0),
+            Line("Please check the totals.", 20));
+        var arabic = Result("ar-SA",
+            Line("Invoice 2026 was sent on .nday.", 0),
+            Line("P1ease check the tota1s.", 20),
+            Line("تم إرسال الفاتورة", 60),
+            Line("يرجى مراجعة المجاميع", 80));
 
-        OcrText.ChooseAutomatic([english, arabic]).Should().BeSameAs(arabic);
+        var chosen = OcrText.ChooseAutomatic([english, arabic]);
+
+        chosen.Text.Should().Be(string.Join("\r\n", "Invoice 2026 was sent on Monday.", "Please check the totals.", string.Empty, "تم إرسال الفاتورة", "يرجى مراجعة المجاميع"));
+        chosen.LanguageTag.Should().Be("en-US+ar-SA");
+    }
+
+    [Fact]
+    public void A_user_whose_main_language_is_arabic_still_gets_english_from_the_english_engine()
+    {
+        var arabic = Result("ar-SA", Line("P1ease check", 0));
+        var english = Result("en-US", Line("Please check", 0));
+
+        OcrText.ChooseAutomatic([arabic, english]).Should().BeSameAs(english);
     }
 
     [Theory]
