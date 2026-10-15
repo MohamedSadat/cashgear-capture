@@ -16,16 +16,24 @@ The WGC leak soak test is explicit:
 dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 ```
 
+So is the real-sound recording test, because it plays quiet beeps through the default output device for about 10 s:
+
+```powershell
+dotnet test --project tests/CashGear.Capture.App.Tests -- --explicit only
+```
+
+The other recording tests with sound use a generated tone (no sound is played) or real system audio with whatever is playing.
+
 ## Manual test matrix
 
 | Configuration | Status |
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 pass (2026-10-15) |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–9 pass on the development PC (2026-10-15); fresh install **pending** |
+| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); fresh install **pending** |
 | Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
@@ -181,6 +189,35 @@ Installer built with `tools\package.ps1`: Setup.exe 118.5 MB, full package 111.3
 Notes:
 - While a screen-control session is active, Windows reports the user as "busy" (full screen), so notification banners go to the Action Center without showing.
 - The countdown and the region overlay are excluded from screen capture, so they can't be checked from screenshots; the countdown was checked through its window and UI Automation instead.
+
+## Sound in recordings results (2026-10-15)
+
+Same PC: Windows 10 22H2, two monitors at 100%, x264 (no hardware encoder works here). The default output device is "Headphones (H5)" and the microphone "Microphone (H5)", both from a ZOOM H5 over USB, with Windows mixing at 48 kHz float. The development build ran with the installed copy closed, and the recordings were driven by `--record` and a scripted drag on the overlay. The toolbar was driven through UI Automation (it is excluded from screen capture, so screenshots can't show it). The beeps were a quiet 50 ms 1 kHz tone at the start of every second, played with `SoundPlayer`. Durations come from ffprobe; beep onsets from the decoded sound.
+
+| Check | Result |
+|---|---|
+| Settings › Recording (rendered off-screen, light and dark): Sound section with "Record system audio (what you hear)", Microphone list (None, Default microphone, Microphone (H5)), "System audio is what plays on Headphones (H5)…" | pass |
+| Toolbar with system sound + microphone: speaker, level meter, Mute mic, Pause, Stop; without a sound device: crossed-out speaker with the reason as tooltip | pass |
+| System audio, 640×480 region, 10 s with a 1.35 s pause from the toolbar: h264 10.700 s (321 frames) and AAC LC 48 kHz stereo 10.700 s; 513,600 sound frames = 321 × 1,600; beeps 1.000 s apart, and 0.650 s across the pause (2 s less the 1.345 s pause) | pass |
+| ffmpeg opened the sound pipe 50–62 ms after the clock started; Stop took about 150 ms (video writer, sound written and pipe closed, ffmpeg exit 0) | pass |
+| System audio + H5 microphone (by device ID in settings.json, applied live), 8 s: toolbar showed **Mute mic**; muted from 3.0 s to 5.25 s. Room noise from the microphone at −45 to −55 dBFS, exact silence between beeps while muted, video and sound both 8.467 s | pass |
+| System audio off, no microphone: only the h264 stream, as before | pass |
+| 60 s of the whole primary monitor (1920×1080) with system audio: 1,814 frames, 0 dropped, constant 30 fps, video and sound both 60.467 s, 20 beeps exactly 1.000 s apart | pass |
+| Explicit test `Real_sound_played_while_recording_lands_where_it_was_played` (10 s, pause, beeps through the default device): beep spacing kept within 30 ms across the pause | pass in 20 of about 21 runs; see below |
+| Settings file restored from a backup, test recordings sent to the Recycle Bin, installed copy started again | done |
+
+Notes on the explicit real-sound test:
+- Twelve consecutive runs with logging (`CASHGEAR_TEST_LOG`) all passed with 481,600 sound frames (301 × 1,600), and no late, overflowed or skipped frames.
+- Before that, one run found a beep captured during the pause just after Resume. It was a packet delivered late and placed at its arrival time; fixed by keeping Windows' timestamp.
+- Another run hung at the start, before the test had a timeout: ffmpeg idle with an empty file, the test never reaching Stop. It didn't happen again, and the cause is unknown.
+  - The sound tests now have timeouts.
+  - `CASHGEAR_TEST_LOG=<file>` logs every step of the recorder: sound pipe opened, progress every 5 s, each step of Stop.
+  - The app logs the same at Debug level.
+
+```powershell
+$env:CASHGEAR_TEST_LOG = "$env:TEMP\recorder-test.log"
+dotnet test --project tests/CashGear.Capture.App.Tests -- --explicit only --filter-method "*Real_sound_played_while_recording*"
+```
 
 ### Pending: install on a fresh Windows 10 22H2 and Windows 11
 

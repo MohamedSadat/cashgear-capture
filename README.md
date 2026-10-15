@@ -16,6 +16,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 7 | Screen recording to MP4 (ffmpeg, H.264), pause, click highlights, toolbar | done |
 | 8 | Capture Text: Windows OCR to the clipboard, English + Arabic in one area | done |
 | 9 | Capture history, delayed capture with countdown, live light/dark, clickable notifications, installer + updates (Velopack) | done (fresh Windows 10/11 install pending) |
+| — | Sound in screen recordings: system audio and a microphone, AAC, kept in sync through pauses | done |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -88,7 +89,7 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 |---|---|
 | Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
 | Capture | Capture delay (also in the tray), hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
-| Recording | Frames per second (15/30/60), quality, encoder (hardware when available, or x264), pointer, click highlights, where ffmpeg is |
+| Recording | Frames per second (15/30/60), quality, encoder (hardware when available, or x264), pointer, click highlights, sound (system audio on/off, microphone: none, the Windows default or a connected one), where ffmpeg is |
 | Hotkeys | Record hotkeys; each shows whether it is active |
 | General | Start with Windows, text recognition language (Automatic or one installed language), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file |
 
@@ -125,6 +126,10 @@ Tray › **Record Screen…** (or `Shift+PrintScreen`): drag the area to record,
 - One monitor at a time (Windows.Graphics.Capture); an area that spans two is limited to the monitor holding its centre. On Windows 10 Windows draws a yellow border around the recorded monitor.
 - The encoder is chosen by trying them: NVIDIA, Intel or AMD hardware when it works, otherwise x264 on the CPU.
 - The video has a constant frame rate; when the screen is still, the same picture repeats. If encoding falls behind, frames are skipped and the notification says how many.
+- **Sound.** System audio (what you hear on the default output device) is recorded by default. A microphone can be added in Settings › Recording. Both are saved in the MP4 as AAC (48 kHz stereo, mixed into one track).
+  - The toolbar shows a level meter and, with a microphone, a **Mute mic** button.
+  - Sound is kept on the recording's clock: silences stay silent, Pause pauses the sound too, and the sound and picture end together.
+  - If no sound device is available, the video is recorded without sound and the notification says why. With system audio off and no microphone, the MP4 has no sound track.
 
 ## Capture Text
 
@@ -172,7 +177,7 @@ src/CashGear.Capture.Core       Models, interfaces, settings, pixel math (net10.
 src/CashGear.Capture.Interop    All P/Invoke + COM declarations
 src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enumeration
 src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom (net10.0, no WPF)
-src/CashGear.Capture.Recording  Screen recording: WGC frames -> ffmpeg (H.264 MP4)
+src/CashGear.Capture.Recording  Screen recording: WGC frames -> ffmpeg (H.264 MP4), WASAPI sound -> a named pipe (AAC)
 tools/get-ffmpeg.ps1            Downloads the pinned ffmpeg build into tools/ffmpeg (not committed)
 tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
 tools/make-icon.ps1             Draws the app icon

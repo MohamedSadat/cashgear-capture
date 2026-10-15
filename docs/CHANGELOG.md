@@ -466,3 +466,98 @@ Each phase lists the features added, how it was tested, and known limitations.
 - Windows doesn't show notification banners while it considers a full-screen app to be in front ("busy"); they go to the Action Center instead.
 - Theme switching with Windows was checked by unit tests (with a simulated Windows theme), not by switching this PC's theme.
 - Recordings are not in the history.
+
+## Sound in screen recordings (2026-10-15)
+
+Lifts Phase 7's "No audio" limitation.
+
+### Added
+- **Sound in recordings**:
+  - System audio ("what you hear": loopback of the default output device) is on by default.
+  - A microphone can be added.
+  - Both are recorded with the video and saved in the MP4 as AAC, 48 kHz stereo at 160 kbit/s, mixed into one track when both are on.
+- **Settings › Recording › Sound**:
+  - "Record system audio (what you hear)".
+  - **Microphone**: None (default), "Default microphone (Windows setting)", or any connected microphone. A chosen microphone that isn't connected stays chosen and shows as not connected.
+  - The tab says which device system audio comes from.
+  - Stored as `recording.systemAudio` and `recording.microphone`. Older settings files get system audio on and no microphone.
+- **Toolbar**:
+  - A speaker and a level meter (−60 to 0 dB) while sound is recorded.
+  - **Mute mic** / **Unmute mic** when a microphone is recorded.
+  - A crossed-out speaker, with the reason as its tooltip, when sound was asked for but isn't available.
+- **Saved notification**:
+  - Says which sound the file has ("· system sound + microphone").
+  - When sound that was asked for is missing, it says why and becomes a warning. The reasons are: no output device, the microphone isn't connected or Windows' privacy settings block it, or a device stopped during the recording.
+  - With no usable sound device at all, the video is recorded without sound, as before.
+- **Capture** (`WasapiAudioSource`):
+  - WASAPI shared mode; Windows converts every device to 48 kHz stereo float (`AUTOCONVERTPCM`).
+  - Polled every 10 ms on its own thread.
+  - Each packet keeps Windows' timestamp (QPC) for its first frame. Silent packets become zeros, and a discontinuity puts the next packet at its timestamp.
+- **Keeping sound and picture together**:
+  - `RecordingClock` replaces the recorder's stopwatch. It maps any moment to recording time, so sound captured during a pause (or before the start, or after the stop) is cut out to the sample, and a packet that straddles Pause or Resume is split.
+  - `AudioMixer` / `AudioTrack`: each source has a ring buffer indexed by recording sample, and packets go where their timestamps say.
+    - A packet within 30 ms of following on from the previous one is placed right after it, so timestamp jitter never makes gaps.
+    - Loopback sends nothing while nothing plays. Those stretches stay silent, and the next sound lands at its own time: **silence is filled by the clock**.
+    - A sound card whose clock drifts against the PC's is pulled back one sample per packet once the smoothed drift passes 10 ms.
+  - The sound is mixed 80 ms behind the clock, so packets that arrive a little late still make it, and written to ffmpeg by its own thread.
+  - **Dropped frames:** for each video frame the pacer drops (only when encoding falls more than 0.5 s behind), the same 1/fps of sound is left out, so the two stay together after the jump.
+  - **Stop:** the video is written up to the frame due at the stop, and the sound to exactly the same length (48000/fps samples per frame). The two streams are equally long; ffprobe shows the same duration for both.
+- **ffmpeg**:
+  - The sound is a second input: raw float on a named pipe (`\\.\pipe\cashgear-rec-<guid>`, current user only), passed as `-f f32le -ar 48000 -ch_layout stereo -i <pipe> -map 0:v:0 -map 1:a:0 … -c:a aac -b:a 160k`.
+  - With no sound the command line is unchanged.
+- **NAudio.Wasapi 3.1.0** (MIT) for the Windows Core Audio interop, added to `THIRD-PARTY-NOTICES.txt`.
+
+### Deviations
+- **A named pipe, not a temp file muxed at stop.**
+  - Why:
+    - one encode pass, so Stop is as quick as before;
+    - no temporary sound file (about 1.4 GB an hour as float);
+    - nothing left behind if the app is killed;
+    - ffmpeg interleaves the streams itself.
+  - The cost: ffmpeg (7 and later) stops reading whichever input runs more than 100 ms ahead of the other, so the two writers must never wait for each other:
+    - The sound follows the clock only, never the video's progress. At 1080p ffmpeg probes one video frame and then waits for 85 ms of sound before it reads stdin again, so tying sound to video deadlocks.
+    - A pause or a stop lets the sound catch up to the clock.
+    - At Stop the sound pipe is closed without waiting for the video, and stdin without waiting for the sound.
+- **Our own capture loop on NAudio's Core Audio interop, not NAudio's `WasapiCapture`.**
+  - `WasapiCapture` drops the QPC timestamps and the discontinuity flag, and polls every 50 ms.
+  - It posts its events to the creating thread's SynchronizationContext, and its capture thread can throw when a device disappears.
+  - Raw WASAPI would have meant about 300 lines of COM interop that NAudio already provides.
+- **"Default microphone (Windows setting)"** in addition to the list of devices, so a different headset doesn't need a trip to Settings.
+- The only level control is the toolbar's mute; microphone volume is set in Windows.
+
+### Fixed during development
+- A packet delivered late was placed at its arrival time. The original check rejected Windows' timestamp when it was more than 200 ms from arrival. In one real-sound test run, a beep captured during a pause landed just after Resume. Windows' timestamp is now kept unless it is missing, more than 200 ms in the future, or more than 5 s old.
+
+### Tested
+- **545 automated tests** (543 pass, 2 explicit). New:
+  - recording clock: pauses, sound mapped to recording samples, packets split at Pause and Resume, nothing from a pause, before the start or after the stop;
+  - mixer:
+    - jittery timestamps make no gaps;
+    - no packets give silence of the clock's length;
+    - sound after a silence lands at its time;
+    - late sound is trimmed;
+    - jumping back replaces instead of doubling;
+    - ±0.05% sound card drift stays within 15 ms over ten minutes;
+    - tracks summed and clamped; mute; frames skipped for dropped video; overflow counted; peak level;
+  - sound frames per video frame, the mixing schedule, `FramePacer.Due`;
+  - ffmpeg arguments with sound (and unchanged without); recording settings: defaults, microphone normalizing, a settings file from before sound;
+  - Windows timestamps: used for late packets, rejected when missing, far in the future or very old; 100 ns conversion without overflow;
+  - notification text with sound and with missing sound; toolbar: level meter scale, mute toggle, missing-sound tooltip; Settings: microphone list, a disconnected microphone kept, round trip;
+  - real recordings with the real ffmpeg:
+    - 3 s with sound: AAC 48 kHz stereo as long as the video, 0 frames dropped;
+    - loopback-like tone bursts at 0.5 s and 3.0 s around a 1.5 s pause land at 0.5 s and 1.5 s (±50 ms);
+    - sound asked for but unavailable gives a video-only file and a note;
+    - real system audio with nothing playing still gives a full-length sound track.
+  - Explicit: real beeps played through the default device while recording 10 s with a pause land where they were played (±30 ms).
+- **Manual on this PC** (see TESTING.md). The default output device is the ZOOM H5's headphone output, and the microphone is its input (USB).
+  - 10 s of a region with beeps and a pause from the toolbar.
+  - System audio + H5 microphone, with mute toggled from the toolbar.
+  - Sound off.
+  - 60 s of the whole 1920×1080 monitor with sound: 1,814 frames, 0 dropped, video and sound both 60.467 s, beeps exactly 1.000 s apart.
+
+### Known limitations
+- System audio comes from the device that was the default output when the recording started; switching output devices during a recording records silence from the old one.
+- When encoding falls far behind and frames are dropped, the same span of sound is left out, so the sound skips with the picture.
+- Hardware encoders are untested with sound here (none works on this PC).
+- If Windows' privacy settings block desktop apps from the microphone, the microphone isn't recorded (the notification says how to allow it).
+- One unexplained hang in about 20 runs of the explicit real-sound test, before the test had timeouts and logging. The test stopped at the start, with ffmpeg idle and an empty file, and didn't recur in later logged runs (see TESTING.md). In the app, Stop has 60 s timeouts and then ends ffmpeg.
