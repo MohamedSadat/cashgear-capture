@@ -246,6 +246,7 @@
 
       <!-- ============================== General ============================== -->
       <TabItem Header="General">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="12,4,12,12">
           <TextBlock Style="{StaticResource Section}" Text="Startup" />
           <CheckBox Margin="0,2" Content="Start CashGear Capture when I sign in to Windows" IsChecked="{Binding StartWithWindows}" />
@@ -259,10 +260,25 @@
           <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" ItemTemplate="{StaticResource EnumItem}"
                     HorizontalAlignment="Left" MinWidth="220" AutomationProperties.Name="Theme" />
 
+          <TextBlock Style="{StaticResource Section}" Text="Capture history" />
+          <ComboBox ItemsSource="{Binding HistorySizes}" SelectedItem="{Binding HistorySize}" DisplayMemberPath="Label"
+                    HorizontalAlignment="Left" MinWidth="220" AutomationProperties.Name="Captures kept in the history" />
+          <TextBlock Style="{StaticResource Hint}" Text="Recent captures are kept (with thumbnails) for tray › Recent Captures and Capture History, even ones you didn't save. Lowering the number removes the oldest straight away." />
+
+          <TextBlock Style="{StaticResource Section}" Text="Updates" />
+          <TextBlock Text="{Binding VersionText}" />
+          <CheckBox Margin="0,6,0,2" Content="Check for updates automatically (once a day) and download them in the background"
+                    IsChecked="{Binding CheckForUpdates}" IsEnabled="{Binding CanCheckForUpdates}" />
+          <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+            <Button Content="Check now" Command="{Binding CheckForUpdatesNowCommand}" MinWidth="100" />
+            <TextBlock Text="{Binding UpdateStatus}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="10,0,0,0" MaxWidth="440" Opacity="0.8" />
+          </StackPanel>
+
           <TextBlock Style="{StaticResource Section}" Text="Advanced" />
           <Button Content="Open settings file" Command="{Binding OpenSettingsFileCommand}" HorizontalAlignment="Left" />
           <TextBlock Style="{StaticResource Hint}" Text="Edits saved in the file apply immediately." />
         </StackPanel>
+        </ScrollViewer>
       </TabItem>
     </TabControl>
   </DockPanel>

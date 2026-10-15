@@ -294,6 +294,31 @@ public sealed class SettingsViewModelTests : IDisposable
         _hotkeyService.Registered.Should().HaveCount(6);
     }
 
+    [Fact]
+    public async Task History_size_and_update_checks_are_loaded_and_saved()
+    {
+        _settings.Current = new AppSettings
+        {
+            History = new HistorySettings(MaxItems: 30), // set by hand: not one of the offered sizes
+            Updates = new UpdateSettings(CheckAutomatically: false, FeedUrl: @"\\server\capture-releases"),
+        };
+        using var vm = Create();
+
+        vm.HistorySize!.Value.Should().Be(30);
+        vm.HistorySizes.Should().Contain(vm.HistorySize, "a hand-set size is offered so it isn't lost");
+        vm.CheckForUpdates.Should().BeFalse();
+        vm.CanCheckForUpdates.Should().BeFalse("no update service: not an installed copy");
+        vm.VersionText.Should().StartWith("Version ");
+
+        vm.HistorySize = vm.HistorySizes.Single(c => c.Value == 0);
+        vm.CheckForUpdates = true;
+        await vm.ApplyCommand.ExecuteAsync(null);
+
+        _settings.Current.History.MaxItems.Should().Be(0);
+        _settings.Current.Updates.CheckAutomatically.Should().BeTrue();
+        _settings.Current.Updates.FeedUrl.Should().Be(@"\\server\capture-releases", "the address is only edited in the file and must survive");
+    }
+
     private SettingsViewModel Create() =>
         new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance);
 }

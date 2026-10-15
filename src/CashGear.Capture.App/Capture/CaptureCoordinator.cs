@@ -1,12 +1,14 @@
 using System.IO;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
 using CashGear.Capture.App.Scrolling;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.History;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Ocr;
 using CashGear.Capture.Core.Output;
@@ -38,8 +40,12 @@ public sealed partial class CaptureCoordinator
     private readonly ScrollingCaptureService _scrolling;
     private readonly IScrollPlatform _scrollPlatform;
     private readonly IOcrService _ocr;
+    private readonly ICaptureCountdown _countdown;
+    private readonly ICaptureHistory _history;
+    private readonly IShell _shell;
     private readonly TimeProvider _time;
     private readonly ILogger<CaptureCoordinator> _logger;
+    private int _busy;
 
     public CaptureCoordinator(
         IScreenCaptureService capture,
@@ -57,6 +63,9 @@ public sealed partial class CaptureCoordinator
         ScrollingCaptureService scrolling,
         IScrollPlatform scrollPlatform,
         IOcrService ocr,
+        ICaptureCountdown countdown,
+        ICaptureHistory history,
+        IShell shell,
         TimeProvider time,
         ILogger<CaptureCoordinator> logger)
     {
@@ -75,6 +84,9 @@ public sealed partial class CaptureCoordinator
         _scrolling = scrolling;
         _scrollPlatform = scrollPlatform;
         _ocr = ocr;
+        _countdown = countdown;
+        _history = history;
+        _shell = shell;
         _time = time;
         _logger = logger;
     }
@@ -305,8 +317,33 @@ public sealed partial class CaptureCoordinator
     private static bool IsShell(WindowInfo window) =>
         window.ClassName is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd";
 
+    /// <summary>True while a capture runs (from the countdown to the notification or editor).</summary>
+    public bool IsBusy => Volatile.Read(ref _busy) != 0;
+
+    /// <summary>
+    /// Runs one capture at a time. Hotkeys, the tray and command-line switches can all start one; a request while
+    /// another is counting down or selecting is ignored rather than stacking a second overlay.
+    /// </summary>
     /// <param name="producesImage">False for Capture Text, which copies text and ignores the after-capture actions.</param>
     private async Task RunAsync(Func<AppSettings, Task> capture, bool producesImage = true)
+    {
+        if (Interlocked.CompareExchange(ref _busy, 1, 0) != 0)
+        {
+            LogBusy();
+            return;
+        }
+
+        try
+        {
+            await RunOneAsync(capture, producesImage).ConfigureAwait(false);
+        }
+        finally
+        {
+            Volatile.Write(ref _busy, 0);
+        }
+    }
+
+    private async Task RunOneAsync(Func<AppSettings, Task> capture, bool producesImage)
     {
         var current = _settings.Current;
         if (producesImage && !current.AfterCapture.DoesAnything)
@@ -335,20 +372,15 @@ public sealed partial class CaptureCoordinator
     }
 
     /// <summary>
-    /// Hides our windows, waits the user's capture delay (announced, so they know when to be ready), then waits
-    /// for the tray menu and hidden windows to fade out. Dispose the result to bring our windows back.
+    /// Hides our windows, counts down the user's capture delay (on screen, with a Cancel button), then waits for the
+    /// tray menu and hidden windows to fade out. Dispose the result to bring our windows back.
     /// </summary>
     private async Task<IDisposable> PrepareAsync(AppSettings current, bool hideOwnUi, CancellationToken ct)
     {
         var hidden = hideOwnUi ? await _ownWindows.HideAsync().ConfigureAwait(false) : NothingHidden.Instance;
         try
         {
-            var delay = current.Capture.DelaySeconds;
-            if (delay > 0)
-            {
-                _notifier.Notify("Capture", $"Capturing in {delay} second{(delay == 1 ? string.Empty : "s")}…");
-                await Task.Delay(TimeSpan.FromSeconds(delay), _time, ct).ConfigureAwait(false);
-            }
+            await _countdown.RunAsync(current.Capture.DelaySeconds, ct).ConfigureAwait(false);
 
             if (hideOwnUi)
             {
@@ -366,7 +398,8 @@ public sealed partial class CaptureCoordinator
 
     /// <summary>
     /// Saves <paramref name="files"/> (if saving is on) under the file-name template, copies <paramref name="primary"/>
-    /// (if copying is on) and opens it in the editor (if that is on), else tells the user what happened.
+    /// (if copying is on) and opens it in the editor (if that is on), else tells the user what happened (clicking
+    /// the notification shows the file). <paramref name="primary"/> also goes into the history, alongside the rest.
     /// <paramref name="hidden"/> brings our windows back; that happens before the editor opens, so the new editor
     /// ends up in front of them.
     /// </summary>
@@ -388,26 +421,40 @@ public sealed partial class CaptureCoordinator
             }
         }
 
-        if (after.CopyToClipboard)
+        string? savedAs = null;
+        for (var i = 0; i < saved.Count; i++)
         {
-            await _output.CopyToClipboardAsync(primary, ct).ConfigureAwait(false);
+            savedAs = ReferenceEquals(files[i], primary) ? saved[i] : savedAs;
         }
 
-        if (after.OpenEditor)
+        // Kept in the history while the rest happens; the image must stay alive until both are done.
+        var pngCopy = current.Output.Format == ImageFileFormat.Png ? savedAs : null;
+        var history = _history.AddAsync(primary, savedAs, pngCopy, CancellationToken.None);
+        try
         {
-            // The editor shows the result, so no notification. If the image was saved, Ctrl+S in the editor updates that file.
-            string? savedAs = null;
-            for (var i = 0; i < saved.Count; i++)
+            if (after.CopyToClipboard)
             {
-                savedAs = ReferenceEquals(files[i], primary) ? saved[i] : savedAs;
+                await _output.CopyToClipboardAsync(primary, ct).ConfigureAwait(false);
             }
 
-            hidden.Dispose();
-            await _editor.OpenAsync(primary, savedAs, ct).ConfigureAwait(false);
-            return;
-        }
+            if (after.OpenEditor)
+            {
+                // The editor shows the result, so no notification. If the image was saved, Ctrl+S in the editor updates that file.
+                hidden.Dispose();
+                await _editor.OpenAsync(primary, savedAs, ct).ConfigureAwait(false);
+                return;
+            }
 
-        _notifier.Notify(saved.Count > 0 ? "Capture saved" : "Capture copied", Summary(saved, after.CopyToClipboard));
+            var shown = saved.FirstOrDefault();
+            _notifier.Notify(
+                saved.Count > 0 ? "Capture saved" : "Capture copied",
+                Summary(saved, after.CopyToClipboard),
+                onClick: shown is null ? null : () => _shell.ShowInFolder(shown));
+        }
+        finally
+        {
+            await history.ConfigureAwait(false);
+        }
     }
 
     /// <summary>The configured template, or the default if a hand edit broke it; several files from one capture get {monitor} so their names differ.</summary>
@@ -437,7 +484,7 @@ public sealed partial class CaptureCoordinator
             lines.Add(saved.Count == 1
                 ? Path.GetFileName(saved[0])
                 : $"{Path.GetFileName(saved[0])} and {saved.Count - 1} more");
-            lines.Add("in " + Path.GetDirectoryName(saved[0]));
+            lines.Add("in " + Path.GetDirectoryName(saved[0]) + " (click to show)");
         }
 
         if (copied)
@@ -459,6 +506,9 @@ public sealed partial class CaptureCoordinator
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Capture cancelled")]
     private partial void LogCancelled();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "A capture is already in progress; the new request was ignored")]
+    private partial void LogBusy();
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Capture failed")]
     private partial void LogFailed(Exception ex);

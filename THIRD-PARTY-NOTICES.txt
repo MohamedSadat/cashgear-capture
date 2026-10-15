@@ -1,0 +1,19 @@
+CashGear Capture includes the third-party software listed below. Each is used under its own license; the
+license texts are available at the addresses given.
+
+ffmpeg (ffmpeg\ffmpeg.exe, ffmpeg\ffprobe.exe)
+  Used for screen recording. It runs as a separate program; CashGear Capture does not link to it.
+  Build: 9.0.2 "essentials" by Gyan Doshi, https://www.gyan.dev/ffmpeg/builds/ (https://github.com/GyanD/codexffmpeg)
+  License: GNU General Public License version 3 (the build includes GPL components such as x264); the full text
+  is in ffmpeg\LICENSE. Source code: https://ffmpeg.org/download.html and the build page above.
+
+.NET runtime and Windows Presentation Foundation (WPF) - MIT License - https://github.com/dotnet/runtime, https://github.com/dotnet/wpf
+C#/WinRT projection (WinRT.Runtime) - MIT License - https://github.com/microsoft/CsWinRT
+Microsoft.Extensions.Hosting, DependencyInjection, Logging - MIT License - https://github.com/dotnet/runtime
+CommunityToolkit.Mvvm - MIT License - https://github.com/CommunityToolkit/dotnet
+H.NotifyIcon - MIT License - https://github.com/HavenDV/H.NotifyIcon
+Serilog, Serilog.Extensions.Hosting, Serilog.Sinks.File - Apache License 2.0 - https://github.com/serilog/serilog
+SkiaSharp - MIT License - https://github.com/mono/SkiaSharp
+  Skia - BSD 3-Clause License - https://skia.org
+Vortice.Windows (Direct3D 11 / DXGI bindings) - MIT License - https://github.com/amerkoleci/Vortice.Windows
+Velopack (installer and updates) - MIT License - https://github.com/velopack/velopack

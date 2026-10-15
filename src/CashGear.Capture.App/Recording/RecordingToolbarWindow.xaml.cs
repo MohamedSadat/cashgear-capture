@@ -61,7 +61,7 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
 /// The small bar shown while recording. It is left out of the recording itself (and of screenshots), never takes
 /// the focus, stays on top at the top centre of the recorded monitor, and can be dragged out of the way.
 /// </summary>
-public partial class RecordingToolbarWindow : Window
+public partial class RecordingToolbarWindow : Window, IThemedWindow
 {
     private const int EdgeMargin = 8;
 
@@ -73,7 +73,7 @@ public partial class RecordingToolbarWindow : Window
         InitializeComponent();
         DataContext = viewModel;
         _workArea = workArea;
-        Theming.Apply(this, theme);
+        ApplyTheme(theme);
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => viewModel.Refresh(), Dispatcher);
         SourceInitialized += (_, _) =>
             User32.SetWindowDisplayAffinity(new WindowInteropHelper(this).Handle, User32.WdaExcludeFromCapture);
@@ -84,6 +84,8 @@ public partial class RecordingToolbarWindow : Window
         };
         Closed += (_, _) => _timer.Stop();
     }
+
+    public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
 
     private void OnDrag(object sender, MouseButtonEventArgs e)
     {

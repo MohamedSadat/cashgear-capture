@@ -32,6 +32,10 @@ public sealed record AppSettings
 
     public OcrSettings Ocr { get; init; } = new();
 
+    public HistorySettings History { get; init; } = new();
+
+    public UpdateSettings Updates { get; init; } = new();
+
     /// <summary>Replaces missing sections with defaults and clamps out-of-range values.</summary>
     public AppSettings Normalize() => this with
     {
@@ -43,6 +47,8 @@ public sealed record AppSettings
         Appearance = (Appearance ?? new AppearanceSettings()).Normalize(),
         Recording = (Recording ?? new RecordingSettings()).Normalize(),
         Ocr = (Ocr ?? new OcrSettings()).Normalize(),
+        History = (History ?? new HistorySettings()).Normalize(),
+        Updates = (Updates ?? new UpdateSettings()).Normalize(),
     };
 }
 
@@ -171,6 +177,24 @@ public sealed record RecordingSettings(
 public sealed record OcrSettings(string? Language = null)
 {
     public OcrSettings Normalize() => this with { Language = string.IsNullOrWhiteSpace(Language) ? null : Language.Trim() };
+}
+
+/// <summary>Capture history (tray › Recent Captures and the History window).</summary>
+/// <param name="MaxItems">How many recent captures to keep; 0 keeps none (history off).</param>
+public sealed record HistorySettings(int MaxItems = HistorySettings.DefaultMaxItems)
+{
+    public const int DefaultMaxItems = 20;
+    public const int Limit = 100;
+
+    public HistorySettings Normalize() => this with { MaxItems = Math.Clamp(MaxItems, 0, Limit) };
+}
+
+/// <summary>Updates of the installed app.</summary>
+/// <param name="CheckAutomatically">Check (and download) in the background, once a day.</param>
+/// <param name="FeedUrl">Where to look: a URL or folder with a release feed. Null uses the address built into the app.</param>
+public sealed record UpdateSettings(bool CheckAutomatically = true, string? FeedUrl = null)
+{
+    public UpdateSettings Normalize() => this with { FeedUrl = string.IsNullOrWhiteSpace(FeedUrl) ? null : FeedUrl.Trim() };
 }
 
 public sealed record AppearanceSettings(AppTheme Theme = AppTheme.System)

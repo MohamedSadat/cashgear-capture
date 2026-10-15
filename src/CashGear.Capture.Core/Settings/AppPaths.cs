@@ -13,6 +13,9 @@ public sealed record AppPaths(
     /// <summary>Per-machine app state (<c>%LocalAppData%\CashGear\Capture</c>).</summary>
     public string DataDirectory => DataDirectoryOverride ?? Path.GetDirectoryName(LogDirectory) ?? LogDirectory;
 
+    /// <summary>Copies of recent captures and their thumbnails.</summary>
+    public string HistoryDirectory => Path.Combine(DataDirectory, "history");
+
     public static AppPaths FromEnvironment() => new(
         SettingsDirectory: Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CashGear", "Capture"),

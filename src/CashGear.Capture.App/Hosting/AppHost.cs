@@ -1,5 +1,6 @@
 using CashGear.Capture.App.Capture;
 using CashGear.Capture.App.Editor;
+using CashGear.Capture.App.History;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
@@ -10,6 +11,7 @@ using CashGear.Capture.App.Settings;
 using CashGear.Capture.App.SingleInstance;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core;
+using CashGear.Capture.Core.History;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
@@ -24,7 +26,7 @@ namespace CashGear.Capture.App.Hosting;
 
 internal static class AppHost
 {
-    public static IHost Build(string[] args, AppPaths paths)
+    public static IHost Build(string[] args, AppPaths paths, InstallEvents install)
     {
         var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
         {
@@ -53,6 +55,11 @@ internal static class AppHost
         builder.Services.AddSingleton<IOutputService, WpfOutputService>();
         builder.Services.AddSingleton<IOwnWindows, WpfOwnWindows>();
         builder.Services.AddSingleton<IStartupRegistration, RegistryStartupRegistration>();
+        builder.Services.AddSingleton(install);
+        builder.Services.AddSingleton<IShell, ExplorerShell>();
+        builder.Services.AddSingleton<IUpdateBackend, VelopackUpdateBackend>();
+        builder.Services.AddSingleton<UpdateService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<UpdateService>());
         builder.Services.AddSingleton<IFolderPicker, WpfFolderPicker>();
         builder.Services.AddSingleton<SettingsWindowService>();
         builder.Services.AddSingleton<RegionSelector>();
@@ -66,6 +73,11 @@ internal static class AppHost
         builder.Services.AddSingleton<IHotkeyService, Win32HotkeyService>();
         builder.Services.AddSingleton<HotkeyRegistrar>();
         builder.Services.AddSingleton<HotkeyRouter>();
+        builder.Services.AddSingleton<ICaptureCountdown, WpfCaptureCountdown>();
+        builder.Services.AddSingleton<ICaptureHistory, FileCaptureHistory>();
+        builder.Services.AddSingleton<HistoryActions>();
+        builder.Services.AddSingleton<HistoryWindowService>();
+        builder.Services.AddSingleton<ThemeService>();
         builder.Services.AddSingleton<CaptureCoordinator>();
         builder.Services.AddSingleton<UiReadySignal>();
         builder.Services.AddSingleton<TrayIconHost>();

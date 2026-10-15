@@ -16,7 +16,7 @@ namespace CashGear.Capture.App.Editor;
 /// The editor window. Logic lives in <see cref="EditorViewModel"/> and the editor session; this handles window
 /// chrome, keyboard shortcuts, the in-place text box and the unsaved-changes prompt on close.
 /// </summary>
-public partial class EditorWindow : Window
+public partial class EditorWindow : Window, IThemedWindow
 {
     private const double PanelWidth = 236;
     private const double ChromeHeight = 150; // toolbar, status bar and title bar, roughly
@@ -31,8 +31,7 @@ public partial class EditorWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
-        Theming.Apply(this, theme);
-        Surface.CanvasColor = Theming.IsDark(theme) ? new SKColor(0x1E, 0x1E, 0x1E) : new SKColor(0xE3, 0xE3, 0xE3);
+        ApplyTheme(theme);
         Surface.Attach(viewModel);
         Surface.TextEditRequested += (_, request) => ShowTextEditor(request);
         viewModel.FinishTextEditRequested += (_, _) => CommitText();
@@ -40,6 +39,12 @@ public partial class EditorWindow : Window
         TextEditor.PreviewKeyDown += OnTextEditorKeyDown;
         SizeToImage(viewModel.Document.Width, viewModel.Document.Height);
         Loaded += (_, _) => Surface.Focus();
+    }
+
+    public void ApplyTheme(AppTheme theme)
+    {
+        Theming.Apply(this, theme);
+        Surface.CanvasColor = Theming.IsDark(theme) ? new SKColor(0x1E, 0x1E, 0x1E) : new SKColor(0xE3, 0xE3, 0xE3);
     }
 
     /// <summary>Closes the window, asking about unsaved changes first. False if the user chose to keep it open.</summary>

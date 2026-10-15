@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Threading;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.SingleInstance;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Instance;
@@ -42,6 +43,7 @@ public partial class CaptureApplication : Application
 
         _tray = _services.GetRequiredService<TrayIconHost>();
         _tray.Show(_services.GetRequiredService<TrayViewModel>());
+        _services.GetRequiredService<ThemeService>().Start();
 
         // After the tray icon exists, so conflict notifications have somewhere to show.
         _services.GetRequiredService<HotkeyRegistrar>().Start();
@@ -53,6 +55,7 @@ public partial class CaptureApplication : Application
         _services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(ShutdownFromHost);
 
         LogStarted(_startupCommand);
+        Welcome(_services.GetRequiredService<InstallEvents>());
 
         if (_startupCommand != InstanceCommand.Activate)
         {
@@ -65,6 +68,23 @@ public partial class CaptureApplication : Application
         LogExiting(e.ApplicationExitCode);
         _tray?.Dispose();
         base.OnExit(e);
+    }
+
+    /// <summary>After installing, say where the app went (a tray app has no window); after an update, say so.</summary>
+    private void Welcome(InstallEvents install)
+    {
+        if (install.FirstRun)
+        {
+            var hotkeys = _services.GetRequiredService<HotkeyRegistrar>();
+            var region = hotkeys.Active.TryGetValue(Core.Hotkeys.HotkeyAction.CaptureRegion, out var gesture) ? $"Press {gesture} to capture a region, or click" : "Click";
+            _tray!.Notify(
+                "CashGear Capture is running",
+                $"It lives in the notification area (under ^ if Windows hides it). {region} the icon for every kind of capture and Settings.");
+        }
+        else if (install.UpdatedTo is { } version)
+        {
+            _tray!.Notify("CashGear Capture updated", $"You are now running version {version}.");
+        }
     }
 
     private void ShutdownFromHost()

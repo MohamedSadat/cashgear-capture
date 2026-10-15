@@ -2,16 +2,13 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:tb="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf">
 
+  <BooleanToVisibilityConverter x:Key="TrayVisible" />
+
+  <!-- The icon itself is set in TrayIconHost (the app icon at the notification area's size). -->
   <tb:TaskbarIcon x:Key="TrayIcon"
                   ToolTipText="CashGear Capture"
                   MenuActivation="LeftOrRightClick"
                   NoLeftClickDelay="True">
-    <tb:TaskbarIcon.IconSource>
-      <tb:GeneratedIconSource Text="CG"
-                              Foreground="White"
-                              Background="#1E6FD9"
-                              FontWeight="Bold" />
-    </tb:TaskbarIcon.IconSource>
 
     <tb:TaskbarIcon.ContextMenu>
       <ContextMenu>
@@ -20,9 +17,45 @@
         <MenuItem Header="Capture _Full Screen" Command="{Binding CaptureFullScreenCommand}" InputGestureText="{Binding FullScreenHotkey}" />
         <MenuItem Header="_Scrolling Capture" Command="{Binding CaptureScrollingCommand}" InputGestureText="{Binding ScrollingHotkey}" />
         <MenuItem Header="Capture _Text" Command="{Binding CaptureTextCommand}" InputGestureText="{Binding TextHotkey}" />
+        <MenuItem Header="{Binding DelayHeader}" ItemsSource="{Binding DelayChoices}">
+          <MenuItem.ItemContainerStyle>
+            <Style TargetType="MenuItem">
+              <Setter Property="Header" Value="{Binding Label}" />
+              <Setter Property="IsChecked" Value="{Binding IsChecked, Mode=OneWay}" />
+              <Setter Property="Command" Value="{Binding SelectCommand}" />
+            </Style>
+          </MenuItem.ItemContainerStyle>
+        </MenuItem>
         <Separator />
         <MenuItem Header="{Binding RecordText}" Command="{Binding ToggleRecordingCommand}" InputGestureText="{Binding RecordHotkey}" />
         <Separator />
+        <MenuItem Header="Recent _Captures" ItemsSource="{Binding RecentCaptures}" IsEnabled="{Binding HasRecentCaptures}">
+          <MenuItem.ItemContainerStyle>
+            <Style TargetType="MenuItem">
+              <Setter Property="Command" Value="{Binding Open}" />
+              <Setter Property="HeaderTemplate">
+                <Setter.Value>
+                  <DataTemplate>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                      <Border Width="64" Height="40" Background="#18808080" Margin="0,0,10,0">
+                        <Image Source="{Binding Item.Thumbnail}" Stretch="Uniform" StretchDirection="DownOnly"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                      </Border>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Item.When}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Item.Description}" Opacity="0.75" />
+                      </StackPanel>
+                    </StackPanel>
+                  </DataTemplate>
+                </Setter.Value>
+              </Setter>
+            </Style>
+          </MenuItem.ItemContainerStyle>
+        </MenuItem>
+        <MenuItem Header="Capture _History…" Command="{Binding OpenHistoryCommand}" />
+        <Separator />
+        <MenuItem Header="{Binding UpdateText}" Command="{Binding RestartToUpdateCommand}"
+                  Visibility="{Binding IsUpdateReady, Converter={StaticResource TrayVisible}}" />
         <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" />
         <Separator />
         <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />

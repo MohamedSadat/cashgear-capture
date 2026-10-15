@@ -45,7 +45,7 @@ public sealed partial class ScrollProgressViewModel(IUiDispatcher ui, Action can
 /// The small window shown while a scrolling capture runs. It never takes the focus, stays on top, is left out of
 /// screen captures, and sits in a corner of the monitor away from where the mouse wheel is turned.
 /// </summary>
-public partial class ScrollProgressWindow : Window
+public partial class ScrollProgressWindow : Window, IThemedWindow
 {
     private const int EdgeMargin = 16;
 
@@ -58,7 +58,7 @@ public partial class ScrollProgressWindow : Window
         DataContext = viewModel;
         _workArea = workArea;
         _avoid = avoid;
-        Theming.Apply(this, theme);
+        ApplyTheme(theme);
         SourceInitialized += (_, _) =>
             User32.SetWindowDisplayAffinity(new WindowInteropHelper(this).Handle, User32.WdaExcludeFromCapture);
         Loaded += (_, _) => Place();
@@ -80,4 +80,6 @@ public partial class ScrollProgressWindow : Window
         User32.SetWindowPos(
             new WindowInteropHelper(this).Handle, 0, x, y, 0, 0, User32.SwpNoActivate | 0x0001 /* NOSIZE */ | 0x0004 /* NOZORDER */);
     }
+
+    public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
 }

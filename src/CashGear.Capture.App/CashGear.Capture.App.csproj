@@ -6,6 +6,7 @@
     <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AssemblyTitle>CashGear Capture</AssemblyTitle>
     <!-- Pinning pooled pixel buffers when handing them to WIC. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -23,15 +24,25 @@
     <PackageReference Include="Serilog.Extensions.Hosting" />
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="SkiaSharp.Views.WPF" />
+    <PackageReference Include="Velopack" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+
+  <!-- The packaging script passes the release feed the installed app checks for updates (empty: none). -->
+  <ItemGroup Condition="'$(UpdateFeedUrl)' != ''">
+    <AssemblyMetadata Include="UpdateFeedUrl" Value="$(UpdateFeedUrl)" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
   </ItemGroup>
 
-  <!-- Screen recording runs ffmpeg\ffmpeg.exe next to the app. tools\get-ffmpeg.ps1 puts a pinned build in tools\ffmpeg. -->
+  <!-- Screen recording runs ffmpeg\ffmpeg.exe next to the app (ffprobe is only for the tests). tools\get-ffmpeg.ps1 puts a pinned build in tools\ffmpeg. -->
   <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\ffmpeg.exe')">
-    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\*" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\ffmpeg.exe;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\LICENSE" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

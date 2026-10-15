@@ -32,6 +32,25 @@ public sealed class StartupRegistrationTests : IDisposable
     }
 
     [Fact]
+    public void Uninstalling_removes_only_an_entry_that_starts_the_uninstalled_copy()
+    {
+        const string installed = @"C:\Users\me\AppData\Local\CashGear.Capture\current\CashGear.Capture.App.exe";
+        var startup = new RegistryStartupRegistration(
+            NullLogger<RegistryStartupRegistration>.Instance, _keyPath, "CashGear Capture", $"\"{installed}\"");
+
+        RegistryStartupRegistration.RemoveIfRegisteredFor(installed, _keyPath, "CashGear Capture").Should().BeFalse("nothing is registered");
+
+        startup.SetEnabled(true);
+        RegistryStartupRegistration.RemoveIfRegisteredFor(@"D:\dev\CashGear.Capture.App.exe", _keyPath, "CashGear Capture")
+            .Should().BeFalse("the entry starts another copy");
+        startup.IsEnabled.Should().BeTrue();
+
+        RegistryStartupRegistration.RemoveIfRegisteredFor(installed.ToUpperInvariant(), _keyPath, "CashGear Capture").Should().BeTrue();
+        startup.IsEnabled.Should().BeFalse();
+        RegistryStartupRegistration.RemoveIfRegisteredFor(null, _keyPath, "CashGear Capture").Should().BeFalse();
+    }
+
+    [Fact]
     public void Default_registration_points_at_the_real_run_key()
     {
         RegistryStartupRegistration.RunKeyPath.Should().Be(@"Software\Microsoft\Windows\CurrentVersion\Run");

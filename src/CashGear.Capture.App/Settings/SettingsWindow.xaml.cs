@@ -6,7 +6,7 @@ using CashGear.Capture.Core.Settings;
 namespace CashGear.Capture.App.Settings;
 
 /// <summary>The settings window. Logic lives in <see cref="SettingsViewModel"/>; this only wires window chrome and focus.</summary>
-public partial class SettingsWindow : Window
+public partial class SettingsWindow : Window, IThemedWindow
 {
     private readonly SettingsViewModel _viewModel;
 
@@ -15,11 +15,12 @@ public partial class SettingsWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
-        Theming.Apply(this, theme);
+        ApplyTheme(theme);
 
         viewModel.CloseRequested += (_, _) => Close();
-        viewModel.Saved += (_, _) => Theming.Apply(this, viewModel.Theme);
     }
+
+    public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
 
     protected override void OnClosed(EventArgs e)
     {

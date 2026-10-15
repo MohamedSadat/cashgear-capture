@@ -23,6 +23,7 @@ public static unsafe partial class User32
     public const int SmCxVirtualScreen = 78;
     public const int SmCyVirtualScreen = 79;
     public const int SmCMonitors = 80;
+    public const int SmCxSmIcon = 49;
 
     public const uint CursorShowing = 0x1;
     public const uint DiNormal = 0x3;
@@ -118,6 +119,9 @@ public static unsafe partial class User32
 
     [LibraryImport(Dll, SetLastError = true)]
     public static partial nint GetWindowLongPtrW(nint hwnd, int index);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial nint SetWindowLongPtrW(nint hwnd, int index, nint value);
 
     [LibraryImport(Dll, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

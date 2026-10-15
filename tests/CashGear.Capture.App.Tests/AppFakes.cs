@@ -40,8 +40,14 @@ internal sealed class FakeNotifier : ITrayNotifier
 {
     public List<(string Title, string Text, NotificationKind Kind)> Messages { get; } = [];
 
-    public void Notify(string title, string message, NotificationKind kind = NotificationKind.Info) =>
+    /// <summary>What clicking each notification would do (null when nothing).</summary>
+    public List<Action?> ClickActions { get; } = [];
+
+    public void Notify(string title, string message, NotificationKind kind = NotificationKind.Info, Action? onClick = null)
+    {
         Messages.Add((title, message, kind));
+        ClickActions.Add(onClick);
+    }
 }
 
 internal sealed class MutableSettings : ISettingsService

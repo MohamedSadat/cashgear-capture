@@ -1,5 +1,6 @@
 using System.IO;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
@@ -37,6 +38,7 @@ public sealed partial class RecordingController
     private readonly AppPaths _paths;
     private readonly ICaptureCounter _counter;
     private readonly ITrayNotifier _notifier;
+    private readonly IShell _shell;
     private readonly TimeProvider _time;
     private readonly ILogger<RecordingController> _logger;
     private RecordingToolbarWindow? _toolbar;
@@ -55,6 +57,7 @@ public sealed partial class RecordingController
         AppPaths paths,
         ICaptureCounter counter,
         ITrayNotifier notifier,
+        IShell shell,
         TimeProvider time,
         ILogger<RecordingController> logger)
     {
@@ -70,6 +73,7 @@ public sealed partial class RecordingController
         _paths = paths;
         _counter = counter;
         _notifier = notifier;
+        _shell = shell;
         _time = time;
         _logger = logger;
         _recorder.StateChanged += (_, _) => StateChanged?.Invoke(this, EventArgs.Empty);
@@ -145,7 +149,11 @@ public sealed partial class RecordingController
         {
             await _ui.InvokeAsync(CloseToolbar).ConfigureAwait(false);
             var result = await _recorder.StopAsync().ConfigureAwait(false);
-            _notifier.Notify("Recording saved", Summary(result), result.DropRate > DropWarning ? NotificationKind.Warning : NotificationKind.Info);
+            _notifier.Notify(
+                "Recording saved",
+                Summary(result),
+                result.DropRate > DropWarning ? NotificationKind.Warning : NotificationKind.Info,
+                onClick: () => _shell.ShowInFolder(result.Path));
         }
         catch (Exception ex) when (ex is CaptureException or IOException or InvalidOperationException)
         {

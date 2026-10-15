@@ -60,7 +60,7 @@ internal sealed class WpfAppLifetime(IUiDispatcher ui) : IAppLifetime
 }
 
 /// <summary>Completes once the tray icon exists, so background services don't drive a UI that isn't there yet.</summary>
-internal sealed class UiReadySignal
+public sealed class UiReadySignal
 {
     private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
 

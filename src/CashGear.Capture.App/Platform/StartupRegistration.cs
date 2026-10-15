@@ -65,6 +65,28 @@ public sealed partial class RegistryStartupRegistration : IStartupRegistration
         LogChanged(enabled, _command);
     }
 
+    /// <summary>
+    /// Removes the start-with-Windows entry if it starts <paramref name="exePath"/>. The uninstaller uses this: an
+    /// entry made by another copy of the app (e.g. a development build) is left alone. Returns whether one was removed.
+    /// </summary>
+    public static bool RemoveIfRegisteredFor(string? exePath, string keyPath = RunKeyPath, string valueName = DefaultValueName)
+    {
+        if (string.IsNullOrEmpty(exePath))
+        {
+            return false;
+        }
+
+        using var key = Registry.CurrentUser.OpenSubKey(keyPath, writable: true);
+        if (key?.GetValue(valueName) is not string command
+            || !string.Equals(command.Trim().Trim('"'), exePath, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        key.DeleteValue(valueName, throwOnMissingValue: false);
+        return true;
+    }
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Start with Windows: {Enabled} ({Command})")]
     private partial void LogChanged(bool enabled, string command);
 }

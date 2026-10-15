@@ -46,6 +46,37 @@ internal static class WpfImaging
         encoder.Save(output);
     }
 
+    /// <summary>Reads an image file back into a capture (Bgra32), e.g. to reopen one from the history.</summary>
+    public static unsafe CapturedImage Load(string path, CaptureMetadata metadata)
+    {
+        BitmapSource frame;
+        using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.OnLoad);
+            frame = new FormatConvertedBitmap(decoder.Frames[0], PixelFormats.Bgra32, null, 0);
+        }
+
+        var image = CapturedImage.Allocate(
+            frame.PixelWidth,
+            frame.PixelHeight,
+            metadata with { SourceBounds = metadata.SourceBounds with { Width = frame.PixelWidth, Height = frame.PixelHeight } },
+            clear: false);
+        try
+        {
+            fixed (byte* pixels = image.Pixels)
+            {
+                frame.CopyPixels(System.Windows.Int32Rect.Empty, (nint)pixels, image.ByteLength, image.Stride);
+            }
+
+            return image;
+        }
+        catch
+        {
+            image.Dispose();
+            throw;
+        }
+    }
+
     /// <summary>
     /// A packed CF_DIB: 40-byte BITMAPINFOHEADER (32 bpp, BI_RGB) followed by bottom-up rows — the format
     /// classic Win32 apps such as Paint read most reliably.

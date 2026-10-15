@@ -1,4 +1,5 @@
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.SingleInstance;
 using CashGear.Capture.Core.Instance;
 using CashGear.Capture.Core.Settings;
@@ -20,6 +21,9 @@ public static class Program
         try
         {
             using var guard = SingleInstanceGuard.TryAcquire(InstanceNames.MutexName);
+
+            // Install, update and uninstall steps run this exe and end inside Run.
+            var install = InstallHooks.Run(args, applyPendingUpdate: guard.IsPrimary && command != InstanceCommand.Exit);
             if (!guard.IsPrimary)
             {
                 log.Information("Another instance is running; forwarding {Command}", command);
@@ -33,14 +37,16 @@ public static class Program
             }
 
             log.Information(
-                "Starting CashGear Capture {Version} (PID {ProcessId}) on {Os}",
-                typeof(Program).Assembly.GetName().Version,
+                "Starting CashGear Capture {Version} (PID {ProcessId}) on {Os} from {Path}{Install}",
+                BuildInfo.Version,
                 Environment.ProcessId,
-                Environment.OSVersion.VersionString);
+                Environment.OSVersion.VersionString,
+                AppContext.BaseDirectory,
+                install.FirstRun ? " (first run after install)" : install.UpdatedTo is { } v ? $" (updated to {v})" : string.Empty);
 
             // Start the host BEFORE creating the WPF Application: the Application constructor installs a
             // DispatcherSynchronizationContext, and blocking on host startup under it can deadlock.
-            using var host = AppHost.Build(args, paths);
+            using var host = AppHost.Build(args, paths, install);
             host.Start();
 
             var app = new CaptureApplication(host.Services, command);

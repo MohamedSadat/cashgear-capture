@@ -10,5 +10,6 @@ public enum NotificationKind
 /// <summary>Shows a tray balloon / toast. Safe to call from any thread.</summary>
 public interface ITrayNotifier
 {
-    void Notify(string title, string message, NotificationKind kind = NotificationKind.Info);
+    /// <param name="onClick">Runs on the UI thread if the user clicks the notification (e.g. to show a saved file).</param>
+    void Notify(string title, string message, NotificationKind kind = NotificationKind.Info, Action? onClick = null);
 }

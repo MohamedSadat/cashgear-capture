@@ -39,6 +39,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly IStartupRegistration _startup;
     private readonly IFolderPicker _folderPicker;
     private readonly ILogger<SettingsViewModel> _logger;
+    private readonly UpdateService? _updates;
+    private readonly SynchronizationContext? _context;
     private IDisposable? _hotkeySuspension;
 
     public SettingsViewModel(
@@ -49,8 +51,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IFolderPicker folderPicker,
         ILogger<SettingsViewModel> logger,
         IFfmpeg? ffmpeg = null,
-        IOcrService? ocr = null)
+        IOcrService? ocr = null,
+        UpdateService? updates = null)
     {
+        _updates = updates;
+        _context = SynchronizationContext.Current;
         OcrLanguages = [new OcrLanguageChoice(null, "Automatic (your Windows languages)"),
             .. (ocr?.AvailableLanguages ?? []).Select(l => new OcrLanguageChoice(l.Tag, $"{l.DisplayName} — {l.NativeName}"))];
         FfmpegStatus = ffmpeg?.Path is { } found
@@ -79,6 +84,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
         Load(settings.Current, startup.IsEnabled);
         _hotkeys.RegistrationsChanged += OnRegistrationsChanged;
+        UpdateStatus = updates?.StatusText ?? string.Empty;
+        if (updates is not null)
+        {
+            updates.StateChanged += OnUpdateStateChanged;
+        }
     }
 
     /// <summary>Raised when the window should close (after OK or Cancel).</summary>
@@ -98,6 +108,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public IReadOnlyList<int> DelayChoices { get; } = [0, 1, 2, 3, 5, 10, 15, 30];
 
     public IReadOnlyList<int> HideDelayChoices { get; } = [0, 100, 200, 300, 500, 1000];
+
+    /// <summary>How many captures the history keeps (a value set by hand in settings.json is added).</summary>
+    public ObservableCollection<CountChoice> HistorySizes { get; } =
+        [new(0, "Off (keep none)"), new(10, "10 captures"), new(20, "20 captures"), new(50, "50 captures"), new(100, "100 captures")];
+
+    /// <summary>E.g. "Version 1.0.0".</summary>
+    public string VersionText => "Version " + BuildInfo.Version;
+
+    /// <summary>Whether this copy can check for updates (installed, with an update address).</summary>
+    public bool CanCheckForUpdates => _updates?.IsAvailable == true;
 
     public IReadOnlyList<int> ScrollSettleChoices { get; } = [100, 250, 500, 1000];
 
@@ -198,6 +218,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private AppTheme _theme;
 
+    [ObservableProperty]
+    private CountChoice? _historySize;
+
+    [ObservableProperty]
+    private bool _checkForUpdates;
+
+    /// <summary>What the last update check found, or why updates are unavailable.</summary>
+    [ObservableProperty]
+    private string _updateStatus = string.Empty;
+
     /// <summary>Every validation problem, one per line; empty when the settings can be saved.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(ApplyCommand))]
@@ -229,6 +259,25 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     {
         EndHotkeyRecording();
         _hotkeys.RegistrationsChanged -= OnRegistrationsChanged;
+        if (_updates is not null)
+        {
+            _updates.StateChanged -= OnUpdateStateChanged;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
+    private Task CheckForUpdatesNowAsync() => _updates?.CheckAsync(userAsked: true) ?? Task.CompletedTask;
+
+    private void OnUpdateStateChanged(object? sender, EventArgs e)
+    {
+        if (_context is { } context)
+        {
+            context.Post(_ => UpdateStatus = _updates?.StatusText ?? string.Empty, null);
+        }
+        else
+        {
+            UpdateStatus = _updates?.StatusText ?? string.Empty;
+        }
     }
 
     partial void OnOutputFolderChanged(string value) => Revalidate();
@@ -339,6 +388,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Appearance = new AppearanceSettings(Theme),
         Recording = new RecordingSettings(RecordingFps, RecordingQuality, RecordingIncludeCursor, RecordingShowClicks, RecordingEncoder),
         Ocr = new OcrSettings(OcrLanguage?.Tag),
+        History = new HistorySettings(HistorySize?.Value ?? current.History.MaxItems),
+        Updates = current.Updates with { CheckAutomatically = CheckForUpdates },
     };
 
     private void Load(AppSettings s, bool startWithWindows)
@@ -368,6 +419,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         FullScreenOutput = s.Capture.FullScreenOutput;
         StartWithWindows = startWithWindows;
         Theme = s.Appearance.Theme;
+        HistorySize = HistorySizes.FirstOrDefault(c => c.Value == s.History.MaxItems);
+        if (HistorySize is null)
+        {
+            HistorySize = new CountChoice(s.History.MaxItems, $"{s.History.MaxItems} captures");
+            HistorySizes.Add(HistorySize);
+        }
+
+        CheckForUpdates = s.Updates.CheckAutomatically;
         foreach (var row in Hotkeys)
         {
             row.Text = s.Hotkeys.For(row.Action) ?? string.Empty;

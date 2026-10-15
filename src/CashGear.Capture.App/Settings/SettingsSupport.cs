@@ -29,6 +29,12 @@ public sealed record OcrLanguageChoice(string? Tag, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>A number with a label, e.g. how many captures the history keeps.</summary>
+public sealed record CountChoice(int Value, string Label)
+{
+    public override string ToString() => Label;
+}
+
 /// <summary>Friendly names for the enums shown in the settings window.</summary>
 public sealed class EnumLabelConverter : IValueConverter
 {

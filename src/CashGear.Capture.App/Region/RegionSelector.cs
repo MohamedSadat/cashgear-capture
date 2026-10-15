@@ -18,9 +18,12 @@ namespace CashGear.Capture.App.Region;
 /// </summary>
 public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
 {
+    private bool _isOpen; // UI thread only
+
     /// <summary>
     /// Opens the overlay. Must be called on the UI thread. Completes with null when the user cancels (Esc,
-    /// right-click), when <paramref name="ct"/> fires, or when the display layout changes.
+    /// right-click), when <paramref name="ct"/> fires, or when the display layout changes — and straight away when an
+    /// overlay is already open (e.g. a recording's area pick while a capture is selecting), so two never stack.
     /// </summary>
     /// <param name="frozen">The all-monitors capture to select from; must stay alive until the task completes.</param>
     public Task<RegionSelectionResult?> SelectAsync(
@@ -31,6 +34,12 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(frozen);
+        if (_isOpen)
+        {
+            LogAlreadyOpen();
+            return Task.FromResult<RegionSelectionResult?>(null);
+        }
+
         var dispatcher = Dispatcher.CurrentDispatcher;
         var displays = monitors.DistinctBy(m => m.Bounds).ToList();
         var bounds = displays.Select(m => m.Bounds).ToList();
@@ -57,6 +66,7 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
             SystemEvents.DisplaySettingsChanged -= onDisplayChange;
             registration.Dispose();
             overlay.Close();
+            _isOpen = false;
 
             if (model.Result is { } result)
             {
@@ -74,6 +84,7 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
         SystemEvents.DisplaySettingsChanged += onDisplayChange; // monitor geometry no longer matches the frozen image
         registration = ct.Register(() => dispatcher.BeginInvoke(model.Cancel));
 
+        _isOpen = true;
         overlay.Show();
 
         // Foreground + full-screen is what makes the shell drop every taskbar below the overlay. Works when this
@@ -118,4 +129,7 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Region selection cancelled")]
     private partial void LogCancelled();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "An overlay is already open; the new selection was not started")]
+    private partial void LogAlreadyOpen();
 }

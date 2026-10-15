@@ -1,19 +1,49 @@
+using System.Collections.ObjectModel;
 using CashGear.Capture.App.Capture;
 using CashGear.Capture.App.Editor;
+using CashGear.Capture.App.History;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Recording;
 using CashGear.Capture.App.Settings;
+using CashGear.Capture.Core.History;
 using CashGear.Capture.Core.Hotkeys;
+using CashGear.Capture.Core.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace CashGear.Capture.App.Tray;
 
+/// <summary>One choice in the Capture Delay submenu.</summary>
+public sealed partial class DelayChoice(int seconds, string label, Func<int, Task> select) : ObservableObject
+{
+    public int Seconds => seconds;
+
+    public string Label => label;
+
+    [ObservableProperty]
+    private bool _isChecked;
+
+    [RelayCommand]
+    private Task SelectAsync() => select(seconds);
+}
+
+/// <summary>A capture in the Recent Captures submenu.</summary>
+public sealed class RecentCapture(HistoryItem item, IAsyncRelayCommand open)
+{
+    public HistoryItem Item => item;
+
+    public IAsyncRelayCommand Open => open;
+}
+
 /// <summary>Commands behind the tray context menu (and the hotkeys, which reuse them).</summary>
 /// <remarks>Async commands are disabled while running, so repeated clicks or hotkeys don't stack captures.</remarks>
 public sealed partial class TrayViewModel : ObservableObject
 {
+    /// <summary>How many captures the Recent Captures submenu lists.</summary>
+    public const int RecentCount = 8;
+
     private readonly CaptureCoordinator _coordinator;
     private readonly IAppLifetime _lifetime;
     private readonly HotkeyRegistrar _hotkeys;
@@ -21,6 +51,12 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly EditorWindowService _editors;
     private readonly RecordingController _recording;
     private readonly IUiDispatcher _ui;
+    private readonly ISettingsService _settings;
+    private readonly ICaptureHistory _history;
+    private readonly HistoryActions _historyActions;
+    private readonly HistoryWindowService _historyWindow;
+    private readonly UpdateService _updates;
+    private readonly TimeProvider _time;
 
     public TrayViewModel(
         CaptureCoordinator coordinator,
@@ -29,7 +65,13 @@ public sealed partial class TrayViewModel : ObservableObject
         SettingsWindowService settingsWindow,
         EditorWindowService editors,
         RecordingController recording,
-        IUiDispatcher ui)
+        IUiDispatcher ui,
+        ISettingsService settings,
+        ICaptureHistory history,
+        HistoryActions historyActions,
+        HistoryWindowService historyWindow,
+        UpdateService updates,
+        TimeProvider time)
     {
         _coordinator = coordinator;
         _lifetime = lifetime;
@@ -38,9 +80,25 @@ public sealed partial class TrayViewModel : ObservableObject
         _editors = editors;
         _recording = recording;
         _ui = ui;
+        _settings = settings;
+        _history = history;
+        _historyActions = historyActions;
+        _historyWindow = historyWindow;
+        _updates = updates;
+        _time = time;
+
+        DelayChoices = [.. new[] { 0, 3, 5, 10 }.Select(s => new DelayChoice(s, s == 0 ? "_No delay" : $"_{s} seconds", SetDelayAsync))];
+
         _recording.StateChanged += (_, _) => _ = _ui.InvokeAsync(() => OnPropertyChanged(nameof(RecordText)));
         _hotkeys.RegistrationsChanged += (_, _) => RefreshHotkeyLabels();
+        _settings.Changed += (_, _) => _ = _ui.InvokeAsync(RefreshDelay);
+        _history.Changed += (_, _) => _ = _ui.InvokeAsync(RefreshRecent);
+        _updates.StateChanged += (_, _) => _ = _ui.InvokeAsync(RefreshUpdate);
+        _updates.RestartRequested += (_, _) => _ = _ui.InvokeAsync(() => RestartToUpdateCommand.ExecuteAsync(null));
         RefreshHotkeyLabels();
+        RefreshDelay();
+        RefreshRecent();
+        RefreshUpdate();
     }
 
     /// <summary>Shown next to the menu item; empty when the action has no working hotkey.</summary>
@@ -58,6 +116,24 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [ObservableProperty]
     private string _textHotkey = string.Empty;
+
+    /// <summary>The Capture Delay submenu; the delay applies to every capture until changed.</summary>
+    public IReadOnlyList<DelayChoice> DelayChoices { get; }
+
+    /// <summary>E.g. "Capture _Delay (5 s)".</summary>
+    [ObservableProperty]
+    private string _delayHeader = "Capture _Delay";
+
+    public ObservableCollection<RecentCapture> RecentCaptures { get; } = [];
+
+    [ObservableProperty]
+    private bool _hasRecentCaptures;
+
+    [ObservableProperty]
+    private bool _isUpdateReady;
+
+    [ObservableProperty]
+    private string _updateText = string.Empty;
 
     /// <summary>The recording menu item: start one, or stop the one running.</summary>
     public string RecordText => _recording.IsRecording ? "Stop _Recording" : "Re_cord Screen…";
@@ -87,6 +163,9 @@ public sealed partial class TrayViewModel : ObservableObject
     [RelayCommand]
     private void OpenSettings() => _settingsWindow.Show();
 
+    [RelayCommand]
+    private void OpenHistory() => _historyWindow.Show();
+
     /// <summary>Starts a screen recording (pick the area), or stops and saves the one running.</summary>
     [RelayCommand]
     private Task ToggleRecordingAsync() => _recording.ToggleAsync();
@@ -98,11 +177,60 @@ public sealed partial class TrayViewModel : ObservableObject
     [RelayCommand]
     private async Task ExitAsync()
     {
-        await _recording.StopAsync();
-        if (await _editors.CloseAllAsync())
+        if (await PrepareExitAsync())
         {
             _lifetime.Shutdown();
         }
+    }
+
+    /// <summary>Exits like <see cref="ExitAsync"/>, after which the updater installs the downloaded update and starts the app again.</summary>
+    [RelayCommand]
+    private async Task RestartToUpdateAsync()
+    {
+        if (_updates.ReadyVersion is not null && await PrepareExitAsync())
+        {
+            _updates.InstallAfterExit();
+            _lifetime.Shutdown();
+        }
+    }
+
+    private async Task<bool> PrepareExitAsync()
+    {
+        await _recording.StopAsync();
+        return await _editors.CloseAllAsync();
+    }
+
+    private Task SetDelayAsync(int seconds) =>
+        _settings.UpdateAsync(s => s with { Capture = s.Capture with { DelaySeconds = seconds } });
+
+    private void RefreshDelay()
+    {
+        var delay = _settings.Current.Capture.DelaySeconds;
+        foreach (var choice in DelayChoices)
+        {
+            choice.IsChecked = choice.Seconds == delay;
+        }
+
+        DelayHeader = delay == 0 ? "Capture _Delay" : $"Capture _Delay ({delay} s)";
+    }
+
+    private void RefreshRecent()
+    {
+        var now = _time.GetLocalNow();
+        RecentCaptures.Clear();
+        foreach (var entry in _history.Entries.Take(RecentCount))
+        {
+            var item = new HistoryItem(entry, HistoryItem.LoadThumbnail(_history.ThumbnailPath(entry)), now);
+            RecentCaptures.Add(new RecentCapture(item, new AsyncRelayCommand(() => _historyActions.OpenAsync(entry))));
+        }
+
+        HasRecentCaptures = RecentCaptures.Count > 0;
+    }
+
+    private void RefreshUpdate()
+    {
+        IsUpdateReady = _updates.ReadyVersion is not null;
+        UpdateText = $"Restart to _Update ({_updates.ReadyVersion})";
     }
 
     private void RefreshHotkeyLabels()

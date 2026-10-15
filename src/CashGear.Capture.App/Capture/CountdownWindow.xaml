@@ -1,0 +1,12 @@
+<Window x:Class="CashGear.Capture.App.Capture.CountdownWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Capture countdown" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="None"
+        Topmost="True" ShowInTaskbar="False" ShowActivated="False" Focusable="False"
+        BorderThickness="1" BorderBrush="#60808080">
+  <StackPanel Margin="18,10,18,14" MinWidth="150">
+    <TextBlock Text="Capturing in" HorizontalAlignment="Center" Opacity="0.75" />
+    <TextBlock x:Name="Seconds" Text="3" FontSize="44" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,-2,0,6" />
+    <Button x:Name="CancelButton" Content="Cancel" HorizontalAlignment="Center" MinWidth="90" Focusable="False" Click="OnCancel" />
+  </StackPanel>
+</Window>
