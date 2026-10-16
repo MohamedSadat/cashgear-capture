@@ -248,3 +248,33 @@ These need display-setting changes, so they are left for a manual run:
 5. Run `dotnet test --solution CashGear.Capture.sln` in each layout. The interactive tests re-derive expectations from the live layout; `RegionOverlayWindowTests` checks overlay placement, pixel mapping and 1:1 display on every monitor.
 6. Capture Region from the tray: drag a rectangle that crosses from one monitor onto the other, then click a window on the 150% monitor. Check the logged rectangle and the file size, then check that the loupe and label look the same size on both monitors.
 7. Restore the original layout.
+
+## Copy running as administrator (2026-10-17)
+
+Same PC; UAC is set to elevate administrators without prompting. Release builds of 1.0.0 (`main` at 3f2407f) and of the fix ran from a scratch folder. Normal launches were started outside Claude's package through `Win32_Process.Create`, as Explorer would start them; elevated ones with `Start-Process -Verb RunAs`. Message boxes were read through their window text. The installed copy was closed for the test (its tray-icon warning box had to be dismissed first; it had received `--exit` 32 s earlier) and started again afterwards.
+
+Cause, with a small probe (not committed) that creates and opens the pipe with 1.0.0's options:
+
+| Check | Result |
+|---|---|
+| Elevated process: token owner `BA` (Administrators), integrity High. Its pipe: `O:BA D:(A;;0x1f019f;;;BA)`, no integrity label | admits Administrators only |
+| Normal process: token owner is the user, integrity Medium. Its pipe: owner and only ACE the user | admits the user |
+| Normal client → elevated pipe, inside and outside Claude's package: "Access to the path is denied"; `CreateFile` error 5 even for `READ_CONTROL` alone, so the DACL refuses it, not an integrity label | refused (the bug) |
+| Elevated client → elevated pipe | sent |
+| Elevated client → normal pipe: "Could not connect to the pipe because it was not owned by the current user" | refused (second bug) |
+| Normal client → normal pipe | sent |
+
+The app:
+
+| Check | Result |
+|---|---|
+| Fixed build started as administrator; log: "(PID 12248, as administrator)" | pass |
+| Normal start: "CashGear Capture is already running as administrator. Windows only lets programs that also run as administrator talk to it, so this copy can't hand over to it. …"; exit code 1, the elevated copy keeps running | pass |
+| Normal `--exit`: "… so --exit can't close it from here. Exit it from its tray icon (› Exit), or run the command again as administrator."; exit code 1 | pass |
+| Normal `--capture-region`: "… so --capture-region can't reach it from here. …"; exit code 1, nothing received | pass |
+| 1.0.0's normal `--exit` against it: no message, exit code 1 | fail (the bug) |
+| Elevated `--exit`: the elevated copy shut down | pass |
+| Fixed build started normally; elevated start: `Activate` forwarded, exit code 0 | pass |
+| 1.0.0's elevated `--exit`: "not owned by the current user", exit code 1, copy kept running | fail (the second bug) |
+| Fixed elevated `--exit`: the normal copy shut down | pass |
+| Installed copy started again | done |

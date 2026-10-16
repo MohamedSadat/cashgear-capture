@@ -562,3 +562,21 @@ Lifts Phase 7's "No audio" limitation.
 - When encoding falls far behind and frames are dropped, the same span of sound is left out, so the sound skips with the picture.
 - Hardware encoders are untested with sound here (none works on this PC).
 - If Windows' privacy settings block desktop apps from the microphone, the microphone isn't recorded (the notification says how to allow it).
+
+## Fixes after 1.0.0 (2026-10-16)
+
+### Fixed
+- **A copy running as administrator ignored every launch that wasn't, without a word.** Starting the app again, `--exit` or a capture switch from a normal prompt did nothing (seen on 2026-10-16 while troubleshooting the tray icon). Later launches hand their command over through a pipe that .NET restricts to the token's default owner. For an elevated process that owner is Administrators, not the user, so only elevated processes can open its pipe. That stays: otherwise any program the user runs could make an elevated process capture, record or exit. Such a launch now shows a message saying the copy runs as administrator and how to use or close it, then exits with code 1. The log also notes when a copy starts as administrator.
+- **An elevated launch couldn't reach a normal copy either.** `--exit` from an administrator prompt failed with "not owned by the current user", because .NET's own check expected the pipe to belong to Administrators. The launch now checks the pipe's owner itself: the user, or Administrators when the launch is elevated too. It connects for identification only, so the copy it reaches can't act as it.
+
+### Tested
+- **556 automated tests** (545 pass, 2 explicit, 9 recording tests skipped: this checkout has no `tools\ffmpeg`). New:
+  - a command reaches a pipe created like the instance's;
+  - nothing listening is "no answer";
+  - a pipe that shuts the user out reads as a copy running as administrator;
+  - which pipe owners a normal and an elevated launch accept;
+  - the messages name the switch and say how to close the copy.
+- **Manual on this PC** (see TESTING.md). With the fixed build running as administrator, a normal start, `--exit` and `--capture-region` each showed the message and exited with code 1; 1.0.0's `--exit` exited silently. With a normal copy running, an elevated `--exit` closed it, where 1.0.0's failed.
+
+### Known limitations
+- Uninstalling can't close a copy that runs as administrator: Windows refuses both the exit request and ending the process (both are logged). Close it from its tray icon first.
