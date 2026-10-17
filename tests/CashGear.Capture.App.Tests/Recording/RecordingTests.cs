@@ -6,6 +6,7 @@ using CashGear.Capture.App.Recording;
 using CashGear.Capture.Audio;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Engine.Capture.Wgc;
@@ -395,6 +396,26 @@ public sealed class RecordingSummaryTests
     }
 }
 
+/// <summary>A keyboard where one key combination (or none) is held.</summary>
+internal sealed class FakeKeyboard : IKeyboardState
+{
+    public HotkeyGesture? Held { get; set; }
+
+    public bool IsHeld(HotkeyGesture gesture) => Held == gesture;
+}
+
+/// <summary>A clock that only moves when told to.</summary>
+internal sealed class ManualClock : TimeProvider
+{
+    private long _now = 1_000_000_000;
+
+    public override long TimestampFrequency => 10_000_000;
+
+    public override long GetTimestamp() => _now;
+
+    public void Advance(TimeSpan by) => _now += by.Ticks;
+}
+
 /// <summary>A recorder for the toolbar's tests: fixed sound, settable level and clock, mute and volumes kept.</summary>
 internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : IScreenRecorder
 {
@@ -411,6 +432,8 @@ internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : 
     public string? SoundNote => note;
 
     public bool MicrophoneMuted { get; set; }
+
+    public bool MicrophoneGated { get; set; }
 
     public bool SystemAudioMuted { get; set; }
 
@@ -489,6 +512,45 @@ public sealed class RecordingToolbarTests
         vm.ToggleMicrophoneCommand.Execute(null);
         recorder.MicrophoneMuted.Should().BeFalse();
 
+    }
+
+    [Fact]
+    public void Push_to_talk_opens_the_microphone_while_the_key_is_held_and_the_toolbar_says_so()
+    {
+        var recorder = new FakeRecorder(RecordingSound.Microphone);
+        var keyboard = new FakeKeyboard();
+        var time = new ManualClock();
+        HotkeyGesture.TryParse("F13", out var key).Should().BeTrue();
+        using var talk = new PushToTalk(recorder, key, keyboard, time, poll: false);
+        var vm = new RecordingToolbarViewModel(recorder, () => { }, () => { }, talk);
+
+        recorder.MicrophoneGated.Should().BeTrue("silent until the key is held");
+        vm.HasPushToTalk.Should().BeTrue();
+        vm.RefreshMeters(TimeSpan.Zero);
+        vm.PushToTalkText.Should().Be("Hold F13 to talk");
+
+        keyboard.Held = key;
+        talk.Poll();
+        recorder.MicrophoneGated.Should().BeFalse();
+        vm.RefreshMeters(TimeSpan.Zero);
+        vm.IsTalking.Should().BeTrue();
+        vm.PushToTalkText.Should().Be("Talking");
+
+        keyboard.Held = null;
+        talk.Poll(); // the poll that sees the key up (10 ms apart in use)
+        time.Advance(TimeSpan.FromMilliseconds(100));
+        talk.Poll();
+        recorder.MicrophoneGated.Should().BeFalse("held open a moment after release");
+        time.Advance(TimeSpan.FromMilliseconds(200));
+        talk.Poll();
+        recorder.MicrophoneGated.Should().BeTrue();
+        recorder.MicrophoneMuted.Should().BeFalse("the user's mute is separate");
+
+        talk.Dispose();
+        keyboard.Held = key;
+        talk.Poll();
+        recorder.MicrophoneGated.Should().BeTrue("stopped reading the key");
+        new RecordingToolbarViewModel(recorder, () => { }, () => { }).HasPushToTalk.Should().BeFalse();
     }
 
     [Fact]

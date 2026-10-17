@@ -6,6 +6,7 @@ using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Selection;
@@ -42,7 +43,9 @@ public sealed partial class RecordingController
     private readonly IShell _shell;
     private readonly TimeProvider _time;
     private readonly ILogger<RecordingController> _logger;
+    private readonly IKeyboardState _keyboard;
     private RecordingToolbarWindow? _toolbar;
+    private PushToTalk? _pushToTalk;
     private bool _stopping;
 
     public RecordingController(
@@ -61,8 +64,10 @@ public sealed partial class RecordingController
         ITrayNotifier notifier,
         IShell shell,
         TimeProvider time,
-        ILogger<RecordingController> logger)
+        ILogger<RecordingController> logger,
+        IKeyboardState? keyboard = null)
     {
+        _keyboard = keyboard ?? new Win32KeyboardState();
         _recorder = recorder;
         _encoders = encoders;
         _interrupted = interrupted;
@@ -178,6 +183,11 @@ public sealed partial class RecordingController
                 recording.MicrophoneProcessing,
                 recording.NormalizeLoudness);
             await _recorder.StartAsync(options, ct).ConfigureAwait(false);
+            if (recording.PushToTalk is { } talk && HotkeyGesture.TryParse(talk, out var key) && _recorder.Sound.HasFlag(RecordingSound.Microphone))
+            {
+                _pushToTalk = new PushToTalk(_recorder, key, _keyboard, _time);
+            }
+
             await _ui.InvokeAsync(() => ShowToolbar(monitor, current.Appearance.Theme)).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -219,6 +229,9 @@ public sealed partial class RecordingController
         }
         finally
         {
+            // After the recording stopped, so the microphone isn't let through for its last moment.
+            _pushToTalk?.Dispose();
+            _pushToTalk = null;
             _stopping = false;
         }
     }
@@ -330,7 +343,7 @@ public sealed partial class RecordingController
     private void ShowToolbar(MonitorInfo monitor, AppTheme theme)
     {
         CloseToolbar();
-        var viewModel = new RecordingToolbarViewModel(_recorder, TogglePause, () => _ = StopAsync());
+        var viewModel = new RecordingToolbarViewModel(_recorder, TogglePause, () => _ = StopAsync(), _pushToTalk);
         _toolbar = new RecordingToolbarWindow(viewModel, theme, monitor.WorkArea);
         _toolbar.Show();
     }

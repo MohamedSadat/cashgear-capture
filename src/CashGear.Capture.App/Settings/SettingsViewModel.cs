@@ -405,6 +405,48 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _normalizeLoudness;
 
+    /// <summary>Push-to-talk's key as text (empty: none).</summary>
+    [ObservableProperty]
+    private string _pushToTalkText = string.Empty;
+
+    /// <summary>"Not set", "Hold it while recording", or why it doesn't work.</summary>
+    [ObservableProperty]
+    private string _pushToTalkStatus = string.Empty;
+
+    [ObservableProperty]
+    private bool _pushToTalkHasProblem;
+
+    [RelayCommand]
+    private void ClearPushToTalk() => PushToTalkText = string.Empty;
+
+    partial void OnPushToTalkTextChanged(string value) => Revalidate();
+
+    /// <summary>Checks push-to-talk's key against the hotkeys (one key can't do both); returns the problem, if any.</summary>
+    private string? ValidatePushToTalk()
+    {
+        if (string.IsNullOrWhiteSpace(PushToTalkText))
+        {
+            (PushToTalkStatus, PushToTalkHasProblem) = ("Not set: the microphone is always recorded", false);
+            return null;
+        }
+
+        if (!HotkeyGesture.TryParse(PushToTalkText, out var key))
+        {
+            (PushToTalkStatus, PushToTalkHasProblem) = ("Not a valid key", true);
+            return $"Push to talk: \"{PushToTalkText}\" is not a valid key.";
+        }
+
+        var clash = Hotkeys.FirstOrDefault(r => HotkeyGesture.TryParse(r.SettingText, out var other) && other == key);
+        if (clash is not null)
+        {
+            (PushToTalkStatus, PushToTalkHasProblem) = ($"Same as {clash.Label}", true);
+            return $"Push to talk: {key} is already the hotkey for {clash.Label}.";
+        }
+
+        (PushToTalkStatus, PushToTalkHasProblem) = ("Hold it while recording", false);
+        return null;
+    }
+
     public string GateThresholdText => $"{GateThresholdDb:0} dB";
 
     public double MinGateThresholdDb => MicrophoneProcessing.MinGateThresholdDb;
@@ -808,6 +850,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             SystemAudioApp = RecordingApp?.Exe,
             SystemAudioAppName = RecordingApp?.Name,
             NormalizeLoudness = NormalizeLoudness,
+            PushToTalk = string.IsNullOrWhiteSpace(PushToTalkText) ? null : PushToTalkText.Trim(),
             MicrophoneProcessing = (current.Recording.MicrophoneProcessing ?? new MicrophoneProcessing()) with
             {
                 NoiseGate = MicrophoneGate,
@@ -859,6 +902,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         MicrophoneCompressor = processing.Compressor;
         MicrophoneLimiter = processing.Limiter;
         NormalizeLoudness = s.Recording.NormalizeLoudness;
+        PushToTalkText = s.Recording.PushToTalk ?? string.Empty;
         RecordingSystemAudioScope = SystemAudioScopes.Contains(s.Recording.SystemAudioScope) ? s.Recording.SystemAudioScope : SystemAudioScope.All;
         RefreshApps(s.Recording.SystemAudioApp, s.Recording.SystemAudioAppName);
         RecordingOutput = OutputDevices.FirstOrDefault(d => string.Equals(d.Id, s.Recording.SystemAudioDevice, StringComparison.OrdinalIgnoreCase));
@@ -919,6 +963,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         errors.AddRange(ValidateHotkeys());
+        if (ValidatePushToTalk() is { } talk)
+        {
+            errors.Add(talk);
+        }
+
         Errors = string.Join(Environment.NewLine, errors);
         OnPropertyChanged(nameof(HasErrors));
     }

@@ -570,6 +570,33 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Push_to_talk_takes_any_key_but_not_one_of_the_hotkeys()
+    {
+        using var vm = Create();
+        vm.PushToTalkText.Should().BeEmpty("off by default");
+        vm.PushToTalkStatus.Should().StartWith("Not set");
+
+        vm.PushToTalkText = "F13";
+        vm.HasErrors.Should().BeFalse("a key on its own is fine: it isn't registered");
+        vm.PushToTalkStatus.Should().Be("Hold it while recording");
+        await vm.ApplyCommand.ExecuteAsync(null);
+        _settings.Current.Recording.PushToTalk.Should().Be("F13");
+
+        vm.PushToTalkText = "Shift+PrintScreen";
+        vm.HasErrors.Should().BeTrue();
+        vm.PushToTalkHasProblem.Should().BeTrue();
+        vm.PushToTalkStatus.Should().StartWith("Same as Record Screen");
+
+        vm.PushToTalkText = "Ctrl+";
+        vm.PushToTalkStatus.Should().Be("Not a valid key");
+
+        vm.ClearPushToTalkCommand.Execute(null);
+        vm.HasErrors.Should().BeFalse();
+        await vm.ApplyCommand.ExecuteAsync(null);
+        _settings.Current.Recording.PushToTalk.Should().BeNull();
+    }
+
+    [Fact]
     public void Without_process_loopback_only_all_sound_is_offered()
     {
         _settings.Current = _settings.Current with

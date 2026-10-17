@@ -163,6 +163,7 @@ public enum AppTheme
 /// <param name="SystemAudioAppName">The app's name as shown in Settings and messages.</param>
 /// <param name="MicrophoneProcessing">Noise suppression, noise gate, compressor and limiter for the microphone.</param>
 /// <param name="NormalizeLoudness">Even out each sound track to −16 LUFS when a recording is saved (the sound is encoded again; the video isn't).</param>
+/// <param name="PushToTalk">A key (as hotkey text, e.g. <c>F13</c> or <c>Ctrl+Space</c>) that must be held for the microphone to be heard while recording; null for none.</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="DefaultMicrophone"/> for the Windows default, or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 /// <param name="SystemAudioGain">System audio's volume in recordings, 1 as captured (0 to 4; set on the recording toolbar).</param>
@@ -183,7 +184,8 @@ public sealed record RecordingSettings(
     string? SystemAudioApp = null,
     string? SystemAudioAppName = null,
     MicrophoneProcessing? MicrophoneProcessing = null,
-    bool NormalizeLoudness = false)
+    bool NormalizeLoudness = false,
+    string? PushToTalk = null)
 {
     public const float MaxGain = 4;
 
@@ -202,6 +204,7 @@ public sealed record RecordingSettings(
         Encoder = string.IsNullOrWhiteSpace(Encoder) ? Recording.EncoderPresets.Auto : Encoder.Trim().ToLowerInvariant(),
         Microphone = string.IsNullOrWhiteSpace(Microphone) ? null : Microphone.Trim(),
         SystemAudioDevice = string.IsNullOrWhiteSpace(SystemAudioDevice) ? null : SystemAudioDevice.Trim(),
+        PushToTalk = string.IsNullOrWhiteSpace(PushToTalk) ? null : PushToTalk.Trim(),
         MicrophoneProcessing = (MicrophoneProcessing ?? new MicrophoneProcessing()).Normalize(),
         SystemAudioApp = string.IsNullOrWhiteSpace(SystemAudioApp) ? null : SystemAudioApp.Trim().ToLowerInvariant(),
         SystemAudioAppName = string.IsNullOrWhiteSpace(SystemAudioAppName) ? null : SystemAudioAppName.Trim(),

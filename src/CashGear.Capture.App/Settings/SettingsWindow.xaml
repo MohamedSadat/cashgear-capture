@@ -337,6 +337,34 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+
+          <TextBlock Style="{StaticResource Section}" Text="Push to talk" />
+          <Grid Margin="0,4">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="200" />
+              <ColumnDefinition Width="220" />
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Hold to talk while recording" VerticalAlignment="Center" />
+            <local:HotkeyBox Grid.Column="1" GestureText="{Binding PushToTalkText}" AutomationProperties.Name="Push to talk"
+                             GotKeyboardFocus="OnHotkeyBoxGotFocus" LostKeyboardFocus="OnHotkeyBoxLostFocus" />
+            <Button Grid.Column="2" Content="Clear" Command="{Binding ClearPushToTalkCommand}" Margin="8,0,0,0" />
+            <TextBlock Grid.Column="3" Text="{Binding PushToTalkStatus}" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="Opacity" Value="0.75" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding PushToTalkHasProblem}" Value="True">
+                      <Setter Property="Foreground" Value="#D13438" />
+                      <Setter Property="Opacity" Value="1" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
+          </Grid>
+          <TextBlock Style="{StaticResource Hint}" Text="With a key set, the microphone is silent in recordings except while the key is held (and a quarter of a second after, so words aren't cut). The key isn't taken from other apps, so a key that does nothing in them works best: F13 to F24, Scroll Lock, Pause, or a mouse button mapped to one of those. A key on its own is fine here." />
         </StackPanel>
       </TabItem>
 

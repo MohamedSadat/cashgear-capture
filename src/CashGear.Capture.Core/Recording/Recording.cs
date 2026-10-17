@@ -113,6 +113,9 @@ public interface IScreenRecorder
     /// <summary>While true the microphone is silent in the recording.</summary>
     bool MicrophoneMuted { get; set; }
 
+    /// <summary>While true the microphone is silent too: push-to-talk with the key not held (separate from <see cref="MicrophoneMuted"/>).</summary>
+    bool MicrophoneGated { get; set; }
+
     /// <summary>While true system audio is silent in the recording.</summary>
     bool SystemAudioMuted { get; set; }
 

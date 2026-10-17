@@ -66,6 +66,7 @@ internal static class AppHost
         builder.Services.AddSingleton<IScrollPlatform, Win32ScrollPlatform>();
         builder.Services.AddSingleton<ScrollTargetFinder>();
         builder.Services.AddSingleton<ScrollingCaptureService>();
+        builder.Services.AddSingleton<IKeyboardState, Win32KeyboardState>();
         builder.Services.AddSingleton<RecordingController>();
         builder.Services.AddSingleton<InterruptedRecordings>();
         builder.Services.AddSingleton<ToolStyleMemory>();

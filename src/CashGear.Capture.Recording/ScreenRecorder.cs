@@ -77,6 +77,12 @@ internal sealed partial class ScreenRecorder(
         set => _session?.Track(RecordingSound.Microphone)?.Muted = value;
     }
 
+    public bool MicrophoneGated
+    {
+        get => _session?.Track(RecordingSound.Microphone)?.Gated ?? false;
+        set => _session?.Track(RecordingSound.Microphone)?.Gated = value;
+    }
+
     public bool SystemAudioMuted
     {
         get => _session?.Track(RecordingSound.System)?.Muted ?? false;

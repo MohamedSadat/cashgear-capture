@@ -25,12 +25,14 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     private readonly IScreenRecorder _recorder;
     private readonly Action _togglePause;
     private readonly Action _stop;
+    private readonly PushToTalk? _pushToTalk;
 
-    public RecordingToolbarViewModel(IScreenRecorder recorder, Action togglePause, Action stop)
+    public RecordingToolbarViewModel(IScreenRecorder recorder, Action togglePause, Action stop, PushToTalk? pushToTalk = null)
     {
         _recorder = recorder;
         _togglePause = togglePause;
         _stop = stop;
+        _pushToTalk = pushToTalk;
         var sound = recorder.Sound;
         HasSound = sound != RecordingSound.None;
         HasMicrophone = sound.HasFlag(RecordingSound.Microphone);
@@ -51,6 +53,11 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     /// <summary>A source, or the mix, clipped in the last two seconds.</summary>
     [ObservableProperty]
     private bool _isClipping;
+
+    /// <summary>Push-to-talk's key is held: the microphone is heard.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PushToTalkText))]
+    private bool _isTalking;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MicrophoneText))]
@@ -77,6 +84,12 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     public bool HasMicrophone { get; }
 
     public bool HasSystemAudio { get; }
+
+    /// <summary>The microphone is only heard while a key is held.</summary>
+    public bool HasPushToTalk => _pushToTalk is not null;
+
+    /// <summary>"Hold F13 to talk", or "Talking" while it is held.</summary>
+    public string PushToTalkText => IsTalking ? "Talking" : $"Hold {_pushToTalk?.Key} to talk";
 
     /// <summary>System audio's level as recorded (after its volume and mute).</summary>
     public MeterReading SystemMeter { get; } = new();
@@ -133,6 +146,7 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     /// <summary>Moves the meters with the sound recorded since the last call (<paramref name="now"/>: a steady clock).</summary>
     public void RefreshMeters(TimeSpan now)
     {
+        IsTalking = _pushToTalk?.IsTalking ?? false;
         if (!HasSound)
         {
             return;

@@ -28,6 +28,7 @@ public sealed class AudioTrack
     private double _drift;
     private readonly LevelAccumulator _level = new();
     private volatile bool _muted;
+    private volatile bool _gated;
     private float _gain = 1;
 
     internal AudioTrack(string name, int capacityFrames)
@@ -44,6 +45,16 @@ public sealed class AudioTrack
     {
         get => _muted;
         set => _muted = value;
+    }
+
+    /// <summary>
+    /// While true the track is silent too, like <see cref="Muted"/> but for push-to-talk (the key not held), so the
+    /// user's own mute stays as it was.
+    /// </summary>
+    public bool Gated
+    {
+        get => _gated;
+        set => _gated = value;
     }
 
     /// <summary>Volume, 1 for as captured (0 to 4; applied when mixing, so a change is heard at once).</summary>
@@ -119,7 +130,7 @@ public sealed class AudioTrack
     /// </summary>
     internal void MixInto(Span<float> output, Span<float> alone, long from)
     {
-        var gain = _muted ? 0 : Gain;
+        var gain = _muted || _gated ? 0 : Gain;
         var frames = output.Length / AudioMixer.Channels;
         for (var i = 0; i < frames; i++)
         {

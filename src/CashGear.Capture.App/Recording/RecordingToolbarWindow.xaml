@@ -38,6 +38,22 @@
       <Button Content="{Binding MicrophoneText}" Command="{Binding ToggleMicrophoneCommand}" Margin="12,0,0,0" MinWidth="90" Focusable="False"
               ToolTip="Silence the microphone in the recording (system audio keeps recording)"
               Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
+      <TextBlock Text="{Binding PushToTalkText}" VerticalAlignment="Center" Margin="10,0,0,0" MinWidth="64"
+                 ToolTip="Push to talk: the microphone is only recorded while this key is held (set in Settings › Hotkeys)"
+                 Visibility="{Binding HasPushToTalk, Converter={StaticResource Visible}}">
+        <TextBlock.Style>
+          <Style TargetType="TextBlock">
+            <Setter Property="Opacity" Value="0.7" />
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding IsTalking}" Value="True">
+                <Setter Property="Foreground" Value="#E81123" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Opacity" Value="1" />
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </TextBlock.Style>
+      </TextBlock>
       <Button Command="{Binding ToggleSoundPanelCommand}" Margin="6,0,0,0" MinWidth="34" Focusable="False"
               ToolTip="Volume and mute for each sound source" AutomationProperties.Name="Sound settings"
               Visibility="{Binding HasSound, Converter={StaticResource Visible}}">
