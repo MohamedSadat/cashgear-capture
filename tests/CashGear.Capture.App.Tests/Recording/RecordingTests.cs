@@ -87,6 +87,26 @@ internal static class TestFfmpeg
         return samples;
     }
 
+    /// <summary>The integrated loudness (LUFS) of a file's first sound track, measured by ffmpeg.exe's ebur128 filter.</summary>
+    public static double Loudness(string file)
+    {
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo(ExePath) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true },
+        };
+        foreach (var arg in new[] { "-hide_banner", "-nostats", "-i", file, "-map", "0:a:0", "-af", "ebur128", "-f", "null", "-" })
+        {
+            process.StartInfo.ArgumentList.Add(arg);
+        }
+
+        process.Start();
+        var text = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        var summary = text[text.LastIndexOf("Summary:", StringComparison.Ordinal)..];
+        var match = System.Text.RegularExpressions.Regex.Match(summary, @"I:\s+(-?[\d.]+) LUFS");
+        return double.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     /// <summary>Where each sound starts (seconds): a sample above <paramref name="threshold"/> after at least 100 ms below it.</summary>
     public static IReadOnlyList<double> Onsets(float[] sound, float threshold)
     {
@@ -588,11 +608,11 @@ public sealed class RecordingRecoveryTests : IDisposable
     private RecordingRecovery Recovery() => new(_store, TestFfmpeg.Runtime(), NullLogger<RecordingRecovery>.Instance);
 
     /// <summary>A recording whose app went away before saving: its folder with a written segment, and no lock held.</summary>
-    private void Interrupted(double seconds, double? cutAt = null)
+    private void Interrupted(double seconds, double? cutAt = null, bool normalizeLoudness = false, float tone = 0)
     {
-        var manifest = new RecordingManifest("abc12345", DateTimeOffset.Now, Output, 640, 360, 30, ["segment-001.mp4"], ["Mixed"]);
+        var manifest = new RecordingManifest("abc12345", DateTimeOffset.Now, Output, 640, 360, 30, ["segment-001.mp4"], ["Mixed"], normalizeLoudness);
         using var folder = _store.Create(manifest);
-        new SyntheticRecording { Directory = folder.Directory, Seconds = seconds }.Write();
+        new SyntheticRecording { Directory = folder.Directory, Seconds = seconds, ToneLevel = tone }.Write();
         if (cutAt is { } fraction)
         {
             var segment = folder.SegmentPath(1);
@@ -632,6 +652,20 @@ public sealed class RecordingRecoveryTests : IDisposable
         saved.Truncated.Should().BeTrue();
         saved.Duration.TotalSeconds.Should().BeGreaterThanOrEqualTo((6 * 0.6) - 2);
         TestFfmpeg.Probe(Output).Frames.Should().BeGreaterThan((int)((6 * 0.6) - 2) * 30);
+    }
+
+    [Fact]
+    public async Task A_recording_made_to_be_evened_out_is_evened_out_when_it_is_recovered()
+    {
+        TestFfmpeg.Require();
+        Interrupted(3, normalizeLoudness: true, tone: 0.03f);
+        var recovery = Recovery();
+
+        var found = recovery.Find().Single();
+        found.Manifest.NormalizeLoudness.Should().BeTrue("kept in the manifest");
+        await recovery.RecoverAsync(found, TestContext.Current.CancellationToken);
+
+        TestFfmpeg.Loudness(Output).Should().BeApproximately(-16, 1);
     }
 
     [Fact]
@@ -942,6 +976,21 @@ public sealed class ScreenRecorderTests : IDisposable
         Peak(sound, 1.02, 1.18).Should().BeInRange(0.85, 0.92, "limited to -1 dB (0.891), not clipped at 1.8");
         Peak(sound, 1.4, 1.5).Should().BeInRange(0.4, 0.6, "the compressor switched on while recording: 29 dB over the threshold at 3:1 is -19 dB, +8 dB make-up");
         TestFfmpeg.Onsets(sound, 0.1f).Should().ContainSingle().Which.Should().BeApproximately(1.0, 0.01, "the chain's 2 ms delay is taken out of the timestamps");
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task A_recording_is_saved_evened_out_to_minus_16_LUFS_when_asked()
+    {
+        var (recorder, options) = Create(sound: new FakeSound(() => new ToneBursts(RecordingSound.System, (0.2, 2.5)) { Amplitude = 0.05f }));
+        var ct = TestContext.Current.CancellationToken;
+
+        await recorder.StartAsync(options with { SystemAudio = true, NormalizeLoudness = true }, ct);
+        await UntilRecorded(recorder, 3, ct);
+        var result = await recorder.StopAsync(ct);
+
+        TestFfmpeg.Loudness(result.Path).Should().BeApproximately(-16, 1, "a 1 kHz tone at 0.05 is about -26 LUFS");
+        TestFfmpeg.Onsets(TestFfmpeg.DecodeSound(result.Path), 0.1f).Should().ContainSingle().Which.Should().BeApproximately(0.2, 0.02, "still where it was played");
+        TestFfmpeg.Streams(result.Path).Single(s => s.Type == "audio").Duration.Should().BeApproximately(result.Duration.TotalSeconds, 0.1);
     }
 
     [Fact(Timeout = 60_000)]

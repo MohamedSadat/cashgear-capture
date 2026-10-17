@@ -1,9 +1,10 @@
 CashGear Capture includes the third-party software listed below. Each is used under its own license; the
 license texts are available at the addresses given.
 
-FFmpeg (ffmpeg\avutil-61.dll, swresample-7.dll, swscale-10.dll, avcodec-63.dll, avformat-63.dll)
-  Used for screen recording: encoding, writing and saving the video. The libraries are loaded at run time
-  (dynamically linked) and can be replaced by another build of the same versions.
+FFmpeg (ffmpeg\avutil-61.dll, swresample-7.dll, swscale-10.dll, avcodec-63.dll, avformat-63.dll, avfilter-12.dll)
+  Used for screen recording: encoding, writing and saving the video, and evening out the sound's loudness
+  (loudnorm). The libraries are loaded at run time (dynamically linked) and can be replaced by another build of
+  the same versions.
   Build: n9.0.2-17-g2a571b6068, LGPL shared build by BtbN, https://github.com/BtbN/FFmpeg-Builds
   (autobuild-2026-09-30-13-08). It contains no GPL-only components (no x264/x265).
   License: GNU Lesser General Public License version 3 (ffmpeg\LICENSE.txt), which adds permissions to the GNU

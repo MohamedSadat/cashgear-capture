@@ -401,6 +401,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _microphoneLimiter;
 
+    /// <summary>Even out each sound track to −16 LUFS when a recording is saved.</summary>
+    [ObservableProperty]
+    private bool _normalizeLoudness;
+
     public string GateThresholdText => $"{GateThresholdDb:0} dB";
 
     public double MinGateThresholdDb => MicrophoneProcessing.MinGateThresholdDb;
@@ -803,6 +807,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             SystemAudioScope = RecordingSystemAudioScope,
             SystemAudioApp = RecordingApp?.Exe,
             SystemAudioAppName = RecordingApp?.Name,
+            NormalizeLoudness = NormalizeLoudness,
             MicrophoneProcessing = (current.Recording.MicrophoneProcessing ?? new MicrophoneProcessing()) with
             {
                 NoiseGate = MicrophoneGate,
@@ -853,6 +858,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         GateThresholdDb = processing.GateThresholdDb;
         MicrophoneCompressor = processing.Compressor;
         MicrophoneLimiter = processing.Limiter;
+        NormalizeLoudness = s.Recording.NormalizeLoudness;
         RecordingSystemAudioScope = SystemAudioScopes.Contains(s.Recording.SystemAudioScope) ? s.Recording.SystemAudioScope : SystemAudioScope.All;
         RefreshApps(s.Recording.SystemAudioApp, s.Recording.SystemAudioAppName);
         RecordingOutput = OutputDevices.FirstOrDefault(d => string.Equals(d.Id, s.Recording.SystemAudioDevice, StringComparison.OrdinalIgnoreCase));

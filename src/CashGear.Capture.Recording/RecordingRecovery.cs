@@ -56,7 +56,8 @@ internal sealed partial class RecordingRecovery(RecordingStore store, FfmpegRunt
             var part = i;
             try
             {
-                var result = Remuxer.Remux(segments[i], destination, progress is null ? null : new Progress<double>(p => progress.Report((part + p) / segments.Count)), ct);
+                var result = Remuxer.Remux(
+                    segments[i], destination, progress is null ? null : new Progress<double>(p => progress.Report((part + p) / segments.Count)), ct, manifest.NormalizeLoudness);
                 files.Add(result.Path);
                 duration += result.Duration;
                 truncated |= result.Truncated;

@@ -4,8 +4,9 @@
 
 .DESCRIPTION
     Screen recording runs FFmpeg inside the app (FFmpeg.AutoGen), so it needs FFmpeg's shared libraries. The build
-    copies five of them (avutil, swresample, swscale, avcodec, avformat) and the licence next to the app as ffmpeg\.
-    The tests also use ffmpeg.exe and ffprobe.exe from the same build, which need avfilter and avdevice too.
+    copies six of them (avutil, swresample, swscale, avcodec, avformat, and avfilter for evening out loudness) and the
+    licence next to the app as ffmpeg\. The tests also use ffmpeg.exe and ffprobe.exe from the same build, which need
+    avdevice too.
 
     The download is an LGPL v3 "shared" build from https://github.com/BtbN/FFmpeg-Builds (no x264/x265; see
     docs\LICENSES.md), pinned to a month-end autobuild, which BtbN keeps for two years. It is checked against its
@@ -58,5 +59,9 @@ foreach ($name in "h264_mf", "libopenh264", "aac") {
     if ($encoders -notmatch "\b$name\b") {
         throw "This FFmpeg build has no $name encoder, which recording relies on."
     }
+}
+$filters = & $ffmpeg -hide_banner -filters 2>$null | Out-String
+if ($filters -notmatch "\bloudnorm\b") {
+    throw "This FFmpeg build has no loudnorm filter, which evening out loudness relies on."
 }
 Write-Host "FFmpeg is in $destination; rebuild to copy it next to the app."

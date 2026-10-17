@@ -265,6 +265,10 @@
               </StackPanel>
               <TextBlock Style="{StaticResource Hint}" Text="{Binding MicrophoneTestStatus}" />
             </StackPanel>
+
+            <TextBlock Text="Loudness" FontWeight="SemiBold" Margin="0,12,0,4" />
+            <CheckBox Margin="0,2" Content="Even out the loudness to −16 LUFS when a recording is saved" IsChecked="{Binding NormalizeLoudness}" />
+            <TextBlock Style="{StaticResource Hint}" Text="Every recording then plays at the same loudness, the usual level for speech online, however loud the microphone or the sound was. Each sound track is measured, then encoded again (EBU R128, FFmpeg's loudnorm in two passes); the video is copied as it is. Peaks are kept below −1.5 dB. A silent track is left alone. Saving takes a few seconds more per 10 minutes." />
             <TextBlock Style="{StaticResource Hint}" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}"
                        Text="Only one app records that app's sound (and that of the programs it starts) on whichever device it plays, and nothing else: no notifications, no other apps. All sound except one app leaves out, say, a call or music you don't want in the video. The app is found by its program when the recording starts, and followed if it starts or restarts later." />
             <Grid Margin="0,8,0,0">

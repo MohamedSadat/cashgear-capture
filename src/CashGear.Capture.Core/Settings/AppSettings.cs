@@ -162,6 +162,7 @@ public enum AppTheme
 /// <param name="SystemAudioApp">The app for <paramref name="SystemAudioScope"/>, by program file name (<c>spotify.exe</c>).</param>
 /// <param name="SystemAudioAppName">The app's name as shown in Settings and messages.</param>
 /// <param name="MicrophoneProcessing">Noise suppression, noise gate, compressor and limiter for the microphone.</param>
+/// <param name="NormalizeLoudness">Even out each sound track to −16 LUFS when a recording is saved (the sound is encoded again; the video isn't).</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="DefaultMicrophone"/> for the Windows default, or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 /// <param name="SystemAudioGain">System audio's volume in recordings, 1 as captured (0 to 4; set on the recording toolbar).</param>
@@ -181,7 +182,8 @@ public sealed record RecordingSettings(
     Recording.SystemAudioScope SystemAudioScope = Recording.SystemAudioScope.All,
     string? SystemAudioApp = null,
     string? SystemAudioAppName = null,
-    MicrophoneProcessing? MicrophoneProcessing = null)
+    MicrophoneProcessing? MicrophoneProcessing = null,
+    bool NormalizeLoudness = false)
 {
     public const float MaxGain = 4;
 

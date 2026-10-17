@@ -22,7 +22,7 @@ public sealed class FfmpegRuntimeTests
     public void File_names_carry_the_major_versions_of_the_bindings()
     {
         FfmpegRuntime.Libraries.Select(FfmpegRuntime.FileName).Should().Equal(
-            "avutil-61.dll", "swresample-7.dll", "swscale-10.dll", "avcodec-63.dll", "avformat-63.dll");
+            "avutil-61.dll", "swresample-7.dll", "swscale-10.dll", "avcodec-63.dll", "avformat-63.dll", "avfilter-12.dll");
     }
 
     [Fact]

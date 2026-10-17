@@ -40,6 +40,7 @@ public enum SystemAudioScope
 /// <param name="SystemAudioApp">The app for <paramref name="SystemAudioScope"/>: its program file name, e.g. <c>spotify.exe</c>.</param>
 /// <param name="SystemAudioAppName">The app's name for messages, e.g. "Spotify".</param>
 /// <param name="MicrophoneProcessing">What is done to the microphone's sound (null: nothing).</param>
+/// <param name="NormalizeLoudness">Even out each sound track to −16 LUFS when the recording is saved.</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="Settings.RecordingSettings.DefaultMicrophone"/> or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 public sealed record RecordingOptions(
@@ -60,7 +61,8 @@ public sealed record RecordingOptions(
     SystemAudioScope SystemAudioScope = SystemAudioScope.All,
     string? SystemAudioApp = null,
     string? SystemAudioAppName = null,
-    MicrophoneProcessing? MicrophoneProcessing = null);
+    MicrophoneProcessing? MicrophoneProcessing = null,
+    bool NormalizeLoudness = false);
 
 /// <param name="Path">The (first) file saved.</param>
 /// <param name="FramesDropped">Frames skipped because encoding fell behind (the picture holds still for that long).</param>

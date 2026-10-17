@@ -167,7 +167,8 @@ internal sealed partial class ScreenRecorder(
                 }
 
                 var manifest = new RecordingManifest(
-                    Guid.NewGuid().ToString("N")[..8], DateTimeOffset.Now, output, width, height, options.Fps, [], [.. tracks.Select(t => t.Title)]);
+                    Guid.NewGuid().ToString("N")[..8], DateTimeOffset.Now, output, width, height, options.Fps, [], [.. tracks.Select(t => t.Title)],
+                    NormalizeLoudness: options.NormalizeLoudness && tracks.Count > 0);
                 parts.Folder = store.Create(manifest);
                 parts.Writer = new MediaWriter(
                     parts.Folder.SegmentPath,

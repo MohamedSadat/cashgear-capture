@@ -32,8 +32,17 @@ internal sealed unsafe class SyntheticRecording
 
     public IReadOnlyList<string> Tracks { get; init; } = ["Mixed"];
 
+    /// <summary>Tracks (by index) that get silence instead of the beeps and tone.</summary>
+    public IReadOnlySet<int> SilentTracks { get; init; } = new HashSet<int>();
+
+    /// <summary>The beeps' peak.</summary>
+    public float BeepLevel { get; init; } = DefaultBeepLevel;
+
+    /// <summary>A steady 440 Hz tone under the beeps, at this peak (0 for none), so the sound has a loudness to measure.</summary>
+    public float ToneLevel { get; init; }
+
     public const int BeepSamplesLong = 2400; // 50 ms
-    public const float BeepLevel = 0.25f;
+    public const float DefaultBeepLevel = 0.25f;
 
     public IReadOnlyList<SegmentFile> Write()
     {
@@ -48,6 +57,7 @@ internal sealed unsafe class SyntheticRecording
         var begun = false;
         var packets = new List<EncodedPacket>();
         var samples = new float[2 * 1024];
+        var silence = new float[2 * 1024];
         long audioPts = 0;
         try
         {
@@ -77,9 +87,9 @@ internal sealed unsafe class SyntheticRecording
                 while (audioPts + 1024 <= due)
                 {
                     Tone(samples, audioPts);
-                    foreach (var track in audio)
+                    for (var t = 0; t < audio.Count; t++)
                     {
-                        track.Encode(samples, audioPts, packets);
+                        audio[t].Encode(SilentTracks.Contains(t) ? silence : samples, audioPts, packets);
                     }
 
                     Send(packets, writer);
@@ -123,6 +133,13 @@ internal sealed unsafe class SyntheticRecording
     private void Tone(float[] samples, long start)
     {
         Array.Clear(samples);
+        for (var i = 0; i < 1024 && ToneLevel > 0; i++)
+        {
+            var value = MathF.Sin(2 * MathF.PI * 440 * (start + i) / AudioEncoder.SampleRate) * ToneLevel;
+            samples[2 * i] = value;
+            samples[(2 * i) + 1] = value;
+        }
+
         foreach (var beep in BeepSamples)
         {
             for (var i = 0; i < 1024; i++)
@@ -131,8 +148,8 @@ internal sealed unsafe class SyntheticRecording
                 if (t >= 0 && t < BeepSamplesLong)
                 {
                     var value = MathF.Sin(2 * MathF.PI * 1000 * t / AudioEncoder.SampleRate) * BeepLevel;
-                    samples[2 * i] = value;
-                    samples[(2 * i) + 1] = value;
+                    samples[2 * i] += value;
+                    samples[(2 * i) + 1] += value;
                 }
             }
         }

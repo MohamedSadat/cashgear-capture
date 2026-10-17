@@ -484,7 +484,9 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.GateThresholdText.Should().Be("-50 dB");
         vm.MicrophoneCompressor.Should().BeFalse();
         vm.MicrophoneLimiter.Should().BeTrue("on by default");
+        vm.NormalizeLoudness.Should().BeFalse("off by default");
 
+        vm.NormalizeLoudness = true;
         vm.GateThresholdDb = -38.4;
         vm.MicrophoneCompressor = true;
         vm.MicrophoneLimiter = false;
@@ -492,6 +494,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         _settings.Current.Recording.MicrophoneProcessing.Should().Be(
             new MicrophoneProcessing(NoiseSuppression: true, NoiseSuppressionStrength: 60, NoiseGate: true, GateThresholdDb: -38, Compressor: true, Limiter: false));
+        _settings.Current.Recording.NormalizeLoudness.Should().BeTrue();
 
         vm.RecordingMicrophone = vm.Microphones.Single(m => m.Id is null);
         vm.HasMicrophone.Should().BeFalse("processing only applies to a microphone");

@@ -25,7 +25,7 @@
 
   <!-- The same FFmpeg libraries the app ships. -->
   <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\ffmpeg\avcodec-63.dll')">
-    <None Include="$(MSBuildThisFileDirectory)..\ffmpeg\avutil-*.dll;$(MSBuildThisFileDirectory)..\ffmpeg\swresample-*.dll;$(MSBuildThisFileDirectory)..\ffmpeg\swscale-*.dll;$(MSBuildThisFileDirectory)..\ffmpeg\avcodec-*.dll;$(MSBuildThisFileDirectory)..\ffmpeg\avformat-*.dll" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)..\ffmpeg\avutil-*.dll;$(MSBuildThisFileDirectory)..\ffmpeg\swresample-*.dll;$(MSBuildThisFileDirectory)..\ffmpeg\swscale-*.dll;$(MSBuildThisFileDirectory)..\ffmpeg\avcodec-*.dll;$(MSBuildThisFileDirectory)..\ffmpeg\avformat-*.dll;$(MSBuildThisFileDirectory)..\ffmpeg\avfilter-*.dll" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
 </Project>

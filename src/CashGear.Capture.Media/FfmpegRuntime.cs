@@ -12,8 +12,8 @@ namespace CashGear.Capture.Media;
 /// </summary>
 public sealed partial class FfmpegRuntime
 {
-    /// <summary>The libraries the app loads, dependencies first. (avfilter and avdevice are only for ffmpeg.exe.)</summary>
-    public static readonly IReadOnlyList<string> Libraries = ["avutil", "swresample", "swscale", "avcodec", "avformat"];
+    /// <summary>The libraries the app loads, dependencies first: avfilter evens out loudness. (avdevice is only for ffmpeg.exe.)</summary>
+    public static readonly IReadOnlyList<string> Libraries = ["avutil", "swresample", "swscale", "avcodec", "avformat", "avfilter"];
 
     private static readonly Lock LoadGate = new();
     private static string? _loadedFrom;
@@ -110,6 +110,7 @@ public sealed partial class FfmpegRuntime
         "swscale" => ffmpeg.swscale_version(),
         "avcodec" => ffmpeg.avcodec_version(),
         "avformat" => ffmpeg.avformat_version(),
+        "avfilter" => ffmpeg.avfilter_version(),
         _ => throw new ArgumentOutOfRangeException(nameof(library), library, null),
     } >> 16);
 

@@ -8,6 +8,7 @@ namespace CashGear.Capture.Core.Recording;
 /// <param name="OutputPath">Where the finished file goes (the first part's name; later parts get " (part 2)" and so on).</param>
 /// <param name="Segments">The temporary files in order, one per encoder used (a recording continues in a new one when its encoder fails).</param>
 /// <param name="Tracks">The sound tracks' titles, the default one first.</param>
+/// <param name="NormalizeLoudness">Even out the sound to −16 LUFS when it is saved (also when it is recovered).</param>
 public sealed record RecordingManifest(
     string Id,
     DateTimeOffset StartedAt,
@@ -16,7 +17,8 @@ public sealed record RecordingManifest(
     int Height,
     int Fps,
     IReadOnlyList<string> Segments,
-    IReadOnlyList<string> Tracks);
+    IReadOnlyList<string> Tracks,
+    bool NormalizeLoudness = false);
 
 /// <summary>
 /// The temporary folders recordings are written to (<c>%LocalAppData%\CashGear\Capture\Recordings\Temp</c>), one per
