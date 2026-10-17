@@ -760,3 +760,125 @@ The first phase of the extended plan. Screen recording no longer runs `ffmpeg.ex
 - **OpenH264.** On Windows N editions without the Media Feature Pack, only OpenH264 is left, and it has no constant-quality mode: it gets a bit rate per pixel, so files are larger.
 - **Bigger download.** The FFmpeg libraries are about 120 MB, against the 105 MB `ffmpeg.exe` they replace. Setup.exe is 130.8 MB (1.0.1: 118 MB).
 - **Harmless FFmpeg log line.** FFmpeg logs "UDTA parsing failed retrying raw" (information level) when reading the track titles back; the titles read correctly.
+
+## Phase 11 — Pro audio (2026-10-17)
+
+Sound gets the controls a recording app needs. Recording follows the sound devices as they change, records one app's sound or leaves one out, and processes the microphone. Settings and the toolbar show levels, the microphone can be tried before recording, loudness is evened out when saving, and push-to-talk is available.
+
+### Added
+- **New project `CashGear.Capture.Audio`** (deferred from Phase 10). It takes over Recording's WASAPI code (the timestamped capture loop, the source factory, the device lists) and adds everything below that touches devices. The pure parts are in Core: the mixer and clock, and a new `Core.Audio` namespace with the DSP, the levels, the timestamp ledger and push-to-talk.
+- **Devices are followed during a recording.**
+  - **Following the default.** "Default output device" and "Default microphone" follow Windows' default (Sound settings, or the default unplugged): recording switches to the new device and says so in a notification.
+  - **Waiting for a chosen device.** A chosen device that is unplugged is waited for and recorded again when it is back, also with a notification. A device that fails without any change (the audio service restarting) is tried again every second.
+  - **The gap.** While no device is recorded, the track is silent. The first sound after a change lands where its timestamp says.
+  - **Missing at the start.** A device not connected at the start no longer leaves its track out. The track waits for the device, and the notification says so.
+  - **The saved notification** lists what happened and when ("At 0:30: Microphone (H5) was disconnected…").
+  - **How.** `IMMNotificationClient` (through NAudio's notification client) is queued to a worker thread, where devices are opened and closed.
+- **The output device can be chosen:** Settings › Recording › **System audio from**: the default output device (followed) or any output device. A chosen device that isn't connected stays chosen.
+- **One app's sound, or all sound except one app** (Settings › Recording › **System audio**: All sound / Only one app / All sound except one app, with a list of running apps and **Refresh**).
+  - **How.** WASAPI process loopback (`AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK`, include or exclude the process tree), so it works whichever device the app plays to. The app's sound is captured before the device's volume.
+  - **Finding the app.** The app is chosen by program file (`chrome.exe`) and found at the top of its process tree (a browser plays from a child process). Where there are several trees, the one with sound open wins.
+  - **Following it.** The app is looked for every second: one that starts later is recorded from then, and one that restarts is followed to its new process.
+  - **Leaving out an app that isn't running** leaves out this app's own process instead, so everything is recorded until it starts.
+  - **The list** shows programs with a window and programs with sound open (marked "playing sound"), named by their file description.
+  - **The track** of one app's sound is named after the app.
+- **Microphone processing** (Settings › Recording › Microphone processing), in this order, on 10 ms blocks on the capture thread:
+  - **noise suppression** (RNNoise; below);
+  - **noise gate**: −80 to −10 dB. It opens within 1 ms, closes 6 dB lower after a 150 ms hold, and fades 60 dB down;
+  - **compressor**: −24 dB, 3:1, soft knee, 5/120 ms, with make-up that keeps a −12 dB peak where it was;
+  - **limiter**: 2 ms look-ahead brick wall at −1 dBFS, on by default. Below the ceiling it changes nothing.
+
+  Each block keeps the time its sound was captured: a `StampLedger` remembers the stamp of every packet, and the chain's delay is taken off. The delay is fixed when the recording starts (a disabled stage still delays), so turning a stage on or off while recording never moves the sound.
+- **Noise suppression with RNNoise 0.2.**
+  - **The DLL.** `tools\get-rnnoise.ps1` builds `rnnoise.dll` from the release tarball, which includes the model (SHA-256 pinned), with Visual Studio's C++ compiler. It is x64 with the static C runtime, uses SSE2, and picks SSE4.1 or AVX2 at run time. It ships as `rnnoise\` with its BSD licence. Without it the option isn't shown.
+  - **How it runs.** Each channel is processed (once for a mono microphone), and the output is two RNNoise frames (20 ms) behind.
+  - **Strength** (0–100%) mixes the original back in; 90% leaves noise about 20 dB down.
+  - **Switched on**, it starts fresh and passes the original until its first real output.
+  - **While recording**, the toolbar's Sound panel switches it, and the choice is kept for the next recording.
+- **Level meters.** Each source has a peak bar, an RMS bar, a held peak and a clip mark. The mark lights red for 2 s when the sound reached full scale.
+  - **On the toolbar:** a thin meter per source in the bar and a wider one in the Sound panel, 20 times a second.
+  - **In Settings › Recording:** the microphone (as processed) and system audio, while the page is open, from the devices, app and processing chosen there.
+  - **Measuring.** The mixer measures each track after volume and mute, and the mix before clamping, so a mix that clips shows it.
+- **Microphone test** (Settings › Recording): **Record 5 seconds**, then **Play as recorded** or **Play with processing**. The processing runs again on each play, so changing it and playing again compares settings. It plays on the default output device.
+- **Even out loudness to −16 LUFS** (Settings › Recording › Loudness, off by default), when a recording is saved or recovered.
+  - **How.** Each sound track is measured with FFmpeg's `loudnorm` (EBU R128), then decoded, run through `loudnorm` with the measurements and encoded again to AAC; the video is copied. With the measurements loudnorm usually just turns the track up or down. It limits only where peaks would pass −1.5 dBTP.
+  - **Silent tracks** (quieter than −60 LUFS) are copied.
+  - **Recovery.** The setting is stored in the recording's manifest, so a recovered recording is saved the same way.
+  - **avfilter.** This needs FFmpeg's `avfilter-12.dll`, which now ships in `ffmpeg\`. `get-ffmpeg.ps1` checks that the build has `loudnorm`, and `package.ps1` checks the six libraries.
+- **Push-to-talk** (Settings › Hotkeys › Push to talk; no key by default). The microphone is silent except while the key is held, and 250 ms after.
+  - The key is read every 10 ms rather than registered, so it still reaches the app in front, and a key on its own (F13, Scroll Lock) is fine. A key that is one of the hotkeys is refused.
+  - The toolbar shows "Hold F13 to talk", and "Talking" in red while held.
+  - It is separate from the toolbar's Mute.
+- **Settings** (no schema change; new fields with defaults): `recording.systemAudioDevice`, `systemAudioScope`, `systemAudioApp`, `systemAudioAppName`, `microphoneProcessing` { `noiseSuppression`, `noiseSuppressionStrength`, `noiseGate`, `gateThresholdDb`, `compressor`, `limiter` }, `normalizeLoudness`, `pushToTalk`.
+
+### Deviations from the spec
+- **Per-app audio is offered from Windows 10 2004 (build 19041), not 20348.** Microsoft's documentation names 20348, but process loopback activates and records on this PC (19045), as OBS and NAudio rely on. Older builds don't get the option (and the app needs 19041 anyway). No Windows 11 machine was needed to test it.
+- **RNNoise is built from source.** There is no official Windows binary, and a third party's would have no provenance to check (see LICENSES.md).
+- **Strength is a mix of the original back in.** RNNoise has no strength setting of its own.
+- **Loudness is evened out when saving, as an option.** There is no export yet (Phase 16). The loudness range target is 20 LU rather than loudnorm's default 7, so speech with pauses is turned up or down as a whole instead of compressed. The true-peak ceiling is −1.5 dBTP.
+- **Each track is evened out by itself.** With a track per source, each source plays at −16 LUFS, so their sum in an editor is louder.
+- **Push-to-talk reads the key instead of registering a hotkey**, so the key isn't taken from other apps, and keys on their own are allowed.
+- **Settings' meters open the devices while the Recording page is shown**, so Windows' microphone indicator is on meanwhile.
+- **A device missing at the start gives a silent track that waits for it.** In Phase 10 there was no track for it.
+- **Only noise suppression is switchable on the toolbar**; the gate, compressor and limiter are set in Settings.
+
+### Fixed during development
+- **A loss never reported.** A device present at the start counted as already lost, so losing the default device with none to take over was never reported. Caught by the following-source tests.
+- **Processing sent too early.** Settings sent processing changes to the meters while loading, before the page was shown. They are now sent only while the meters listen.
+- **Settings compared unequal after loading.** The new nested `microphoneProcessing` was null in a default `RecordingSettings` but filled in after normalizing, so the two compared unequal. For example, the settings service raised Changed twice. It now defaults to its own defaults.
+- **A false limiter failure.** The tests' decoder (`ffmpeg -ac 1`) mixes identical channels √2 louder, so a limited 0.891 peak read as 1.26. The test divides it out. (AAC also overshoots for about 5 ms where a full-scale tone starts out of silence.)
+
+### Tested
+- **738 automated tests** (729 pass, 9 skipped: the 6 RNNoise tests until `rnnoise.dll` is built, and 3 explicit). New:
+  - **Core:**
+    - the gate, compressor and limiter, including the ceiling never passed, the 2 ms delay exactly, and smooth gain before a spike;
+    - the ledger, including stamps from each packet and splits at jumps and losses;
+    - levels and meter ballistics;
+    - the push-to-talk gate;
+    - per-track and mix levels with clipping;
+    - the new settings.
+  - **Audio:**
+    - following the default and chosen devices with a fake watcher (switch, loss reported once, a new default right after a loss, no default, unplug and replug, missing at the start, retry, dispose);
+    - process trees and following an app (start, restart, leaving out, failure);
+    - the chain's timestamps through the delay, jumps and live changes;
+    - the monitor and the test recording;
+    - RNNoise's delay, suppression, strength and switching on (skipped until built).
+  - **Real devices:**
+    - the device lists;
+    - default system audio opened and followed;
+    - a missing device waiting;
+    - **process loopback of this process for 2 s with every frame there**;
+    - an app that isn't running;
+    - the app list;
+    - the default microphone recorded for the test (0.5 s).
+  - **Media:**
+    - tracks at about −31 and −5 LUFS come out at −15.9 and −16.0 LUFS (ffmpeg.exe's `ebur128`), with true peak under −1 dBTP;
+    - a peaky track (+15 dB would clip its beeps) at −16.0 with peaks limited;
+    - the sound within 2 samples of its place, and the video frames identical;
+    - a silent track copied;
+    - loudnorm's report parsed.
+  - **App:**
+    - a 1.8× microphone tone limited to −1 dB at its own time, with the compressor turned on mid-way;
+    - a recording saved evened out (−16 ± 1);
+    - a recovered recording evened out;
+    - a recording asked to leave out an app falling back to all sound;
+    - the toolbar's meters, clip mark, push-to-talk text and noise-suppression switch;
+    - Settings: devices, apps, processing, meters, microphone test, push-to-talk validation, and the window showing two meters on the Recording page only.
+- **Manual on this PC** (Windows 10 22H2 19045, ZOOM H5 as output and microphone; see TESTING.md):
+  - **One app only.** Two helper processes played 440 Hz and 1 kHz. Recording only the first heard 440 Hz at 0.196 and the other at 0.00006 (71 dB down); all but the first heard 1 kHz at 0.196 and 440 Hz at 0.00005.
+  - **Packaging.** `ffmpeg\` holds the six libraries and both licence texts; Setup.exe is 143.7 MB.
+- **Not run** (left for the user; see TESTING.md › Pending):
+  - switching the default output device during a recording;
+  - unplugging and replugging the H5 with the new following;
+  - RNNoise on a real microphone (the DLL isn't built: no C++ compiler here);
+  - push-to-talk with a real key;
+  - loudness of a real recording.
+
+### Known limitations
+- **RNNoise isn't built on this PC.** Visual Studio has no C++ workload, so `rnnoise.dll`, its tests and the before/after acceptance (fan and keyboard noise) are pending. The 20 ms delay comes from reading RNNoise 0.2's source; a test measures it once the DLL exists.
+- **One app = one process tree.** Two separate instances of the same program: only one is recorded. Sound an app has another process play (a system service or broker) isn't included.
+- **Switching devices** leaves a few milliseconds of silence. When the default device goes and none takes over, the loss is reported after a second.
+- **Evening out loudness** encodes the sound again (a second AAC generation) and adds measuring and encoding time when saving.
+- **Push-to-talk** can't use a mouse button directly (map it to F13–F24), and the key also reaches the app in front.
+- **The microphone light.** Settings' meters keep the microphone open while the Recording page is open.
+- **Bigger download.** avfilter adds about 13 MB: Setup.exe is 143.7 MB (Phase 10: 130.8 MB).

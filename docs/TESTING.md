@@ -22,6 +22,14 @@ So is the real-sound recording test, because it plays quiet beeps through the de
 dotnet test --project tests/CashGear.Capture.App.Tests -- --explicit only
 ```
 
+And the per-app acceptance test, which plays a 440 Hz and a 1 kHz tone (amplitude 0.2) from two helper processes for about 5 s and checks that "only one app" hears only the first and "all except one app" only the second:
+
+```powershell
+dotnet test --project tests/CashGear.Capture.Audio.Tests --filter-method "*Only_the_chosen_app_is_recorded*" --explicit only --output Detailed
+```
+
+The noise-suppression tests use the real RNNoise from `tools\rnnoise` and skip without it. Build it once with `tools\get-rnnoise.ps1`, which needs Visual Studio's C++ compiler ("Desktop development with C++").
+
 The other recording tests with sound use a generated tone (no sound is played) or real system audio with whatever is playing.
 
 ### Recording acceptance: `tools\SyncTest`
@@ -49,7 +57,7 @@ Other options: `--fps 15|30|60`, `--encoder auto|software|<id>`, `--quality Smal
 | Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); fresh install **pending** |
+| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); fresh install **pending** |
 | Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
@@ -358,3 +366,35 @@ The app:
 | 1.0.0's elevated `--exit`: "not owned by the current user", exit code 1, copy kept running | fail (the second bug) |
 | Fixed elevated `--exit`: the normal copy shut down | pass |
 | Installed copy started again | done |
+
+## Phase 11 results (2026-10-17)
+
+Same PC as Phase 10 (Windows 10 Pro 22H2 19045). The output devices are "Headphones (H5)" (the default) and "Speakers (High Definition Audio Device)"; the microphone is "Microphone (H5)". There is no C++ compiler here, so `rnnoise.dll` isn't built and the 6 RNNoise tests skip.
+
+| Check | Result |
+|---|---|
+| Process loopback on Windows 10 19045 (a probe before the work, then `ProcessLoopbackTests`) | pass: include and exclude both activate; 2 s of this test process's (silent) sound arrives with Windows' timestamps on every packet and no frame lost between the 10 ms polls |
+| Explicit `Only_the_chosen_app_is_recorded_while_another_plays_too`: 440 Hz and 1 kHz from two PowerShell processes | pass: only the 440 Hz process → 440 Hz 0.1957, 1 kHz 0.000058 (71 dB down); all but it → 1 kHz 0.1957, 440 Hz 0.000051 (72 dB down). The tones were played at 0.2: process loopback is before the device volume |
+| The real default microphone (H5) recorded for the microphone test, 0.5 s, while the meters listened | pass: 24,000 frames, with sound on the meter |
+| Loudness through the remux (`LoudnessTests`, measured by `ffmpeg.exe -af ebur128`) | pass: −30.6 LUFS → −15.9; −5.1 LUFS → −16.0; a quiet track with loud beeps → −16.0, true peak −5.7 dBFS; the sound within 2 samples of its place, video frames identical, a silent track copied |
+| A recording made with "Even out loudness" (a generated 1 kHz tone at 0.05), and a recovered one | pass: both −16 ± 1 LUFS |
+| The microphone limited at −1 dBFS with the compressor turned on mid-recording (a generated tone at 1.8× full scale) | pass: peaks 0.85–0.92 after the onset, 0.4–0.6 with the compressor, the tone at 1.00 s as made |
+| Settings window: Recording page shows two meters, which listen only while it is shown | pass (desktop test) |
+| `tools\package.ps1 -Version 1.0.1-phase11 -NoRnnoise` into the scratch folder | pass: `ffmpeg\` holds exactly the six libraries (now with `avfilter-12.dll`), `LICENSE.txt` and `COPYING.GPLv3`; Setup.exe 143.7 MB (Phase 10: 130.8 MB) |
+| `tools\get-rnnoise.ps1` without the C++ workload | as designed: the tarball's SHA-256 checks out, it extracts, and it stops with how to add the workload |
+| The whole suite, after each milestone and at the end | 738 tests: 729 pass, 9 skip (6 RNNoise, 3 explicit). Two desktop tests failed once each while the screen was busy and passed alone: `WindowCaptureTests.Wgc_captures_the_visible_frame…` and `WgcCaptureTests.Matches_gdi_for_every_monitor` (96.998% against 97%) |
+
+### Pending: devices during a recording
+With a test recording of system audio and the H5 microphone running (track layout Both):
+1. In Windows' Sound settings, make "Speakers (High Definition Audio Device)" the default output, then the H5 again. Expect a notification "System audio now comes from Speakers…" each time, the sound following, and the saved notification listing both switches with their times.
+2. Unplug the H5's USB cable for about 10 s, then plug it back in. Expect "…was disconnected" (microphone; system audio switches to the speakers if Windows makes them the default), then "…works again", silence in between, and no dropped frames.
+3. Choose the H5 by name (not the default) under Settings › Recording › System audio from and repeat step 2: it should be waited for and recorded again.
+
+### Pending: RNNoise
+1. Add "Desktop development with C++" to Visual Studio 2026 in the Visual Studio Installer, then run `tools\get-rnnoise.ps1` and rebuild. The RNNoise tests then run: the delay (expected 960 frames), more than 20 dB off noise alone, strength, switching on mid-way, the chain's timestamps.
+2. Acceptance: Settings › Recording, turn on noise suppression (100%), and with a fan or typing nearby, **Record 5 seconds** while talking, then play it as recorded and processed. For a file: record 10 s with the processing off and on (a track per source), and compare the microphone tracks' noise floor (`ffmpeg -i file.mp4 -map 0:a:2 -af astats -f null -`) and spectrograms (`-lavfi showspectrumpic=s=1024x512`).
+3. CPU: watch the app's CPU in Task Manager during a few minutes of recording with the microphone, noise suppression on and then off.
+
+### Pending: push-to-talk and a real recording's loudness
+- Set Settings › Hotkeys › Push to talk to F13 (or Scroll Lock), record 30 s talking with and without the key held: the microphone track is silent except while it is held and a quarter of a second after; the toolbar says "Talking".
+- Record a minute of speech with "Even out loudness" on, and measure it with `ffmpeg -i file.mp4 -map 0:a:0 -af ebur128 -f null -` (expect −16 ± 1 LUFS).

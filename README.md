@@ -18,6 +18,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 9 | Capture history, delayed capture with countdown, live light/dark, clickable notifications, installer + updates (Velopack) | done (fresh Windows 10/11 install pending) |
 | — | Sound in screen recordings: system audio and a microphone, AAC, kept in sync through pauses | done |
 | 10 | Recording engine v2: FFmpeg in-process (LGPL), timestamped frames, crash-safe temp file + recovery, encoder detection and fallback, sound tracks per source | done |
+| 11 | Pro audio: devices followed during a recording, one app's sound (or all but one), microphone noise gate / compressor / limiter and RNNoise, level meters, microphone test, loudness to −16 LUFS, push-to-talk | done (RNNoise build and manual sound checks pending) |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -31,7 +32,8 @@ Until the build is signed, Windows SmartScreen may say "Windows protected your P
 
 - Windows 10 2004 (build 19041) or later, x64
 - .NET SDK 10.0.401+ (pinned in `global.json`)
-- For screen recording: FFmpeg's libraries. Run `tools\get-ffmpeg.ps1` once (it downloads a pinned, checksum-verified LGPL build into the git-ignored `tools\ffmpeg`); the build copies the five libraries the app uses next to it as `ffmpeg\`. Without them everything else works and recording says what is missing. See [docs/LICENSES.md](docs/LICENSES.md).
+- For screen recording: FFmpeg's libraries. Run `tools\get-ffmpeg.ps1` once (it downloads a pinned, checksum-verified LGPL build into the git-ignored `tools\ffmpeg`); the build copies the six libraries the app uses next to it as `ffmpeg\`. Without them everything else works and recording says what is missing. See [docs/LICENSES.md](docs/LICENSES.md).
+- For microphone noise suppression: RNNoise. Run `tools\get-rnnoise.ps1` once; it needs Visual Studio's C++ compiler ("Desktop development with C++"). It builds `rnnoise.dll` from the pinned, checksum-verified RNNoise 0.2 source into the git-ignored `tools\rnnoise`, and the build copies it next to the app as `rnnoise\`. Without it Settings doesn't offer noise suppression.
 
 ## Build, test, run
 
@@ -50,10 +52,11 @@ powershell -File tools\package.ps1                       # version from Director
 powershell -File tools\package.ps1 -Version 1.0.1 -UpdateFeedUrl https://downloads.example.com/capture
 ```
 
-- **Output.** The script publishes the app self-contained (win-x64, single-file exe plus WPF's and SkiaSharp's native DLLs, `ffmpeg\`, `THIRD-PARTY-NOTICES.txt`). Velopack (`vpk`, a local dotnet tool pinned in `dotnet-tools.json`) then writes `artifacts\releases\`: `CashGear.Capture-win-Setup.exe`, a portable zip, the full and delta `.nupkg` files and `releases.win.json`. Keep that folder between releases; deltas are made against the previous version in it.
+- **Output.** The script publishes the app self-contained (win-x64, single-file exe plus WPF's and SkiaSharp's native DLLs, `ffmpeg\`, `rnnoise\`, `THIRD-PARTY-NOTICES.txt`). Velopack (`vpk`, a local dotnet tool pinned in `dotnet-tools.json`) then writes `artifacts\releases\`: `CashGear.Capture-win-Setup.exe`, a portable zip, the full and delta `.nupkg` files and `releases.win.json`. Keep that folder between releases; deltas are made against the previous version in it.
 - **Updates.** `-UpdateFeedUrl` builds in where installed copies look for updates: an https address or a shared folder holding the contents of `artifacts\releases`. It can be overridden by `updates.feedUrl` in settings.json. Without one, the app doesn't check. Installed copies check a minute after start and then daily (Settings › General can turn that off or check now), download in the background, and offer tray › **Restart to Update**. A downloaded update is otherwise installed at the next start.
 - **Signing.** Pass `-SignParams "/a /fd sha256 /tr http://timestamp.digicert.com /td sha256 /f cert.pfx /p …"` (signtool arguments), `-SignTemplate "<any command with {{file}}>"` or `-AzureTrustedSignFile metadata.json`. A build server can set `CASHGEAR_SIGN_PARAMS`, `CASHGEAR_SIGN_TEMPLATE` or `CASHGEAR_AZURE_SIGN_FILE` instead. The app's binaries, the updater and Setup.exe are all signed.
 - **Leaving FFmpeg out.** `-NoFfmpeg` packages without it; recording then explains what is missing. FFmpeg is an LGPL v3 build loaded as separate DLLs (replaceable); its licence texts ship in `ffmpeg\`, and [docs/LICENSES.md](docs/LICENSES.md) says where its source is.
+- **RNNoise.** The script builds it with `get-rnnoise.ps1` if `tools\rnnoise` doesn't have it yet; `-NoRnnoise` packages without it (no noise suppression).
 - **Icon.** `tools\make-icon.ps1` redraws `src\CashGear.Capture.App\Assets\app.ico`.
 
 The app starts hidden in the system tray. Command-line switches forward to the running instance:
@@ -90,8 +93,8 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 |---|---|
 | Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
 | Capture | Capture delay (also in the tray), hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
-| Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer, click highlights, sound (system audio on/off, microphone: none, the Windows default or a connected one; with both, one mixed track, a track per source, or both), FFmpeg's version |
-| Hotkeys | Record hotkeys; each shows whether it is active |
+| Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer, click highlights. Sound: system audio on/off, all sound / only one app / all except one app, the output device (the default, followed, or one by name), the microphone (none, the Windows default or a connected one); with both, one mixed track, a track per source, or both. Microphone processing (noise suppression with its strength, noise gate with its threshold, compressor, limiter), live level meters, the microphone test, evening out loudness when saving. FFmpeg's version |
+| Hotkeys | Record hotkeys; each shows whether it is active. Push to talk |
 | General | Start with Windows, text recognition language (Automatic or one installed language), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file |
 
 Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved.
@@ -129,9 +132,13 @@ Tray › **Record Screen…** (or `Shift+PrintScreen`): drag the area to record,
 - **Timing.** Every picture and every sound packet is stamped with the time Windows captured it, on one clock, so they stay together however long the recording runs. The video has a constant frame rate; when the screen is still, the same picture repeats. If encoding falls far behind, frames are skipped (the picture holds still for a moment) but the sound never is.
 - **Crash-safe.** While recording, the video is written to a temporary file in `%LocalAppData%\CashGear\Capture\Recordings\Temp` that survives the app being closed or the PC losing power, losing about a second. Stop turns it into the MP4. A recording left behind is found when the app starts: a notification, and tray › **Save Interrupted Recordings**, save it where it was going.
 - **Sound.** System audio (what you hear on the default output device) is recorded by default. A microphone can be added in Settings › Recording. Both are saved in the MP4 as AAC (48 kHz stereo): mixed into one track, or (Settings) a track per source for editing, or both.
-  - The toolbar shows a level meter and, with a microphone, a **Mute mic** button. Its sound button opens volume (0–200%) and mute for each source; the volumes are kept for the next recording.
+  - **One app.** System audio can be one app's sound only, or all sound except one app's (a call, music), whichever device it plays to. The app is found when the recording starts, and followed if it starts or restarts later.
+  - **Devices.** The default output device and microphone are followed when Windows' default changes. A device unplugged during a recording leaves silence until it is back, and is then recorded again; notifications say so, and the recording goes on.
+  - **The microphone** can be cleaned up as it is recorded: noise suppression (RNNoise) for fans, hum and typing; a noise gate between words; a compressor; and a limiter that keeps it below −1 dB (on by default). Settings › Recording shows live meters and has a microphone test: record 5 seconds and play them back as recorded or processed.
+  - **The toolbar** shows a level meter per source (red at the right end when it clipped) and, with a microphone, a **Mute mic** button. Its sound button opens volume (0–200%), mute, a wider meter for each source and the noise suppression switch; the volumes are kept for the next recording.
+  - **Push-to-talk** (Settings › Hotkeys): with a key set, the microphone is only recorded while the key is held.
+  - **Loudness.** With Settings › Recording › Even out the loudness, every recording is saved at −16 LUFS (the sound is measured and encoded again; the video isn't).
   - Sound is kept on the recording's clock: silences stay silent, Pause pauses the sound too, and the sound and picture end together.
-  - A device unplugged during a recording leaves silence; a notification says so and the recording goes on.
   - If no sound device is available, the video is recorded without sound and the notification says why. With system audio off and no microphone, the MP4 has no sound track.
 
 ## Capture Text
@@ -180,15 +187,17 @@ src/CashGear.Capture.Core       Models, interfaces, settings, pixel math (net10.
 src/CashGear.Capture.Interop    All P/Invoke + COM declarations
 src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enumeration
 src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom (net10.0, no WPF)
-src/CashGear.Capture.Media      FFmpeg in-process (FFmpeg.AutoGen): encoders, crash-safe writer, remux, decoding (net10.0)
-src/CashGear.Capture.Recording  Screen recording: timestamped WGC pictures + WASAPI sound -> encoders -> temp file -> MP4; recovery
+src/CashGear.Capture.Media      FFmpeg in-process (FFmpeg.AutoGen): encoders, crash-safe writer, remux, loudness, decoding (net10.0)
+src/CashGear.Capture.Audio      Sound devices: WASAPI capture with Windows' timestamps, devices followed, process loopback, microphone chain, RNNoise, meters
+src/CashGear.Capture.Recording  Screen recording: timestamped WGC pictures + sound -> encoders -> temp file -> MP4; recovery
 tools/get-ffmpeg.ps1            Downloads the pinned LGPL FFmpeg build into tools/ffmpeg (not committed)
+tools/get-rnnoise.ps1           Builds rnnoise.dll from the pinned RNNoise source into tools/rnnoise (not committed; needs MSVC)
 tools/SyncTest                  Recording acceptance test: flashes + beeps, then sync, drift, CPU (docs/TESTING.md)
 tools/licenses                  License texts shipped with FFmpeg
 tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
 tools/make-icon.ps1             Draws the app icon
 src/CashGear.Capture.App        WPF app: tray, windows, view models, output
-tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, App)
+tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, App)
 ```
 
 ## Files on disk
