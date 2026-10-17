@@ -42,7 +42,7 @@
 
   <!-- Screen recording loads FFmpeg's libraries from ffmpeg\ next to the app (an LGPL build; see docs\LICENSES.md). tools\get-ffmpeg.ps1 puts the pinned build in tools\ffmpeg; only the five libraries the app uses ship, with the licence. -->
   <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\avcodec-63.dll')">
-    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\avutil-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\swresample-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\swscale-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\avcodec-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\avformat-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\LICENSE.txt" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\avutil-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\swresample-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\swscale-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\avcodec-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\avformat-*.dll;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\LICENSE.txt;$(MSBuildThisFileDirectory)..\..\tools\licenses\COPYING.GPLv3" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

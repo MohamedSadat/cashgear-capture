@@ -7,6 +7,9 @@ namespace CashGear.Capture.Media;
 /// <param name="Start">The first packet's time in seconds.</param>
 public sealed record MediaStreamInfo(int Index, bool IsVideo, string Codec, string? Title, bool IsDefault, double Start, double Duration, int Width, int Height);
 
+/// <summary>Receives decoded sound mixed to mono, starting at <paramref name="time"/> seconds.</summary>
+public delegate void MonoSoundHandler(double time, int sampleRate, ReadOnlySpan<float> samples);
+
 /// <summary>
 /// Reads a recording back by decoding it: what the tests and the sync test check a file with. Not used while
 /// recording.
@@ -95,11 +98,31 @@ public sealed unsafe class MediaReader : IDisposable
         var samples = new List<float>();
         double? start = null;
         var rate = 0;
+        ReadAudio(streamIndex, (time, sampleRate, chunk) =>
+        {
+            rate = sampleRate;
+            start ??= time;
+            foreach (var sample in chunk)
+            {
+                samples.Add(sample);
+            }
+        });
+        return (start ?? 0, rate, samples.ToArray());
+    }
+
+    /// <summary>Decodes a sound stream to mono a frame at a time (for files too long to hold in memory).</summary>
+    public void ReadAudio(int streamIndex, MonoSoundHandler onSound)
+    {
+        ArgumentNullException.ThrowIfNull(onSound);
+        var mono = Array.Empty<float>();
         Decode(streamIndex, frame =>
         {
-            rate = frame->sample_rate;
-            start ??= frame->best_effort_timestamp * TimeBase(streamIndex);
             var channels = frame->ch_layout.nb_channels;
+            if (mono.Length < frame->nb_samples)
+            {
+                mono = new float[frame->nb_samples];
+            }
+
             for (var i = 0; i < frame->nb_samples; i++)
             {
                 float sum = 0;
@@ -110,10 +133,11 @@ public sealed unsafe class MediaReader : IDisposable
                         : ((float*)frame->data[0])[(i * channels) + c];
                 }
 
-                samples.Add(sum / channels);
+                mono[i] = sum / channels;
             }
+
+            onSound(frame->best_effort_timestamp * TimeBase(streamIndex), frame->sample_rate, mono.AsSpan(0, frame->nb_samples));
         });
-        return (start ?? 0, rate, samples.ToArray());
     }
 
     private double TimeBase(int stream) => ffmpeg.av_q2d(_input->streams[stream]->time_base);

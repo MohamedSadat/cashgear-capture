@@ -506,12 +506,12 @@ public sealed class RecordingToolbarTests
             try
             {
                 window.Show();
-                await Task.Delay(200);
+                await Task.Delay(200, TestContext.Current.CancellationToken);
                 var closed = window.ActualHeight;
 
                 vm.ToggleSoundPanelCommand.Execute(null);
                 window.UpdateLayout();
-                await Task.Delay(200);
+                await Task.Delay(200, TestContext.Current.CancellationToken);
 
                 window.ActualHeight.Should().BeGreaterThan(closed + 30, "the panel adds two rows to the toolbar");
                 System.Windows.Media.VisualTreeHelper.GetChildrenCount(window).Should().BeGreaterThan(0);

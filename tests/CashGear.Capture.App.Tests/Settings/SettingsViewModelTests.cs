@@ -321,7 +321,7 @@ public sealed class SettingsViewModelTests : IDisposable
                 var tabs = FindAll<System.Windows.Controls.TabControl>(window).Single();
                 tabs.SelectedItem = tabs.Items.Cast<System.Windows.Controls.TabItem>().Single(t => (string)t.Header == "Recording");
                 window.UpdateLayout();
-                await Task.Delay(300);
+                await Task.Delay(300, TestContext.Current.CancellationToken);
 
                 var boxes = FindAll<System.Windows.Controls.ComboBox>(window).Where(b => b.IsVisible).ToList();
                 boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Quality" && b.SelectedItem is QualityPreset);

@@ -634,6 +634,10 @@ internal sealed partial class ScreenRecorder(
 
         private void WriteVideo()
         {
+            // Like a video player: while recording, Windows must not turn the display off or put the PC to sleep for
+            // lack of input. A display that goes off stops the screen changing, and the video would freeze there.
+            // Held by this thread, so it ends with the recording however the thread ends.
+            Kernel32.SetThreadExecutionState(Kernel32.EsContinuous | Kernel32.EsSystemRequired | Kernel32.EsDisplayRequired);
             var packets = new List<EncodedPacket>();
             var picture = new byte[_format.Width * _format.Height * 4];
             var marked = _options.ShowClicks ? new byte[picture.Length] : null;
@@ -710,6 +714,8 @@ internal sealed partial class ScreenRecorder(
                 {
                     _stream.Release(current);
                 }
+
+                Kernel32.SetThreadExecutionState(Kernel32.EsContinuous);
             }
         }
 
@@ -725,7 +731,7 @@ internal sealed partial class ScreenRecorder(
                     _stream.Release(current);
                 }
 
-                LogPicture(slot, Clock.MapInstant(next.Timestamp), Stopwatch.GetElapsedTime(next.Timestamp));
+                LogPicture(slot, next.Slot);
                 current = next;
                 changed = true;
             }
@@ -983,8 +989,8 @@ internal sealed partial class ScreenRecorder(
         [LoggerMessage(Level = LogLevel.Debug, Message = "Recording at {Elapsed}: {Written} frames, {Dropped} dropped, sound mixed to {Mixed}, {Queued} packets waiting, {Pictures} pictures from Windows")]
         private partial void LogProgress(TimeSpan elapsed, long written, long dropped, long mixed, int queued, long pictures);
 
-        [LoggerMessage(Level = LogLevel.Trace, Message = "Frame {Slot} shows a picture of {Time} (captured {Age} ago)")]
-        private partial void LogPicture(long slot, TimeSpan time, TimeSpan age);
+        [LoggerMessage(Level = LogLevel.Trace, Message = "Frame {Slot} shows the picture captured for frame {PictureSlot}")]
+        private partial void LogPicture(long slot, long pictureSlot);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Stop: {Step}")]
         private partial void LogStopStep(string step);

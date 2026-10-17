@@ -75,7 +75,7 @@ if ($NoFfmpeg) {
 }
 else {
     $shipped = Get-ChildItem (Join-Path $publish "ffmpeg") -File | ForEach-Object Name | Sort-Object
-    $expected = "LICENSE.txt", "avcodec-63.dll", "avformat-63.dll", "avutil-61.dll", "swresample-7.dll", "swscale-10.dll" | Sort-Object
+    $expected = "COPYING.GPLv3", "LICENSE.txt", "avcodec-63.dll", "avformat-63.dll", "avutil-61.dll", "swresample-7.dll", "swscale-10.dll" | Sort-Object
     if (Compare-Object $shipped $expected) {
         throw "ffmpeg\ in the publish folder should hold exactly $($expected -join ', '), not $($shipped -join ', ')."
     }
