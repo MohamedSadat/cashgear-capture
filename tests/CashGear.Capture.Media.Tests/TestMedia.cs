@@ -1,3 +1,4 @@
+using System.IO;
 using CashGear.Capture.Media;
 using Microsoft.Extensions.Logging.Abstractions;
 

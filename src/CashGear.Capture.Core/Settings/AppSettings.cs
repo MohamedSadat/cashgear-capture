@@ -165,6 +165,8 @@ public sealed record RecordingSettings(
     string? Microphone = null)
 {
     public const int DefaultQuality = 23;
+    public const int MinQuality = 15;
+    public const int MaxQuality = 35;
 
     /// <summary><see cref="Microphone"/> value for "whichever microphone Windows uses by default".</summary>
     public const string DefaultMicrophone = "default";
@@ -174,7 +176,7 @@ public sealed record RecordingSettings(
     public RecordingSettings Normalize() => this with
     {
         Fps = FrameRates.MinBy(f => Math.Abs(f - Fps)),
-        Quality = Math.Clamp(Quality, Recording.FfmpegArguments.MinQuality, Recording.FfmpegArguments.MaxQuality),
+        Quality = Math.Clamp(Quality, MinQuality, MaxQuality),
         Encoder = Enum.IsDefined(Encoder) ? Encoder : Recording.RecordingEncoder.Auto,
         Microphone = string.IsNullOrWhiteSpace(Microphone) ? null : Microphone.Trim(),
     };

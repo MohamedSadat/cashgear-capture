@@ -9,7 +9,7 @@
       *.nupkg + releases.win.json        the update feed: copy the folder's contents to the update address
 
     The app is published self-contained (no .NET install needed) as one executable plus the native libraries
-    WPF and SkiaSharp need, with ffmpeg\ for screen recording and THIRD-PARTY-NOTICES.txt.
+    WPF and SkiaSharp need, with ffmpeg\ (FFmpeg's libraries, for screen recording) and THIRD-PARTY-NOTICES.txt.
 
     Code signing: pass -SignParams (signtool.exe arguments, e.g. '/a /fd sha256 /tr http://timestamp.digicert.com
     /td sha256 /f cert.pfx /p ...'), -SignTemplate (any command, {{file}} is replaced by the file to sign) or
@@ -26,7 +26,7 @@
     artifacts\releases. Empty (the default) builds an app without automatic updates.
 
 .PARAMETER NoFfmpeg
-    Leaves ffmpeg out. Recording then explains that ffmpeg is missing.
+    Leaves FFmpeg's libraries out. Recording then explains that FFmpeg is missing.
 
 .EXAMPLE
     powershell -File tools\package.ps1
@@ -60,8 +60,8 @@ $OutputDir = (Resolve-Path $OutputDir).Path
 $publish = Join-Path $OutputDir "publish\$Version"
 $releases = Join-Path $OutputDir "releases"
 
-if (-not $NoFfmpeg -and -not (Test-Path (Join-Path $root "tools\ffmpeg\legacy\ffmpeg.exe"))) {
-    & (Join-Path $PSScriptRoot "get-ffmpeg.ps1") -Legacy
+if (-not $NoFfmpeg -and -not (Test-Path (Join-Path $root "tools\ffmpeg\avcodec-63.dll"))) {
+    & (Join-Path $PSScriptRoot "get-ffmpeg.ps1")
 }
 
 Write-Host "Publishing CashGear Capture $Version (win-x64, self-contained, single file)"
@@ -72,6 +72,13 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)." }
 
 if ($NoFfmpeg) {
     Remove-Item (Join-Path $publish "ffmpeg") -Recurse -Force -ErrorAction SilentlyContinue
+}
+else {
+    $shipped = Get-ChildItem (Join-Path $publish "ffmpeg") -File | ForEach-Object Name | Sort-Object
+    $expected = "LICENSE.txt", "avcodec-63.dll", "avformat-63.dll", "avutil-61.dll", "swresample-7.dll", "swscale-10.dll" | Sort-Object
+    if (Compare-Object $shipped $expected) {
+        throw "ffmpeg\ in the publish folder should hold exactly $($expected -join ', '), not $($shipped -join ', ')."
+    }
 }
 Copy-Item (Join-Path $root "THIRD-PARTY-NOTICES.txt") $publish
 

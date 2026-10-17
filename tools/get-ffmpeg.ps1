@@ -10,32 +10,18 @@
     The download is an LGPL v3 "shared" build from https://github.com/BtbN/FFmpeg-Builds (no x264/x265; see
     docs\LICENSES.md), pinned to a month-end autobuild, which BtbN keeps for two years. It is checked against its
     SHA-256 before anything is extracted, and the result must offer the encoders recording relies on.
-
-    -Legacy instead downloads the GPL ffmpeg.exe the external-process recorder still uses into tools\ffmpeg\legacy.
-    It goes away when the in-process recorder lands.
 #>
 param(
     [string]$Tag = "autobuild-2026-09-30-13-08",
     [string]$Asset = "ffmpeg-n9.0.2-17-g2a571b6068-win64-lgpl-shared-9.0.zip",
-    [string]$Sha256 = "7157177b8a6cb2174c1650ba8c71b363f2c78cba5330f88c4c02cf5b2b880646",
-    [switch]$Legacy
+    [string]$Sha256 = "7157177b8a6cb2174c1650ba8c71b363f2c78cba5330f88c4c02cf5b2b880646"
 )
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 $destination = Join-Path $PSScriptRoot "ffmpeg"
-
-if ($Legacy) {
-    $destination = Join-Path $destination "legacy"
-    $legacyVersion = "9.0.2"
-    $url = "https://github.com/GyanD/codexffmpeg/releases/download/$legacyVersion/ffmpeg-$legacyVersion-essentials_build.zip"
-    $Sha256 = "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba"
-    $wanted = { param($name) $name -match '/bin/(ffmpeg|ffprobe)\.exe$' -or $name -match '/LICENSE$' }
-}
-else {
-    $url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/$Tag/$Asset"
-    $wanted = { param($name) $name -match '/bin/[^/]+\.dll$' -or $name -match '/bin/(ffmpeg|ffprobe)\.exe$' -or $name -match '^[^/]+/LICENSE\.txt$' }
-}
+$url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/$Tag/$Asset"
+$wanted = { param($name) $name -match '/bin/[^/]+\.dll$' -or $name -match '/bin/(ffmpeg|ffprobe)\.exe$' -or $name -match '^[^/]+/LICENSE\.txt$' }
 
 $zip = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetFileName($url))
 
@@ -67,12 +53,10 @@ finally {
 
 $ffmpeg = Join-Path $destination "ffmpeg.exe"
 & $ffmpeg -hide_banner -version | Select-Object -First 1
-if (-not $Legacy) {
-    $encoders = & $ffmpeg -hide_banner -encoders 2>$null | Out-String
-    foreach ($name in "h264_mf", "libopenh264", "aac") {
-        if ($encoders -notmatch "\b$name\b") {
-            throw "This FFmpeg build has no $name encoder, which recording relies on."
-        }
+$encoders = & $ffmpeg -hide_banner -encoders 2>$null | Out-String
+foreach ($name in "h264_mf", "libopenh264", "aac") {
+    if ($encoders -notmatch "\b$name\b") {
+        throw "This FFmpeg build has no $name encoder, which recording relies on."
     }
 }
 Write-Host "FFmpeg is in $destination; rebuild to copy it next to the app."

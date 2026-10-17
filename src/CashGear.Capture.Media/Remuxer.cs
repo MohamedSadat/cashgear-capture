@@ -10,6 +10,7 @@ public sealed record RemuxResult(string Path, TimeSpan Duration, long Bytes, boo
 /// part starts at 0, and the index goes to the front of the file (<c>+faststart</c>) so it plays before it has
 /// fully downloaded. The file is written as <c>…​.partial</c> and renamed at the end, so a crash or a full disk never
 /// leaves a broken file under the final name. A file cut short by a crash is saved up to its last readable packet.
+/// (A finished temporary file ends with the fragment index, an <c>mfro</c> box; one cut short doesn't.)
 /// </summary>
 public static unsafe class Remuxer
 {
@@ -67,7 +68,7 @@ public static unsafe class Remuxer
             FfmpegException.Check(header, "Starting the MP4");
 
             var size = Math.Max(1, ffmpeg.avio_size(input->pb));
-            var truncated = false;
+            var truncated = !EndsWithFragmentIndex(source);
             var end = 0.0;
             var count = 0;
             while (true)
@@ -76,7 +77,7 @@ public static unsafe class Remuxer
                 var read = ffmpeg.av_read_frame(input, packet);
                 if (read < 0)
                 {
-                    truncated = read != ffmpeg.AVERROR_EOF;
+                    truncated |= read != ffmpeg.AVERROR_EOF;
                     break;
                 }
 
@@ -133,6 +134,21 @@ public static unsafe class Remuxer
                 File.Delete(partial);
             }
         }
+    }
+
+    /// <summary>True if the file ends with an <c>mfro</c> box, the last thing a fragmented MP4's trailer writes.</summary>
+    private static bool EndsWithFragmentIndex(string path)
+    {
+        using var file = File.OpenRead(path);
+        if (file.Length < 16)
+        {
+            return false;
+        }
+
+        Span<byte> tail = stackalloc byte[16];
+        file.Seek(-16, SeekOrigin.End);
+        file.ReadExactly(tail);
+        return tail[4..8].SequenceEqual("mfro"u8);
     }
 
     /// <summary>MP4 track names come back from a file as "name"; the muxer writes them from "title".</summary>

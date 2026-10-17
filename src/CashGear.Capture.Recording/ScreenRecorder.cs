@@ -2,8 +2,10 @@ using System.Diagnostics;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Recording;
+using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Engine.Capture.Wgc;
 using CashGear.Capture.Interop.Native;
+using CashGear.Capture.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -30,26 +32,29 @@ internal sealed unsafe class Win32MouseState : IMouseState
 }
 
 /// <summary>
-/// Records an area of one monitor to MP4: a <see cref="WgcAreaStream"/> keeps the latest picture, and a writer
-/// thread hands it to ffmpeg at a steady frame rate (<see cref="FramePacer"/>), drawing click highlights first.
-/// Pausing stops the clock, so the video simply continues after the pause. Memory use is fixed for the whole
-/// recording: two frame buffers and one staging texture (plus a few seconds of sound per sound source).
-/// Sound (system audio, a microphone) is placed on the same clock by an <see cref="AudioMixer"/> and written to
-/// ffmpeg's second input by its own thread; see <see cref="Session"/>.
+/// Records an area of one monitor to MP4, encoding inside the app (FFmpeg). Pictures from a
+/// <see cref="WgcAreaStream"/> and sound from WASAPI are stamped with the same clock (<see cref="RecordingClock"/>),
+/// so every frame and every sound packet goes into the file at the time it was captured. The recording is written
+/// as it happens to a crash-safe temporary file (<see cref="MediaWriter"/>), and saved as an MP4 when it stops.
+/// See <see cref="Session"/>.
 /// </summary>
 internal sealed partial class ScreenRecorder(
-    IFfmpeg ffmpeg,
+    IRecordingEncoders encoders,
+    RecordingStore store,
     WgcInterop interop,
     IMouseState mouse,
     IAudioSourceFactory audio,
     ILoggerFactory loggers) : IScreenRecorder
 {
     private static readonly TimeSpan FinishTimeout = TimeSpan.FromSeconds(60);
-    private static readonly TimeSpan SoundConnectTimeout = TimeSpan.FromSeconds(10);
 
     private readonly ILogger _logger = loggers.CreateLogger<ScreenRecorder>();
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Session? _session;
+    private Session? _saving;
+
+    /// <summary>Called on the video thread before each frame is encoded (tests: make an encoder fail or stall).</summary>
+    internal Action<EncoderCandidate, long>? BeforeEncode { get; set; }
 
     public bool IsRecording => _session is not null;
 
@@ -63,17 +68,37 @@ internal sealed partial class ScreenRecorder(
 
     public bool MicrophoneMuted
     {
-        get => _session?.MicrophoneMuted ?? false;
-        set
-        {
-            if (_session is { } session)
-            {
-                session.MicrophoneMuted = value;
-            }
-        }
+        get => _session?.Track(RecordingSound.Microphone)?.Muted ?? false;
+        set => _session?.Track(RecordingSound.Microphone)?.Muted = value;
     }
 
+    public bool SystemAudioMuted
+    {
+        get => _session?.Track(RecordingSound.System)?.Muted ?? false;
+        set => _session?.Track(RecordingSound.System)?.Muted = value;
+    }
+
+    public float MicrophoneGain
+    {
+        get => _session?.Track(RecordingSound.Microphone)?.Gain ?? 1;
+        set => _session?.Track(RecordingSound.Microphone)?.Gain = value;
+    }
+
+    public float SystemAudioGain
+    {
+        get => _session?.Track(RecordingSound.System)?.Gain ?? 1;
+        set => _session?.Track(RecordingSound.System)?.Gain = value;
+    }
+
+    public bool IsSaving => _saving is not null;
+
+    public double SaveProgress => _saving?.SaveProgress ?? 0;
+
     public event EventHandler? StateChanged;
+
+    public event EventHandler<string>? Warning;
+
+    public event EventHandler<string>? Failed;
 
     public float TakeSoundLevel() => _session?.TakeSoundLevel() ?? 0;
 
@@ -88,56 +113,65 @@ internal sealed partial class ScreenRecorder(
                 throw new InvalidOperationException("A recording is already running.");
             }
 
-            var path = ffmpeg.Path ?? throw new CaptureException($"Screen recording needs ffmpeg.exe in {ffmpeg.ExpectedPath}.");
-            var (width, height) = FfmpegArguments.EvenSize(options.Area.Width, options.Area.Height);
+            if (encoders.Problem is { } problem)
+            {
+                throw new CaptureException("Screen recording isn't available. " + problem);
+            }
+
+            var detected = await encoders.DetectAsync(ct: ct).ConfigureAwait(false);
+            var usable = EncoderService.Usable(options.Encoder, detected);
+            if (usable.Count == 0)
+            {
+                throw new CaptureException("No video encoder works on this PC: " +
+                    string.Join(" ", detected.Where(p => !p.Works).Select(p => $"{p.Id}: {p.Detail}")));
+            }
+
+            var (width, height) = EncoderPresets.EvenSize(options.Area.Width, options.Area.Height);
             var area = options.Area with { Width = width, Height = height };
-            var encoder = await ffmpeg.ChooseEncoderAsync(options.Encoder, ct).ConfigureAwait(false);
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(options.OutputPath))!);
+            var format = new VideoFormat(width, height, options.Fps);
+            var output = Path.GetFullPath(options.OutputPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(output)!);
 
-            // Sound devices are opened off the caller's (possibly UI) thread.
-            var (sources, soundNote) = await Task.Run(() => OpenSound(options), ct).ConfigureAwait(false);
-            WgcAreaStream stream;
+            var fallbacks = new Queue<(EncoderCandidate, EncoderProbe)>(usable);
+            var video = await Task.Run(() => OpenFirst(fallbacks, format, options.Quality, _logger), ct).ConfigureAwait(false);
+            var parts = new Parts();
+            parts.Add(video);
             try
             {
-                stream = await WgcAreaStream.StartAsync(interop, options.Monitor, area, options.IncludeCursor, loggers, ct).ConfigureAwait(false);
-            }
-            catch
-            {
-                DisposeAll(sources);
-                throw;
-            }
+                // Sound devices are opened off the caller's (possibly UI) thread.
+                var (sources, soundNote) = await Task.Run(() => OpenSound(options), ct).ConfigureAwait(false);
+                parts.Sources.AddRange(sources);
+                var tracks = SoundTracks.For(options.Tracks, sources.Select(SourceTitle).ToList());
+                foreach (var _ in tracks)
+                {
+                    parts.Audio.Add(AudioEncoder.Open(parts.Audio.Count + 1));
+                }
 
-            var pipe = sources.Count > 0 ? new FfmpegAudioPipe() : null;
-            FfmpegProcess process;
-            try
-            {
-                process = FfmpegProcess.Start(
-                    path, FfmpegArguments.Record(width, height, options.Fps, options.Quality, encoder, options.OutputPath, pipe?.Path), _logger);
-            }
-            catch
-            {
-                stream.Dispose();
-                pipe?.Dispose();
-                DisposeAll(sources);
-                throw;
-            }
+                var manifest = new RecordingManifest(
+                    Guid.NewGuid().ToString("N")[..8], DateTimeOffset.Now, output, width, height, options.Fps, [], [.. tracks.Select(t => t.Title)]);
+                parts.Folder = store.Create(manifest);
+                parts.Writer = new MediaWriter(
+                    parts.Folder.SegmentPath,
+                    [.. parts.Audio.Select((a, i) => StreamSetup.From(a, tracks[i].Title, i == 0))],
+                    loggers.CreateLogger<MediaWriter>());
+                var clock = new RecordingClock(TimeProvider.System);
+                var grid = new FrameGrid(options.Fps);
+                parts.Stream = await WgcAreaStream.StartAsync(
+                    interop, options.Monitor, area, options.IncludeCursor, loggers, ct, timestamp => grid.SlotOf(clock.MapInstant(timestamp))).ConfigureAwait(false);
 
-            var session = new Session(options with { Area = area }, encoder, stream, process, pipe, sources, soundNote, mouse, _logger);
-            session.Failed += (_, _) => OnStateChanged();
-            try
-            {
+                var session = new Session(
+                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, fallbacks, parts, manifest, tracks, soundNote, mouse, _logger);
+                session.Failed += (_, e) => OnFailed(e);
                 session.Start();
-                await session.WaitForSoundInputAsync(SoundConnectTimeout, ct).ConfigureAwait(false);
+                _session = session;
+                LogStarted(area, options.Monitor.ShortName, options.Fps, video.Candidate.DisplayName, video.Detail ?? "", options.Quality, output, parts.Folder.Directory);
+                LogSound(sources.Count == 0 ? "none" : string.Join(", ", sources.Select(s => s.Name)), string.Join(", ", tracks.Select(t => t.Title)), soundNote ?? string.Empty);
             }
             catch
             {
-                session.Abort(); // kills ffmpeg, which may still be waiting for frames or sound
+                parts.Dispose(deleteFolder: true);
                 throw;
             }
-
-            _session = session;
-            LogStarted(area, options.Monitor.ShortName, options.Fps, FfmpegArguments.Name(encoder), options.Quality, options.OutputPath);
-            LogSound(sources.Count == 0 ? "none" : string.Join(", ", sources.Select(s => s.Name)), soundNote ?? string.Empty);
         }
         finally
         {
@@ -173,31 +207,51 @@ internal sealed partial class ScreenRecorder(
         {
             session = _session ?? throw new InvalidOperationException("Nothing is being recorded.");
             _session = null;
+            _saving = session;
         }
         finally
         {
             _gate.Release();
         }
 
+        OnStateChanged();
         try
         {
             var result = await session.StopAsync(FinishTimeout).ConfigureAwait(false);
-            LogFinished(result.Path, result.Duration, result.FramesWritten, result.FramesDropped, result.DropRate, result.FramesRepeated, result.FileBytes);
+            LogFinished(string.Join(", ", result.AllParts), result.Duration, result.FramesWritten, result.FramesDropped, result.DropRate, result.FramesRepeated, result.FileBytes);
             return result;
         }
         finally
         {
+            _saving = null;
             OnStateChanged();
         }
     }
 
-    private static void DisposeAll(IEnumerable<IAudioSource> sources)
+    /// <summary>The first encoder that opens at the recording's real size (a 256×256 test passing doesn't promise that).</summary>
+    private static VideoEncoder OpenFirst(Queue<(EncoderCandidate Candidate, EncoderProbe Probe)> candidates, VideoFormat format, QualityPreset quality, ILogger logger)
     {
-        foreach (var source in sources)
+        var problems = new List<string>();
+        while (candidates.TryDequeue(out var next))
         {
-            source.Dispose();
+            try
+            {
+                return Open(next.Candidate, next.Probe, format, quality);
+            }
+            catch (FfmpegException e)
+            {
+                LogOpenFailed(logger, next.Candidate.Id, e.Message);
+                problems.Add($"{next.Candidate.DisplayName}: {e.Message}");
+            }
         }
+
+        throw new CaptureException($"No video encoder could record {format.Width}x{format.Height}. {string.Join(" ", problems)}");
     }
+
+    private static VideoEncoder Open(EncoderCandidate candidate, EncoderProbe probe, VideoFormat format, QualityPreset quality) =>
+        VideoEncoder.Open(candidate, format, EncoderPresets.Options(candidate, quality, format.Width, format.Height, format.Fps, probe.QualityMode));
+
+    private static string SourceTitle(IAudioSource source) => source.Kind == RecordingSound.Microphone ? "Microphone" : "System audio";
 
     /// <summary>The sound devices the options ask for; any that can't be used are explained in the note instead.</summary>
     private (List<IAudioSource> Sources, string? Note) OpenSound(RecordingOptions options)
@@ -237,98 +291,178 @@ internal sealed partial class ScreenRecorder(
 
     private void OnStateChanged() => StateChanged?.Invoke(this, EventArgs.Empty);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Recording {Area} on {Monitor} at {Fps} fps with {Encoder} (quality {Quality}) to {Path}")]
-    private partial void LogStarted(PixelRect area, string monitor, int fps, string encoder, int quality, string path);
+    private void OnWarning(string message)
+    {
+        LogWarning(message);
+        Warning?.Invoke(this, message);
+    }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Recording sound: {Sources} {Note}")]
-    private partial void LogSound(string sources, string note);
+    private void OnFailed(Exception e)
+    {
+        OnStateChanged();
+        Failed?.Invoke(this, e.Message);
+    }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Recording saved: {Path}, {Duration}, {Written} frames, {Dropped} dropped ({DropRate:P1}), {Repeated} unchanged, {Bytes} bytes")]
-    private partial void LogFinished(string path, TimeSpan duration, long written, long dropped, double dropRate, long repeated, long bytes);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recording {Area} on {Monitor} at {Fps} fps with {Encoder} {Detail} ({Quality}) to {Path}, temporary files in {Folder}")]
+    private partial void LogStarted(PixelRect area, string monitor, int fps, string encoder, string detail, QualityPreset quality, string path, string folder);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recording sound: {Sources}; tracks {Tracks} {Note}")]
+    private partial void LogSound(string sources, string tracks, string note);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recording saved: {Paths}, {Duration}, {Written} frames, {Dropped} dropped ({DropRate:P1}), {Repeated} unchanged, {Bytes} bytes")]
+    private partial void LogFinished(string paths, TimeSpan duration, long written, long dropped, double dropRate, long repeated, long bytes);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Encoder {Id} could not open: {Reason}")]
+    private static partial void LogOpenFailed(ILogger logger, string id, string reason);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Recording: {Message}")]
+    private partial void LogWarning(string message);
+
+    /// <summary>What a recording is made of, so a start that fails half way can undo exactly what it did.</summary>
+    private sealed class Parts
+    {
+        public List<VideoEncoder> Video { get; } = [];
+
+        public List<AudioEncoder> Audio { get; } = [];
+
+        public List<IAudioSource> Sources { get; } = [];
+
+        public RecordingFolder? Folder { get; set; }
+
+        public MediaWriter? Writer { get; set; }
+
+        public WgcAreaStream? Stream { get; set; }
+
+        public void Add(VideoEncoder video) => Video.Add(video);
+
+        public void Dispose(bool deleteFolder)
+        {
+            Stream?.Dispose();
+            Sources.ForEach(s => s.Dispose());
+            Writer?.Complete(FinishTimeout);
+            Writer?.Dispose();
+            Audio.ForEach(a => a.Dispose());
+            Video.ForEach(v => v.Dispose());
+            Folder?.Dispose();
+            if (deleteFolder && Folder is not null)
+            {
+                RecordingStore.Delete(Folder.Directory);
+            }
+        }
+    }
 
     /// <summary>
-    /// One recording: the capture, the encoder and the writer threads between them.
+    /// One recording: the capture, the encoders, the temporary file and the threads between them.
     /// <para>
-    /// Sound: each source's packets are placed by their capture time on the recording clock (sound from a pause is
-    /// cut out), and a second writer thread mixes them up to <see cref="AudioSchedule.Latency"/> behind the clock
-    /// and writes them to ffmpeg's sound pipe. Silence (loopback sends nothing while nothing plays) is filled by the
-    /// clock. For each video frame the pacer drops, the same time is left out of the sound, and at Stop the video is
-    /// written up to the frame due at the stop and the sound to exactly the same length.
+    /// Video ("Recording video" thread): a <see cref="FrameGrid"/> decides which frame is due; it shows the newest
+    /// picture captured by then (by its capture time on the recording clock), which is read back from the GPU,
+    /// gets its click highlights, is converted to the encoder's format and encoded with the frame's timestamp. If
+    /// encoding falls far behind, frames are skipped and their timestamps simply left out. If the encoder fails,
+    /// the next one that works takes over in a new segment (saved as a second file).
     /// </para>
     /// <para>
-    /// ffmpeg stops reading an input whose stream is ahead of the other, so neither writer ever waits for the other:
-    /// the sound follows the clock only, a paused or stopped clock lets the sound catch up to it, the sound input is
-    /// closed at Stop without waiting for the video, and the video input is closed without waiting for the sound.
+    /// Sound ("Recording sound" thread): each source's packets are placed on the clock by their capture time (sound
+    /// from a pause is cut out); the mix and, as the track layout asks, each source by itself are encoded to AAC up
+    /// to <see cref="AudioSchedule.Latency"/> behind the clock. Silence is filled by the clock, so a source that
+    /// stops (an unplugged microphone) leaves silence, never a gap. Sound is never dropped.
+    /// </para>
+    /// <para>
+    /// At Stop the video gets every frame up to the stop and the sound exactly the same length; the temporary file
+    /// is finished and saved as MP4, and the temporary folder removed. If saving fails it is kept for recovery.
     /// </para>
     /// </summary>
     private sealed partial class Session
     {
-        private const int MixChunkFrames = AudioMixer.SampleRate / 10;
+        private const int AudioFrameSize = 1024;
+        private static readonly TimeSpan HungEncoder = TimeSpan.FromSeconds(2);
 
+        private readonly ScreenRecorder _owner;
         private readonly RecordingOptions _options;
-        private readonly VideoEncoder _encoder;
+        private readonly VideoFormat _format;
+        private readonly Queue<(EncoderCandidate Candidate, EncoderProbe Probe)> _fallbacks;
+        private readonly Parts _parts;
         private readonly WgcAreaStream _stream;
-        private readonly FfmpegProcess _process;
-        private readonly FfmpegAudioPipe? _pipe;
-        private readonly IReadOnlyList<IAudioSource> _sources;
+        private readonly MediaWriter _writer;
+        private readonly RecordingFolder _folder;
+        private readonly IReadOnlyList<SoundTrack> _tracks;
         private readonly IMouseState _mouse;
         private readonly ILogger _logger;
-        private readonly FramePacer _pacer;
+        private readonly FrameGrid _grid;
+        private readonly object _gridGate = new();
         private readonly ClickHighlighter _clicks = new();
         private readonly ManualResetEventSlim _running = new(initialState: true);
         private readonly Stopwatch _wallClock = new();
-        private readonly object _pacerGate = new();
         private readonly AudioMixer? _mixer;
-        private AudioTrack? _microphone;
-        private readonly TaskCompletionSource? _soundConnected;
+        private readonly Dictionary<RecordingSound, AudioTrack> _sourceTracks = [];
+        private readonly List<string> _encoderNames = [];
         private readonly CancellationTokenSource _abort = new();
-        private readonly int _soundPerFrame;
-        private Thread? _writer;
-        private Thread? _soundWriter;
+        private RecordingManifest _manifest;
+        private VideoEncoder _video;
+        private FrameConverter _converter;
+        private Timer? _watchdog;
+        private Thread? _videoThread;
+        private Thread? _soundThread;
         private volatile bool _stopping;
         private volatile string? _soundNote;
+        private volatile string? _note;
         private bool _timerPeriod;
+        private bool _segmentBegun;
+        private int _segments;
         private long _stillSince;
-        private long _finalFrames = -1;
-        private long _skippedFrames;
-        private long _repeated;
+        private long _finalSamples = -1;
+        private long _encodingSince;
+        private double _saveProgress;
         private Exception? _failure;
 
         public Session(
+            ScreenRecorder owner,
             RecordingOptions options,
-            VideoEncoder encoder,
-            WgcAreaStream stream,
-            FfmpegProcess process,
-            FfmpegAudioPipe? pipe,
-            IReadOnlyList<IAudioSource> sources,
+            VideoFormat format,
+            RecordingClock clock,
+            FrameGrid grid,
+            VideoEncoder video,
+            Queue<(EncoderCandidate, EncoderProbe)> fallbacks,
+            Parts parts,
+            RecordingManifest manifest,
+            IReadOnlyList<SoundTrack> tracks,
             string? soundNote,
             IMouseState mouse,
             ILogger logger)
         {
+            _owner = owner;
             _options = options;
-            _encoder = encoder;
-            _stream = stream;
-            _process = process;
-            _pipe = pipe;
-            _sources = sources;
+            _format = format;
+            _video = video;
+            _fallbacks = fallbacks;
+            _parts = parts;
+            _stream = parts.Stream!;
+            _writer = parts.Writer!;
+            _folder = parts.Folder!;
+            _manifest = manifest;
+            _tracks = tracks;
             _soundNote = soundNote;
             _mouse = mouse;
             _logger = logger;
-            _pacer = new FramePacer(options.Fps);
-            if (pipe is not null)
+            Clock = clock;
+            _grid = grid;
+            _converter = new FrameConverter(format.Width, format.Height, video.PixelFormat);
+            _encoderNames.Add(video.Candidate.DisplayName);
+            _writer.Failed += (_, e) => Fail(e);
+            if (parts.Sources.Count > 0)
             {
                 _mixer = new AudioMixer();
-                _soundPerFrame = AudioSchedule.FramesPerVideoFrame(options.Fps);
-                _soundConnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                foreach (var source in sources)
+                foreach (var source in parts.Sources)
                 {
+                    var track = _mixer.AddTrack(source.Name);
+                    track.Gain = source.Kind == RecordingSound.Microphone ? options.MicrophoneGain : options.SystemAudioGain;
+                    _sourceTracks[source.Kind] = track;
                     Sound |= source.Kind;
                 }
             }
         }
 
         /// <summary>Recording time: runs only while not paused.</summary>
-        public RecordingClock Clock { get; } = new(TimeProvider.System);
+        public RecordingClock Clock { get; }
 
         public bool Paused { get; private set; }
 
@@ -336,20 +470,12 @@ internal sealed partial class ScreenRecorder(
 
         public string? SoundNote => _soundNote;
 
-        public bool MicrophoneMuted
-        {
-            get => _microphone?.Muted ?? false;
-            set
-            {
-                if (_microphone is not null)
-                {
-                    _microphone.Muted = value;
-                }
-            }
-        }
+        public double SaveProgress => Volatile.Read(ref _saveProgress);
 
-        /// <summary>Raised (on a writer thread) when recording fails, e.g. ffmpeg quits.</summary>
-        public event EventHandler? Failed;
+        /// <summary>Raised (on a worker thread) when recording can't go on, e.g. the disk is full.</summary>
+        public event EventHandler<Exception>? Failed;
+
+        public AudioTrack? Track(RecordingSound kind) => _sourceTracks.GetValueOrDefault(kind);
 
         public float TakeSoundLevel() => _mixer?.TakePeak() ?? 0;
 
@@ -359,51 +485,26 @@ internal sealed partial class ScreenRecorder(
             _timerPeriod = true;
             Clock.Start();
             _wallClock.Start();
-            _writer = new Thread(WriteFrames) { IsBackground = true, Name = "Recording writer", Priority = ThreadPriority.AboveNormal };
-            _writer.Start();
+            _videoThread = new Thread(WriteVideo) { IsBackground = true, Name = "Recording video", Priority = ThreadPriority.AboveNormal };
+            _videoThread.Start();
+            _watchdog = new Timer(_ => Watch(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
             if (_mixer is null)
             {
                 return;
             }
 
-            _soundWriter = new Thread(WriteSound) { IsBackground = true, Name = "Recording sound writer", Priority = ThreadPriority.AboveNormal };
-            _soundWriter.Start();
-            foreach (var source in _sources)
+            _soundThread = new Thread(WriteSound) { IsBackground = true, Name = "Recording sound", Priority = ThreadPriority.AboveNormal };
+            _soundThread.Start();
+            foreach (var source in _parts.Sources)
             {
-                var track = _mixer.AddTrack(source.Name);
-                if (source.Kind == RecordingSound.Microphone)
-                {
-                    _microphone = track;
-                }
-
+                var track = _sourceTracks[source.Kind];
                 source.Start((samples, start, discontinuity) => OnSound(track, samples, start, discontinuity), ex => OnSoundFailed(source, ex));
             }
         }
 
-        /// <summary>Waits until ffmpeg has opened the sound pipe (it does so after reading the first video frame).</summary>
-        public async Task WaitForSoundInputAsync(TimeSpan timeout, CancellationToken ct)
-        {
-            if (_soundConnected is null)
-            {
-                return;
-            }
-
-            var done = await Task.WhenAny(_soundConnected.Task, _process.Exited, Task.Delay(timeout, ct)).ConfigureAwait(false);
-            if (done == _soundConnected.Task)
-            {
-                await done.ConfigureAwait(false);
-                return;
-            }
-
-            ct.ThrowIfCancellationRequested();
-            var why = done == _process.Exited ? "ffmpeg quit" : $"ffmpeg didn't open it within {timeout.TotalSeconds:0} s";
-            var messages = _process.Messages;
-            throw new CaptureException($"The sound couldn't be passed to ffmpeg ({why}).{(messages.Length > 0 ? Environment.NewLine + messages : string.Empty)}");
-        }
-
         public void Pause()
         {
-            lock (_pacerGate)
+            lock (_gridGate)
             {
                 Paused = true;
                 Clock.Stop();
@@ -415,7 +516,7 @@ internal sealed partial class ScreenRecorder(
 
         public void Resume()
         {
-            lock (_pacerGate)
+            lock (_gridGate)
             {
                 Paused = false;
                 Clock.Start();
@@ -427,7 +528,7 @@ internal sealed partial class ScreenRecorder(
 
         public async Task<RecordingResult> StopAsync(TimeSpan timeout)
         {
-            lock (_pacerGate)
+            lock (_gridGate)
             {
                 _stopping = true;
                 Clock.Stop();
@@ -436,84 +537,87 @@ internal sealed partial class ScreenRecorder(
                     _stillSince = Stopwatch.GetTimestamp();
                 }
 
-                if (_mixer is not null)
-                {
-                    // The video ends with the frame due at the stop, and the sound at the same moment.
-                    _finalFrames = FramePacer.Due(Clock.Elapsed, _options.Fps) - _pacer.Dropped;
-                }
+                // The video ends with the frame due at the stop, and the sound at the same moment.
+                _grid.Finish(Clock.Elapsed);
+                _finalSamples = _grid.End!.Value * AudioSchedule.FramesPerVideoFrame(_format.Fps);
             }
 
             _running.Set();
-            LogStopStep($"stopping at {Clock.Elapsed}, final frames {_finalFrames}");
-            if (!await JoinAsync(_writer, timeout).ConfigureAwait(false))
+            LogStopStep($"stopping at {Clock.Elapsed}, {_grid.End} frames");
+            var videoDone = await JoinAsync(_videoThread, _failure is null ? timeout : HungEncoder).ConfigureAwait(false);
+            if (!videoDone)
             {
-                _process.Dispose(); // a write that never returns: kill ffmpeg so the thread ends
-                await JoinAsync(_writer, timeout).ConfigureAwait(false);
+                Fail(new CaptureException("The video encoder stopped responding."));
             }
 
-            LogStopStep($"video writer done, {_pacer.Written} frames");
+            LogStopStep($"video done ({videoDone}), {_grid.Written} frames");
+            _watchdog?.Dispose();
             EndTimerPeriod();
-            _process.CloseInput(); // the encoder flushes, so ffmpeg takes the rest of the sound too
             _stream.Dispose();
-            if (!await JoinAsync(_soundWriter, timeout).ConfigureAwait(false))
+            if (!await JoinAsync(_soundThread, timeout).ConfigureAwait(false))
             {
-                _process.Dispose();
-                await JoinAsync(_soundWriter, timeout).ConfigureAwait(false);
+                _abort.Cancel();
+                await JoinAsync(_soundThread, timeout).ConfigureAwait(false);
             }
 
-            LogStopStep("sound writer done");
-            DisposeSound();
-            var exitCode = await _process.WaitForExitAsync(timeout).ConfigureAwait(false);
-            LogStopStep($"ffmpeg exited with {exitCode}");
-            var messages = _process.Messages;
-            _process.Dispose();
+            LogStopStep("sound done");
+            _parts.Sources.ForEach(s => s.Dispose());
+            await Task.Run(() => _writer.Complete(timeout)).ConfigureAwait(false);
+            _writer.Dispose();
+            LogStopStep($"temporary file finished, {_writer.Segments.Count} segment(s)");
+            _parts.Audio.ForEach(a => a.Dispose());
+            if (videoDone)
+            {
+                _video.Dispose();
+                _converter.Dispose();
+            }
+
             _running.Dispose();
-            if (_mixer is not null)
+            LogSoundFinished();
+
+            var segments = _writer.Segments;
+            _manifest = _manifest with { Segments = [.. segments.Select(s => Path.GetFileName(s.Path))] };
+            TrySaveManifest();
+            if (segments.Count == 0 || _grid.Written == 0)
             {
-                var tracks = _mixer.Tracks;
-                LogSoundFinished(
-                    TimeSpan.FromSeconds((double)_mixer.Mixed / AudioMixer.SampleRate),
-                    _mixer.Mixed,
-                    _mixer.Skipped,
-                    tracks.Sum(t => t.LateFrames),
-                    tracks.Sum(t => t.OverflowFrames));
+                _folder.Dispose();
+                RecordingStore.Delete(_folder.Directory);
+                var reason = _failure?.Message ?? "no frames were recorded";
+                throw new CaptureException($"The recording could not be saved ({reason}).", _failure ?? new InvalidOperationException(reason));
             }
 
-            var file = new FileInfo(_options.OutputPath);
-            if (_failure is not null || exitCode != 0 || _pacer.Written == 0 || !file.Exists)
+            RecoveredRecording saved;
+            try
             {
-                TryDelete(file);
-                var reason = _failure?.Message ?? (exitCode != 0 ? $"ffmpeg exit code {exitCode}" : "no frames were recorded");
-                var message = $"The recording could not be saved ({reason}).{(messages.Length > 0 ? Environment.NewLine + messages : string.Empty)}";
-                throw _failure is null ? new CaptureException(message) : new CaptureException(message, _failure);
+                var progress = new Progress<double>(p => Volatile.Write(ref _saveProgress, p));
+                saved = await Task.Run(() => RecordingRecovery.Save(_folder.Directory, _manifest, progress, CancellationToken.None)).ConfigureAwait(false);
+            }
+            catch (Exception e) when (e is FfmpegException or IOException or UnauthorizedAccessException)
+            {
+                _folder.Dispose();
+                throw new CaptureException($"The recording could not be saved ({e.Message}). It was kept and can be recovered from the tray menu.", e);
             }
 
+            _folder.Dispose();
+            RecordingStore.Delete(_folder.Directory);
+            if (saved.Files.Count == 0)
+            {
+                throw new CaptureException("The recording could not be saved: nothing in it could be read.");
+            }
+
+            var note = _failure is { } failure ? $"Recording stopped early: {failure.Message}" : _note;
             return new RecordingResult(
-                file.FullName,
-                TimeSpan.FromSeconds((double)_pacer.Written / _options.Fps),
-                _pacer.Written,
-                _pacer.Dropped,
-                _repeated,
-                _encoder,
-                file.Length,
+                saved.Files[0],
+                TimeSpan.FromSeconds((double)(_grid.End ?? _grid.Next) / _format.Fps),
+                _grid.Written,
+                _grid.Dropped,
+                _grid.Repeated,
+                string.Join(", then ", _encoderNames),
+                saved.Files.Sum(f => new FileInfo(f).Length),
                 Sound,
-                _soundNote);
-        }
-
-        /// <summary>Undoes a start that failed half way: kills ffmpeg, ends the threads and releases everything.</summary>
-        public void Abort()
-        {
-            _stopping = true;
-            _abort.Cancel();
-            _running.Set();
-            _process.Dispose();
-            _writer?.Join();
-            _soundWriter?.Join();
-            Clock.Stop();
-            EndTimerPeriod();
-            _stream.Dispose();
-            DisposeSound();
-            _running.Dispose();
+                _soundNote,
+                saved.Files,
+                note);
         }
 
         private static async Task<bool> JoinAsync(Thread? thread, TimeSpan timeout) =>
@@ -528,77 +632,216 @@ internal sealed partial class ScreenRecorder(
             }
         }
 
-        private void DisposeSound()
+        private void WriteVideo()
         {
-            DisposeAll(_sources);
-            _pipe?.Dispose();
-        }
-
-        private void WriteFrames()
-        {
-            var frame = new byte[_stream.Width * _stream.Height * 4];
-            var lastSequence = -1L;
+            var packets = new List<EncodedPacket>();
+            var picture = new byte[_format.Width * _format.Height * 4];
+            var marked = _options.ShowClicks ? new byte[picture.Length] : null;
+            Picture? current = null;
             try
             {
-                while (true)
+                while (_failure is null)
                 {
-                    if (Paused && !_stopping)
+                    GridStep step;
+                    lock (_gridGate)
                     {
-                        _running.Wait(100);
-                        continue;
-                    }
-
-                    TimeSpan? wait;
-                    lock (_pacerGate)
-                    {
-                        if (_stopping)
+                        step = _grid.Step(Clock.Elapsed);
+                        if (!step.Produce && _grid.End is not null)
                         {
                             break;
                         }
-
-                        wait = _pacer.Next(Clock.Elapsed);
                     }
 
-                    if (wait is { } w)
+                    if (!step.Produce)
                     {
-                        Thread.Sleep(w < TimeSpan.FromMilliseconds(1) ? TimeSpan.FromMilliseconds(1) : w);
+                        if (Paused && !_stopping)
+                        {
+                            _running.Wait(100);
+                        }
+                        else
+                        {
+                            Thread.Sleep(TimeSpan.FromMilliseconds(Math.Clamp(step.Wait.TotalMilliseconds, 1, 20)));
+                        }
+
                         continue;
                     }
 
-                    WriteFrame(frame, ref lastSequence);
+                    var changed = TakePictures(step.Slot, ref current);
+                    if (changed)
+                    {
+                        _stream.Read(current!, picture);
+                    }
+
+                    var frame = picture;
+                    if (marked is not null)
+                    {
+                        var m = _mouse.Read();
+                        var now = _wallClock.Elapsed;
+                        _clicks.Update(now, m.Cursor, m.LeftDown, m.LeftClicked, m.RightDown, m.RightClicked);
+                        if (_clicks.IsActive(now))
+                        {
+                            picture.CopyTo(marked, 0);
+                            _clicks.Draw(marked, _format.Width, _format.Height, new PixelPoint(_options.Area.X, _options.Area.Y), now, _options.Monitor.Scale.ScaleX);
+                            frame = marked;
+                        }
+                    }
+
+                    Encode(step.Slot, frame, packets);
+                    lock (_gridGate)
+                    {
+                        _grid.Produced(repeated: !changed);
+                    }
                 }
 
-                // With sound, every frame due by the stop is written, so the video is exactly as long as the sound.
-                while (!_abort.IsCancellationRequested && _pacer.Written < Interlocked.Read(ref _finalFrames))
+                if (_failure is null)
                 {
-                    WriteFrame(frame, ref lastSequence);
+                    _video.Flush(packets);
+                    Post(packets);
                 }
             }
-            catch (Exception ex) when (ex is IOException or CaptureException or ObjectDisposedException)
+            catch (Exception ex)
             {
-                Fail(ex);
+                Fail(ex); // never let a recording thread take the app down
+            }
+            finally
+            {
+                packets.ForEach(p => p.Dispose());
+                if (current is not null)
+                {
+                    _stream.Release(current);
+                }
             }
         }
 
-        private void WriteFrame(byte[] frame, ref long lastSequence)
+        /// <summary>Takes the pictures due by frame <paramref name="slot"/>, keeping the newest; true if it is a new one.</summary>
+        private bool TakePictures(long slot, ref Picture? current)
         {
-            var sequence = _stream.CopyLatest(frame);
-            if (sequence == lastSequence)
+            var changed = false;
+            while (_stream.TryPeek(out var next) && (current is null || next.Slot <= slot))
             {
-                _repeated++;
+                _stream.TryTake(out _);
+                if (current is not null)
+                {
+                    _stream.Release(current);
+                }
+
+                LogPicture(slot, Clock.MapInstant(next.Timestamp), Stopwatch.GetElapsedTime(next.Timestamp));
+                current = next;
+                changed = true;
             }
 
-            lastSequence = sequence;
-            if (_options.ShowClicks)
+            return changed;
+        }
+
+        private unsafe void Encode(long slot, byte[] bgra, List<EncodedPacket> packets)
+        {
+            while (true)
             {
-                var m = _mouse.Read();
-                var now = _wallClock.Elapsed;
-                _clicks.Update(now, m.Cursor, m.LeftDown, m.LeftClicked, m.RightDown, m.RightClicked);
-                _clicks.Draw(frame, _stream.Width, _stream.Height, new PixelPoint(_options.Area.X, _options.Area.Y), now, _options.Monitor.Scale.ScaleX);
+                try
+                {
+                    Volatile.Write(ref _encodingSince, Stopwatch.GetTimestamp());
+                    _owner.BeforeEncode?.Invoke(_video.Candidate, slot);
+                    _converter.Convert(bgra, _format.Width * 4, _video.NextFrame());
+                    _video.Encode(slot, packets);
+                    Post(packets);
+                    return;
+                }
+                catch (FfmpegException ex)
+                {
+                    packets.ForEach(p => p.Dispose());
+                    packets.Clear();
+                    SwitchEncoder(ex);
+                }
+                finally
+                {
+                    Volatile.Write(ref _encodingSince, 0);
+                }
+            }
+        }
+
+        /// <summary>The encoder failed: finish its segment and carry on with the next one that opens, in a new segment.</summary>
+        private void SwitchEncoder(FfmpegException ex)
+        {
+            var failed = _video;
+            var failedFormat = failed.PixelFormat;
+            LogEncoderFailed(ex, failed.Candidate.Id);
+            var flushed = new List<EncodedPacket>();
+            try
+            {
+                failed.Flush(flushed);
+                Post(flushed);
+            }
+            catch (FfmpegException)
+            {
+                flushed.ForEach(p => p.Dispose());
             }
 
-            _process.Write(frame);
-            _pacer.FrameWritten();
+            failed.Dispose();
+            while (_fallbacks.TryDequeue(out var next))
+            {
+                if (next.Candidate.Id == failed.Candidate.Id)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    _video = Open(next.Candidate, next.Probe, _format, _options.Quality);
+                }
+                catch (FfmpegException e)
+                {
+                    LogOpenFailed(_logger, next.Candidate.Id, e.Message);
+                    continue;
+                }
+
+                if (_video.PixelFormat != failedFormat)
+                {
+                    _converter.Dispose();
+                    _converter = new FrameConverter(_format.Width, _format.Height, _video.PixelFormat);
+                }
+
+                _segmentBegun = false;
+                _encoderNames.Add(next.Candidate.DisplayName);
+                var at = Clock.Elapsed;
+                _note = $"{failed.Candidate.DisplayName} stopped working at {(int)at.TotalMinutes}:{at.Seconds:00}; {next.Candidate.DisplayName} recorded the rest, saved as a second file.";
+                _owner.OnWarning($"{failed.Candidate.DisplayName} stopped working ({ex.Message}). Recording continues with {next.Candidate.DisplayName}; it will be saved as a second file.");
+                return;
+            }
+
+            throw new CaptureException($"The video encoder stopped working and no other could take over ({ex.Message}).", ex);
+        }
+
+        /// <summary>Hands packets to the writer, starting a segment for the current encoder with its first packet.</summary>
+        private void Post(List<EncodedPacket> packets)
+        {
+            if (packets.Count == 0)
+            {
+                return;
+            }
+
+            if (!_segmentBegun)
+            {
+                _writer.BeginSegment(StreamSetup.From(_video), packets[0].Seconds);
+                _segmentBegun = true;
+                _segments++;
+                _manifest = _manifest with { Segments = [.. Enumerable.Range(1, _segments).Select(n => Path.GetFileName(_folder.SegmentPath(n)))] };
+                TrySaveManifest();
+            }
+
+            packets.ForEach(_writer.Write);
+            packets.Clear();
+        }
+
+        private void TrySaveManifest()
+        {
+            try
+            {
+                _folder.Save(_manifest);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                LogManifestFailed(e);
+            }
         }
 
         /// <summary>A packet from a sound source (on its capture thread): onto the track where the clock says it belongs.</summary>
@@ -621,120 +864,136 @@ internal sealed partial class ScreenRecorder(
         {
             var at = Clock.Elapsed;
             _soundNote = $"Sound from {source.Name} stopped at {(int)at.TotalMinutes}:{at.Seconds:00} ({ex.Message.Trim()}).";
+            _owner.OnWarning($"{source.Name} stopped working ({ex.Message.Trim()}). The recording continues without it.");
         }
 
         private void WriteSound()
         {
             var mixer = _mixer!;
-            var pipe = _pipe!;
+            var mixed = new float[AudioFrameSize * AudioMixer.Channels];
+            var alone = _tracks.Any(t => t.Source is not null)
+                ? _parts.Sources.Select(_ => new float[AudioFrameSize * AudioMixer.Channels]).ToArray()
+                : [];
+            var packets = new List<EncodedPacket>();
+            var heartbeat = Stopwatch.StartNew();
             try
             {
-                pipe.WaitForConnection(_abort.Token);
-                LogSoundConnected(Clock.Elapsed);
-                _soundConnected!.TrySetResult();
-                var buffer = new float[MixChunkFrames * AudioMixer.Channels];
-                var heartbeat = Stopwatch.StartNew();
-                while (true)
+                while (!_abort.IsCancellationRequested)
                 {
                     if (heartbeat.Elapsed >= TimeSpan.FromSeconds(5))
                     {
                         heartbeat.Restart();
-                        LogProgress(Clock.Elapsed, _pacer.Written, _pacer.Dropped, mixer.Position, _stillSince != 0);
+                        LogProgress(Clock.Elapsed, _grid.Written, _grid.Dropped, mixer.Position, _writer.Queued, _stream.Delivered);
                     }
 
                     long target;
                     bool last;
-                    lock (_pacerGate)
+                    lock (_gridGate)
                     {
-                        // Leave out the time of every video frame the pacer dropped.
-                        var dropped = _pacer.Dropped;
-                        mixer.Skip((dropped - _skippedFrames) * _soundPerFrame);
-                        _skippedFrames = dropped;
-
                         TimeSpan? stillFor = _stillSince == 0 ? null : Stopwatch.GetElapsedTime(_stillSince);
-                        last = _finalFrames >= 0 && stillFor >= AudioSchedule.Latency;
-                        target = last ? (_finalFrames + dropped) * _soundPerFrame : AudioSchedule.Target(Clock.Elapsed, stillFor);
+                        last = _finalSamples >= 0 && stillFor >= AudioSchedule.Latency;
+                        target = last ? _finalSamples : AudioSchedule.Target(Clock.Elapsed, stillFor);
                     }
 
-                    while (mixer.Position < target && !_abort.IsCancellationRequested)
+                    while (mixer.Position + AudioFrameSize <= target && !_abort.IsCancellationRequested)
                     {
-                        var frames = (int)Math.Min(MixChunkFrames, target - mixer.Position);
-                        var chunk = buffer.AsSpan(0, frames * AudioMixer.Channels);
-                        mixer.Mix(chunk);
-                        pipe.Write(chunk);
+                        EncodeSound(AudioFrameSize, mixer, mixed, alone, packets);
                     }
 
-                    if (last || _abort.IsCancellationRequested)
+                    if (last)
                     {
+                        var rest = (int)(target - mixer.Position);
+                        if (rest > 0)
+                        {
+                            EncodeSound(rest, mixer, mixed, alone, packets);
+                        }
+
+                        foreach (var encoder in _parts.Audio)
+                        {
+                            encoder.Flush(packets);
+                        }
+
+                        packets.ForEach(_writer.Write);
+                        packets.Clear();
                         break;
                     }
 
                     Thread.Sleep(10);
                 }
+            }
+            catch (Exception ex)
+            {
+                packets.ForEach(p => p.Dispose());
+                Fail(ex); // never let a recording thread take the app down
+            }
+        }
 
-                if (!_abort.IsCancellationRequested)
-                {
-                    LogStopStep("sound written, waiting for ffmpeg to read it");
-                    pipe.Finish(); // ffmpeg reads the rest, then the sound input ends
-                    LogStopStep("sound input closed");
-                }
-            }
-            catch (OperationCanceledException)
+        private void EncodeSound(int frames, AudioMixer mixer, float[] mixed, float[][] alone, List<EncodedPacket> packets)
+        {
+            var position = mixer.Position;
+            mixer.Mix(frames, mixed, alone);
+            for (var i = 0; i < _tracks.Count; i++)
             {
-                _soundConnected!.TrySetCanceled();
+                var samples = _tracks[i].Source is { } source ? alone[source] : mixed;
+                _parts.Audio[i].Encode(samples.AsSpan(0, frames * AudioMixer.Channels), position, packets);
             }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
+
+            packets.ForEach(_writer.Write);
+            packets.Clear();
+        }
+
+        /// <summary>Every half second: a video encoder call that hasn't returned for 2 s means the encoder hangs.</summary>
+        private void Watch()
+        {
+            var since = Volatile.Read(ref _encodingSince);
+            if (since != 0 && Stopwatch.GetElapsedTime(since) > HungEncoder)
             {
-                _soundConnected!.TrySetException(ex);
-                Fail(ex);
+                Fail(new CaptureException($"{_video.Candidate.DisplayName} stopped responding."));
             }
         }
 
         private void Fail(Exception ex)
         {
-            if (_abort.IsCancellationRequested)
+            if (Interlocked.CompareExchange(ref _failure, ex, null) is not null || _abort.IsCancellationRequested)
             {
-                return; // the start failed and is being undone; the caller reports why
+                return;
             }
 
-            Interlocked.CompareExchange(ref _failure, ex, null);
-            LogWriterFailed(ex);
-            Failed?.Invoke(this, EventArgs.Empty);
+            LogFailed(ex);
+            Failed?.Invoke(this, ex);
         }
 
-        private void TryDelete(FileInfo file)
+        private void LogSoundFinished()
         {
-            try
+            if (_mixer is null)
             {
-                file.Refresh();
-                if (file.Exists)
-                {
-                    file.Delete();
-                }
+                return;
             }
-            catch (IOException ex)
-            {
-                LogDeleteFailed(ex, file.FullName);
-            }
+
+            var tracks = _mixer.Tracks;
+            LogSound(TimeSpan.FromSeconds((double)_mixer.Mixed / AudioMixer.SampleRate), _mixer.Mixed, tracks.Sum(t => t.LateFrames), tracks.Sum(t => t.OverflowFrames));
         }
 
-        [LoggerMessage(Level = LogLevel.Error, Message = "Recording stopped writing")]
-        private partial void LogWriterFailed(Exception ex);
+        [LoggerMessage(Level = LogLevel.Error, Message = "Recording can't go on")]
+        private partial void LogFailed(Exception ex);
 
-        [LoggerMessage(Level = LogLevel.Debug, Message = "ffmpeg opened the sound input at {Elapsed}")]
-        private partial void LogSoundConnected(TimeSpan elapsed);
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Encoder {Id} failed during the recording")]
+        private partial void LogEncoderFailed(Exception ex, string id);
 
-        [LoggerMessage(Level = LogLevel.Debug, Message = "Recording at {Elapsed}: {Written} frames written, {Dropped} dropped, sound mixed to frame {Mixed}, paused/stopping {Still}")]
-        private partial void LogProgress(TimeSpan elapsed, long written, long dropped, long mixed, bool still);
+        [LoggerMessage(Level = LogLevel.Debug, Message = "Recording at {Elapsed}: {Written} frames, {Dropped} dropped, sound mixed to {Mixed}, {Queued} packets waiting, {Pictures} pictures from Windows")]
+        private partial void LogProgress(TimeSpan elapsed, long written, long dropped, long mixed, int queued, long pictures);
+
+        [LoggerMessage(Level = LogLevel.Trace, Message = "Frame {Slot} shows a picture of {Time} (captured {Age} ago)")]
+        private partial void LogPicture(long slot, TimeSpan time, TimeSpan age);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Stop: {Step}")]
         private partial void LogStopStep(string step);
 
-        [LoggerMessage(Level = LogLevel.Information, Message = "Recording sound: {Duration}, {Frames} frames, {Skipped} left out for dropped video frames, {Late} arrived late, {Overflow} overflowed")]
-        private partial void LogSoundFinished(TimeSpan duration, long frames, long skipped, long late, long overflow);
+        [LoggerMessage(Level = LogLevel.Information, Message = "Recording sound: {Duration}, {Frames} frames, {Late} arrived late, {Overflow} overflowed")]
+        private partial void LogSound(TimeSpan duration, long frames, long late, long overflow);
 
-        [LoggerMessage(Level = LogLevel.Warning, Message = "Could not delete the unfinished recording {Path}")]
-        private partial void LogDeleteFailed(Exception ex, string path);
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Could not update the recording's manifest")]
+        private partial void LogManifestFailed(Exception e);
     }
 }
 
@@ -743,7 +1002,10 @@ public static class RecordingServiceCollectionExtensions
     public static IServiceCollection AddScreenRecording(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        services.AddSingleton<IFfmpeg, FfmpegService>();
+        services.AddSingleton<FfmpegRuntime>();
+        services.AddSingleton<IRecordingEncoders, EncoderService>();
+        services.AddSingleton<RecordingStore>();
+        services.AddSingleton<IRecordingRecovery, RecordingRecovery>();
         services.AddSingleton<IMouseState, Win32MouseState>();
         services.AddSingleton<IAudioSourceFactory, WasapiAudioSourceFactory>();
         services.AddSingleton<IAudioDevices, WasapiAudioDevices>();

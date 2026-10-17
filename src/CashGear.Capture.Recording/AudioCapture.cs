@@ -136,8 +136,7 @@ internal sealed partial class WasapiAudioSource : IAudioSource
     }
 
     /// <summary>A QPC value in 100 ns units (as WASAPI gives it) as a <see cref="Stopwatch"/> timestamp, without overflowing.</summary>
-    internal static long FromHundredNanoseconds(long value) =>
-        (value / 10_000_000 * Stopwatch.Frequency) + (value % 10_000_000 * Stopwatch.Frequency / 10_000_000);
+    internal static long FromHundredNanoseconds(long value) => QpcTime.FromHundredNanoseconds(value, Stopwatch.Frequency);
 
     /// <summary>When the packet's first frame was captured: Windows' timestamp, or arrival time minus its length if that is missing or implausible.</summary>
     internal static long Stamp(long qpcPosition, int frames, long arrived)

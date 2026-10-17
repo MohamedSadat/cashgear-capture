@@ -27,7 +27,7 @@ public sealed partial class RecordingController
     public const double DropWarning = 0.05;
 
     private readonly IScreenRecorder _recorder;
-    private readonly IFfmpeg _ffmpeg;
+    private readonly IRecordingEncoders _encoders;
     private readonly IScreenCaptureService _capture;
     private readonly IMonitorService _monitors;
     private readonly IWindowService _windows;
@@ -46,7 +46,7 @@ public sealed partial class RecordingController
 
     public RecordingController(
         IScreenRecorder recorder,
-        IFfmpeg ffmpeg,
+        IRecordingEncoders encoders,
         IScreenCaptureService capture,
         IMonitorService monitors,
         IWindowService windows,
@@ -62,7 +62,7 @@ public sealed partial class RecordingController
         ILogger<RecordingController> logger)
     {
         _recorder = recorder;
-        _ffmpeg = ffmpeg;
+        _encoders = encoders;
         _capture = capture;
         _monitors = monitors;
         _windows = windows;
@@ -77,6 +77,12 @@ public sealed partial class RecordingController
         _time = time;
         _logger = logger;
         _recorder.StateChanged += (_, _) => StateChanged?.Invoke(this, EventArgs.Empty);
+        _recorder.Warning += (_, message) => _notifier.Notify("Recording", message, NotificationKind.Warning);
+        _recorder.Failed += (_, message) =>
+        {
+            _notifier.Notify("Recording stopped", message + " What was recorded is being saved.", NotificationKind.Error);
+            _ = StopAsync();
+        };
     }
 
     public bool IsRecording => _recorder.IsRecording;
@@ -94,12 +100,9 @@ public sealed partial class RecordingController
             return;
         }
 
-        if (_ffmpeg.Path is null)
+        if (_encoders.Problem is { } problem)
         {
-            _notifier.Notify(
-                "Recording is not available",
-                $"Screen recording needs ffmpeg. Put ffmpeg.exe in {_ffmpeg.ExpectedPath} and try again.",
-                NotificationKind.Error);
+            _notifier.Notify("Recording is not available", problem, NotificationKind.Error);
             return;
         }
 
@@ -120,8 +123,16 @@ public sealed partial class RecordingController
 
             var recording = current.Recording;
             var options = new RecordingOptions(
-                monitor, area, recording.Fps, recording.Quality, recording.IncludeCursor, recording.ShowClicks, recording.Encoder,
-                OutputPath(current, monitor, title), recording.SystemAudio, recording.Microphone);
+                monitor,
+                area,
+                recording.Fps,
+                EncoderPresets.FromLegacyQuality(recording.Quality),
+                recording.IncludeCursor,
+                recording.ShowClicks,
+                recording.Encoder == RecordingEncoder.Software ? EncoderPresets.Software : EncoderPresets.Auto,
+                OutputPath(current, monitor, title),
+                recording.SystemAudio,
+                recording.Microphone);
             await _recorder.StartAsync(options, ct).ConfigureAwait(false);
             await _ui.InvokeAsync(() => ShowToolbar(monitor, current.Appearance.Theme)).ConfigureAwait(false);
         }
@@ -152,7 +163,7 @@ public sealed partial class RecordingController
             _notifier.Notify(
                 "Recording saved",
                 Summary(result),
-                result.DropRate > DropWarning || result.SoundNote is not null ? NotificationKind.Warning : NotificationKind.Info,
+                result.DropRate > DropWarning || result.SoundNote is not null || result.Note is not null ? NotificationKind.Warning : NotificationKind.Info,
                 onClick: () => _shell.ShowInFolder(result.Path));
         }
         catch (Exception ex) when (ex is CaptureException or IOException or InvalidOperationException)
@@ -178,12 +189,18 @@ public sealed partial class RecordingController
         }
     }
 
-    /// <summary>"1:05 · 12.3 MB · libx264 · system sound in D:\Videos" (plus notes about missing sound or dropped frames).</summary>
+    /// <summary>"1:05 · 12.3 MB · Windows hardware encoder (H.264) · system sound in D:\Videos" (plus notes about missing sound, a second part or dropped frames).</summary>
     public static string Summary(RecordingResult result)
     {
         var sound = result.Sound == RecordingSound.None ? string.Empty : " · " + SoundText(result.Sound);
-        var text = $"{Path.GetFileName(result.Path)}\n{Duration(result.Duration)} · {result.FileBytes / 1048576.0:0.0} MB · {FfmpegArguments.Name(result.Encoder)}{sound}\nin {Path.GetDirectoryName(result.Path)}";
-        if (result.SoundNote is { } note)
+        var name = result.AllParts.Count > 1 ? $"{Path.GetFileName(result.Path)} (+{result.AllParts.Count - 1} more)" : Path.GetFileName(result.Path);
+        var text = $"{name}\n{Duration(result.Duration)} · {result.FileBytes / 1048576.0:0.0} MB · {result.EncoderName}{sound}\nin {Path.GetDirectoryName(result.Path)}";
+        if (result.SoundNote is { } soundNote)
+        {
+            text += "\n" + soundNote;
+        }
+
+        if (result.Note is { } note)
         {
             text += "\n" + note;
         }
@@ -235,7 +252,7 @@ public sealed partial class RecordingController
             ?? displays.MaxBy(m => m.Bounds.Intersect(bounds).Area)
             ?? displays[0];
         var area = bounds.Intersect(monitor.Bounds);
-        var (width, height) = FfmpegArguments.EvenSize(area.Width, area.Height);
+        var (width, height) = EncoderPresets.EvenSize(area.Width, area.Height);
         return (monitor, area with { Width = width, Height = height }, selection.Window?.Title);
     }
 

@@ -5,9 +5,12 @@ using System.Text.Json;
 using CashGear.Capture.App.Recording;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Recording;
+using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Engine.Capture.Wgc;
 using CashGear.Capture.Engine.Display;
 using CashGear.Capture.Engine.Tests;
+using CashGear.Capture.Media;
+using CashGear.Capture.Media.Tests;
 using CashGear.Capture.Recording;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,19 +18,34 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace CashGear.Capture.App.Tests.Recording;
 
 /// <summary>A stream of an MP4 as ffprobe sees it.</summary>
-internal sealed record ProbedStream(string Type, string Codec, double Duration, int SampleRate, int Channels);
+internal sealed record ProbedStream(string Type, string Codec, double Start, double Duration, int SampleRate, int Channels);
 
-/// <summary>The ffmpeg that the build copies next to the tests (from tools\ffmpeg); tests that need it skip without it.</summary>
+/// <summary>
+/// The FFmpeg build that the build copies next to the tests (from tools\ffmpeg): its libraries for recording, and
+/// ffmpeg.exe and ffprobe.exe to check the files independently. Tests that need it skip without it.
+/// </summary>
 internal static class TestFfmpeg
 {
-    public static string ExePath { get; } = Path.Combine(AppContext.BaseDirectory, "ffmpeg", "ffmpeg.exe");
+    private static readonly Lazy<EncoderService> Shared = new(() =>
+        new EncoderService(Runtime(), Paths(Path.Combine(Path.GetTempPath(), "cashgear-tests", "encoders")), NullLoggerFactory.Instance));
 
-    public static string ProbePath { get; } = Path.Combine(AppContext.BaseDirectory, "ffmpeg", "ffprobe.exe");
+    public static string Directory { get; } = Path.Combine(AppContext.BaseDirectory, "ffmpeg");
+
+    public static string ExePath { get; } = Path.Combine(Directory, "ffmpeg.exe");
+
+    public static string ProbePath { get; } = Path.Combine(Directory, "ffprobe.exe");
+
+    /// <summary>One detection for all the recorder tests, cached between runs like the app's.</summary>
+    public static EncoderService Encoders => Shared.Value;
 
     public static void Require() =>
-        Assert.SkipUnless(File.Exists(ExePath), "ffmpeg is not in tools\\ffmpeg (run tools\\get-ffmpeg.ps1).");
+        Assert.SkipUnless(File.Exists(Path.Combine(Directory, FfmpegRuntime.FileName("avcodec"))) && File.Exists(ProbePath),
+            "FFmpeg is not in tools\\ffmpeg (run tools\\get-ffmpeg.ps1).");
 
-    public static FfmpegService Service() => new(ExePath, searchPath: false, NullLogger<FfmpegService>.Instance);
+    public static FfmpegRuntime Runtime() => new(Directory, NullLogger<FfmpegRuntime>.Instance);
+
+    public static AppPaths Paths(string root) =>
+        new(Path.Combine(root, "settings"), Path.Combine(root, "logs"), Path.Combine(root, "pictures"), Path.Combine(root, "data"));
 
     /// <summary>codec, width, height and frame count of the video stream, read by ffprobe.</summary>
     public static (string Codec, int Width, int Height, int Frames) Probe(string video)
@@ -37,17 +55,21 @@ internal static class TestFfmpeg
         return (parts[0], int.Parse(parts[1]), int.Parse(parts[2]), int.Parse(parts[3]));
     }
 
-    /// <summary>Every stream of the file: type, codec, duration and, for sound, rate and channels.</summary>
+    /// <summary>Every stream of the file: type, codec, start and duration and, for sound, rate and channels.</summary>
     public static IReadOnlyList<ProbedStream> Streams(string file)
     {
-        var json = Run(ProbePath, "-v", "error", "-show_entries", "stream=codec_type,codec_name,duration,sample_rate,channels", "-of", "json", file);
+        var json = Run(ProbePath, "-v", "error", "-show_entries", "stream=codec_type,codec_name,start_time,duration,sample_rate,channels", "-of", "json", file);
         using var doc = JsonDocument.Parse(json);
         return [.. doc.RootElement.GetProperty("streams").EnumerateArray().Select(s => new ProbedStream(
             s.GetProperty("codec_type").GetString()!,
             s.GetProperty("codec_name").GetString()!,
-            double.Parse(s.GetProperty("duration").GetString()!, System.Globalization.CultureInfo.InvariantCulture),
+            Number(s, "start_time"),
+            Number(s, "duration"),
             s.TryGetProperty("sample_rate", out var rate) ? int.Parse(rate.GetString()!) : 0,
             s.TryGetProperty("channels", out var channels) ? channels.GetInt32() : 0))];
+
+        static double Number(JsonElement stream, string name) =>
+            double.Parse(stream.GetProperty(name).GetString()!, System.Globalization.CultureInfo.InvariantCulture);
     }
 
     /// <summary>The file's sound decoded to 48 kHz mono float.</summary>
@@ -169,49 +191,127 @@ internal sealed class ToneBursts(RecordingSound kind, params (double Start, doub
     }
 }
 
-/// <summary>Sound devices for the recorder tests: system audio from a factory function, or a reason it's missing.</summary>
-internal sealed class FakeSound(Func<IAudioSource>? system = null) : IAudioSourceFactory
+/// <summary>A microphone that hums until it is "unplugged" after <paramref name="after"/> seconds, then reports the failure once and goes quiet.</summary>
+internal sealed class Unplugged(double after) : IAudioSource
+{
+    private Thread? _thread;
+    private volatile bool _stopping;
+
+    public string Name => "test microphone";
+
+    public RecordingSound Kind => RecordingSound.Microphone;
+
+    public void Start(AudioDataHandler data, Action<Exception> failed)
+    {
+        var origin = Stopwatch.GetTimestamp();
+        _thread = new Thread(() =>
+        {
+            var samples = Enumerable.Repeat(0.05f, 960).ToArray();
+            var next = 0L;
+            while (!_stopping)
+            {
+                Thread.Sleep(10);
+                if (Stopwatch.GetElapsedTime(origin).TotalSeconds >= after)
+                {
+                    failed(new IOException("The device was removed."));
+                    return;
+                }
+
+                var now = (long)(Stopwatch.GetElapsedTime(origin).TotalSeconds * 48000);
+                for (; next + 480 <= now; next += 480)
+                {
+                    data(samples, origin + (next * Stopwatch.Frequency / 48000), discontinuity: false);
+                }
+            }
+        }) { IsBackground = true };
+        _thread.Start();
+    }
+
+    public void Dispose()
+    {
+        _stopping = true;
+        _thread?.Join();
+    }
+}
+
+/// <summary>Sound devices for the recorder tests: sources from factory functions, or a reason each is missing.</summary>
+internal sealed class FakeSound(Func<IAudioSource>? system = null, Func<IAudioSource>? microphone = null) : IAudioSourceFactory
 {
     public const string NoDevice = "No sound output device was found, so system audio isn't recorded.";
 
     public (IAudioSource? Source, string? Problem) OpenSystemAudio() => system is null ? (null, NoDevice) : (system(), null);
 
-    public (IAudioSource? Source, string? Problem) OpenMicrophone(string id) =>
-        (null, "The microphone chosen in Settings isn't connected, so it isn't recorded.");
+    public (IAudioSource? Source, string? Problem) OpenMicrophone(string id) => microphone is null
+        ? (null, "The microphone chosen in Settings isn't connected, so it isn't recorded.")
+        : (microphone(), null);
 }
 
-public sealed class FfmpegServiceTests
+public sealed class EncoderServiceTests : IDisposable
 {
-    [Fact]
-    public async Task Software_preference_always_gives_x264()
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "cashgear-tests", Guid.NewGuid().ToString("N"));
+
+    public void Dispose()
     {
-        TestFfmpeg.Require();
-
-        var encoder = await TestFfmpeg.Service().ChooseEncoderAsync(RecordingEncoder.Software, TestContext.Current.CancellationToken);
-
-        encoder.Should().Be(VideoEncoder.X264);
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, recursive: true);
+        }
     }
 
     [Fact]
-    public async Task Auto_gives_an_encoder_that_actually_encodes()
+    public async Task Detection_finds_Windows_own_encoder_and_is_remembered()
     {
         TestFfmpeg.Require();
+        var ct = TestContext.Current.CancellationToken;
+        var service = new EncoderService(TestFfmpeg.Runtime(), TestFfmpeg.Paths(_root), NullLoggerFactory.Instance);
 
-        var encoder = await TestFfmpeg.Service().ChooseEncoderAsync(RecordingEncoder.Auto, TestContext.Current.CancellationToken);
+        var detected = await service.DetectAsync(ct: ct);
 
-        // Whatever was picked passed a real test encode; on a PC without working hardware encoders that is x264.
-        Enum.IsDefined(encoder).Should().BeTrue();
+        detected.Select(p => p.Id).Should().Equal(EncoderPresets.All.Select(c => c.Id));
+        detected.Single(p => p.Id == "h264_mf").Works.Should().BeTrue();
+        service.Detected.Should().BeSameAs(detected);
+        File.Exists(Path.Combine(_root, "data", "encoders.json")).Should().BeTrue();
+
+        var again = new EncoderService(TestFfmpeg.Runtime(), TestFfmpeg.Paths(_root), NullLoggerFactory.Instance);
+        var timer = Stopwatch.StartNew();
+        var cached = await again.DetectAsync(ct: ct);
+        timer.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2), "the results come from encoders.json");
+        cached.Should().BeEquivalentTo(detected, o => o.WithStrictOrdering());
     }
 
     [Fact]
-    public async Task Without_ffmpeg_recording_is_unavailable()
+    public void Only_encoders_that_work_are_tried_best_first()
     {
-        var missing = new FfmpegService(Path.Combine(Path.GetTempPath(), "no-such-dir", "ffmpeg.exe"), searchPath: false, NullLogger<FfmpegService>.Instance);
+        IReadOnlyList<EncoderProbe> detected =
+        [
+            new("h264_nvenc", false, "Cannot load cuMemAllocAsync"),
+            new("h264_mf_hw", true, "NVIDIA H.264 Encoder MFT"),
+            new("h264_mf", true),
+            new("libopenh264", true),
+        ];
 
-        missing.Path.Should().BeNull();
-        missing.ExpectedPath.Should().EndWith(@"no-such-dir\ffmpeg.exe");
-        var choose = () => missing.ChooseEncoderAsync(RecordingEncoder.Auto, TestContext.Current.CancellationToken);
-        await choose.Should().ThrowAsync<InvalidOperationException>();
+        EncoderService.Usable("auto", detected).Select(u => u.Candidate.Id).Should().Equal("h264_mf_hw", "h264_mf", "libopenh264");
+        EncoderService.Usable("software", detected).Select(u => u.Candidate.Id).Should().Equal("h264_mf", "libopenh264");
+        EncoderService.Usable("h264_nvenc", detected).Select(u => u.Candidate.Id).Should().Equal(["h264_mf", "libopenh264"], "a chosen encoder that doesn't work falls back");
+    }
+
+    [Fact]
+    public async Task Without_FFmpeg_recording_is_unavailable_and_says_why()
+    {
+        var missing = new EncoderService(
+            new FfmpegRuntime(Path.Combine(_root, "no-ffmpeg"), NullLogger<FfmpegRuntime>.Instance), TestFfmpeg.Paths(_root), NullLoggerFactory.Instance);
+
+        missing.Problem.Should().Contain("FFmpeg is missing").And.Contain("avcodec-63.dll");
+        (await missing.DetectAsync(ct: TestContext.Current.CancellationToken)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Detection_depends_on_FFmpeg_the_graphics_adapters_and_Windows()
+    {
+        var key = EncoderService.CacheKey("n9.0.2");
+
+        key.Should().StartWith("ffmpeg n9.0.2|").And.Contain("|windows " + Environment.OSVersion.Version);
+        EncoderService.CacheKey("n9.0.3").Should().NotBe(key);
     }
 }
 
@@ -245,18 +345,20 @@ public sealed class SoundStampTests
 
 public sealed class RecordingSummaryTests
 {
+    private const string Hardware = "Windows hardware encoder (H.264)";
+
     [Fact]
     public void The_saved_notification_tells_name_length_size_and_encoder()
     {
-        var result = new RecordingResult(@"D:\Videos\Capture_recording.mp4", TimeSpan.FromSeconds(65), 1950, 0, 400, VideoEncoder.X264, 12_900_000);
+        var result = new RecordingResult(@"D:\Videos\Capture_recording.mp4", TimeSpan.FromSeconds(65), 1950, 0, 400, Hardware, 12_900_000);
 
-        RecordingController.Summary(result).Should().Be("Capture_recording.mp4\n1:05 · 12.3 MB · libx264\nin D:\\Videos");
+        RecordingController.Summary(result).Should().Be($"Capture_recording.mp4\n1:05 · 12.3 MB · {Hardware}\nin D:\\Videos");
     }
 
     [Fact]
     public void Many_dropped_frames_are_explained()
     {
-        var result = new RecordingResult(@"D:\v.mp4", TimeSpan.FromSeconds(10), 270, 30, 0, VideoEncoder.Nvenc, 1_000_000);
+        var result = new RecordingResult(@"D:\v.mp4", TimeSpan.FromSeconds(10), 270, 30, 0, Hardware, 1_000_000);
 
         result.DropRate.Should().BeApproximately(0.1, 1e-9);
         RecordingController.Summary(result).Should().Contain("10% of the frames were skipped");
@@ -266,13 +368,24 @@ public sealed class RecordingSummaryTests
     [Fact]
     public void The_notification_says_what_sound_was_recorded_and_why_some_is_missing()
     {
-        var both = new RecordingResult(@"D:\v.mp4", TimeSpan.FromSeconds(5), 150, 0, 0, VideoEncoder.X264, 1_048_576, RecordingSound.System | RecordingSound.Microphone);
-        RecordingController.Summary(both).Should().Be("v.mp4\n0:05 · 1.0 MB · libx264 · system sound + microphone\nin D:\\");
+        var both = new RecordingResult(@"D:\v.mp4", TimeSpan.FromSeconds(5), 150, 0, 0, Hardware, 1_048_576, RecordingSound.System | RecordingSound.Microphone);
+        RecordingController.Summary(both).Should().Be($"v.mp4\n0:05 · 1.0 MB · {Hardware} · system sound + microphone\nin D:\\");
 
         var none = both with { Sound = RecordingSound.None, SoundNote = FakeSound.NoDevice + " The video has no sound." };
         RecordingController.Summary(none).Should().EndWith("in D:\\\nNo sound output device was found, so system audio isn't recorded. The video has no sound.");
         RecordingController.SoundText(RecordingSound.Microphone).Should().Be("microphone");
         RecordingController.SoundText(RecordingSound.None).Should().Be("no sound");
+    }
+
+    [Fact]
+    public void A_second_part_is_counted_and_explained()
+    {
+        var result = new RecordingResult(
+            @"D:\v.mp4", TimeSpan.FromSeconds(5), 150, 0, 0, Hardware + ", then OpenH264 (software)", 2_097_152,
+            Parts: [@"D:\v.mp4", @"D:\v (part 2).mp4"], Note: "The encoder changed.");
+
+        RecordingController.Summary(result).Should().Be(
+            $"v.mp4 (+1 more)\n0:05 · 2.0 MB · {Hardware}, then OpenH264 (software)\nin D:\\\nThe encoder changed.");
     }
 }
 
@@ -294,7 +407,29 @@ public sealed class RecordingToolbarTests
 
         public bool MicrophoneMuted { get; set; }
 
+        public bool SystemAudioMuted { get; set; }
+
+        public float MicrophoneGain { get; set; } = 1;
+
+        public float SystemAudioGain { get; set; } = 1;
+
+        public bool IsSaving => false;
+
+        public double SaveProgress => 0;
+
         public event EventHandler? StateChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public event EventHandler<string>? Warning
+        {
+            add { }
+            remove { }
+        }
+
+        public event EventHandler<string>? Failed
         {
             add { }
             remove { }
@@ -357,7 +492,106 @@ public sealed class RecordingToolbarTests
     }
 }
 
-/// <summary>Real recordings of a corner of the primary monitor through Windows.Graphics.Capture and ffmpeg.</summary>
+public sealed class RecordingRecoveryTests : IDisposable
+{
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "cashgear-tests", Guid.NewGuid().ToString("N"));
+    private readonly RecordingStore _store;
+
+    public RecordingRecoveryTests() => _store = new RecordingStore(TestFfmpeg.Paths(_root));
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, recursive: true);
+        }
+    }
+
+    private string Output => Path.Combine(_root, "videos", "Interrupted.mp4");
+
+    private RecordingRecovery Recovery() => new(_store, TestFfmpeg.Runtime(), NullLogger<RecordingRecovery>.Instance);
+
+    /// <summary>A recording whose app went away before saving: its folder with a written segment, and no lock held.</summary>
+    private void Interrupted(double seconds, double? cutAt = null)
+    {
+        var manifest = new RecordingManifest("abc12345", DateTimeOffset.Now, Output, 640, 360, 30, ["segment-001.mp4"], ["Mixed"]);
+        using var folder = _store.Create(manifest);
+        new SyntheticRecording { Directory = folder.Directory, Seconds = seconds }.Write();
+        if (cutAt is { } fraction)
+        {
+            var segment = folder.SegmentPath(1);
+            var bytes = File.ReadAllBytes(segment);
+            File.WriteAllBytes(segment, bytes[..(int)(bytes.Length * fraction)]);
+        }
+    }
+
+    [Fact]
+    public async Task An_interrupted_recording_is_saved_where_it_was_going_and_its_files_removed()
+    {
+        TestFfmpeg.Require();
+        Interrupted(3);
+        var recovery = Recovery();
+
+        var found = recovery.Find();
+        found.Should().ContainSingle().Which.Manifest.OutputPath.Should().Be(Output);
+        var saved = await recovery.RecoverAsync(found[0], TestContext.Current.CancellationToken);
+
+        saved.Files.Should().Equal(Output);
+        saved.Truncated.Should().BeFalse();
+        saved.Duration.TotalSeconds.Should().BeApproximately(3, 0.1);
+        TestFfmpeg.Probe(Output).Frames.Should().Be(90);
+        Directory.Exists(found[0].Directory).Should().BeFalse();
+        recovery.Find().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_recording_cut_short_is_saved_up_to_about_a_second_before_the_cut()
+    {
+        TestFfmpeg.Require();
+        Interrupted(6, cutAt: 0.6);
+        var recovery = Recovery();
+
+        var saved = await recovery.RecoverAsync(recovery.Find().Single(), TestContext.Current.CancellationToken);
+
+        saved.Truncated.Should().BeTrue();
+        saved.Duration.TotalSeconds.Should().BeGreaterThanOrEqualTo((6 * 0.6) - 2);
+        TestFfmpeg.Probe(Output).Frames.Should().BeGreaterThan((int)((6 * 0.6) - 2) * 30);
+    }
+
+    [Fact]
+    public async Task A_taken_name_gets_a_number()
+    {
+        TestFfmpeg.Require();
+        Interrupted(1);
+        Directory.CreateDirectory(Path.GetDirectoryName(Output)!);
+        File.WriteAllText(Output, "someone else's file");
+        var recovery = Recovery();
+
+        var saved = await recovery.RecoverAsync(recovery.Find().Single(), TestContext.Current.CancellationToken);
+
+        saved.Files.Should().Equal(Path.Combine(_root, "videos", "Interrupted (2).mp4"));
+        File.ReadAllText(Output).Should().Be("someone else's file");
+    }
+
+    [Fact]
+    public void A_recording_still_being_written_is_left_alone_and_one_can_be_discarded()
+    {
+        TestFfmpeg.Require();
+        var manifest = new RecordingManifest("live0001", DateTimeOffset.Now, Output, 640, 360, 30, [], ["Mixed"]);
+        string directory;
+        using (var folder = _store.Create(manifest))
+        {
+            directory = folder.Directory;
+            Recovery().Find().Should().BeEmpty("its lock is held");
+        }
+
+        var recovery = Recovery();
+        recovery.Discard(recovery.Find().Single());
+        Directory.Exists(directory).Should().BeFalse();
+    }
+}
+
+/// <summary>Real recordings of a corner of the primary monitor through Windows.Graphics.Capture and FFmpeg in the process.</summary>
 [Trait("Category", InteractiveDesktop.Category)]
 [Collection(DesktopCollection.Name)]
 public sealed class ScreenRecorderTests : IDisposable
@@ -366,8 +600,13 @@ public sealed class ScreenRecorderTests : IDisposable
     private readonly WgcInterop _interop = new();
     private readonly ILoggerFactory _loggers = TestLog.Create();
     private readonly ILogger _log;
+    private readonly RecordingStore _store;
 
-    public ScreenRecorderTests() => _log = _loggers.CreateLogger("Test");
+    public ScreenRecorderTests()
+    {
+        _log = _loggers.CreateLogger("Test");
+        _store = new RecordingStore(TestFfmpeg.Paths(_folder));
+    }
 
     public void Dispose()
     {
@@ -384,15 +623,15 @@ public sealed class ScreenRecorderTests : IDisposable
         public MouseSnapshot Read() => default;
     }
 
-    private (ScreenRecorder Recorder, RecordingOptions Options) Create(int fps = 30, IAudioSourceFactory? sound = null)
+    private (ScreenRecorder Recorder, RecordingOptions Options) Create(int fps = 30, IAudioSourceFactory? sound = null, string encoder = EncoderPresets.Software)
     {
         InteractiveDesktop.Require();
         TestFfmpeg.Require();
         var monitor = new Win32MonitorService(NullLogger<Win32MonitorService>.Instance).GetMonitors().First(m => m.IsPrimary);
         var area = new PixelRect(monitor.Bounds.X + 100, monitor.Bounds.Y + 100, 320, 240);
-        var recorder = new ScreenRecorder(TestFfmpeg.Service(), _interop, new NoClicks(), sound ?? new FakeSound(), _loggers);
+        var recorder = new ScreenRecorder(TestFfmpeg.Encoders, _store, _interop, new NoClicks(), sound ?? new FakeSound(), _loggers);
         _log.LogInformation("Test {Name}", TestContext.Current.Test?.TestDisplayName);
-        var options = new RecordingOptions(monitor, area, fps, 23, IncludeCursor: false, ShowClicks: true, RecordingEncoder.Software, Path.Combine(_folder, "test.mp4"));
+        var options = new RecordingOptions(monitor, area, fps, QualityPreset.Balanced, IncludeCursor: false, ShowClicks: true, encoder, Path.Combine(_folder, "test.mp4"));
         return (recorder, options);
     }
 
@@ -413,14 +652,17 @@ public sealed class ScreenRecorderTests : IDisposable
 
         await recorder.StartAsync(options, ct);
         recorder.IsRecording.Should().BeTrue();
+        Directory.GetDirectories(_store.Root).Should().ContainSingle("the recording is written to a temporary folder first");
         await Task.Delay(2000, ct);
         var result = await recorder.StopAsync(ct);
 
         recorder.IsRecording.Should().BeFalse();
+        recorder.IsSaving.Should().BeFalse();
         File.Exists(result.Path).Should().BeTrue();
+        result.AllParts.Should().Equal(result.Path);
         result.FramesWritten.Should().BeInRange(54, 66);
         result.DropRate.Should().BeLessThan(0.05);
-        result.Encoder.Should().Be(VideoEncoder.X264);
+        result.EncoderName.Should().Be("Windows software encoder (H.264)");
         var (codec, width, height, frames) = TestFfmpeg.Probe(result.Path);
         codec.Should().Be("h264");
         (width, height).Should().Be((320, 240));
@@ -428,6 +670,7 @@ public sealed class ScreenRecorderTests : IDisposable
         TestFfmpeg.Streams(result.Path).Should().ContainSingle("without sound there is only the video stream");
         result.Sound.Should().Be(RecordingSound.None);
         result.SoundNote.Should().BeNull();
+        Directory.GetDirectories(_store.Root).Should().BeEmpty("the temporary files are removed once saved");
     }
 
     [Fact]
@@ -478,16 +721,15 @@ public sealed class ScreenRecorderTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         await StaDispatcher.RunAsync(async () =>
         {
-            var square = RepaintingSquare(area.X + 20, area.Y + 20, monitor.Scale.ScaleX);
+            var square = Square(area.X + 20, area.Y + 20, 24, monitor.Scale.ScaleX, repaint: true);
             try
             {
-                var frame = new byte[area.Width * area.Height * 4];
                 for (var round = 0; round < 3; round++)
                 {
                     var stream = await WgcAreaStream.StartAsync(_interop, monitor, area, includeCursor: false, _loggers, ct);
-                    var first = stream.CopyLatest(frame);
+                    var first = stream.Delivered;
                     await Task.Delay(200, ct);
-                    stream.CopyLatest(frame).Should().BeGreaterThan(first, "frames keep arriving");
+                    stream.Delivered.Should().BeGreaterThan(first, "frames keep arriving");
 
                     var returned = await Task.Run(() => ReleaseWhileAFrameWaits(stream), ct);
                     returned.Should().BeTrue($"release {round} returns");
@@ -530,8 +772,11 @@ public sealed class ScreenRecorderTests : IDisposable
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_gate")]
     private static extern ref object Gate(WgcAreaStream stream);
 
-    /// <summary>A 24 px square (in physical pixels at <paramref name="x"/>, <paramref name="y"/>) that changes between two nearly equal greys on every screen refresh.</summary>
-    private static System.Windows.Window RepaintingSquare(int x, int y, double scale)
+    /// <summary>
+    /// A square of <paramref name="size"/> physical pixels at <paramref name="x"/>, <paramref name="y"/>: black, or
+    /// (<paramref name="repaint"/>) changing between two nearly equal greys on every screen refresh.
+    /// </summary>
+    private static System.Windows.Window Square(int x, int y, int size, double scale, bool repaint = false)
     {
         var greys = new[] { System.Windows.Media.Color.FromRgb(128, 128, 128), System.Windows.Media.Color.FromRgb(129, 129, 129) }
             .Select(c => new System.Windows.Media.SolidColorBrush(c))
@@ -545,15 +790,58 @@ public sealed class ScreenRecorderTests : IDisposable
             Topmost = true,
             Left = x / scale,
             Top = y / scale,
-            Width = 24 / scale,
-            Height = 24 / scale,
+            Width = size / scale,
+            Height = size / scale,
+            Background = System.Windows.Media.Brushes.Black,
         };
-        var n = 0;
-        EventHandler repaint = (_, _) => window.Background = greys[n++ & 1];
-        System.Windows.Media.CompositionTarget.Rendering += repaint;
-        window.Closed += (_, _) => System.Windows.Media.CompositionTarget.Rendering -= repaint;
+        if (repaint)
+        {
+            var n = 0;
+            EventHandler paint = (_, _) => window.Background = greys[n++ & 1];
+            System.Windows.Media.CompositionTarget.Rendering += paint;
+            window.Closed += (_, _) => System.Windows.Media.CompositionTarget.Rendering -= paint;
+        }
+
         window.Show();
         return window;
+    }
+
+    /// <summary>
+    /// A picture captured during a pause is shown from the moment recording resumes. Windows sends a picture only when
+    /// the screen changes, so a change made during the pause, which then stays put, must not be lost.
+    /// </summary>
+    [Fact(Timeout = 60_000)]
+    public async Task A_change_made_during_a_pause_is_there_after_resuming()
+    {
+        var (recorder, options) = Create();
+        var ct = TestContext.Current.CancellationToken;
+        RecordingResult? result = null;
+        await StaDispatcher.RunAsync(async () =>
+        {
+            var cover = Square(options.Area.X - 20, options.Area.Y - 20, 400, options.Monitor.Scale.ScaleX);
+            try
+            {
+                await Task.Delay(300, ct);
+                await recorder.StartAsync(options, ct);
+                await UntilRecorded(recorder, 1.0, ct);
+                recorder.Pause();
+                await Task.Delay(300, ct);
+                cover.Background = System.Windows.Media.Brushes.White;
+                await Task.Delay(500, ct);
+                recorder.Resume();
+                await UntilRecorded(recorder, 1.8, ct);
+                result = await recorder.StopAsync(ct);
+            }
+            finally
+            {
+                cover.Close();
+            }
+        });
+
+        using var reader = new MediaReader(result!.Path);
+        var frames = reader.VideoLuma();
+        frames.Where(f => f.Time < 0.9).Should().OnlyContain(f => f.Luma < 60, "black before the pause");
+        frames.Where(f => f.Time >= 1.1).Should().NotBeEmpty().And.OnlyContain(f => f.Luma > 200, "white from the resume on");
     }
 
     [Fact(Timeout = 60_000)]
@@ -620,6 +908,91 @@ public sealed class ScreenRecorderTests : IDisposable
         result.Sound.Should().Be(RecordingSound.None);
         result.SoundNote.Should().Contain("No sound output device").And.Contain("The video has no sound.");
         TestFfmpeg.Streams(result.Path).Should().ContainSingle().Which.Type.Should().Be("video");
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task An_unplugged_microphone_leaves_silence_and_a_warning_while_recording_goes_on()
+    {
+        var (recorder, options) = Create(sound: new FakeSound(
+            system: () => new ToneBursts(RecordingSound.System, (2.0, 0.2)),
+            microphone: () => new Unplugged(after: 1.0)));
+        var ct = TestContext.Current.CancellationToken;
+        var warnings = new List<string>();
+        recorder.Warning += (_, message) =>
+        {
+            lock (warnings)
+            {
+                warnings.Add(message);
+            }
+        };
+
+        await recorder.StartAsync(options with { SystemAudio = true, Microphone = "test" }, ct);
+        recorder.Sound.Should().Be(RecordingSound.System | RecordingSound.Microphone);
+        await UntilRecorded(recorder, 3, ct);
+        recorder.IsRecording.Should().BeTrue();
+        var result = await recorder.StopAsync(ct);
+
+        warnings.Should().ContainSingle().Which.Should().Contain("test microphone stopped working").And.Contain("continues");
+        result.SoundNote.Should().Contain("test microphone stopped at 0:01");
+        var streams = TestFfmpeg.Streams(result.Path);
+        streams.Single(s => s.Type == "audio").Duration.Should().BeApproximately(streams.Single(s => s.Type == "video").Duration, 0.1);
+        TestFfmpeg.Onsets(TestFfmpeg.DecodeSound(result.Path), 0.1f).Should().ContainSingle().Which.Should().BeApproximately(2.0, 0.1, "system audio carried on");
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task An_encoder_that_fails_mid_recording_is_replaced_and_the_rest_saved_as_a_second_file()
+    {
+        var (recorder, options) = Create(encoder: "h264_mf");
+        var ct = TestContext.Current.CancellationToken;
+        var warnings = new List<string>();
+        recorder.Warning += (_, message) => warnings.Add(message);
+        recorder.BeforeEncode = (encoder, frame) =>
+        {
+            if (encoder.Id == "h264_mf" && frame == 30)
+            {
+                throw new FfmpegException("Injected failure");
+            }
+        };
+
+        await recorder.StartAsync(options, ct);
+        await UntilRecorded(recorder, 2.0, ct);
+        var result = await recorder.StopAsync(ct);
+
+        result.AllParts.Should().HaveCount(2);
+        Path.GetFileName(result.AllParts[1]).Should().Be("test (part 2).mp4");
+        result.EncoderName.Should().Be("Windows software encoder (H.264), then OpenH264 (software)");
+        result.Note.Should().Contain("second file");
+        warnings.Should().ContainSingle().Which.Should().Contain("OpenH264");
+        var first = TestFfmpeg.Probe(result.AllParts[0]);
+        var second = TestFfmpeg.Probe(result.AllParts[1]);
+        first.Frames.Should().Be(30);
+        (first.Frames + second.Frames).Should().Be((int)result.FramesWritten);
+        TestFfmpeg.Streams(result.AllParts[1]).Single().Start.Should().BeApproximately(0, 0.001, "the second part starts at 0");
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task An_encoder_that_falls_far_behind_skips_frames_but_keeps_all_the_sound()
+    {
+        var (recorder, options) = Create(sound: new FakeSound(() => new ToneBursts(RecordingSound.System, (2.5, 0.2))));
+        var ct = TestContext.Current.CancellationToken;
+        var stalled = 0;
+        recorder.BeforeEncode = (_, frame) =>
+        {
+            if (frame == 15 && Interlocked.Exchange(ref stalled, 1) == 0)
+            {
+                Thread.Sleep(1200);
+            }
+        };
+
+        await recorder.StartAsync(options with { SystemAudio = true }, ct);
+        await UntilRecorded(recorder, 3.5, ct);
+        var result = await recorder.StopAsync(ct);
+
+        result.FramesDropped.Should().BeGreaterThan(15, "1.2 s stuck at 30 fps");
+        var streams = TestFfmpeg.Streams(result.Path);
+        streams.Single(s => s.Type == "video").Duration.Should().BeApproximately(result.Duration.TotalSeconds, 0.1, "the skipped frames' time is still there");
+        streams.Single(s => s.Type == "audio").Duration.Should().BeApproximately(result.Duration.TotalSeconds, 0.1);
+        TestFfmpeg.Onsets(TestFfmpeg.DecodeSound(result.Path), 0.1f).Should().ContainSingle().Which.Should().BeApproximately(2.5, 0.05);
     }
 
     [Fact(Timeout = 60_000)]

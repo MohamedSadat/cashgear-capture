@@ -8,129 +8,6 @@ using CashGear.Capture.Core.Settings;
 
 namespace CashGear.Capture.Core.Tests.Recording;
 
-public sealed class FramePacerTests
-{
-    private static TimeSpan Ms(double ms) => TimeSpan.FromMilliseconds(ms);
-
-    [Fact]
-    public void Frames_are_due_on_the_frame_rate_grid()
-    {
-        var pacer = new FramePacer(30);
-
-        pacer.Next(Ms(0)).Should().BeNull("frame 0 is due at once");
-        pacer.FrameWritten();
-        pacer.Next(Ms(10)).Should().BeCloseTo(Ms(1000.0 / 30 - 10), Ms(0.01), "frame 1 belongs at 33.3 ms");
-        pacer.Next(Ms(34)).Should().BeNull();
-        pacer.FrameWritten();
-
-        pacer.Written.Should().Be(2);
-        pacer.Dropped.Should().Be(0);
-    }
-
-    [Fact]
-    public void A_short_delay_is_caught_up_by_writing_every_missed_frame()
-    {
-        var pacer = new FramePacer(30);
-        pacer.Next(Ms(0));
-        pacer.FrameWritten();
-
-        // 100 ms later frames 1, 2 and 3 are due: within the backlog, so all are written (the same picture repeats).
-        var written = 0;
-        while (pacer.Next(Ms(100)) is null)
-        {
-            pacer.FrameWritten();
-            written++;
-        }
-
-        written.Should().Be(3);
-        pacer.Dropped.Should().Be(0);
-    }
-
-    [Fact]
-    public void Falling_far_behind_skips_frames_and_counts_them_as_dropped()
-    {
-        var pacer = new FramePacer(30, maxBacklog: 5);
-        pacer.Next(Ms(0));
-        pacer.FrameWritten();
-
-        pacer.Next(Ms(1000)).Should().BeNull();
-        pacer.FrameWritten();
-
-        pacer.Dropped.Should().Be(29, "frames 1–29 were skipped to catch up with frame 30");
-        pacer.Next(Ms(1000)).Should().NotBeNull("caught up");
-    }
-
-    [Fact]
-    public void A_minute_of_steady_writing_produces_exactly_fps_times_seconds_frames()
-    {
-        var pacer = new FramePacer(30);
-        for (var ms = 0.0; ms < 60_000; ms += 7) // the writer wakes every 7 ms or so
-        {
-            while (pacer.Next(Ms(ms)) is null)
-            {
-                pacer.FrameWritten();
-            }
-        }
-
-        pacer.Written.Should().Be(1800);
-        pacer.Dropped.Should().Be(0);
-    }
-}
-
-public sealed class FfmpegArgumentsTests
-{
-    [Fact]
-    public void Raw_bgra_frames_go_in_on_stdin_and_h264_mp4_comes_out()
-    {
-        var args = FfmpegArguments.Record(1920, 1080, 30, 23, VideoEncoder.X264, @"C:\out\rec.mp4");
-
-        string.Join(' ', args).Should().Be(
-            "-hide_banner -nostats -loglevel warning -f rawvideo -pixel_format bgra -video_size 1920x1080 -framerate 30 -i pipe:0 " +
-            "-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -g 60 -movflags +faststart -y C:\\out\\rec.mp4");
-    }
-
-    [Theory]
-    [InlineData(VideoEncoder.Nvenc, "-c:v h264_nvenc -preset p4 -rc vbr -cq 28 -b:v 0 -pix_fmt yuv420p")]
-    [InlineData(VideoEncoder.QuickSync, "-c:v h264_qsv -preset veryfast -global_quality 28 -pix_fmt nv12")]
-    [InlineData(VideoEncoder.Amf, "-c:v h264_amf -quality balanced -rc cqp -qp_i 28 -qp_p 28 -pix_fmt yuv420p")]
-    public void Each_hardware_encoder_gets_its_own_quality_settings(VideoEncoder encoder, string expected)
-    {
-        var args = string.Join(' ', FfmpegArguments.Record(640, 480, 60, 28, encoder, "x.mp4"));
-
-        args.Should().Contain(expected);
-        args.Should().Contain("-g 120");
-    }
-
-    [Fact]
-    public void Quality_is_clamped_and_odd_sizes_are_refused()
-    {
-        string.Join(' ', FfmpegArguments.Record(64, 64, 15, 99, VideoEncoder.X264, "x.mp4")).Should().Contain("-crf 35");
-
-        var odd = () => FfmpegArguments.Record(641, 480, 30, 23, VideoEncoder.X264, "x.mp4");
-        odd.Should().Throw<ArgumentException>();
-        FfmpegArguments.EvenSize(641, 481).Should().Be((640, 480));
-    }
-
-    [Fact]
-    public void Sound_comes_in_as_a_second_input_on_a_named_pipe_and_goes_out_as_aac()
-    {
-        var args = FfmpegArguments.Record(1920, 1080, 30, 23, VideoEncoder.X264, @"C:\out\rec.mp4", @"\\.\pipe\cashgear-rec-1");
-
-        string.Join(' ', args).Should().Be(
-            "-hide_banner -nostats -loglevel warning -f rawvideo -pixel_format bgra -video_size 1920x1080 -framerate 30 -i pipe:0 " +
-            @"-f f32le -ar 48000 -ch_layout stereo -i \\.\pipe\cashgear-rec-1 -map 0:v:0 -map 1:a:0 " +
-            @"-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -g 60 -c:a aac -b:a 160k -movflags +faststart -y C:\out\rec.mp4");
-    }
-
-    [Fact]
-    public void Hardware_is_preferred_unless_software_is_chosen()
-    {
-        FfmpegArguments.Preference(RecordingEncoder.Auto).Should().Equal(VideoEncoder.Nvenc, VideoEncoder.QuickSync, VideoEncoder.Amf, VideoEncoder.X264);
-        FfmpegArguments.Preference(RecordingEncoder.Software).Should().Equal(VideoEncoder.X264);
-        string.Join(' ', FfmpegArguments.Probe(VideoEncoder.Nvenc)).Should().Contain("-c:v h264_nvenc").And.EndWith("-f null -");
-    }
-}
-
 public sealed class ClickHighlighterTests
 {
     private const int Size = 100;
@@ -205,7 +82,7 @@ public sealed class RecordingSettingsTests
 
         var odd = new RecordingSettings(Fps: 50, Quality: 3, Encoder: (RecordingEncoder)9).Normalize();
         odd.Fps.Should().Be(60, "the nearest supported rate");
-        odd.Quality.Should().Be(FfmpegArguments.MinQuality);
+        odd.Quality.Should().Be(RecordingSettings.MinQuality);
         odd.Encoder.Should().Be(RecordingEncoder.Auto);
     }
 

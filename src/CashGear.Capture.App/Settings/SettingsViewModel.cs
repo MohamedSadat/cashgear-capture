@@ -50,7 +50,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IStartupRegistration startup,
         IFolderPicker folderPicker,
         ILogger<SettingsViewModel> logger,
-        IFfmpeg? ffmpeg = null,
+        IRecordingEncoders? encoders = null,
         IOcrService? ocr = null,
         UpdateService? updates = null,
         IAudioDevices? audio = null)
@@ -59,10 +59,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _context = SynchronizationContext.Current;
         OcrLanguages = [new OcrLanguageChoice(null, "Automatic (your Windows languages)"),
             .. (ocr?.AvailableLanguages ?? []).Select(l => new OcrLanguageChoice(l.Tag, $"{l.DisplayName} — {l.NativeName}"))];
-        FfmpegStatus = ffmpeg?.Path is { } found
-            ? "ffmpeg: " + found
-            : $"ffmpeg.exe was not found, so recording is unavailable. Put it in {ffmpeg?.ExpectedPath ?? "the app's ffmpeg folder"}.";
-        IsFfmpegMissing = ffmpeg?.Path is null;
+        FfmpegStatus = encoders is null ? "Screen recording isn't available."
+            : encoders.Problem is { } problem ? "Screen recording isn't available. " + problem
+            : $"FFmpeg {encoders.FfmpegVersion} (built into the app).";
+        IsFfmpegMissing = encoders is null || encoders.Problem is not null;
         Microphones =
         [
             new MicrophoneChoice(null, "None"),
@@ -138,7 +138,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>"Automatic" and each language Windows can recognize.</summary>
     public IReadOnlyList<OcrLanguageChoice> OcrLanguages { get; }
 
-    /// <summary>Where ffmpeg is, or why recording is unavailable.</summary>
+    /// <summary>The FFmpeg in use, or why recording is unavailable.</summary>
     public string FfmpegStatus { get; }
 
     /// <summary>None, the Windows default and each microphone connected (plus a saved one that isn't).</summary>

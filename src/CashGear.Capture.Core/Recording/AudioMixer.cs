@@ -53,7 +53,7 @@ public sealed class AudioTrack
     /// <summary>Frames that arrived after their place had been mixed.</summary>
     public long LateFrames { get; private set; }
 
-    /// <summary>Frames that didn't fit because the mix wasn't being taken (ffmpeg not reading).</summary>
+    /// <summary>Frames that didn't fit because the mix wasn't being taken (the sound writer stalled).</summary>
     public long OverflowFrames { get; private set; }
 
     /// <summary>Where the next packet would go if it follows on (for tests).</summary>
@@ -133,9 +133,6 @@ public sealed class AudioTrack
         }
     }
 
-    /// <summary>Throws away frames that won't be mixed.</summary>
-    internal void Discard(long from, long frames) => Clear(from, from + frames, from);
-
     private void Write(ReadOnlySpan<float> samples, long start, long mixPosition)
     {
         var frames = samples.Length / AudioMixer.Channels;
@@ -184,7 +181,7 @@ public sealed class AudioMixer(int capacityFrames = AudioMixer.DefaultCapacityFr
     public const int SampleRate = 48_000;
     public const int Channels = 2;
 
-    /// <summary>8 s per track: enough for ffmpeg to hold sound back while x264's look-ahead fills.</summary>
+    /// <summary>8 s per track: far more than the sound writer ever falls behind.</summary>
     public const int DefaultCapacityFrames = SampleRate * 8;
 
     private readonly object _gate = new();
@@ -217,9 +214,6 @@ public sealed class AudioMixer(int capacityFrames = AudioMixer.DefaultCapacityFr
 
     /// <summary>Frames of sound produced so far.</summary>
     public long Mixed { get; private set; }
-
-    /// <summary>Frames left out because the video lost that time (dropped frames).</summary>
-    public long Skipped { get; private set; }
 
     public AudioTrack AddTrack(string name)
     {
@@ -279,26 +273,6 @@ public sealed class AudioMixer(int capacityFrames = AudioMixer.DefaultCapacityFr
             var sample = Math.Clamp(samples[i], -1f, 1f);
             samples[i] = sample;
             peak = Math.Max(peak, Math.Abs(sample));
-        }
-    }
-
-    /// <summary>Leaves the next <paramref name="frames"/> frames out of the sound.</summary>
-    public void Skip(long frames)
-    {
-        if (frames <= 0)
-        {
-            return;
-        }
-
-        lock (_gate)
-        {
-            foreach (var track in _tracks)
-            {
-                track.Discard(_position, frames);
-            }
-
-            _position += frames;
-            Skipped += frames;
         }
     }
 

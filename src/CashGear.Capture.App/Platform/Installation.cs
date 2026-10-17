@@ -89,12 +89,12 @@ internal static class InstallHooks
         }
     }
 
-    /// <summary>The app and ffmpeg processes started from <paramref name="root"/>, other than this one.</summary>
+    /// <summary>The app's processes started from <paramref name="root"/>, other than this one.</summary>
     private static List<Process> RunningFrom(string root)
     {
         var prefix = Path.TrimEndingDirectorySeparator(root) + Path.DirectorySeparatorChar;
         var found = new List<Process>();
-        foreach (var process in Process.GetProcessesByName("CashGear.Capture.App").Concat(Process.GetProcessesByName("ffmpeg")))
+        foreach (var process in Process.GetProcessesByName("CashGear.Capture.App"))
         {
             string? path = null;
             try

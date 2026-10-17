@@ -241,23 +241,6 @@ public sealed class AudioMixerTests
     }
 
     [Fact]
-    public void Skipped_frames_are_left_out_of_the_sound()
-    {
-        var mixer = new AudioMixer();
-        var track = mixer.AddTrack("system");
-        mixer.Place(track, Frames(960, 0.5f), 0);
-        mixer.Place(track, Frames(480, 0.25f), 960);
-
-        mixer.Skip(960);
-        var mixed = Left(MixAll(mixer, 480));
-
-        mixed.Should().AllSatisfy(v => v.Should().Be(0.25f));
-        mixer.Position.Should().Be(1440);
-        mixer.Mixed.Should().Be(480);
-        mixer.Skipped.Should().Be(960);
-    }
-
-    [Fact]
     public void Sound_that_does_not_fit_is_counted_as_overflow()
     {
         var mixer = new AudioMixer(capacityFrames: 1000);
@@ -295,10 +278,10 @@ public sealed class AudioScheduleTests
     }
 
     [Fact]
-    public void Due_frames_include_frame_zero()
+    public void A_recording_has_its_frame_zero()
     {
-        FramePacer.Due(TimeSpan.Zero, 30).Should().Be(1);
-        FramePacer.Due(TimeSpan.FromSeconds(1), 30).Should().Be(31);
-        FramePacer.Due(TimeSpan.FromMilliseconds(1999), 15).Should().Be(30);
+        new FrameGrid(30).FramesIn(TimeSpan.Zero).Should().Be(1);
+        new FrameGrid(30).FramesIn(TimeSpan.FromSeconds(1)).Should().Be(31);
+        new FrameGrid(15).FramesIn(TimeSpan.FromMilliseconds(1999)).Should().Be(30);
     }
 }

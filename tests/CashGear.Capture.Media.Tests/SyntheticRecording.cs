@@ -1,3 +1,4 @@
+using System.IO;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Media;
 using FFmpeg.AutoGen.Abstractions;

@@ -48,7 +48,7 @@ public sealed class EnumLabelConverter : IValueConverter
     {
         ImageFileFormat.Png => "PNG (lossless)",
         Core.Recording.RecordingEncoder.Auto => "Hardware when available (recommended)",
-        Core.Recording.RecordingEncoder.Software => "Software (x264)",
+        Core.Recording.RecordingEncoder.Software => "Software (the encoder built into Windows)",
         ImageFileFormat.Jpeg => "JPEG",
         ImageFileFormat.Bmp => "BMP",
         CaptureBackend.Auto => "Automatic (recommended)",
