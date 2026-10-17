@@ -1,3 +1,4 @@
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Recording;
 
 namespace CashGear.Capture.Core.Tests.Recording;
@@ -220,8 +221,12 @@ public sealed class AudioMixerTests
         mixed[..100].Should().AllSatisfy(v => v.Should().Be(1f));
         mixed[100..200].Should().AllSatisfy(v => v.Should().Be(-1f));
         mixed[200..].Should().AllSatisfy(v => v.Should().Be(0.375f));
-        mixer.TakePeak().Should().Be(1f);
-        mixer.TakePeak().Should().Be(0f, "taking the peak resets it");
+        var levels = mixer.TakeLevels();
+        levels.Mix.Peak.Should().Be(1.25f, "measured before clamping");
+        levels.Mix.Clipped.Should().BeTrue();
+        levels.Tracks.Select(t => t.Peak).Should().Equal(0.75f, 0.5f);
+        levels.Tracks.Should().OnlyContain(t => !t.Clipped, "each track by itself is below full scale");
+        mixer.TakeLevels().Mix.Should().Be(new AudioLevel(0, 0, false), "taking the levels resets them");
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Recording;
 
 namespace CashGear.Capture.Core.Tests.Recording;
@@ -172,7 +173,9 @@ public sealed class MixerOutputTests
         alone[0].Should().OnlyContain(s => s == 0.25f);
         alone[1].Should().OnlyContain(s => s == 0.5f);
         mixer.Position.Should().Be(480);
-        mixer.TakePeak().Should().Be(0.75f);
+        var levels = mixer.TakeLevels();
+        levels.Mix.Should().Be(new AudioLevel(0.75f, 0.75f, false));
+        levels.Tracks.Should().Equal(new AudioLevel(0.25f, 0.25f, false), new AudioLevel(0.5f, 0.5f, false));
     }
 
     [Fact]

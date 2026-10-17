@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using CashGear.Capture.Audio;
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Recording;
@@ -118,7 +119,7 @@ internal sealed partial class ScreenRecorder(
 
     public event EventHandler<string>? Failed;
 
-    public float TakeSoundLevel() => _session?.TakeSoundLevel() ?? 0;
+    public SoundLevels TakeSoundLevels() => _session?.TakeSoundLevels() ?? default;
 
     public async Task StartAsync(RecordingOptions options, CancellationToken ct = default)
     {
@@ -528,7 +529,30 @@ internal sealed partial class ScreenRecorder(
 
         public AudioTrack? Track(RecordingSound kind) => _sourceTracks.GetValueOrDefault(kind);
 
-        public float TakeSoundLevel() => _mixer?.TakePeak() ?? 0;
+        public SoundLevels TakeSoundLevels()
+        {
+            if (_mixer is null)
+            {
+                return default;
+            }
+
+            var levels = _mixer.TakeLevels();
+            var system = default(AudioLevel);
+            var microphone = default(AudioLevel);
+            for (var i = 0; i < _parts.Sources.Count && i < levels.Tracks.Count; i++)
+            {
+                if (_parts.Sources[i].Kind == RecordingSound.Microphone)
+                {
+                    microphone = levels.Tracks[i];
+                }
+                else
+                {
+                    system = levels.Tracks[i];
+                }
+            }
+
+            return new SoundLevels(system, microphone, levels.Mix);
+        }
 
         public void Start()
         {

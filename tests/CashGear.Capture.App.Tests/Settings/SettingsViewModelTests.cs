@@ -1,3 +1,4 @@
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Settings;
 using CashGear.Capture.Core.Capture;
@@ -313,7 +314,8 @@ public sealed class SettingsViewModelTests : IDisposable
         CashGear.Capture.Engine.Tests.InteractiveDesktop.Require();
         return StaDispatcher.RunAsync(async () =>
         {
-            using var vm = Create(encoders: new FakeEncoders([new EncoderProbe("h264_mf", true, "H264 Encoder MFT")]));
+            var monitor = new FakeMonitor();
+            using var vm = Create(encoders: new FakeEncoders([new EncoderProbe("h264_mf", true, "H264 Encoder MFT")]), monitor: monitor);
             var window = new SettingsWindow(vm, AppTheme.Light);
             try
             {
@@ -322,11 +324,19 @@ public sealed class SettingsViewModelTests : IDisposable
                 tabs.SelectedItem = tabs.Items.Cast<System.Windows.Controls.TabItem>().Single(t => (string)t.Header == "Recording");
                 window.UpdateLayout();
                 await Task.Delay(300, TestContext.Current.CancellationToken);
+                await vm.MonitorWork;
 
                 var boxes = FindAll<System.Windows.Controls.ComboBox>(window).Where(b => b.IsVisible).ToList();
                 boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Quality" && b.SelectedItem is QualityPreset);
                 boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Encoder" && b.SelectedItem is EncoderChoice);
                 boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Sound tracks");
+                monitor.Requests.Should().ContainSingle("the meters listen once the Recording page shows");
+                FindAll<CashGear.Capture.App.Wpf.LevelMeter>(window).Count(m => m.IsVisible).Should().Be(2);
+
+                tabs.SelectedIndex = 0;
+                await Task.Delay(100, TestContext.Current.CancellationToken);
+                await vm.MonitorWork;
+                monitor.Listening.Should().BeFalse("another page stops them");
             }
             finally
             {
@@ -488,6 +498,75 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task The_meters_listen_to_what_a_recording_would_record_and_follow_the_choices()
+    {
+        _settings.Current = _settings.Current with { Recording = new RecordingSettings(Microphone: "{mic-1}") };
+        var monitor = new FakeMonitor();
+        using var vm = Create(new FakeAudioDevices(new AudioDevice("{mic-1}", "Microphone (H5)")), monitor: monitor);
+        vm.CanMonitor.Should().BeTrue();
+        monitor.Requests.Should().BeEmpty("nothing is opened until the page is shown");
+
+        vm.StartMonitoring();
+        await vm.MonitorWork;
+        monitor.Requests.Should().ContainSingle().Which.Should().Be(new MonitorRequest("{mic-1}", new MicrophoneProcessing(), SystemAudio: true));
+
+        vm.RecordSystemAudio = false;
+        vm.RecordingOutput = vm.OutputDevices.Single(d => d.Id == "{out-2}");
+        await vm.MonitorWork;
+        monitor.Requests.Should().HaveCount(3, "each change listens again");
+        monitor.Requests[^1].SystemAudio.Should().BeFalse();
+        monitor.Requests[^1].SystemAudioDevice.Should().Be("{out-2}");
+
+        vm.MicrophoneCompressor = true;
+        monitor.Processing.Should().ContainSingle().Which.Compressor.Should().BeTrue("processing changes apply at once, without reopening");
+
+        monitor.Levels = new SoundLevels(new AudioLevel(0.5f, 0.1f, false), new AudioLevel(0.25f, 0.1f, true), default);
+        vm.RefreshMeters(TimeSpan.FromSeconds(1));
+        vm.SystemAudioLevel.Peak.Should().BeApproximately(0.9, 0.01);
+        vm.MicrophoneLevel.Clipping.Should().BeTrue();
+
+        monitor.Problem = "The microphone chosen in Settings isn't connected.";
+        vm.RefreshMeters(TimeSpan.FromSeconds(2));
+        vm.MonitorStatus.Should().Be(monitor.Problem);
+
+        vm.StopMonitoring();
+        await vm.MonitorWork;
+        monitor.Listening.Should().BeFalse();
+        vm.MicrophoneLevel.Peak.Should().Be(0, "the meters go back to silence");
+    }
+
+    [Fact]
+    public async Task The_microphone_test_records_and_plays_back_as_recorded_and_processed()
+    {
+        _settings.Current = _settings.Current with { Recording = new RecordingSettings(Microphone: "default") };
+        var monitor = new FakeMonitor();
+        using var vm = Create(new FakeAudioDevices(), monitor: monitor);
+        vm.PlayOriginalCommand.CanExecute(null).Should().BeFalse("nothing recorded yet");
+
+        await vm.TestMicrophoneCommand.ExecuteAsync(null);
+        vm.MicrophoneTestStatus.Should().StartWith("Recorded.");
+        vm.PlayOriginalCommand.CanExecute(null).Should().BeTrue();
+
+        await vm.PlayOriginalCommand.ExecuteAsync(null);
+        await vm.PlayProcessedCommand.ExecuteAsync(null);
+        monitor.Played.Should().HaveCount(2);
+        monitor.Played[0].Should().Equal(monitor.Recording);
+        monitor.Played[1].Should().Equal(1f, 1f, 0.5f, 0.5f);
+
+        monitor.PlayGate = new TaskCompletionSource();
+        var playing = vm.PlayOriginalCommand.ExecuteAsync(null);
+        vm.IsPlayingTest.Should().BeTrue();
+        vm.TestMicrophoneCommand.CanExecute(null).Should().BeFalse("not while playing");
+        vm.StopPlaybackCommand.Execute(null);
+        await playing;
+        vm.MicrophoneTestStatus.Should().Be("Stopped.");
+        vm.IsPlayingTest.Should().BeFalse();
+
+        vm.RecordingMicrophone = vm.Microphones.Single(m => m.Id is null);
+        vm.TestMicrophoneCommand.CanExecute(null).Should().BeFalse("no microphone chosen");
+    }
+
+    [Fact]
     public void Without_process_loopback_only_all_sound_is_offered()
     {
         _settings.Current = _settings.Current with
@@ -551,8 +630,57 @@ public sealed class SettingsViewModelTests : IDisposable
         _settings.Current.Updates.FeedUrl.Should().Be(@"\\server\capture-releases", "the address is only edited in the file and must survive");
     }
 
-    private SettingsViewModel Create(IAudioDevices? audio = null, IRecordingEncoders? encoders = null, IAudioApps? apps = null) =>
-        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance, encoders: encoders, audio: audio, apps: apps);
+    private SettingsViewModel Create(IAudioDevices? audio = null, IRecordingEncoders? encoders = null, IAudioApps? apps = null, IAudioMonitor? monitor = null) =>
+        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance, encoders: encoders, audio: audio, apps: apps, monitor: monitor);
+
+    /// <summary>Records what it is asked to listen to; levels and the test recording are set by the test.</summary>
+    private sealed class FakeMonitor : IAudioMonitor
+    {
+        public List<MonitorRequest> Requests { get; } = [];
+
+        public List<MicrophoneProcessing> Processing { get; } = [];
+
+        public List<float[]> Played { get; } = [];
+
+        public bool Listening { get; private set; }
+
+        public SoundLevels Levels { get; set; }
+
+        public float[] Recording { get; set; } = [0.5f, 0.5f, 0.25f, 0.25f];
+
+        public TaskCompletionSource? PlayGate { get; set; }
+
+        public bool CanSuppressNoise => false;
+
+        public string? Problem { get; set; }
+
+        public void Start(MonitorRequest request)
+        {
+            Requests.Add(request);
+            Listening = true;
+        }
+
+        public void SetProcessing(MicrophoneProcessing processing) => Processing.Add(processing);
+
+        public void Stop() => Listening = false;
+
+        public SoundLevels TakeLevels() => Levels;
+
+        public Task<float[]> RecordMicrophoneAsync(string microphone, TimeSpan length, CancellationToken ct = default) => Task.FromResult(Recording);
+
+        public float[] Process(float[] recorded, MicrophoneProcessing processing) => [.. recorded.Select(s => s * 2)];
+
+        public async Task PlayAsync(float[] samples, CancellationToken ct = default)
+        {
+            Played.Add(samples);
+            if (PlayGate is { } gate)
+            {
+                await gate.Task.WaitAsync(ct);
+            }
+        }
+
+        public void Dispose() => Stop();
+    }
 
     private sealed class FakeApps(params AudioApp[] running) : IAudioApps
     {

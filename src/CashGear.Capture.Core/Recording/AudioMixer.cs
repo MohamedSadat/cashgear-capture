@@ -1,3 +1,5 @@
+using CashGear.Capture.Core.Audio;
+
 namespace CashGear.Capture.Core.Recording;
 
 /// <summary>
@@ -24,6 +26,7 @@ public sealed class AudioTrack
     private long _next = -1;
     private long _end;
     private double _drift;
+    private readonly LevelAccumulator _level = new();
     private volatile bool _muted;
     private float _gain = 1;
 
@@ -58,6 +61,9 @@ public sealed class AudioTrack
 
     /// <summary>Where the next packet would go if it follows on (for tests).</summary>
     internal long NextPosition => _next;
+
+    /// <summary>The track's level as mixed (after gain and mute) since the last call; under the mixer's lock.</summary>
+    internal AudioLevel TakeLevel() => _level.Take();
 
     /// <summary>Places a packet whose first frame belongs at recording frame <paramref name="position"/>. Called under the mixer's lock.</summary>
     internal void Place(ReadOnlySpan<float> samples, long position, bool discontinuity, long mixPosition)
@@ -120,6 +126,8 @@ public sealed class AudioTrack
             var slot = Slot(from + i);
             var left = _ring[slot] * gain;
             var right = _ring[slot + 1] * gain;
+            _level.Add(left);
+            _level.Add(right);
             output[i * 2] += left;
             output[(i * 2) + 1] += right;
             if (!alone.IsEmpty)
@@ -186,8 +194,8 @@ public sealed class AudioMixer(int capacityFrames = AudioMixer.DefaultCapacityFr
 
     private readonly object _gate = new();
     private readonly List<AudioTrack> _tracks = [];
+    private readonly LevelAccumulator _level = new();
     private long _position;
-    private float _peak;
 
     public IReadOnlyList<AudioTrack> Tracks
     {
@@ -258,8 +266,8 @@ public sealed class AudioMixer(int capacityFrames = AudioMixer.DefaultCapacityFr
                 Clamp(own, out _);
             }
 
-            Clamp(sum, out var peak);
-            _peak = Math.Max(_peak, peak);
+            _level.Add(sum); // before clamping: a sum beyond full scale is a clip
+            Clamp(sum, out _);
             _position += frames;
             Mixed += frames;
         }
@@ -276,17 +284,18 @@ public sealed class AudioMixer(int capacityFrames = AudioMixer.DefaultCapacityFr
         }
     }
 
-    /// <summary>The loudest mixed sample since the last call, 0 to 1.</summary>
-    public float TakePeak()
+    /// <summary>The level of the mix and of each track (in order) since the last call; a level is clipped where the sound reached full scale.</summary>
+    public MixerLevels TakeLevels()
     {
         lock (_gate)
         {
-            var peak = _peak;
-            _peak = 0;
-            return peak;
+            return new MixerLevels(_level.Take(), [.. _tracks.Select(t => t.TakeLevel())]);
         }
     }
 }
+
+/// <summary>The level of a mixer's mix and of each of its tracks.</summary>
+public sealed record MixerLevels(AudioLevel Mix, IReadOnlyList<AudioLevel> Tracks);
 
 /// <summary>How a recording's sound sources become tracks in the file.</summary>
 public enum AudioTrackLayout

@@ -4,6 +4,7 @@ using System.Windows.Interop;
 using System.Windows.Threading;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Wpf;
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
@@ -14,14 +15,13 @@ using CommunityToolkit.Mvvm.Input;
 namespace CashGear.Capture.App.Recording;
 
 /// <summary>
-/// The recording toolbar's state: elapsed time and sound level (refreshed a few times a second), what sound is
-/// recorded, the microphone's mute, each source's mute and volume (the Sound panel), pause and stop.
+/// The recording toolbar's state: elapsed time (refreshed a few times a second) and a level meter per source
+/// (twenty times a second), what sound is recorded, the microphone's mute, each source's mute and volume (the Sound
+/// panel), pause and stop.
 /// </summary>
 public sealed partial class RecordingToolbarViewModel : ObservableObject
 {
-    /// <summary>The level meter shows −60 dB (empty) to 0 dB (full).</summary>
-    private const double MeterRangeDb = 60;
-
+    private readonly MeterBallistics _mix = new();
     private readonly IScreenRecorder _recorder;
     private readonly Action _togglePause;
     private readonly Action _stop;
@@ -48,9 +48,9 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsRecordingNow), nameof(PauseText))]
     private bool _isPaused;
 
-    /// <summary>The loudest recent sound, 0 (silence or below −60 dB) to 1.</summary>
+    /// <summary>A source, or the mix, clipped in the last two seconds.</summary>
     [ObservableProperty]
-    private double _soundLevel;
+    private bool _isClipping;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MicrophoneText))]
@@ -77,6 +77,12 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     public bool HasMicrophone { get; }
 
     public bool HasSystemAudio { get; }
+
+    /// <summary>System audio's level as recorded (after its volume and mute).</summary>
+    public MeterReading SystemMeter { get; } = new();
+
+    /// <summary>The microphone's level as recorded (after its processing, volume and mute).</summary>
+    public MeterReading MicrophoneMeter { get; } = new();
 
     /// <summary>The microphone's volume in the recording, in percent of what it captures.</summary>
     public double MicrophoneVolume
@@ -114,19 +120,29 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
         ? "Recording " + RecordingController.SoundText(_recorder.Sound) + (SoundNote is null ? string.Empty : ". " + SoundNote)
         : SoundNote ?? "No sound";
 
-    /// <summary>A peak sample (0–1) as a meter position on a decibel scale.</summary>
-    public static double MeterLevel(float peak) =>
-        peak <= 0 ? 0 : Math.Clamp(1 + (20 * Math.Log10(peak) / MeterRangeDb), 0, 1);
-
     /// <summary>Reads the recorder's clock and state.</summary>
     public void Refresh()
     {
         ElapsedText = RecordingController.Duration(_recorder.Elapsed);
         IsPaused = _recorder.IsPaused;
-        SoundLevel = HasSound ? MeterLevel(_recorder.TakeSoundLevel()) : 0;
         MicrophoneMuted = _recorder.MicrophoneMuted;
         SystemAudioMuted = _recorder.SystemAudioMuted;
         SoundNote = _recorder.SoundNote;
+    }
+
+    /// <summary>Moves the meters with the sound recorded since the last call (<paramref name="now"/>: a steady clock).</summary>
+    public void RefreshMeters(TimeSpan now)
+    {
+        if (!HasSound)
+        {
+            return;
+        }
+
+        var levels = _recorder.TakeSoundLevels();
+        SystemMeter.Update(levels.System, now);
+        MicrophoneMeter.Update(levels.Microphone, now);
+        _mix.Update(levels.Mix, now);
+        IsClipping = SystemMeter.Clipping || MicrophoneMeter.Clipping || _mix.Clipping;
     }
 
     partial void OnMicrophoneMutedChanged(bool value) => _recorder.MicrophoneMuted = value;
@@ -164,6 +180,7 @@ public partial class RecordingToolbarWindow : Window, IThemedWindow
 
     private readonly PixelRect _workArea;
     private readonly DispatcherTimer _timer;
+    private readonly DispatcherTimer _meters;
 
     public RecordingToolbarWindow(RecordingToolbarViewModel viewModel, AppTheme theme, PixelRect workArea)
     {
@@ -172,14 +189,24 @@ public partial class RecordingToolbarWindow : Window, IThemedWindow
         _workArea = workArea;
         ApplyTheme(theme);
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => viewModel.Refresh(), Dispatcher);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        _meters = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Background, (_, _) => viewModel.RefreshMeters(clock.Elapsed), Dispatcher);
         SourceInitialized += (_, _) =>
             User32.SetWindowDisplayAffinity(new WindowInteropHelper(this).Handle, User32.WdaExcludeFromCapture);
         Loaded += (_, _) =>
         {
             Place();
             _timer.Start();
+            if (viewModel.HasSound)
+            {
+                _meters.Start();
+            }
         };
-        Closed += (_, _) => _timer.Stop();
+        Closed += (_, _) =>
+        {
+            _timer.Stop();
+            _meters.Stop();
+        };
     }
 
     public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);

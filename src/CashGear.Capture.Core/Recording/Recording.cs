@@ -1,3 +1,4 @@
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Settings;
@@ -88,6 +89,9 @@ public sealed record RecordingResult(
     public IReadOnlyList<string> AllParts => Parts ?? [Path];
 }
 
+/// <summary>The levels of a recording's sound since they were last taken; a source that isn't recorded is silent.</summary>
+public readonly record struct SoundLevels(AudioLevel System, AudioLevel Microphone, AudioLevel Mix);
+
 /// <summary>Records an area of the screen to an MP4 file.</summary>
 public interface IScreenRecorder
 {
@@ -124,8 +128,8 @@ public interface IScreenRecorder
 
     double SaveProgress { get; }
 
-    /// <summary>The loudest sound recorded since the last call, 0 to 1.</summary>
-    float TakeSoundLevel();
+    /// <summary>The level of each source and of the mix (as recorded: after volume, mute and processing) since the last call.</summary>
+    SoundLevels TakeSoundLevels();
 
     /// <summary>Raised when recording starts, pauses, resumes or stops (on any thread).</summary>
     event EventHandler? StateChanged;

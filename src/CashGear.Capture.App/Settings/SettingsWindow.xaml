@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.Settings"
+        xmlns:wpf="clr-namespace:CashGear.Capture.App.Wpf"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SettingsViewModel}"
         Title="CashGear Capture Settings"
@@ -40,7 +41,7 @@
     <TextBlock DockPanel.Dock="Bottom" Text="{Binding Errors}" Foreground="#D13438" TextWrapping="Wrap" Margin="0,10,0,0"
                Visibility="{Binding HasErrors, Converter={StaticResource Visible}}" />
 
-    <TabControl>
+    <TabControl x:Name="Tabs" SelectionChanged="OnTabChanged">
       <!-- ============================== Output ============================== -->
       <TabItem Header="Output">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -149,7 +150,7 @@
       </TabItem>
 
       <!-- ============================== Recording ============================== -->
-      <TabItem Header="Recording">
+      <TabItem Header="Recording" x:Name="RecordingTab">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,4,12,12">
             <TextBlock Style="{StaticResource Section}" Text="Video" />
@@ -230,6 +231,40 @@
               <CheckBox Margin="0,2" Content="Limiter: never let the microphone go above −1 dB (no clipping)" IsChecked="{Binding MicrophoneLimiter}" />
             </StackPanel>
             <TextBlock Style="{StaticResource Hint}" Text="Applied to the microphone as it is recorded, in this order. The gate threshold is a peak level: set it between the room's noise and your quietest word. The microphone is held back 2 ms (10 ms more with noise suppression), and the recording takes that out, so it stays in sync." />
+
+            <StackPanel Visibility="{Binding CanMonitor, Converter={StaticResource Visible}}">
+              <TextBlock Text="Levels" FontWeight="SemiBold" Margin="0,12,0,4" />
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="220" />
+                  <ColumnDefinition Width="240" />
+                  <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition />
+                  <RowDefinition />
+                </Grid.RowDefinitions>
+                <TextBlock Text="Microphone (processed)" VerticalAlignment="Center" />
+                <wpf:LevelMeter Grid.Column="1" Height="10" VerticalAlignment="Center" AutomationProperties.Name="Microphone level"
+                                Peak="{Binding MicrophoneLevel.Peak}" Rms="{Binding MicrophoneLevel.Rms}" Hold="{Binding MicrophoneLevel.Hold}" Clipping="{Binding MicrophoneLevel.Clipping}" />
+                <TextBlock Grid.Column="2" Text="{Binding MicrophoneLevel.Text}" Margin="10,0,0,0" VerticalAlignment="Center" Opacity="0.75" />
+                <TextBlock Grid.Row="1" Text="System audio" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <wpf:LevelMeter Grid.Row="1" Grid.Column="1" Height="10" VerticalAlignment="Center" Margin="0,8,0,0" AutomationProperties.Name="System audio level"
+                                Peak="{Binding SystemAudioLevel.Peak}" Rms="{Binding SystemAudioLevel.Rms}" Hold="{Binding SystemAudioLevel.Hold}" Clipping="{Binding SystemAudioLevel.Clipping}" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding SystemAudioLevel.Text}" Margin="10,8,0,0" VerticalAlignment="Center" Opacity="0.75" />
+              </Grid>
+              <TextBlock Style="{StaticResource Hint}" Text="{Binding MonitorStatus}" Foreground="#D13438" />
+              <TextBlock Style="{StaticResource Hint}" Text="The meters listen while this page is open, to what a recording would record with the choices above. Speech peaking around −12 dB is right; the mark at the right end turns red when the sound clipped." />
+
+              <TextBlock Text="Microphone test" FontWeight="SemiBold" Margin="0,12,0,4" />
+              <StackPanel Orientation="Horizontal">
+                <Button Content="Record 5 seconds" Command="{Binding TestMicrophoneCommand}" Padding="10,2" />
+                <Button Content="Play as recorded" Command="{Binding PlayOriginalCommand}" Padding="10,2" Margin="8,0,0,0" />
+                <Button Content="Play with processing" Command="{Binding PlayProcessedCommand}" Padding="10,2" Margin="8,0,0,0" />
+                <Button Content="Stop" Command="{Binding StopPlaybackCommand}" Padding="10,2" Margin="8,0,0,0" />
+              </StackPanel>
+              <TextBlock Style="{StaticResource Hint}" Text="{Binding MicrophoneTestStatus}" />
+            </StackPanel>
             <TextBlock Style="{StaticResource Hint}" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}"
                        Text="Only one app records that app's sound (and that of the programs it starts) on whichever device it plays, and nothing else: no notifications, no other apps. All sound except one app leaves out, say, a call or music you don't want in the video. The app is found by its program when the recording starts, and followed if it starts or restarts later." />
             <Grid Margin="0,8,0,0">

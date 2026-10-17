@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.Recording"
+        xmlns:wpf="clr-namespace:CashGear.Capture.App.Wpf"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:RecordingToolbarViewModel}"
         Title="Recording" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="None"
@@ -19,12 +20,18 @@
       <Rectangle Width="12" Height="12" Fill="#808080" VerticalAlignment="Center" Margin="0,0,8,0"
                  Visibility="{Binding IsPaused, Converter={StaticResource Visible}}" />
       <TextBlock Text="{Binding ElapsedText}" FontSize="15" FontFamily="Segoe UI Semibold" VerticalAlignment="Center" MinWidth="48" />
-      <!-- Sound: a speaker and a level meter, or a crossed-out speaker when sound was asked for but isn't available. -->
+      <!-- Sound: a speaker and a level meter per source (system audio above the microphone), or a crossed-out speaker when sound was asked for but isn't available. -->
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0" ToolTip="{Binding SoundToolTip}"
                   Visibility="{Binding HasSound, Converter={StaticResource Visible}}">
         <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0" />
-        <ProgressBar Width="44" Height="6" Minimum="0" Maximum="1" Value="{Binding SoundLevel, Mode=OneWay}" VerticalAlignment="Center"
-                     AutomationProperties.Name="Sound level" />
+        <StackPanel VerticalAlignment="Center">
+          <wpf:LevelMeter Width="60" Height="4" Margin="0,1" Peak="{Binding SystemMeter.Peak}" Rms="{Binding SystemMeter.Rms}" Hold="{Binding SystemMeter.Hold}"
+                          Clipping="{Binding SystemMeter.Clipping}" AutomationProperties.Name="System audio level"
+                          Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
+          <wpf:LevelMeter Width="60" Height="4" Margin="0,1" Peak="{Binding MicrophoneMeter.Peak}" Rms="{Binding MicrophoneMeter.Rms}" Hold="{Binding MicrophoneMeter.Hold}"
+                          Clipping="{Binding MicrophoneMeter.Clipping}" AutomationProperties.Name="Microphone level"
+                          Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
+        </StackPanel>
       </StackPanel>
       <TextBlock Text="&#xE74F;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="10,0,0,0" Opacity="0.7"
                  ToolTip="{Binding SoundToolTip}" Visibility="{Binding IsSoundMissing, Converter={StaticResource Visible}}" />
@@ -46,6 +53,7 @@
         <ColumnDefinition Width="160" />
         <ColumnDefinition Width="46" />
         <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
       <Grid.RowDefinitions>
         <RowDefinition />
@@ -58,6 +66,9 @@
                  Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
       <CheckBox Grid.Column="3" Content="Mute" IsChecked="{Binding SystemAudioMuted}" Margin="10,0,0,0" VerticalAlignment="Center" Focusable="False"
                 Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
+      <wpf:LevelMeter Grid.Column="4" Width="110" Height="8" Margin="12,0,0,0" VerticalAlignment="Center" ToolTip="{Binding SystemMeter.Text}"
+                      Peak="{Binding SystemMeter.Peak}" Rms="{Binding SystemMeter.Rms}" Hold="{Binding SystemMeter.Hold}" Clipping="{Binding SystemMeter.Clipping}"
+                      AutomationProperties.Name="System audio level" Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
       <TextBlock Grid.Row="1" Text="Microphone" VerticalAlignment="Center" Margin="0,6,10,0" Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
       <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="200" SmallChange="5" LargeChange="25" Value="{Binding MicrophoneVolume}" Focusable="False"
               VerticalAlignment="Center" Margin="0,6,0,0" AutomationProperties.Name="Microphone volume" Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
@@ -65,6 +76,9 @@
                  Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
       <CheckBox Grid.Row="1" Grid.Column="3" Content="Mute" IsChecked="{Binding MicrophoneMuted}" Margin="10,6,0,0" VerticalAlignment="Center" Focusable="False"
                 Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
+      <wpf:LevelMeter Grid.Row="1" Grid.Column="4" Width="110" Height="8" Margin="12,6,0,0" VerticalAlignment="Center" ToolTip="{Binding MicrophoneMeter.Text}"
+                      Peak="{Binding MicrophoneMeter.Peak}" Rms="{Binding MicrophoneMeter.Rms}" Hold="{Binding MicrophoneMeter.Hold}" Clipping="{Binding MicrophoneMeter.Clipping}"
+                      AutomationProperties.Name="Microphone level" Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
     </Grid>
     </StackPanel>
   </Border>

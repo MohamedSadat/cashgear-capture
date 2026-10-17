@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.IO;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Wpf;
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Imaging;
@@ -43,7 +45,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly IRecordingEncoders? _encoders;
     private readonly IScreenRecorder? _recorder;
     private readonly IAudioApps? _apps;
+    private readonly IAudioMonitor? _monitor;
     private readonly SynchronizationContext? _context;
+    private Task _monitorWork = Task.CompletedTask;
+    private bool _monitoring;
+    private float[]? _testRecording;
+    private CancellationTokenSource? _playback;
     private IDisposable? _hotkeySuspension;
 
     public SettingsViewModel(
@@ -58,9 +65,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         UpdateService? updates = null,
         IAudioDevices? audio = null,
         IScreenRecorder? recorder = null,
-        IAudioApps? apps = null)
+        IAudioApps? apps = null,
+        IAudioMonitor? monitor = null)
     {
         _apps = apps;
+        _monitor = monitor;
         IsAppAudioSupported = apps?.IsSupported == true;
         SystemAudioScopes = IsAppAudioSupported ? Enum.GetValues<SystemAudioScope>() : [SystemAudioScope.All];
         _updates = updates;
@@ -263,11 +272,23 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
     }
 
-    partial void OnRecordingSystemAudioScopeChanged(SystemAudioScope value) => Revalidate();
+    partial void OnRecordingSystemAudioScopeChanged(SystemAudioScope value)
+    {
+        Revalidate();
+        RestartMonitor();
+    }
 
-    partial void OnRecordingAppChanged(AppChoice? value) => Revalidate();
+    partial void OnRecordingAppChanged(AppChoice? value)
+    {
+        Revalidate();
+        RestartMonitor();
+    }
 
-    partial void OnRecordSystemAudioChanged(bool value) => Revalidate();
+    partial void OnRecordSystemAudioChanged(bool value)
+    {
+        Revalidate();
+        RestartMonitor();
+    }
 
     private bool CanRedetectEncoders() => _encoders is { Problem: null } && !IsDetectingEncoders && _recorder?.IsRecording != true;
 
@@ -389,6 +410,183 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>The microphone's processing applies: a microphone is chosen.</summary>
     public bool HasMicrophone => RecordingMicrophone?.Id is not null;
 
+    /// <summary>The microphone's level, as it would be recorded (after the processing).</summary>
+    public MeterReading MicrophoneLevel { get; } = new();
+
+    /// <summary>System audio's level, as it would be recorded.</summary>
+    public MeterReading SystemAudioLevel { get; } = new();
+
+    /// <summary>Settings can listen to the devices (meters and the microphone test).</summary>
+    public bool CanMonitor => _monitor is not null;
+
+    /// <summary>Why a meter is silent (no device, app not running), or empty.</summary>
+    [ObservableProperty]
+    private string _monitorStatus = string.Empty;
+
+    [ObservableProperty]
+    private string _microphoneTestStatus = "Records 5 seconds of the microphone, then plays them back as recorded or as processed.";
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TestMicrophoneCommand), nameof(PlayOriginalCommand), nameof(PlayProcessedCommand))]
+    private bool _isTestingMicrophone;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TestMicrophoneCommand), nameof(PlayOriginalCommand), nameof(PlayProcessedCommand), nameof(StopPlaybackCommand))]
+    private bool _isPlayingTest;
+
+    /// <summary>The work of opening and closing the monitored devices, done one after another off the UI thread (for tests).</summary>
+    internal Task MonitorWork => _monitorWork;
+
+    /// <summary>Starts the meters (the Recording page is shown).</summary>
+    public void StartMonitoring()
+    {
+        _monitoring = true;
+        RestartMonitor();
+    }
+
+    /// <summary>Stops the meters and closes the devices (another page, or the window closes).</summary>
+    public void StopMonitoring()
+    {
+        _monitoring = false;
+        if (_monitor is { } monitor)
+        {
+            Queue(monitor.Stop);
+        }
+
+        MicrophoneLevel.Reset();
+        SystemAudioLevel.Reset();
+    }
+
+    /// <summary>Moves the meters with the sound heard since the last call (<paramref name="now"/>: a steady clock).</summary>
+    public void RefreshMeters(TimeSpan now)
+    {
+        if (!_monitoring || _monitor is null)
+        {
+            return;
+        }
+
+        var levels = _monitor.TakeLevels();
+        MicrophoneLevel.Update(levels.Microphone, now);
+        SystemAudioLevel.Update(levels.System, now);
+        MonitorStatus = _monitor.Problem ?? string.Empty;
+    }
+
+    /// <summary>The processing as set on this page now (what a recording would use, and what the test plays).</summary>
+    private MicrophoneProcessing CurrentProcessing() => (_settings.Current.Recording.MicrophoneProcessing ?? new MicrophoneProcessing()) with
+    {
+        NoiseGate = MicrophoneGate,
+        GateThresholdDb = (int)Math.Round(GateThresholdDb),
+        Compressor = MicrophoneCompressor,
+        Limiter = MicrophoneLimiter,
+    };
+
+    /// <summary>Listens to what a recording would record with this page's choices (when the meters run).</summary>
+    private void RestartMonitor()
+    {
+        if (!_monitoring || _monitor is not { } monitor)
+        {
+            return;
+        }
+
+        var request = new MonitorRequest(
+            RecordingMicrophone?.Id, CurrentProcessing(), RecordSystemAudio, RecordingOutput?.Id, RecordingSystemAudioScope, RecordingApp?.Exe, RecordingApp?.Name);
+        Queue(() => monitor.Start(request));
+    }
+
+    /// <summary>Opening devices can take a moment (and an app's sound must not be activated on the UI thread): one at a time, in the background.</summary>
+    private void Queue(Action work) =>
+        _monitorWork = _monitorWork.ContinueWith(_ => work(), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+
+    private void UpdateMonitorProcessing()
+    {
+        if (_monitoring)
+        {
+            _monitor?.SetProcessing(CurrentProcessing());
+        }
+    }
+
+    partial void OnMicrophoneGateChanged(bool value) => UpdateMonitorProcessing();
+
+    partial void OnGateThresholdDbChanged(double value) => UpdateMonitorProcessing();
+
+    partial void OnMicrophoneCompressorChanged(bool value) => UpdateMonitorProcessing();
+
+    partial void OnMicrophoneLimiterChanged(bool value) => UpdateMonitorProcessing();
+
+    partial void OnRecordingMicrophoneChanged(DeviceChoice? value)
+    {
+        RestartMonitor();
+        TestMicrophoneCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnRecordingOutputChanged(DeviceChoice? value) => RestartMonitor();
+
+    private bool CanTestMicrophone() => _monitor is not null && HasMicrophone && !IsTestingMicrophone && !IsPlayingTest;
+
+    /// <summary>Records 5 s of the chosen microphone, as captured.</summary>
+    [RelayCommand(CanExecute = nameof(CanTestMicrophone))]
+    private async Task TestMicrophoneAsync()
+    {
+        IsTestingMicrophone = true;
+        MicrophoneTestStatus = "Recording 5 seconds: say something, and let the room be heard too…";
+        try
+        {
+            _testRecording = await _monitor!.RecordMicrophoneAsync(RecordingMicrophone!.Id!, TimeSpan.FromSeconds(5)).ConfigureAwait(true);
+            MicrophoneTestStatus = "Recorded. Play it as recorded, or with the processing above; change the processing and play again to compare.";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or TimeoutException or System.Runtime.InteropServices.COMException)
+        {
+            MicrophoneTestStatus = "The microphone couldn't be recorded: " + ex.Message;
+        }
+        finally
+        {
+            IsTestingMicrophone = false;
+            PlayOriginalCommand.NotifyCanExecuteChanged();
+            PlayProcessedCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    private bool CanPlayTest() => _testRecording is not null && !IsTestingMicrophone && !IsPlayingTest;
+
+    [RelayCommand(CanExecute = nameof(CanPlayTest))]
+    private Task PlayOriginalAsync() => PlayTestAsync(processed: false);
+
+    [RelayCommand(CanExecute = nameof(CanPlayTest))]
+    private Task PlayProcessedAsync() => PlayTestAsync(processed: true);
+
+    [RelayCommand(CanExecute = nameof(IsPlayingTest))]
+    private void StopPlayback() => _playback?.Cancel();
+
+    private async Task PlayTestAsync(bool processed)
+    {
+        var recording = _testRecording!;
+        IsPlayingTest = true;
+        using var playback = new CancellationTokenSource();
+        _playback = playback;
+        try
+        {
+            var samples = processed
+                ? await Task.Run(() => _monitor!.Process(recording, CurrentProcessing())).ConfigureAwait(true)
+                : recording;
+            MicrophoneTestStatus = processed ? "Playing with the processing…" : "Playing as recorded…";
+            await _monitor!.PlayAsync(samples, playback.Token).ConfigureAwait(true);
+            MicrophoneTestStatus = "Played. Play again, or record a new test.";
+        }
+        catch (OperationCanceledException)
+        {
+            MicrophoneTestStatus = "Stopped.";
+        }
+        catch (System.Runtime.InteropServices.COMException ex)
+        {
+            MicrophoneTestStatus = "It couldn't be played: " + ex.Message.Trim();
+        }
+        finally
+        {
+            _playback = null;
+            IsPlayingTest = false;
+        }
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasMicrophone))]
     private DeviceChoice? _recordingMicrophone;
@@ -462,6 +660,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        StopMonitoring();
+        _playback?.Cancel();
         EndHotkeyRecording();
         _hotkeys.RegistrationsChanged -= OnRegistrationsChanged;
         if (_updates is not null)

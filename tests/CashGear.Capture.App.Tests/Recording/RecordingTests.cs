@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using CashGear.Capture.App.Recording;
 using CashGear.Capture.Audio;
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
@@ -377,7 +378,7 @@ public sealed class RecordingSummaryTests
 /// <summary>A recorder for the toolbar's tests: fixed sound, settable level and clock, mute and volumes kept.</summary>
 internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : IScreenRecorder
 {
-    public float Level { get; set; }
+    public SoundLevels Levels { get; set; }
 
     public bool IsRecording => true;
 
@@ -427,7 +428,7 @@ internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : 
         remove { }
     }
 
-    public float TakeSoundLevel() => Level;
+    public SoundLevels TakeSoundLevels() => Levels;
 
     public Task StartAsync(RecordingOptions options, CancellationToken ct = default) => Task.CompletedTask;
 
@@ -441,15 +442,24 @@ internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : 
 public sealed class RecordingToolbarTests
 {
     [Fact]
-    public void Sound_shows_a_level_and_the_microphone_can_be_muted()
+    public void Sound_shows_a_meter_per_source_and_the_microphone_can_be_muted()
     {
-        var recorder = new FakeRecorder(RecordingSound.System | RecordingSound.Microphone) { Level = 0.1f, Elapsed = TimeSpan.FromSeconds(7) };
+        var recorder = new FakeRecorder(RecordingSound.System | RecordingSound.Microphone)
+        {
+            Elapsed = TimeSpan.FromSeconds(7),
+            Levels = new SoundLevels(new AudioLevel(0.1f, 0.01f, false), new AudioLevel(0.5f, 0.1f, false), new AudioLevel(0.6f, 0.1f, false)),
+        };
         var vm = new RecordingToolbarViewModel(recorder, () => { }, () => { });
+        vm.RefreshMeters(TimeSpan.FromSeconds(1));
 
         vm.HasSound.Should().BeTrue();
         vm.HasMicrophone.Should().BeTrue();
         vm.IsSoundMissing.Should().BeFalse();
-        vm.SoundLevel.Should().BeApproximately(2.0 / 3, 0.001, "-20 dB on a 60 dB meter");
+        vm.SystemMeter.Peak.Should().BeApproximately(2.0 / 3, 0.001, "-20 dB on a 60 dB meter");
+        vm.SystemMeter.Rms.Should().BeApproximately(1.0 / 3, 0.001, "-40 dB");
+        vm.MicrophoneMeter.Peak.Should().BeApproximately(1 - (6.02 / 60), 0.001);
+        vm.MicrophoneMeter.Text.Should().Be("Peak -6 dB");
+        vm.IsClipping.Should().BeFalse();
         vm.SoundToolTip.Should().Be("Recording system sound + microphone");
         vm.ElapsedText.Should().Be("0:07");
 
@@ -459,9 +469,25 @@ public sealed class RecordingToolbarTests
         vm.ToggleMicrophoneCommand.Execute(null);
         recorder.MicrophoneMuted.Should().BeFalse();
 
-        RecordingToolbarViewModel.MeterLevel(0).Should().Be(0);
-        RecordingToolbarViewModel.MeterLevel(1).Should().Be(1);
-        RecordingToolbarViewModel.MeterLevel(0.0001f).Should().Be(0, "-80 dB is below the meter");
+    }
+
+    [Fact]
+    public void A_clip_lights_the_meter_for_two_seconds()
+    {
+        var recorder = new FakeRecorder(RecordingSound.Microphone) { Levels = new SoundLevels(default, new AudioLevel(1f, 0.5f, true), new AudioLevel(1f, 0.5f, true)) };
+        var vm = new RecordingToolbarViewModel(recorder, () => { }, () => { });
+
+        vm.RefreshMeters(TimeSpan.FromSeconds(10));
+        vm.IsClipping.Should().BeTrue();
+        vm.MicrophoneMeter.Clipping.Should().BeTrue();
+        vm.MicrophoneMeter.Text.Should().Be("Clipping: too loud");
+
+        recorder.Levels = default;
+        vm.RefreshMeters(TimeSpan.FromSeconds(11.9));
+        vm.IsClipping.Should().BeTrue("still within two seconds");
+        vm.RefreshMeters(TimeSpan.FromSeconds(12.1));
+        vm.IsClipping.Should().BeFalse();
+        vm.MicrophoneMeter.Peak.Should().BeApproximately(1 - (2.1 * 24 / 60), 0.01, "it falls back 24 dB a second");
     }
 
     [Fact]
@@ -473,7 +499,8 @@ public sealed class RecordingToolbarTests
         vm.HasMicrophone.Should().BeFalse();
         vm.IsSoundMissing.Should().BeTrue();
         vm.SoundToolTip.Should().Be(FakeSound.NoDevice);
-        vm.SoundLevel.Should().Be(0);
+        vm.RefreshMeters(TimeSpan.FromSeconds(1));
+        vm.SystemMeter.Peak.Should().Be(0);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Recording;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,7 @@ public static class AudioServiceCollectionExtensions
         services.AddSingleton<IAudioSourceFactory, WasapiAudioSourceFactory>();
         services.AddSingleton<IAudioDevices, WasapiAudioDevices>();
         services.AddSingleton<MicrophoneProcessors>();
+        services.AddSingleton<IAudioMonitor, AudioMonitor>();
         return services;
     }
 }
