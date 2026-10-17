@@ -17,9 +17,9 @@
     <ProjectReference Include="..\..\src\CashGear.Capture.Recording\CashGear.Capture.Recording.csproj" />
   </ItemGroup>
 
-  <!-- The recording tests run the real ffmpeg when tools\ffmpeg has it (they skip otherwise). -->
-  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\ffmpeg.exe')">
-    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\*" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  <!-- The recording tests run the real ffmpeg when tools\ffmpeg\legacy has it (they skip otherwise). -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\legacy\ffmpeg.exe')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\legacy\*" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

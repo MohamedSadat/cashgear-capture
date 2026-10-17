@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CashGear.Capture.Media\CashGear.Capture.Media.csproj" />
+  </ItemGroup>
+
+  <!-- The real FFmpeg libraries (and ffmpeg.exe / ffprobe.exe for independent checks) when tools\ffmpeg has them; the tests skip otherwise. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\avcodec-63.dll')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\*" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+</Project>

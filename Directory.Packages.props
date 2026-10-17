@@ -26,6 +26,9 @@
 
   <ItemGroup Label="Recording">
     <PackageVersion Include="NAudio.Wasapi" Version="3.1.0" />
+    <!-- Must match the FFmpeg major version in tools\ffmpeg (9.0); FfmpegRuntime refuses to run on a mismatch. -->
+    <PackageVersion Include="FFmpeg.AutoGen.Abstractions" Version="9.0.1.1" />
+    <PackageVersion Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" Version="9.0.1.1" />
   </ItemGroup>
 
   <ItemGroup Label="Editor">

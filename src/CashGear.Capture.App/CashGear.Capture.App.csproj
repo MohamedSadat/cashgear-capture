@@ -40,9 +40,9 @@
     <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
   </ItemGroup>
 
-  <!-- Screen recording runs ffmpeg\ffmpeg.exe next to the app (ffprobe is only for the tests). tools\get-ffmpeg.ps1 puts a pinned build in tools\ffmpeg. -->
-  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\ffmpeg.exe')">
-    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\ffmpeg.exe;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\LICENSE" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  <!-- Screen recording still runs ffmpeg\ffmpeg.exe next to the app until the in-process recorder lands. tools\get-ffmpeg.ps1 -Legacy puts that pinned GPL build in tools\ffmpeg\legacy. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\legacy\ffmpeg.exe')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\legacy\ffmpeg.exe;$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\legacy\LICENSE" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

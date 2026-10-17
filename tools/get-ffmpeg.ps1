@@ -1,23 +1,43 @@
 <#
 .SYNOPSIS
-    Downloads the ffmpeg build used for screen recording into tools\ffmpeg (ffmpeg.exe, ffprobe.exe, LICENSE).
+    Downloads the FFmpeg libraries used for screen recording into tools\ffmpeg.
 
 .DESCRIPTION
-    The build copies tools\ffmpeg next to the app (and the App tests) as ffmpeg\. The download is a pinned
-    "essentials" build from https://github.com/GyanD/codexffmpeg (the Windows builds linked from ffmpeg.org) and is
-    checked against its SHA-256 before anything is extracted. It is a GPL build (it includes x264); how ffmpeg is
-    shipped with the app is decided with the installer (Phase 9).
+    Screen recording runs FFmpeg inside the app (FFmpeg.AutoGen), so it needs FFmpeg's shared libraries. The build
+    copies five of them (avutil, swresample, swscale, avcodec, avformat) and the licence next to the app as ffmpeg\.
+    The tests also use ffmpeg.exe and ffprobe.exe from the same build, which need avfilter and avdevice too.
+
+    The download is an LGPL v3 "shared" build from https://github.com/BtbN/FFmpeg-Builds (no x264/x265; see
+    docs\LICENSES.md), pinned to a month-end autobuild, which BtbN keeps for two years. It is checked against its
+    SHA-256 before anything is extracted, and the result must offer the encoders recording relies on.
+
+    -Legacy instead downloads the GPL ffmpeg.exe the external-process recorder still uses into tools\ffmpeg\legacy.
+    It goes away when the in-process recorder lands.
 #>
 param(
-    [string]$Version = "9.0.2",
-    [string]$Sha256 = "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba"
+    [string]$Tag = "autobuild-2026-09-30-13-08",
+    [string]$Asset = "ffmpeg-n9.0.2-17-g2a571b6068-win64-lgpl-shared-9.0.zip",
+    [string]$Sha256 = "7157177b8a6cb2174c1650ba8c71b363f2c78cba5330f88c4c02cf5b2b880646",
+    [switch]$Legacy
 )
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 $destination = Join-Path $PSScriptRoot "ffmpeg"
-$url = "https://github.com/GyanD/codexffmpeg/releases/download/$Version/ffmpeg-$Version-essentials_build.zip"
-$zip = Join-Path ([IO.Path]::GetTempPath()) "ffmpeg-$Version-essentials_build.zip"
+
+if ($Legacy) {
+    $destination = Join-Path $destination "legacy"
+    $legacyVersion = "9.0.2"
+    $url = "https://github.com/GyanD/codexffmpeg/releases/download/$legacyVersion/ffmpeg-$legacyVersion-essentials_build.zip"
+    $Sha256 = "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba"
+    $wanted = { param($name) $name -match '/bin/(ffmpeg|ffprobe)\.exe$' -or $name -match '/LICENSE$' }
+}
+else {
+    $url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/$Tag/$Asset"
+    $wanted = { param($name) $name -match '/bin/[^/]+\.dll$' -or $name -match '/bin/(ffmpeg|ffprobe)\.exe$' -or $name -match '^[^/]+/LICENSE\.txt$' }
+}
+
+$zip = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetFileName($url))
 
 Write-Host "Downloading $url"
 Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
@@ -32,7 +52,7 @@ try {
     $archive = [IO.Compression.ZipFile]::OpenRead($zip)
     try {
         foreach ($entry in $archive.Entries) {
-            if ($entry.FullName -match '/bin/(ffmpeg|ffprobe)\.exe$' -or $entry.FullName -match '/LICENSE$') {
+            if (& $wanted $entry.FullName) {
                 [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, (Join-Path $destination $entry.Name), $true)
             }
         }
@@ -45,5 +65,14 @@ finally {
     Remove-Item $zip -ErrorAction SilentlyContinue
 }
 
-& (Join-Path $destination "ffmpeg.exe") -hide_banner -version | Select-Object -First 1
-Write-Host "ffmpeg is in $destination; rebuild to copy it next to the app."
+$ffmpeg = Join-Path $destination "ffmpeg.exe"
+& $ffmpeg -hide_banner -version | Select-Object -First 1
+if (-not $Legacy) {
+    $encoders = & $ffmpeg -hide_banner -encoders 2>$null | Out-String
+    foreach ($name in "h264_mf", "libopenh264", "aac") {
+        if ($encoders -notmatch "\b$name\b") {
+            throw "This FFmpeg build has no $name encoder, which recording relies on."
+        }
+    }
+}
+Write-Host "FFmpeg is in $destination; rebuild to copy it next to the app."

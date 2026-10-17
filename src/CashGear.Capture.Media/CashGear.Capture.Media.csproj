@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- FFmpeg inside the process (FFmpeg.AutoGen over the LGPL shared libraries in ffmpeg\): encoders, muxing, remuxing, decoding for tests. Plain net10.0: no WPF, WinRT or Direct3D here. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FFmpeg.AutoGen.Abstractions" />
+    <PackageReference Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CashGear.Capture.Media.Tests" />
+    <InternalsVisibleTo Include="CashGear.Capture.Recording" />
+    <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -60,8 +60,8 @@ $OutputDir = (Resolve-Path $OutputDir).Path
 $publish = Join-Path $OutputDir "publish\$Version"
 $releases = Join-Path $OutputDir "releases"
 
-if (-not $NoFfmpeg -and -not (Test-Path (Join-Path $root "tools\ffmpeg\ffmpeg.exe"))) {
-    & (Join-Path $PSScriptRoot "get-ffmpeg.ps1")
+if (-not $NoFfmpeg -and -not (Test-Path (Join-Path $root "tools\ffmpeg\legacy\ffmpeg.exe"))) {
+    & (Join-Path $PSScriptRoot "get-ffmpeg.ps1") -Legacy
 }
 
 Write-Host "Publishing CashGear Capture $Version (win-x64, self-contained, single file)"
