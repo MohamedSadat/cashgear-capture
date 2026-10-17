@@ -7,9 +7,11 @@ namespace CashGear.Capture.Core.Recording;
 public readonly record struct SoundRun(long Position, int SourceOffset, int Count);
 
 /// <summary>
-/// Recording time: it runs from Start to Stop, except while paused. Thread-safe. It also says where sound captured
-/// at a given moment belongs in the recording, so sound from a pause (or from before the start or after the stop) is
-/// cut out exactly, and a packet that straddles Pause or Resume is split between the two sides.
+/// Recording time, the clock every picture and sound packet is stamped against: it runs from Start to Stop, except
+/// while paused, and reads the same high-resolution counter (QPC) Windows stamps captured frames and sound with.
+/// Thread-safe. It says where sound captured at a given moment belongs in the recording, so sound from a pause (or
+/// from before the start or after the stop) is cut out exactly, and a packet that straddles Pause or Resume is split
+/// between the two sides; and when a picture captured at a given moment is shown (<see cref="MapInstant"/>).
 /// </summary>
 public sealed class RecordingClock(TimeProvider time)
 {
@@ -118,6 +120,32 @@ public sealed class RecordingClock(TimeProvider time)
         }
 
         return count;
+    }
+
+    /// <summary>
+    /// The recording time a picture captured at <paramref name="timestamp"/> (<see cref="TimeProvider.GetTimestamp"/>)
+    /// is shown from. A picture captured while paused is shown from the moment recording resumes (the screen may
+    /// have changed during the pause), one from before the start from 0, and one after the stop at the end.
+    /// </summary>
+    public TimeSpan MapInstant(long timestamp)
+    {
+        lock (_gate)
+        {
+            foreach (var segment in _segments)
+            {
+                if (timestamp < segment.Start)
+                {
+                    return time.GetElapsedTime(0, segment.RecordedBefore);
+                }
+
+                if (timestamp < segment.End)
+                {
+                    return time.GetElapsedTime(0, segment.RecordedBefore + timestamp - segment.Start);
+                }
+            }
+
+            return time.GetElapsedTime(0, _finishedTicks + (_runningSince >= 0 ? timestamp - _runningSince : 0));
+        }
     }
 
     private static long CeilDiv(long a, long b) => (a + b - 1) / b;

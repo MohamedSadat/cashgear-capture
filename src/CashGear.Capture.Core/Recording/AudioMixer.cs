@@ -25,6 +25,7 @@ public sealed class AudioTrack
     private long _end;
     private double _drift;
     private volatile bool _muted;
+    private float _gain = 1;
 
     internal AudioTrack(string name, int capacityFrames)
     {
@@ -40,6 +41,13 @@ public sealed class AudioTrack
     {
         get => _muted;
         set => _muted = value;
+    }
+
+    /// <summary>Volume, 1 for as captured (0 to 4; applied when mixing, so a change is heard at once).</summary>
+    public float Gain
+    {
+        get => Volatile.Read(ref _gain);
+        set => Volatile.Write(ref _gain, Math.Clamp(value, 0f, 4f));
     }
 
     /// <summary>Frames that arrived after their place had been mixed.</summary>
@@ -97,17 +105,27 @@ public sealed class AudioTrack
     }
 
     /// <summary>Adds (or, muted, just consumes) the frames from <paramref name="from"/> into <paramref name="output"/>, clearing them.</summary>
-    internal void MixInto(Span<float> output, long from)
+    internal void MixInto(Span<float> output, long from) => MixInto(output, default, from);
+
+    /// <summary>
+    /// Adds the frames from <paramref name="from"/>, with this track's gain (or silence, muted), into
+    /// <paramref name="output"/> and into <paramref name="alone"/> (when not empty), clearing them.
+    /// </summary>
+    internal void MixInto(Span<float> output, Span<float> alone, long from)
     {
-        var muted = _muted;
+        var gain = _muted ? 0 : Gain;
         var frames = output.Length / AudioMixer.Channels;
         for (var i = 0; i < frames; i++)
         {
             var slot = Slot(from + i);
-            if (!muted)
+            var left = _ring[slot] * gain;
+            var right = _ring[slot + 1] * gain;
+            output[i * 2] += left;
+            output[(i * 2) + 1] += right;
+            if (!alone.IsEmpty)
             {
-                output[i * 2] += _ring[slot];
-                output[(i * 2) + 1] += _ring[slot + 1];
+                alone[i * 2] = left;
+                alone[(i * 2) + 1] = right;
             }
 
             _ring[slot] = 0;
@@ -224,28 +242,43 @@ public sealed class AudioMixer(int capacityFrames = AudioMixer.DefaultCapacityFr
     }
 
     /// <summary>Mixes the next <c>output.Length / 2</c> frames into <paramref name="output"/>.</summary>
-    public void Mix(Span<float> output)
+    public void Mix(Span<float> output) => Mix(output.Length / Channels, output, []);
+
+    /// <summary>
+    /// Takes the next <paramref name="frames"/> frames: <paramref name="mixed"/> gets every track together, and
+    /// <c>alone[i]</c> (when given) track i by itself, each with its gain and mute and clamped to ±1. Buffers hold
+    /// at least <c>frames * 2</c> samples. (The mix is always made: it is what the level meter shows.)
+    /// </summary>
+    public void Mix(int frames, Span<float> mixed, IReadOnlyList<float[]> alone)
     {
-        var frames = output.Length / Channels;
+        ArgumentNullException.ThrowIfNull(alone);
+        var length = frames * Channels;
+        var sum = mixed[..length];
         lock (_gate)
         {
-            output.Clear();
-            foreach (var track in _tracks)
+            sum.Clear();
+            for (var t = 0; t < _tracks.Count; t++)
             {
-                track.MixInto(output[..(frames * Channels)], _position);
+                var own = t < alone.Count && alone[t] is { } buffer ? buffer.AsSpan(0, length) : default;
+                _tracks[t].MixInto(sum, own, _position);
+                Clamp(own, out _);
             }
 
-            var peak = _peak;
-            for (var i = 0; i < frames * Channels; i++)
-            {
-                var sample = Math.Clamp(output[i], -1f, 1f);
-                output[i] = sample;
-                peak = Math.Max(peak, Math.Abs(sample));
-            }
-
-            _peak = peak;
+            Clamp(sum, out var peak);
+            _peak = Math.Max(_peak, peak);
             _position += frames;
             Mixed += frames;
+        }
+    }
+
+    private static void Clamp(Span<float> samples, out float peak)
+    {
+        peak = 0;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var sample = Math.Clamp(samples[i], -1f, 1f);
+            samples[i] = sample;
+            peak = Math.Max(peak, Math.Abs(sample));
         }
     }
 
@@ -278,6 +311,45 @@ public sealed class AudioMixer(int capacityFrames = AudioMixer.DefaultCapacityFr
             _peak = 0;
             return peak;
         }
+    }
+}
+
+/// <summary>How a recording's sound sources become tracks in the file.</summary>
+public enum AudioTrackLayout
+{
+    /// <summary>One track with everything (plays everywhere).</summary>
+    Mixed,
+
+    /// <summary>One track per source (system audio, microphone), for editing; players play only the first.</summary>
+    Separate,
+
+    /// <summary>The mix first, then one track per source.</summary>
+    Both,
+}
+
+/// <summary>A track of the file: the mix of all sources (<paramref name="Source"/> null) or one source by itself.</summary>
+public sealed record SoundTrack(string Title, int? Source);
+
+public static class SoundTracks
+{
+    public const string MixedTitle = "Mixed";
+
+    /// <summary>The file's tracks for the given sources (by name, in mixer order); a single source is always one track.</summary>
+    public static IReadOnlyList<SoundTrack> For(AudioTrackLayout layout, IReadOnlyList<string> sources)
+    {
+        ArgumentNullException.ThrowIfNull(sources);
+        if (sources.Count <= 1)
+        {
+            return sources.Count == 0 ? [] : [new SoundTrack(sources[0], 0)];
+        }
+
+        var each = sources.Select((name, i) => new SoundTrack(name, i));
+        return layout switch
+        {
+            AudioTrackLayout.Separate => [.. each],
+            AudioTrackLayout.Both => [new SoundTrack(MixedTitle, null), .. each],
+            _ => [new SoundTrack(MixedTitle, null)],
+        };
     }
 }
 
