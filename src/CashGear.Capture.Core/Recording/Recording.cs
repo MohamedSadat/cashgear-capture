@@ -128,6 +128,9 @@ public interface IScreenRecorder
     /// <summary>What is done to the microphone now; changes are heard at once (null when there is no microphone).</summary>
     MicrophoneProcessing? MicrophoneProcessing { get; set; }
 
+    /// <summary>The microphone's noise suppression can be turned on (RNNoise is there and a microphone is recorded).</summary>
+    bool CanSuppressNoise { get; }
+
     /// <summary>True while a stopped recording is being saved; <see cref="SaveProgress"/> says how far (0 to 1).</summary>
     bool IsSaving { get; }
 

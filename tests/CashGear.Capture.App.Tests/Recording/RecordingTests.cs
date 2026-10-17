@@ -443,6 +443,8 @@ internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : 
 
     public MicrophoneProcessing? MicrophoneProcessing { get; set; }
 
+    public bool CanSuppressNoise { get; set; }
+
     public bool IsSaving => false;
 
     public double SaveProgress => 0;
@@ -551,6 +553,23 @@ public sealed class RecordingToolbarTests
         talk.Poll();
         recorder.MicrophoneGated.Should().BeTrue("stopped reading the key");
         new RecordingToolbarViewModel(recorder, () => { }, () => { }).HasPushToTalk.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Noise_suppression_can_be_switched_from_the_sound_panel_when_RNNoise_is_there()
+    {
+        var recorder = new FakeRecorder(RecordingSound.Microphone) { MicrophoneProcessing = new MicrophoneProcessing() };
+        new RecordingToolbarViewModel(recorder, () => { }, () => { }).CanSuppressNoise.Should().BeFalse("no RNNoise");
+
+        recorder.CanSuppressNoise = true;
+        var vm = new RecordingToolbarViewModel(recorder, () => { }, () => { });
+        vm.CanSuppressNoise.Should().BeTrue();
+        vm.NoiseSuppression.Should().BeFalse();
+
+        vm.NoiseSuppression = true;
+        recorder.MicrophoneProcessing.Should().Be(new MicrophoneProcessing(NoiseSuppression: true));
+        new RecordingToolbarViewModel(new FakeRecorder(RecordingSound.System) { CanSuppressNoise = true }, () => { }, () => { })
+            .CanSuppressNoise.Should().BeFalse("no microphone");
     }
 
     [Fact]

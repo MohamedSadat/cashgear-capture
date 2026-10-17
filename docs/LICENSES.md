@@ -36,3 +36,15 @@ Licences cover copyright, not patents.
 - **AAC.** Sound uses FFmpeg's own AAC encoder.
 
 Get advice before selling the app in markets where this matters (Phase 19).
+
+## RNNoise (microphone noise suppression)
+
+**Decision (Phase 11):** RNNoise has no official Windows binary, so `tools\get-rnnoise.ps1` builds `rnnoise.dll` from the release source with Visual Studio's C++ compiler. A binary from a third party would have no provenance we can check.
+
+| | |
+|---|---|
+| Source | [xiph/rnnoise](https://github.com/xiph/rnnoise) release v0.2 (2024-04-15), `rnnoise-0.2.tar.gz`, SHA-256 `90fce4b00b9ff24c08dbfe31b82ffd43bae383d85c5535676d28b0a2b11c0d37`, checked by the script. The tarball includes the trained model (`src/rnnoise_data.c`), trained on publicly available data according to its release notes. |
+| Licence | BSD 3-Clause (`COPYING` from the tarball), shipped as `rnnoise\COPYING`. It allows closed-source and commercial use; the notice must ship with the binary. |
+| Build | x64, static C runtime (`/MT`, no Visual C++ redistributable needed), `/O2`; SSE2 everywhere, with SSE4.1 and AVX2 (+FMA) code chosen at run time by RNNoise's own CPU detection. |
+| What ships | `rnnoise\rnnoise.dll` and `rnnoise\COPYING`. Without them the app works and Settings doesn't offer noise suppression. |
+| Bindings | `CashGear.Capture.Interop.Native.Rnnoise` (`LibraryImport`), loaded only from `rnnoise\` next to the app. |

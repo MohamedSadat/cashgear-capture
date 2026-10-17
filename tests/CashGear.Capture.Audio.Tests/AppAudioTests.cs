@@ -336,6 +336,8 @@ public sealed class ProcessLoopbackTests
         var only = await Capture(factory.OpenProcess(low.Id, exclude: false, "440 Hz"));
         var except = await Capture(factory.OpenProcess(low.Id, exclude: true, "all but 440 Hz"));
 
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"Only the 440 Hz app: 440 Hz {Tone.Level(only, 440):0.0000}, 1 kHz {Tone.Level(only, 1000):0.000000}; all but it: 440 Hz {Tone.Level(except, 440):0.000000}, 1 kHz {Tone.Level(except, 1000):0.0000}");
         Tone.Level(only, 440).Should().BeGreaterThan(0.01f, "the chosen app is heard");
         Tone.Level(only, 1000).Should().BeLessThan(Tone.Level(only, 440) / 100, "the other app is not (40 dB down)");
         Tone.Level(except, 1000).Should().BeGreaterThan(0.01f);

@@ -220,6 +220,13 @@
 
             <TextBlock Text="Microphone processing" FontWeight="SemiBold" Margin="0,12,0,4" />
             <StackPanel IsEnabled="{Binding HasMicrophone}">
+              <StackPanel Orientation="Horizontal" Margin="0,2" Visibility="{Binding CanSuppressNoise, Converter={StaticResource Visible}}">
+                <CheckBox Content="Noise suppression (RNNoise): remove fans, hum and typing, strength" IsChecked="{Binding MicrophoneNoiseSuppression}" VerticalAlignment="Center" />
+                <Slider Width="140" Margin="8,0,0,0" Minimum="0" Maximum="100" SmallChange="5" LargeChange="10" Value="{Binding NoiseSuppressionStrength}"
+                        IsSnapToTickEnabled="True" TickFrequency="5" IsEnabled="{Binding MicrophoneNoiseSuppression}" VerticalAlignment="Center"
+                        AutomationProperties.Name="Noise suppression strength" />
+                <TextBlock Text="{Binding NoiseSuppressionStrengthText}" Margin="8,0,0,0" VerticalAlignment="Center" MinWidth="44" />
+              </StackPanel>
               <StackPanel Orientation="Horizontal" Margin="0,2">
                 <CheckBox Content="Noise gate: silence the microphone between words, below" IsChecked="{Binding MicrophoneGate}" VerticalAlignment="Center" />
                 <Slider Width="140" Margin="8,0,0,0" Minimum="{Binding MinGateThresholdDb}" Maximum="{Binding MaxGateThresholdDb}" SmallChange="1" LargeChange="5"

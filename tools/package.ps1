@@ -9,7 +9,8 @@
       *.nupkg + releases.win.json        the update feed: copy the folder's contents to the update address
 
     The app is published self-contained (no .NET install needed) as one executable plus the native libraries
-    WPF and SkiaSharp need, with ffmpeg\ (FFmpeg's libraries, for screen recording) and THIRD-PARTY-NOTICES.txt.
+    WPF and SkiaSharp need, with ffmpeg\ (FFmpeg's libraries, for screen recording), rnnoise\ (noise suppression,
+    built by tools\get-rnnoise.ps1 if it isn't there yet) and THIRD-PARTY-NOTICES.txt.
 
     Code signing: pass -SignParams (signtool.exe arguments, e.g. '/a /fd sha256 /tr http://timestamp.digicert.com
     /td sha256 /f cert.pfx /p ...'), -SignTemplate (any command, {{file}} is replaced by the file to sign) or
@@ -28,6 +29,10 @@
 .PARAMETER NoFfmpeg
     Leaves FFmpeg's libraries out. Recording then explains that FFmpeg is missing.
 
+.PARAMETER NoRnnoise
+    Leaves RNNoise out (rnnoise.dll needs Visual Studio's C++ compiler to build). Settings then offers no noise
+    suppression.
+
 .EXAMPLE
     powershell -File tools\package.ps1
 .EXAMPLE
@@ -40,7 +45,9 @@ param(
     [string]$SignParams = $env:CASHGEAR_SIGN_PARAMS,
     [string]$SignTemplate = $env:CASHGEAR_SIGN_TEMPLATE,
     [string]$AzureTrustedSignFile = $env:CASHGEAR_AZURE_SIGN_FILE,
-    [switch]$NoFfmpeg
+    [switch]$NoFfmpeg,
+
+    [switch]$NoRnnoise
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,6 +71,10 @@ if (-not $NoFfmpeg -and -not (Test-Path (Join-Path $root "tools\ffmpeg\avcodec-6
     & (Join-Path $PSScriptRoot "get-ffmpeg.ps1")
 }
 
+if (-not $NoRnnoise -and -not (Test-Path (Join-Path $root "tools\rnnoise\rnnoise.dll"))) {
+    & (Join-Path $PSScriptRoot "get-rnnoise.ps1")
+}
+
 Write-Host "Publishing CashGear Capture $Version (win-x64, self-contained, single file)"
 if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
 dotnet publish $project -c Release -r win-x64 --self-contained true --nologo `
@@ -78,6 +89,15 @@ else {
     $expected = "COPYING.GPLv3", "LICENSE.txt", "avcodec-63.dll", "avfilter-12.dll", "avformat-63.dll", "avutil-61.dll", "swresample-7.dll", "swscale-10.dll" | Sort-Object
     if (Compare-Object $shipped $expected) {
         throw "ffmpeg\ in the publish folder should hold exactly $($expected -join ', '), not $($shipped -join ', ')."
+    }
+}
+if ($NoRnnoise) {
+    Remove-Item (Join-Path $publish "rnnoise") -Recurse -Force -ErrorAction SilentlyContinue
+}
+else {
+    $shipped = Get-ChildItem (Join-Path $publish "rnnoise") -File | ForEach-Object Name | Sort-Object
+    if (Compare-Object $shipped ("COPYING", "rnnoise.dll" | Sort-Object)) {
+        throw "rnnoise\ in the publish folder should hold exactly COPYING and rnnoise.dll, not $($shipped -join ', ')."
     }
 }
 Copy-Item (Join-Path $root "THIRD-PARTY-NOTICES.txt") $publish

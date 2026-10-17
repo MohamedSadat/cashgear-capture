@@ -570,6 +570,30 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Noise_suppression_is_offered_with_RNNoise_and_changes_what_the_meter_hears()
+    {
+        Create(monitor: new FakeMonitor()).CanSuppressNoise.Should().BeFalse("no RNNoise: not offered");
+
+        var monitor = new FakeMonitor { CanSuppressNoise = true };
+        _settings.Current = _settings.Current with { Recording = new RecordingSettings(Microphone: "default") };
+        using var vm = Create(new FakeAudioDevices(), monitor: monitor);
+        vm.CanSuppressNoise.Should().BeTrue();
+        vm.MicrophoneNoiseSuppression.Should().BeFalse("off by default");
+        vm.NoiseSuppressionStrength.Should().Be(100);
+        vm.NoiseSuppressionStrengthText.Should().Be("100%");
+
+        vm.StartMonitoring();
+        await vm.MonitorWork;
+        vm.MicrophoneNoiseSuppression = true;
+        vm.NoiseSuppressionStrength = 80;
+        monitor.Processing[^1].Should().Be(new MicrophoneProcessing(NoiseSuppression: true, NoiseSuppressionStrength: 80));
+
+        await vm.ApplyCommand.ExecuteAsync(null);
+        _settings.Current.Recording.MicrophoneProcessing!.NoiseSuppression.Should().BeTrue();
+        _settings.Current.Recording.MicrophoneProcessing.NoiseSuppressionStrength.Should().Be(80);
+    }
+
+    [Fact]
     public async Task Push_to_talk_takes_any_key_but_not_one_of_the_hotkeys()
     {
         using var vm = Create();
@@ -680,7 +704,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         public TaskCompletionSource? PlayGate { get; set; }
 
-        public bool CanSuppressNoise => false;
+        public bool CanSuppressNoise { get; init; }
 
         public string? Problem { get; set; }
 

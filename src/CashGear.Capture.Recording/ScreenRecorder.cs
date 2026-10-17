@@ -101,6 +101,8 @@ internal sealed partial class ScreenRecorder(
         set => _session?.Track(RecordingSound.System)?.Gain = value;
     }
 
+    public bool CanSuppressNoise => _session?.MicrophoneChain?.CanSuppressNoise ?? false;
+
     public MicrophoneProcessing? MicrophoneProcessing
     {
         get => _session?.MicrophoneChain?.Settings;

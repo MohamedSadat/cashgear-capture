@@ -384,6 +384,20 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private AppChoice? _recordingApp;
 
+    /// <summary>RNNoise on the microphone.</summary>
+    [ObservableProperty]
+    private bool _microphoneNoiseSuppression;
+
+    /// <summary>How much of the noise is taken out (percent).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NoiseSuppressionStrengthText))]
+    private double _noiseSuppressionStrength;
+
+    public string NoiseSuppressionStrengthText => $"{NoiseSuppressionStrength:0}%";
+
+    /// <summary>RNNoise is there, so noise suppression can be offered.</summary>
+    public bool CanSuppressNoise => _monitor?.CanSuppressNoise ?? false;
+
     /// <summary>Silence the microphone between words.</summary>
     [ObservableProperty]
     private bool _microphoneGate;
@@ -520,6 +534,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>The processing as set on this page now (what a recording would use, and what the test plays).</summary>
     private MicrophoneProcessing CurrentProcessing() => (_settings.Current.Recording.MicrophoneProcessing ?? new MicrophoneProcessing()) with
     {
+        NoiseSuppression = MicrophoneNoiseSuppression,
+        NoiseSuppressionStrength = (int)Math.Round(NoiseSuppressionStrength),
         NoiseGate = MicrophoneGate,
         GateThresholdDb = (int)Math.Round(GateThresholdDb),
         Compressor = MicrophoneCompressor,
@@ -550,6 +566,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             _monitor?.SetProcessing(CurrentProcessing());
         }
     }
+
+    partial void OnMicrophoneNoiseSuppressionChanged(bool value) => UpdateMonitorProcessing();
+
+    partial void OnNoiseSuppressionStrengthChanged(double value) => UpdateMonitorProcessing();
 
     partial void OnMicrophoneGateChanged(bool value) => UpdateMonitorProcessing();
 
@@ -853,6 +873,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             PushToTalk = string.IsNullOrWhiteSpace(PushToTalkText) ? null : PushToTalkText.Trim(),
             MicrophoneProcessing = (current.Recording.MicrophoneProcessing ?? new MicrophoneProcessing()) with
             {
+                NoiseSuppression = MicrophoneNoiseSuppression,
+                NoiseSuppressionStrength = (int)Math.Round(NoiseSuppressionStrength),
                 NoiseGate = MicrophoneGate,
                 GateThresholdDb = (int)Math.Round(GateThresholdDb),
                 Compressor = MicrophoneCompressor,
@@ -897,6 +919,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         var processing = s.Recording.MicrophoneProcessing ?? new MicrophoneProcessing();
+        MicrophoneNoiseSuppression = processing.NoiseSuppression;
+        NoiseSuppressionStrength = processing.NoiseSuppressionStrength;
         MicrophoneGate = processing.NoiseGate;
         GateThresholdDb = processing.GateThresholdDb;
         MicrophoneCompressor = processing.Compressor;

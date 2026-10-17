@@ -74,6 +74,7 @@
       <Grid.RowDefinitions>
         <RowDefinition />
         <RowDefinition />
+        <RowDefinition />
       </Grid.RowDefinitions>
       <TextBlock Text="System audio" VerticalAlignment="Center" Margin="0,0,10,0" Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
       <Slider Grid.Column="1" Minimum="0" Maximum="200" SmallChange="5" LargeChange="25" Value="{Binding SystemAudioVolume}" Focusable="False"
@@ -95,6 +96,9 @@
       <wpf:LevelMeter Grid.Row="1" Grid.Column="4" Width="110" Height="8" Margin="12,6,0,0" VerticalAlignment="Center" ToolTip="{Binding MicrophoneMeter.Text}"
                       Peak="{Binding MicrophoneMeter.Peak}" Rms="{Binding MicrophoneMeter.Rms}" Hold="{Binding MicrophoneMeter.Hold}" Clipping="{Binding MicrophoneMeter.Clipping}"
                       AutomationProperties.Name="Microphone level" Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
+      <CheckBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Content="Noise suppression on the microphone" IsChecked="{Binding NoiseSuppression}"
+                Margin="0,6,0,0" Focusable="False" ToolTip="RNNoise: removes steady noise such as fans, hum and typing; heard at once"
+                Visibility="{Binding CanSuppressNoise, Converter={StaticResource Visible}}" />
     </Grid>
     </StackPanel>
   </Border>

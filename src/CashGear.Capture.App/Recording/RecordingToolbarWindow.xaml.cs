@@ -85,6 +85,23 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
 
     public bool HasSystemAudio { get; }
 
+    /// <summary>The microphone's noise suppression can be switched here (RNNoise is there).</summary>
+    public bool CanSuppressNoise => HasMicrophone && _recorder.CanSuppressNoise;
+
+    /// <summary>RNNoise on the microphone, on or off while recording.</summary>
+    public bool NoiseSuppression
+    {
+        get => _recorder.MicrophoneProcessing?.NoiseSuppression ?? false;
+        set
+        {
+            if (_recorder.MicrophoneProcessing is { } processing && processing.NoiseSuppression != value)
+            {
+                _recorder.MicrophoneProcessing = processing with { NoiseSuppression = value };
+                OnPropertyChanged();
+            }
+        }
+    }
+
     /// <summary>The microphone is only heard while a key is held.</summary>
     public bool HasPushToTalk => _pushToTalk is not null;
 

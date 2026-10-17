@@ -214,8 +214,10 @@ public sealed partial class RecordingController
         {
             await _ui.InvokeAsync(CloseToolbar).ConfigureAwait(false);
             var gains = (System: _recorder.SystemAudioGain, Microphone: _recorder.MicrophoneGain);
+            var noise = _recorder.MicrophoneProcessing?.NoiseSuppression;
             var result = await _recorder.StopAsync().ConfigureAwait(false);
             await RememberGainsAsync(gains.System, gains.Microphone).ConfigureAwait(false);
+            await RememberNoiseSuppressionAsync(noise).ConfigureAwait(false);
             _notifier.Notify(
                 "Recording saved",
                 Summary(result),
@@ -243,6 +245,15 @@ public sealed partial class RecordingController
         return Math.Abs(recording.SystemAudioGain - system) < 0.001f && Math.Abs(recording.MicrophoneGain - microphone) < 0.001f
             ? Task.CompletedTask
             : _settings.UpdateAsync(s => s with { Recording = s.Recording with { SystemAudioGain = system, MicrophoneGain = microphone } });
+    }
+
+    /// <summary>Noise suppression switched on the toolbar stays that way next time.</summary>
+    private Task RememberNoiseSuppressionAsync(bool? noise)
+    {
+        var processing = _settings.Current.Recording.MicrophoneProcessing ?? new MicrophoneProcessing();
+        return noise is not { } on || processing.NoiseSuppression == on
+            ? Task.CompletedTask
+            : _settings.UpdateAsync(s => s with { Recording = s.Recording with { MicrophoneProcessing = processing with { NoiseSuppression = on } } });
     }
 
     public void TogglePause()
