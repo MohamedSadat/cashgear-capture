@@ -40,6 +40,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly IFolderPicker _folderPicker;
     private readonly ILogger<SettingsViewModel> _logger;
     private readonly UpdateService? _updates;
+    private readonly IRecordingEncoders? _encoders;
+    private readonly IScreenRecorder? _recorder;
     private readonly SynchronizationContext? _context;
     private IDisposable? _hotkeySuspension;
 
@@ -53,15 +55,18 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IRecordingEncoders? encoders = null,
         IOcrService? ocr = null,
         UpdateService? updates = null,
-        IAudioDevices? audio = null)
+        IAudioDevices? audio = null,
+        IScreenRecorder? recorder = null)
     {
         _updates = updates;
+        _encoders = encoders;
+        _recorder = recorder;
         _context = SynchronizationContext.Current;
         OcrLanguages = [new OcrLanguageChoice(null, "Automatic (your Windows languages)"),
             .. (ocr?.AvailableLanguages ?? []).Select(l => new OcrLanguageChoice(l.Tag, $"{l.DisplayName} — {l.NativeName}"))];
         FfmpegStatus = encoders is null ? "Screen recording isn't available."
             : encoders.Problem is { } problem ? "Screen recording isn't available. " + problem
-            : $"FFmpeg {encoders.FfmpegVersion} (built into the app).";
+            : $"FFmpeg {encoders.FfmpegVersion}, built into the app (LGPL; see THIRD-PARTY-NOTICES.txt).";
         IsFfmpegMissing = encoders is null || encoders.Problem is not null;
         Microphones =
         [
@@ -133,7 +138,20 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<int> FrameRates { get; } = RecordingSettings.FrameRates;
 
-    public IReadOnlyList<RecordingEncoder> Encoders { get; } = Enum.GetValues<RecordingEncoder>();
+    public IReadOnlyList<QualityPreset> QualityPresets { get; } = Enum.GetValues<QualityPreset>();
+
+    public IReadOnlyList<AudioTrackLayout> TrackLayouts { get; } = Enum.GetValues<AudioTrackLayout>();
+
+    /// <summary>Automatic, software only, and every encoder the app knows, with what detection found about each.</summary>
+    public ObservableCollection<EncoderChoice> Encoders { get; } = [];
+
+    /// <summary>Which encoders work here, or that they are being checked.</summary>
+    [ObservableProperty]
+    private string _encoderStatus = string.Empty;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RedetectEncodersCommand))]
+    private bool _isDetectingEncoders;
 
     /// <summary>"Automatic" and each language Windows can recognize.</summary>
     public IReadOnlyList<OcrLanguageChoice> OcrLanguages { get; }
@@ -148,6 +166,74 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public string SpeakersStatus { get; }
 
     public bool IsFfmpegMissing { get; }
+
+    /// <summary>Lists the encoder choices with what detection found, keeping <paramref name="selectedId"/> selected (or the current choice).</summary>
+    private void RefreshEncoders(string? selectedId = null)
+    {
+        selectedId ??= RecordingEncoder?.Id ?? EncoderPresets.Auto;
+        var detected = _encoders?.Detected;
+        Encoders.Clear();
+        Encoders.Add(new EncoderChoice(EncoderPresets.Auto, "Automatic: the best that works here (recommended)"));
+        Encoders.Add(new EncoderChoice(EncoderPresets.Software, "Software only (uses the CPU)"));
+        foreach (var candidate in EncoderPresets.All)
+        {
+            var probe = detected?.FirstOrDefault(p => p.Id == candidate.Id);
+            var label = probe is null ? candidate.DisplayName
+                : !probe.Works ? candidate.DisplayName + " (not available here)"
+                : candidate.FfmpegName is "h264_mf" or "hevc_mf" && candidate.Hardware && probe.Detail is { } device ? $"{candidate.DisplayName}: {device}"
+                : candidate.DisplayName;
+            Encoders.Add(new EncoderChoice(candidate.Id, label));
+        }
+
+        RecordingEncoder = Encoders.FirstOrDefault(e => string.Equals(e.Id, selectedId, StringComparison.OrdinalIgnoreCase));
+        if (RecordingEncoder is null)
+        {
+            // An id set by hand that this version doesn't know stays (and is kept) rather than silently becoming Automatic.
+            RecordingEncoder = new EncoderChoice(selectedId, selectedId + " (unknown)");
+            Encoders.Add(RecordingEncoder);
+        }
+
+        if (_encoders is null || _encoders.Problem is not null)
+        {
+            EncoderStatus = string.Empty;
+        }
+        else if (detected is null || IsDetectingEncoders)
+        {
+            EncoderStatus = "Checking which encoders work on this PC…";
+            if (detected is null && !IsDetectingEncoders)
+            {
+                _ = DetectEncodersAsync(force: false);
+            }
+        }
+        else
+        {
+            var working = EncoderPresets.All.Where(c => detected.Any(p => p.Id == c.Id && p.Works)).Select(c => c.DisplayName).ToList();
+            EncoderStatus = working.Count == 0
+                ? "No encoder works on this PC, so recording is unavailable."
+                : "Works on this PC: " + string.Join(", ", working) + ".";
+        }
+    }
+
+    private bool CanRedetectEncoders() => _encoders is { Problem: null } && !IsDetectingEncoders && _recorder?.IsRecording != true;
+
+    /// <summary>Tests every encoder again (after a driver update, say); the list shows the new results.</summary>
+    [RelayCommand(CanExecute = nameof(CanRedetectEncoders))]
+    private Task RedetectEncodersAsync() => DetectEncodersAsync(force: true);
+
+    private async Task DetectEncodersAsync(bool force)
+    {
+        IsDetectingEncoders = true;
+        EncoderStatus = "Checking which encoders work on this PC…";
+        try
+        {
+            await Task.Run(() => _encoders!.DetectAsync(force)).ConfigureAwait(true);
+        }
+        finally
+        {
+            IsDetectingEncoders = false;
+            RefreshEncoders();
+        }
+    }
 
     public IReadOnlyList<int> ScrollMaxHeightChoices { get; } = [10_000, 20_000, 40_000, 60_000];
 
@@ -195,9 +281,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _recordingFps;
 
-    /// <summary>15 (best) to 35 (smallest).</summary>
     [ObservableProperty]
-    private int _recordingQuality;
+    private QualityPreset _recordingQuality;
+
+    [ObservableProperty]
+    private AudioTrackLayout _recordingTracks;
 
     [ObservableProperty]
     private bool _recordingIncludeCursor;
@@ -206,7 +294,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private bool _recordingShowClicks;
 
     [ObservableProperty]
-    private RecordingEncoder _recordingEncoder;
+    private EncoderChoice? _recordingEncoder;
 
     [ObservableProperty]
     private bool _recordSystemAudio;
@@ -408,8 +496,17 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         AfterCapture = new AfterCaptureSettings(SaveToFile, CopyToClipboard, OpenEditor),
         Hotkeys = Hotkeys.Aggregate(current.Hotkeys, (h, row) => h.With(row.Action, row.SettingText)),
         Appearance = new AppearanceSettings(Theme),
-        Recording = new RecordingSettings(
-            RecordingFps, RecordingQuality, RecordingIncludeCursor, RecordingShowClicks, RecordingEncoder, RecordSystemAudio, RecordingMicrophone?.Id),
+        Recording = current.Recording with
+        {
+            Fps = RecordingFps,
+            Quality = RecordingQuality,
+            IncludeCursor = RecordingIncludeCursor,
+            ShowClicks = RecordingShowClicks,
+            Encoder = RecordingEncoder?.Id ?? EncoderPresets.Auto,
+            SystemAudio = RecordSystemAudio,
+            Microphone = RecordingMicrophone?.Id,
+            Tracks = RecordingTracks,
+        },
         Ocr = new OcrSettings(OcrLanguage?.Tag),
         History = new HistorySettings(HistorySize?.Value ?? current.History.MaxItems),
         Updates = current.Updates with { CheckAutomatically = CheckForUpdates },
@@ -432,9 +529,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             ?? new OcrLanguageChoice(s.Ocr.Language, s.Ocr.Language + " (not installed)");
         RecordingFps = s.Recording.Fps;
         RecordingQuality = s.Recording.Quality;
+        RecordingTracks = s.Recording.Tracks;
         RecordingIncludeCursor = s.Recording.IncludeCursor;
         RecordingShowClicks = s.Recording.ShowClicks;
-        RecordingEncoder = s.Recording.Encoder;
+        RefreshEncoders(s.Recording.Encoder);
         RecordSystemAudio = s.Recording.SystemAudio;
         // A microphone that isn't connected now stays selected (and saved) rather than silently becoming None.
         RecordingMicrophone = Microphones.FirstOrDefault(m => string.Equals(m.Id, s.Recording.Microphone, StringComparison.OrdinalIgnoreCase));

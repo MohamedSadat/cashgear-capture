@@ -67,6 +67,7 @@ internal static class AppHost
         builder.Services.AddSingleton<ScrollTargetFinder>();
         builder.Services.AddSingleton<ScrollingCaptureService>();
         builder.Services.AddSingleton<RecordingController>();
+        builder.Services.AddSingleton<InterruptedRecordings>();
         builder.Services.AddSingleton<ToolStyleMemory>();
         builder.Services.AddSingleton<EditorWindowService>();
         builder.Services.AddSingleton<IEditorLauncher>(sp => sp.GetRequiredService<EditorWindowService>());

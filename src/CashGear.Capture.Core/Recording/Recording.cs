@@ -3,16 +3,6 @@ using CashGear.Capture.Core.Geometry;
 
 namespace CashGear.Capture.Core.Recording;
 
-/// <summary>Which encoder a recording uses (the settings' choice; see <see cref="EncoderPresets"/>).</summary>
-public enum RecordingEncoder
-{
-    /// <summary>The best encoder that works on this PC: the GPU's when there is one.</summary>
-    Auto,
-
-    /// <summary>A software encoder only.</summary>
-    Software,
-}
-
 /// <summary>The sound in a recording.</summary>
 [Flags]
 public enum RecordingSound

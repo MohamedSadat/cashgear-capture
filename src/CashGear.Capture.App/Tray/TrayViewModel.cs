@@ -56,6 +56,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly HistoryActions _historyActions;
     private readonly HistoryWindowService _historyWindow;
     private readonly UpdateService _updates;
+    private readonly InterruptedRecordings _interrupted;
     private readonly TimeProvider _time;
 
     public TrayViewModel(
@@ -71,6 +72,7 @@ public sealed partial class TrayViewModel : ObservableObject
         HistoryActions historyActions,
         HistoryWindowService historyWindow,
         UpdateService updates,
+        InterruptedRecordings interrupted,
         TimeProvider time)
     {
         _coordinator = coordinator;
@@ -85,11 +87,13 @@ public sealed partial class TrayViewModel : ObservableObject
         _historyActions = historyActions;
         _historyWindow = historyWindow;
         _updates = updates;
+        _interrupted = interrupted;
         _time = time;
 
         DelayChoices = [.. new[] { 0, 3, 5, 10 }.Select(s => new DelayChoice(s, s == 0 ? "_No delay" : $"_{s} seconds", SetDelayAsync))];
 
         _recording.StateChanged += (_, _) => _ = _ui.InvokeAsync(() => OnPropertyChanged(nameof(RecordText)));
+        _interrupted.Changed += (_, _) => _ = _ui.InvokeAsync(() => OnPropertyChanged(nameof(HasInterruptedRecordings)));
         _hotkeys.RegistrationsChanged += (_, _) => RefreshHotkeyLabels();
         _settings.Changed += (_, _) => _ = _ui.InvokeAsync(RefreshDelay);
         _history.Changed += (_, _) => _ = _ui.InvokeAsync(RefreshRecent);
@@ -136,7 +140,10 @@ public sealed partial class TrayViewModel : ObservableObject
     private string _updateText = string.Empty;
 
     /// <summary>The recording menu item: start one, or stop the one running.</summary>
-    public string RecordText => _recording.IsRecording ? "Stop _Recording" : "Re_cord Screen…";
+    public string RecordText => _recording.IsRecording ? "Stop _Recording" : _recording.IsSaving ? "Saving the Recording…" : "Re_cord Screen…";
+
+    /// <summary>Recordings a crash left unsaved: the menu offers to save them.</summary>
+    public bool HasInterruptedRecordings => _interrupted.Count > 0;
 
     [RelayCommand]
     private Task CaptureRegionAsync() => _coordinator.CaptureRegionAsync();
@@ -169,6 +176,9 @@ public sealed partial class TrayViewModel : ObservableObject
     /// <summary>Starts a screen recording (pick the area), or stops and saves the one running.</summary>
     [RelayCommand]
     private Task ToggleRecordingAsync() => _recording.ToggleAsync();
+
+    [RelayCommand]
+    private Task RecoverRecordingsAsync() => _interrupted.RecoverAllAsync();
 
     /// <summary>
     /// Saves a running recording, then closes the editors (each asks about unsaved changes); keeping one open

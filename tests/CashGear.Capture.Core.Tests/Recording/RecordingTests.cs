@@ -78,12 +78,18 @@ public sealed class RecordingSettingsTests
     [Fact]
     public void Defaults_and_normalizing()
     {
-        new RecordingSettings().Should().Be(new RecordingSettings(30, 23, true, true, RecordingEncoder.Auto, SystemAudio: true, Microphone: null));
+        new RecordingSettings().Should().Be(new RecordingSettings(
+            30, QualityPreset.Balanced, true, true, "auto", SystemAudio: true, Microphone: null, Tracks: AudioTrackLayout.Mixed, SystemAudioGain: 1, MicrophoneGain: 1));
 
-        var odd = new RecordingSettings(Fps: 50, Quality: 3, Encoder: (RecordingEncoder)9).Normalize();
+        var odd = new RecordingSettings(
+            Fps: 50, Quality: (QualityPreset)9, Encoder: "  H264_MF_HW ", Tracks: (AudioTrackLayout)7, SystemAudioGain: 9, MicrophoneGain: float.NaN).Normalize();
         odd.Fps.Should().Be(60, "the nearest supported rate");
-        odd.Quality.Should().Be(RecordingSettings.MinQuality);
-        odd.Encoder.Should().Be(RecordingEncoder.Auto);
+        odd.Quality.Should().Be(QualityPreset.Balanced);
+        odd.Encoder.Should().Be("h264_mf_hw");
+        odd.Tracks.Should().Be(AudioTrackLayout.Mixed);
+        odd.SystemAudioGain.Should().Be(RecordingSettings.MaxGain);
+        odd.MicrophoneGain.Should().Be(1);
+        new RecordingSettings(Encoder: " ").Normalize().Encoder.Should().Be("auto");
     }
 
     [Fact]
@@ -94,10 +100,43 @@ public sealed class RecordingSettingsTests
         new RecordingSettings(Microphone: RecordingSettings.DefaultMicrophone).Normalize().Microphone.Should().Be("default");
     }
 
+    [Theory]
+    [InlineData(15, QualityPreset.Lossless)]
+    [InlineData(20, QualityPreset.High)]
+    [InlineData(23, QualityPreset.Balanced)]
+    [InlineData(30, QualityPreset.Small)]
+    public void Version_2_quality_numbers_and_encoders_carry_over(int quality, QualityPreset preset)
+    {
+        var json = System.Text.Json.Nodes.JsonNode.Parse(
+            $$"""{ "schemaVersion": 2, "recording": { "fps": 60, "Quality": {{quality}}, "encoder": "Software", "systemAudio": false } }""")!.AsObject();
+
+        SettingsMigration.Upgrade(json).Should().Be(2);
+        var settings = json.Deserialize(SettingsJsonContext.Default.AppSettings)!.Normalize();
+
+        settings.Recording.Quality.Should().Be(preset);
+        settings.Recording.Encoder.Should().Be("software");
+        settings.Recording.Fps.Should().Be(60);
+        settings.Recording.SystemAudio.Should().BeFalse();
+        settings.Recording.Tracks.Should().Be(AudioTrackLayout.Mixed);
+        settings.SchemaVersion.Should().Be(3);
+    }
+
+    [Fact]
+    public void Version_3_settings_round_trip_with_readable_values()
+    {
+        var settings = new AppSettings { Recording = new RecordingSettings(Quality: QualityPreset.High, Encoder: "h264_mf_hw", Tracks: AudioTrackLayout.Separate, MicrophoneGain: 0.5f) };
+
+        var text = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.AppSettings);
+        text.Should().Contain("\"quality\": \"High\"").And.Contain("\"encoder\": \"h264_mf_hw\"").And.Contain("\"tracks\": \"Separate\"");
+        var back = JsonSerializer.Deserialize(text, SettingsJsonContext.Default.AppSettings)!.Normalize();
+
+        back.Recording.Should().Be(settings.Recording);
+    }
+
     [Fact]
     public void A_settings_file_from_before_sound_records_system_audio_and_no_microphone()
     {
-        var settings = JsonSerializer.Deserialize("""{ "recording": { "fps": 15, "quality": 25 } }""", SettingsJsonContext.Default.AppSettings)!.Normalize();
+        var settings = JsonSerializer.Deserialize("""{ "recording": { "fps": 15, "quality": "Small" } }""", SettingsJsonContext.Default.AppSettings)!.Normalize();
 
         settings.Recording.Fps.Should().Be(15);
         settings.Recording.SystemAudio.Should().BeTrue();

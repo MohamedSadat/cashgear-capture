@@ -3,6 +3,7 @@ using System.Windows.Threading;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Recording;
 using CashGear.Capture.App.SingleInstance;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Instance;
@@ -76,6 +77,8 @@ public partial class CaptureApplication : Application
 
         LogStarted(_startupCommand);
         Welcome(_services.GetRequiredService<InstallEvents>());
+        _ = _services.GetRequiredService<RecordingController>().WarmUpAsync(
+            _services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
 
         if (_startupCommand != InstanceCommand.Activate)
         {

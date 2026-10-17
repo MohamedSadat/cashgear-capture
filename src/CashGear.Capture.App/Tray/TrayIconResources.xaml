@@ -28,6 +28,8 @@
         </MenuItem>
         <Separator />
         <MenuItem Header="{Binding RecordText}" Command="{Binding ToggleRecordingCommand}" InputGestureText="{Binding RecordHotkey}" />
+        <MenuItem Header="Save _Interrupted Recordings" Command="{Binding RecoverRecordingsCommand}"
+                  Visibility="{Binding HasInterruptedRecordings, Converter={StaticResource TrayVisible}}" />
         <Separator />
         <MenuItem Header="Recent _Captures" ItemsSource="{Binding RecentCaptures}" IsEnabled="{Binding HasRecentCaptures}">
           <MenuItem.ItemContainerStyle>

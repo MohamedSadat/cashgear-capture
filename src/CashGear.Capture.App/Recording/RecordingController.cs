@@ -28,6 +28,7 @@ public sealed partial class RecordingController
 
     private readonly IScreenRecorder _recorder;
     private readonly IRecordingEncoders _encoders;
+    private readonly InterruptedRecordings _interrupted;
     private readonly IScreenCaptureService _capture;
     private readonly IMonitorService _monitors;
     private readonly IWindowService _windows;
@@ -47,6 +48,7 @@ public sealed partial class RecordingController
     public RecordingController(
         IScreenRecorder recorder,
         IRecordingEncoders encoders,
+        InterruptedRecordings interrupted,
         IScreenCaptureService capture,
         IMonitorService monitors,
         IWindowService windows,
@@ -63,6 +65,7 @@ public sealed partial class RecordingController
     {
         _recorder = recorder;
         _encoders = encoders;
+        _interrupted = interrupted;
         _capture = capture;
         _monitors = monitors;
         _windows = windows;
@@ -87,16 +90,47 @@ public sealed partial class RecordingController
 
     public bool IsRecording => _recorder.IsRecording;
 
+    /// <summary>A stopped recording is being saved (copied into its MP4).</summary>
+    public bool IsSaving => _recorder.IsSaving;
+
     /// <summary>Recording started, paused, resumed or stopped (raised on any thread).</summary>
     public event EventHandler? StateChanged;
 
     /// <summary>Starts a recording, or stops the one running (the hotkey and the tray item do this).</summary>
     public Task ToggleAsync(CancellationToken ct = default) => _recorder.IsRecording ? StopAsync() : StartAsync(ct);
 
+    /// <summary>
+    /// Work that makes the first recording start quickly, done a moment after the app starts: finding out which
+    /// encoders work (or reading that from the cache), then looking for recordings a crash left unsaved.
+    /// </summary>
+    public async Task WarmUpAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3), _time, ct).ConfigureAwait(false);
+            if (_encoders.Problem is null)
+            {
+                await Task.Run(() => _encoders.DetectAsync(ct: ct), ct).ConfigureAwait(false);
+            }
+
+            await _interrupted.CheckAsync().ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // the app is closing
+        }
+    }
+
     public async Task StartAsync(CancellationToken ct = default)
     {
         if (_recorder.IsRecording)
         {
+            return;
+        }
+
+        if (_recorder.IsSaving)
+        {
+            _notifier.Notify("Recording", "The last recording is still being saved. Try again in a moment.", NotificationKind.Info);
             return;
         }
 
@@ -126,13 +160,16 @@ public sealed partial class RecordingController
                 monitor,
                 area,
                 recording.Fps,
-                EncoderPresets.FromLegacyQuality(recording.Quality),
+                recording.Quality,
                 recording.IncludeCursor,
                 recording.ShowClicks,
-                recording.Encoder == RecordingEncoder.Software ? EncoderPresets.Software : EncoderPresets.Auto,
+                recording.Encoder,
                 OutputPath(current, monitor, title),
                 recording.SystemAudio,
-                recording.Microphone);
+                recording.Microphone,
+                recording.Tracks,
+                recording.SystemAudioGain,
+                recording.MicrophoneGain);
             await _recorder.StartAsync(options, ct).ConfigureAwait(false);
             await _ui.InvokeAsync(() => ShowToolbar(monitor, current.Appearance.Theme)).ConfigureAwait(false);
         }
@@ -159,7 +196,9 @@ public sealed partial class RecordingController
         try
         {
             await _ui.InvokeAsync(CloseToolbar).ConfigureAwait(false);
+            var gains = (System: _recorder.SystemAudioGain, Microphone: _recorder.MicrophoneGain);
             var result = await _recorder.StopAsync().ConfigureAwait(false);
+            await RememberGainsAsync(gains.System, gains.Microphone).ConfigureAwait(false);
             _notifier.Notify(
                 "Recording saved",
                 Summary(result),
@@ -175,6 +214,15 @@ public sealed partial class RecordingController
         {
             _stopping = false;
         }
+    }
+
+    /// <summary>Volumes changed on the toolbar are used again next time.</summary>
+    private Task RememberGainsAsync(float system, float microphone)
+    {
+        var recording = _settings.Current.Recording;
+        return Math.Abs(recording.SystemAudioGain - system) < 0.001f && Math.Abs(recording.MicrophoneGain - microphone) < 0.001f
+            ? Task.CompletedTask
+            : _settings.UpdateAsync(s => s with { Recording = s.Recording with { SystemAudioGain = system, MicrophoneGain = microphone } });
     }
 
     public void TogglePause()

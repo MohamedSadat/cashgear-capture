@@ -13,8 +13,11 @@ namespace CashGear.Capture.Core.Settings;
 /// <summary>User settings, persisted as JSON. Immutable; change via <see cref="ISettingsService.UpdateAsync"/>.</summary>
 public sealed record AppSettings
 {
-    /// <summary>2: <c>output.copyToClipboard</c> moved to <c>afterCapture</c> (see <see cref="SettingsMigration"/>).</summary>
-    public const int CurrentSchemaVersion = 2;
+    /// <summary>
+    /// 2: <c>output.copyToClipboard</c> moved to <c>afterCapture</c>. 3: <c>recording.quality</c> is a preset instead of a
+    /// number, and <c>recording.encoder</c> an encoder id (see <see cref="SettingsMigration"/>).
+    /// </summary>
+    public const int CurrentSchemaVersion = 3;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
@@ -149,24 +152,28 @@ public enum AppTheme
 
 /// <summary>Screen recording.</summary>
 /// <param name="Fps">Frames per second: 15, 30 or 60.</param>
-/// <param name="Quality">Constant quality, 15 (best, biggest) to 35 (smallest); 23 is a good balance.</param>
+/// <param name="Quality">Small files to near lossless; Balanced is a good balance.</param>
 /// <param name="IncludeCursor">Show the mouse pointer.</param>
 /// <param name="ShowClicks">Draw a circle where the mouse is clicked.</param>
-/// <param name="Encoder">Hardware encoding when available, or always software.</param>
+/// <param name="Encoder"><c>auto</c> (the best that works here), <c>software</c>, or an encoder's id (see <see cref="Recording.EncoderPresets"/>).</param>
 /// <param name="SystemAudio">Record what the PC plays (the default output device).</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="DefaultMicrophone"/> for the Windows default, or a device ID.</param>
+/// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
+/// <param name="SystemAudioGain">System audio's volume in recordings, 1 as captured (0 to 4; set on the recording toolbar).</param>
+/// <param name="MicrophoneGain">The microphone's volume in recordings, 1 as captured (0 to 4; set on the recording toolbar).</param>
 public sealed record RecordingSettings(
     int Fps = 30,
-    int Quality = RecordingSettings.DefaultQuality,
+    Recording.QualityPreset Quality = Recording.QualityPreset.Balanced,
     bool IncludeCursor = true,
     bool ShowClicks = true,
-    Recording.RecordingEncoder Encoder = Recording.RecordingEncoder.Auto,
+    string Encoder = Recording.EncoderPresets.Auto,
     bool SystemAudio = true,
-    string? Microphone = null)
+    string? Microphone = null,
+    Recording.AudioTrackLayout Tracks = Recording.AudioTrackLayout.Mixed,
+    float SystemAudioGain = 1,
+    float MicrophoneGain = 1)
 {
-    public const int DefaultQuality = 23;
-    public const int MinQuality = 15;
-    public const int MaxQuality = 35;
+    public const float MaxGain = 4;
 
     /// <summary><see cref="Microphone"/> value for "whichever microphone Windows uses by default".</summary>
     public const string DefaultMicrophone = "default";
@@ -176,10 +183,15 @@ public sealed record RecordingSettings(
     public RecordingSettings Normalize() => this with
     {
         Fps = FrameRates.MinBy(f => Math.Abs(f - Fps)),
-        Quality = Math.Clamp(Quality, MinQuality, MaxQuality),
-        Encoder = Enum.IsDefined(Encoder) ? Encoder : Recording.RecordingEncoder.Auto,
+        Quality = Enum.IsDefined(Quality) ? Quality : Recording.QualityPreset.Balanced,
+        Encoder = string.IsNullOrWhiteSpace(Encoder) ? Recording.EncoderPresets.Auto : Encoder.Trim().ToLowerInvariant(),
         Microphone = string.IsNullOrWhiteSpace(Microphone) ? null : Microphone.Trim(),
+        Tracks = Enum.IsDefined(Tracks) ? Tracks : Recording.AudioTrackLayout.Mixed,
+        SystemAudioGain = Gain(SystemAudioGain),
+        MicrophoneGain = Gain(MicrophoneGain),
     };
+
+    private static float Gain(float value) => float.IsFinite(value) ? Math.Clamp(value, 0, MaxGain) : 1;
 }
 
 /// <summary>Capture Text (OCR).</summary>

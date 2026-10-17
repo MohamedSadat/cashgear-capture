@@ -35,6 +35,12 @@ public sealed record MicrophoneChoice(string? Id, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>An encoder setting: <c>auto</c>, <c>software</c> or an encoder's id, with what detection found.</summary>
+public sealed record EncoderChoice(string Id, string Label)
+{
+    public override string ToString() => Label;
+}
+
 /// <summary>A number with a label, e.g. how many captures the history keeps.</summary>
 public sealed record CountChoice(int Value, string Label)
 {
@@ -47,8 +53,13 @@ public sealed class EnumLabelConverter : IValueConverter
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value switch
     {
         ImageFileFormat.Png => "PNG (lossless)",
-        Core.Recording.RecordingEncoder.Auto => "Hardware when available (recommended)",
-        Core.Recording.RecordingEncoder.Software => "Software (the encoder built into Windows)",
+        Core.Recording.QualityPreset.Small => "Small files",
+        Core.Recording.QualityPreset.Balanced => "Balanced (recommended)",
+        Core.Recording.QualityPreset.High => "High quality",
+        Core.Recording.QualityPreset.Lossless => "Near lossless (very large files)",
+        Core.Recording.AudioTrackLayout.Mixed => "One track with everything (plays everywhere)",
+        Core.Recording.AudioTrackLayout.Separate => "One track per source (for editing)",
+        Core.Recording.AudioTrackLayout.Both => "The mix, then one track per source",
         ImageFileFormat.Jpeg => "JPEG",
         ImageFileFormat.Bmp => "BMP",
         CaptureBackend.Auto => "Automatic (recommended)",

@@ -389,63 +389,64 @@ public sealed class RecordingSummaryTests
     }
 }
 
-public sealed class RecordingToolbarTests
+/// <summary>A recorder for the toolbar's tests: fixed sound, settable level and clock, mute and volumes kept.</summary>
+internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : IScreenRecorder
 {
-    private sealed class FakeRecorder(RecordingSound sound, string? note = null) : IScreenRecorder
+    public float Level { get; set; }
+
+    public bool IsRecording => true;
+
+    public bool IsPaused { get; set; }
+
+    public TimeSpan Elapsed { get; set; }
+
+    public RecordingSound Sound => sound;
+
+    public string? SoundNote => note;
+
+    public bool MicrophoneMuted { get; set; }
+
+    public bool SystemAudioMuted { get; set; }
+
+    public float MicrophoneGain { get; set; } = 1;
+
+    public float SystemAudioGain { get; set; } = 1;
+
+    public bool IsSaving => false;
+
+    public double SaveProgress => 0;
+
+    public event EventHandler? StateChanged
     {
-        public float Level { get; set; }
-
-        public bool IsRecording => true;
-
-        public bool IsPaused { get; set; }
-
-        public TimeSpan Elapsed { get; set; }
-
-        public RecordingSound Sound => sound;
-
-        public string? SoundNote => note;
-
-        public bool MicrophoneMuted { get; set; }
-
-        public bool SystemAudioMuted { get; set; }
-
-        public float MicrophoneGain { get; set; } = 1;
-
-        public float SystemAudioGain { get; set; } = 1;
-
-        public bool IsSaving => false;
-
-        public double SaveProgress => 0;
-
-        public event EventHandler? StateChanged
-        {
-            add { }
-            remove { }
-        }
-
-        public event EventHandler<string>? Warning
-        {
-            add { }
-            remove { }
-        }
-
-        public event EventHandler<string>? Failed
-        {
-            add { }
-            remove { }
-        }
-
-        public float TakeSoundLevel() => Level;
-
-        public Task StartAsync(RecordingOptions options, CancellationToken ct = default) => Task.CompletedTask;
-
-        public void Pause() => IsPaused = true;
-
-        public void Resume() => IsPaused = false;
-
-        public Task<RecordingResult> StopAsync(CancellationToken ct = default) => throw new NotSupportedException();
+        add { }
+        remove { }
     }
 
+    public event EventHandler<string>? Warning
+    {
+        add { }
+        remove { }
+    }
+
+    public event EventHandler<string>? Failed
+    {
+        add { }
+        remove { }
+    }
+
+    public float TakeSoundLevel() => Level;
+
+    public Task StartAsync(RecordingOptions options, CancellationToken ct = default) => Task.CompletedTask;
+
+    public void Pause() => IsPaused = true;
+
+    public void Resume() => IsPaused = false;
+
+    public Task<RecordingResult> StopAsync(CancellationToken ct = default) => throw new NotSupportedException();
+}
+
+public sealed class RecordingToolbarTests
+{
     [Fact]
     public void Sound_shows_a_level_and_the_microphone_can_be_muted()
     {
@@ -489,6 +490,61 @@ public sealed class RecordingToolbarTests
 
         vm.HasSound.Should().BeFalse();
         vm.IsSoundMissing.Should().BeFalse();
+    }
+
+    /// <summary>The window itself: its XAML loads, and the Sound panel opens inside it (a popup would be in the recording).</summary>
+    [Fact(Timeout = 30_000)]
+    [Trait("Category", InteractiveDesktop.Category)]
+    public Task The_toolbar_window_opens_its_sound_panel_inside_itself()
+    {
+        InteractiveDesktop.Require();
+        return StaDispatcher.RunAsync(async () =>
+        {
+            var vm = new RecordingToolbarViewModel(new FakeRecorder(RecordingSound.System | RecordingSound.Microphone), () => { }, () => { });
+            var monitor = new Win32MonitorService(NullLogger<Win32MonitorService>.Instance).GetMonitors().First(m => m.IsPrimary);
+            var window = new RecordingToolbarWindow(vm, Core.Settings.AppTheme.Light, monitor.WorkArea);
+            try
+            {
+                window.Show();
+                await Task.Delay(200);
+                var closed = window.ActualHeight;
+
+                vm.ToggleSoundPanelCommand.Execute(null);
+                window.UpdateLayout();
+                await Task.Delay(200);
+
+                window.ActualHeight.Should().BeGreaterThan(closed + 30, "the panel adds two rows to the toolbar");
+                System.Windows.Media.VisualTreeHelper.GetChildrenCount(window).Should().BeGreaterThan(0);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void The_sound_panel_sets_each_sources_volume_and_mute()
+    {
+        var recorder = new FakeRecorder(RecordingSound.System | RecordingSound.Microphone);
+        var vm = new RecordingToolbarViewModel(recorder, () => { }, () => { });
+
+        vm.HasSystemAudio.Should().BeTrue();
+        vm.IsSoundPanelOpen.Should().BeFalse();
+        vm.ToggleSoundPanelCommand.Execute(null);
+        vm.IsSoundPanelOpen.Should().BeTrue();
+        vm.SystemAudioVolume.Should().Be(100);
+        vm.MicrophoneVolumeText.Should().Be("100%");
+
+        vm.SystemAudioVolume = 50;
+        vm.MicrophoneVolume = 350;
+        vm.SystemAudioMuted = true;
+
+        recorder.SystemAudioGain.Should().Be(0.5f);
+        recorder.MicrophoneGain.Should().Be(2f, "the toolbar goes up to 200%");
+        vm.MicrophoneVolumeText.Should().Be("200%");
+        recorder.SystemAudioMuted.Should().BeTrue();
+        recorder.MicrophoneMuted.Should().BeFalse();
     }
 }
 

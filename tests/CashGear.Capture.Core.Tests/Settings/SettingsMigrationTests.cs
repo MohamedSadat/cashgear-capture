@@ -90,7 +90,7 @@ public sealed class SettingsMigrationTests : IDisposable
         service.Current.AfterCapture.Save.Should().BeTrue();
         service.Current.Capture.HideDelayMs.Should().Be(300);
         var rewritten = File.ReadAllText(_paths.SettingsFile);
-        rewritten.Should().Contain("\"schemaVersion\": 2").And.Contain("\"afterCapture\"").And.NotContain("\"output\": {\n    \"copyToClipboard\"");
+        rewritten.Should().Contain("\"schemaVersion\": 3").And.Contain("\"afterCapture\"").And.NotContain("\"output\": {\n    \"copyToClipboard\"");
         JsonNode.Parse(rewritten)!["output"]!.AsObject().ContainsKey("copyToClipboard").Should().BeFalse();
     }
 }

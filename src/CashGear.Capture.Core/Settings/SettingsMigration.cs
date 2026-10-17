@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using CashGear.Capture.Core.Recording;
 
 namespace CashGear.Capture.Core.Settings;
 
@@ -30,6 +31,21 @@ public static class SettingsMigration
             SetIfMissing(after, "save", JsonValue.Create(true));
             SetIfMissing(after, "copyToClipboard", copy ?? JsonValue.Create(true));
             SetIfMissing(after, "openEditor", JsonValue.Create(false));
+        }
+
+        if (version < 3 && Property(root, "recording") is JsonObject recording)
+        {
+            // v3: the 15-35 quality number (x264's scale, when ffmpeg.exe recorded) becomes the nearest preset. The
+            // encoder's old values "Auto" and "Software" are valid ids already.
+            var quality = Remove(recording, "quality");
+            if (quality is JsonValue number && number.TryGetValue(out int legacy))
+            {
+                recording["quality"] = JsonValue.Create(EncoderPresets.FromLegacyQuality(legacy).ToString());
+            }
+            else if (quality is not null)
+            {
+                recording["quality"] = quality;
+            }
         }
 
         return version;

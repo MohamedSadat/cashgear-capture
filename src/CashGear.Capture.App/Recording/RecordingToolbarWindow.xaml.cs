@@ -15,7 +15,7 @@ namespace CashGear.Capture.App.Recording;
 
 /// <summary>
 /// The recording toolbar's state: elapsed time and sound level (refreshed a few times a second), what sound is
-/// recorded, the microphone's mute, pause and stop.
+/// recorded, the microphone's mute, each source's mute and volume (the Sound panel), pause and stop.
 /// </summary>
 public sealed partial class RecordingToolbarViewModel : ObservableObject
 {
@@ -34,8 +34,12 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
         var sound = recorder.Sound;
         HasSound = sound != RecordingSound.None;
         HasMicrophone = sound.HasFlag(RecordingSound.Microphone);
+        HasSystemAudio = sound.HasFlag(RecordingSound.System);
         Refresh();
     }
+
+    /// <summary>The highest volume the toolbar offers, in percent (settings.json allows up to 400).</summary>
+    public const double MaxVolume = 200;
 
     [ObservableProperty]
     private string _elapsedText = "0:00";
@@ -52,6 +56,13 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(MicrophoneText))]
     private bool _microphoneMuted;
 
+    [ObservableProperty]
+    private bool _systemAudioMuted;
+
+    /// <summary>The Sound panel (mute and volume for each source) is open.</summary>
+    [ObservableProperty]
+    private bool _isSoundPanelOpen;
+
     /// <summary>Why sound that was asked for is missing (shown as the tooltip of a crossed-out speaker).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSoundMissing), nameof(SoundToolTip))]
@@ -64,6 +75,36 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     public bool HasSound { get; }
 
     public bool HasMicrophone { get; }
+
+    public bool HasSystemAudio { get; }
+
+    /// <summary>The microphone's volume in the recording, in percent of what it captures.</summary>
+    public double MicrophoneVolume
+    {
+        get => Math.Round(_recorder.MicrophoneGain * 100);
+        set
+        {
+            _recorder.MicrophoneGain = (float)(Math.Clamp(value, 0, MaxVolume) / 100);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(MicrophoneVolumeText));
+        }
+    }
+
+    /// <summary>System audio's volume in the recording, in percent of what it captures.</summary>
+    public double SystemAudioVolume
+    {
+        get => Math.Round(_recorder.SystemAudioGain * 100);
+        set
+        {
+            _recorder.SystemAudioGain = (float)(Math.Clamp(value, 0, MaxVolume) / 100);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SystemAudioVolumeText));
+        }
+    }
+
+    public string MicrophoneVolumeText => $"{MicrophoneVolume:0}%";
+
+    public string SystemAudioVolumeText => $"{SystemAudioVolume:0}%";
 
     public bool IsSoundMissing => SoundNote is not null && !HasSound;
 
@@ -84,8 +125,13 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
         IsPaused = _recorder.IsPaused;
         SoundLevel = HasSound ? MeterLevel(_recorder.TakeSoundLevel()) : 0;
         MicrophoneMuted = _recorder.MicrophoneMuted;
+        SystemAudioMuted = _recorder.SystemAudioMuted;
         SoundNote = _recorder.SoundNote;
     }
+
+    partial void OnMicrophoneMutedChanged(bool value) => _recorder.MicrophoneMuted = value;
+
+    partial void OnSystemAudioMutedChanged(bool value) => _recorder.SystemAudioMuted = value;
 
     [RelayCommand]
     private void Pause()
@@ -100,6 +146,9 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
         _recorder.MicrophoneMuted = !_recorder.MicrophoneMuted;
         Refresh();
     }
+
+    [RelayCommand]
+    private void ToggleSoundPanel() => IsSoundPanelOpen = !IsSoundPanelOpen;
 
     [RelayCommand]
     private void Stop() => _stop();

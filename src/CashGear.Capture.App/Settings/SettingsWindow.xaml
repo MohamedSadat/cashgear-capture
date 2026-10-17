@@ -166,21 +166,19 @@
               <TextBlock Text="Frames per second" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" ItemsSource="{Binding FrameRates}" SelectedItem="{Binding RecordingFps}" ItemStringFormat="{}{0} fps"
                         HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="Frames per second" />
-              <TextBlock Grid.Row="1" VerticalAlignment="Center" Margin="0,10,0,0">
-                <Run Text="Quality:" />
-                <Run Text="{Binding RecordingQuality, Mode=OneWay}" />
-              </TextBlock>
-              <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,10,0,0">
-                <TextBlock DockPanel.Dock="Left" Text="Best" Opacity="0.7" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <TextBlock DockPanel.Dock="Right" Text="Smallest" Opacity="0.7" VerticalAlignment="Center" Margin="8,0,0,0" />
-                <Slider Minimum="15" Maximum="35" Value="{Binding RecordingQuality}" IsSnapToTickEnabled="True" TickFrequency="1"
-                        AutomationProperties.Name="Quality" />
-              </DockPanel>
+              <TextBlock Grid.Row="1" Text="Quality" VerticalAlignment="Center" Margin="0,10,0,0" />
+              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding QualityPresets}" SelectedItem="{Binding RecordingQuality}" ItemTemplate="{StaticResource EnumItem}"
+                        HorizontalAlignment="Left" MinWidth="260" Margin="0,10,0,0" AutomationProperties.Name="Quality" />
               <TextBlock Grid.Row="2" Text="Encoder" VerticalAlignment="Center" Margin="0,10,0,0" />
-              <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Encoders}" SelectedItem="{Binding RecordingEncoder}" ItemTemplate="{StaticResource EnumItem}"
-                        HorizontalAlignment="Left" MinWidth="260" Margin="0,10,0,0" AutomationProperties.Name="Encoder" />
+              <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,10,0,0">
+                <ComboBox ItemsSource="{Binding Encoders}" SelectedItem="{Binding RecordingEncoder}" DisplayMemberPath="Label"
+                          MinWidth="260" MaxWidth="420" AutomationProperties.Name="Encoder" />
+                <Button Content="Check again" Command="{Binding RedetectEncodersCommand}" Margin="8,0,0,0" Padding="10,2"
+                        ToolTip="Test every encoder again (after a driver update or a new graphics card)" />
+              </StackPanel>
             </Grid>
-            <TextBlock Style="{StaticResource Hint}" Text="23 is a good balance. Hardware encoding (NVIDIA, Intel, AMD) uses little CPU; it is tried first and x264 is used when it doesn't work on this PC." />
+            <TextBlock Style="{StaticResource Hint}" Text="{Binding EncoderStatus}" />
+            <TextBlock Style="{StaticResource Hint}" Text="Automatic uses the graphics card's encoder when it works here, which leaves the CPU free; otherwise the encoder built into Windows. If an encoder stops working during a recording, another takes over and the rest is saved as a second file." />
 
             <TextBlock Style="{StaticResource Section}" Text="Mouse" />
             <CheckBox Margin="0,2" Content="Show the mouse pointer" IsChecked="{Binding RecordingIncludeCursor}" />
@@ -198,9 +196,18 @@
                         HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Microphone" />
             </Grid>
             <TextBlock Style="{StaticResource Hint}" Text="{Binding SpeakersStatus}" />
-            <TextBlock Style="{StaticResource Hint}" Text="Sound is saved in the MP4 as AAC, mixed when both are on. Pause pauses the sound too. Without a sound device the video is recorded without sound, and the notification says so." />
+            <Grid Margin="0,8,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="With both" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding TrackLayouts}" SelectedItem="{Binding RecordingTracks}" ItemTemplate="{StaticResource EnumItem}"
+                        HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Sound tracks" />
+            </Grid>
+            <TextBlock Style="{StaticResource Hint}" Text="Sound is saved in the MP4 as AAC. Players play the first track only, so a track per source is for video editors. Volume and mute for each source are on the recording toolbar. Pause pauses the sound too. Without a sound device the video is recorded without sound, and the notification says so." />
 
-            <TextBlock Style="{StaticResource Section}" Text="ffmpeg" />
+            <TextBlock Style="{StaticResource Section}" Text="FFmpeg" />
             <TextBlock Text="{Binding FfmpegStatus}" TextWrapping="Wrap">
               <TextBlock.Style>
                 <Style TargetType="TextBlock">
@@ -214,7 +221,7 @@
                 </Style>
               </TextBlock.Style>
             </TextBlock>
-            <TextBlock Style="{StaticResource Hint}" Text="Start and stop a recording from the tray or with the recording hotkey. Recordings are saved as MP4 in the capture folder." />
+            <TextBlock Style="{StaticResource Hint}" Text="Start and stop a recording from the tray or with the recording hotkey. Recordings are saved as MP4 in the capture folder. While recording, the video is written to a temporary file, so if the app or the PC stops, the recording can be saved from the tray menu afterwards." />
           </StackPanel>
         </ScrollViewer>
       </TabItem>

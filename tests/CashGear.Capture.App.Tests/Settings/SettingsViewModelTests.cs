@@ -252,21 +252,116 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
-    public async Task Recording_settings_are_loaded_and_saved()
+    public async Task Recording_settings_are_loaded_and_saved_keeping_the_toolbar_volumes()
     {
-        _settings.Current = _settings.Current with { Recording = new RecordingSettings(15, 28, false, false, RecordingEncoder.Software) };
+        _settings.Current = _settings.Current with
+        {
+            Recording = new RecordingSettings(15, QualityPreset.Small, false, false, "software", MicrophoneGain: 1.5f),
+        };
         using var vm = Create();
         vm.RecordingFps.Should().Be(15);
-        vm.RecordingQuality.Should().Be(28);
-        vm.RecordingEncoder.Should().Be(RecordingEncoder.Software);
-        vm.IsFfmpegMissing.Should().BeTrue("this view model was given no ffmpeg");
+        vm.RecordingQuality.Should().Be(QualityPreset.Small);
+        vm.RecordingEncoder!.Id.Should().Be("software");
+        vm.RecordingTracks.Should().Be(AudioTrackLayout.Mixed);
+        vm.IsFfmpegMissing.Should().BeTrue("this view model was given no FFmpeg");
 
         vm.RecordingFps = 60;
-        vm.RecordingQuality = 20;
+        vm.RecordingQuality = QualityPreset.High;
         vm.RecordingShowClicks = true;
+        vm.RecordingTracks = AudioTrackLayout.Both;
+        vm.RecordingEncoder = vm.Encoders.Single(e => e.Id == "h264_mf_hw");
         await vm.ApplyCommand.ExecuteAsync(null);
 
-        _settings.Current.Recording.Should().Be(new RecordingSettings(60, 20, false, true, RecordingEncoder.Software));
+        _settings.Current.Recording.Should().Be(new RecordingSettings(
+            60, QualityPreset.High, false, true, "h264_mf_hw", Tracks: AudioTrackLayout.Both, MicrophoneGain: 1.5f));
+    }
+
+    [Fact]
+    public async Task The_encoder_list_says_what_works_here_and_can_be_checked_again()
+    {
+        var encoders = new FakeEncoders(
+        [
+            new EncoderProbe("h264_nvenc", false, "Cannot load cuMemAllocAsync"),
+            new EncoderProbe("h264_mf_hw", true, "NVIDIA H.264 Encoder MFT"),
+            new EncoderProbe("h264_mf", true, "H264 Encoder MFT"),
+            new EncoderProbe("libopenh264", true),
+        ]);
+        using var vm = Create(encoders: encoders);
+
+        vm.Encoders.Select(e => e.Id).Should().StartWith(["auto", "software"]).And.Contain(EncoderPresets.All.Select(c => c.Id));
+        vm.Encoders.Single(e => e.Id == "h264_nvenc").Label.Should().Be("NVIDIA NVENC (H.264) (not available here)");
+        vm.Encoders.Single(e => e.Id == "h264_mf_hw").Label.Should().Be("Windows hardware encoder (H.264): NVIDIA H.264 Encoder MFT");
+        vm.EncoderStatus.Should().Be("Works on this PC: Windows hardware encoder (H.264), Windows software encoder (H.264), OpenH264 (software).");
+        vm.RecordingEncoder!.Id.Should().Be("auto");
+        vm.FfmpegStatus.Should().Contain("FFmpeg n9.0.2");
+
+        encoders.Next = [new EncoderProbe("h264_nvenc", true)];
+        vm.RecordingEncoder = vm.Encoders.Single(e => e.Id == "libopenh264");
+        await vm.RedetectEncodersCommand.ExecuteAsync(null);
+
+        encoders.Forced.Should().BeTrue();
+        vm.Encoders.Single(e => e.Id == "h264_nvenc").Label.Should().Be("NVIDIA NVENC (H.264)");
+        vm.RecordingEncoder!.Id.Should().Be("libopenh264", "the choice is kept");
+        vm.EncoderStatus.Should().Be("Works on this PC: NVIDIA NVENC (H.264).");
+    }
+
+    /// <summary>The window itself: its XAML loads and the Recording tab shows the new choices.</summary>
+    [Fact(Timeout = 30_000)]
+    [Trait("Category", CashGear.Capture.Engine.Tests.InteractiveDesktop.Category)]
+    public Task The_settings_window_shows_the_recording_tab()
+    {
+        CashGear.Capture.Engine.Tests.InteractiveDesktop.Require();
+        return StaDispatcher.RunAsync(async () =>
+        {
+            using var vm = Create(encoders: new FakeEncoders([new EncoderProbe("h264_mf", true, "H264 Encoder MFT")]));
+            var window = new SettingsWindow(vm, AppTheme.Light);
+            try
+            {
+                window.Show();
+                var tabs = FindAll<System.Windows.Controls.TabControl>(window).Single();
+                tabs.SelectedItem = tabs.Items.Cast<System.Windows.Controls.TabItem>().Single(t => (string)t.Header == "Recording");
+                window.UpdateLayout();
+                await Task.Delay(300);
+
+                var boxes = FindAll<System.Windows.Controls.ComboBox>(window).Where(b => b.IsVisible).ToList();
+                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Quality" && b.SelectedItem is QualityPreset);
+                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Encoder" && b.SelectedItem is EncoderChoice);
+                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Sound tracks");
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    private static IEnumerable<T> FindAll<T>(System.Windows.DependencyObject root)
+        where T : System.Windows.DependencyObject
+    {
+        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is T match)
+            {
+                yield return match;
+            }
+
+            foreach (var inner in FindAll<T>(child))
+            {
+                yield return inner;
+            }
+        }
+    }
+
+    [Fact]
+    public void An_encoder_set_by_hand_that_is_not_known_stays_chosen()
+    {
+        _settings.Current = _settings.Current with { Recording = new RecordingSettings(Encoder: "future_encoder") };
+
+        using var vm = Create();
+
+        vm.RecordingEncoder!.Id.Should().Be("future_encoder");
+        vm.RecordingEncoder.Label.Should().Contain("unknown");
     }
 
     [Fact]
@@ -299,7 +394,7 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Microphones.Should().Contain(vm.RecordingMicrophone);
         vm.SpeakersStatus.Should().StartWith("No sound output device");
 
-        vm.RecordingQuality = 30;
+        vm.RecordingQuality = QualityPreset.Small;
         await vm.ApplyCommand.ExecuteAsync(null);
         _settings.Current.Recording.Microphone.Should().Be("{unplugged}", "only choosing another microphone replaces it");
     }
@@ -354,8 +449,32 @@ public sealed class SettingsViewModelTests : IDisposable
         _settings.Current.Updates.FeedUrl.Should().Be(@"\\server\capture-releases", "the address is only edited in the file and must survive");
     }
 
-    private SettingsViewModel Create(IAudioDevices? audio = null) =>
-        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance, audio: audio);
+    private SettingsViewModel Create(IAudioDevices? audio = null, IRecordingEncoders? encoders = null) =>
+        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance, encoders: encoders, audio: audio);
+
+    private sealed class FakeEncoders(IReadOnlyList<EncoderProbe> detected) : IRecordingEncoders
+    {
+        public IReadOnlyList<EncoderProbe>? Next { get; set; }
+
+        public bool Forced { get; private set; }
+
+        public string? Problem => null;
+
+        public string? FfmpegVersion => "n9.0.2";
+
+        public IReadOnlyList<EncoderProbe>? Detected { get; private set; } = detected;
+
+        public Task<IReadOnlyList<EncoderProbe>> DetectAsync(bool force = false, CancellationToken ct = default)
+        {
+            Forced |= force;
+            if (force && Next is not null)
+            {
+                Detected = Next;
+            }
+
+            return Task.FromResult(Detected!);
+        }
+    }
 
     private sealed class FakeAudioDevices(params AudioDevice[] microphones) : IAudioDevices
     {
