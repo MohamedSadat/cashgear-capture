@@ -39,6 +39,9 @@ internal sealed partial class InstancePipeServer(
 
     private async Task ServeOneAsync(CancellationToken ct)
     {
+        // CurrentUserOnly admits (and makes owner) the token's default owner: the user, or Administrators when this
+        // instance runs elevated. An elevated instance thus refuses launches that aren't elevated, on purpose: it would
+        // otherwise take commands from any program of the user's. Those launches say so (HandOffResult.InstanceElevated).
         var server = new NamedPipeServerStream(
             InstanceNames.PipeName,
             PipeDirection.In,

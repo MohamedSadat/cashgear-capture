@@ -569,8 +569,22 @@ Lifts Phase 7's "No audio" limitation.
 - **The tray icon could still be refused after installing**, for good, with "Windows did not let it add its icon" after 2 minutes. An earlier copy had been installed from a shell started by a packaged app (Claude's desktop app). Windows redirects that app's AppData writes, so the copy landed in `%LocalAppData%\Packages\<package>\LocalCache\Local\CashGear.Capture` while still seeing the usual path. Both copies therefore computed the same icon id, and Windows had tied it to the hidden copy's file. Restarting the real install didn't help, and neither did deleting the hidden copy. When the usual id is refused, the app now tries two fallback ids, each stable for its path. The usual id is unchanged, so existing installs keep their "always show this icon" choice.
 - The message shown after 2 minutes of refusals no longer says a restart usually helps. It names the likely causes (no taskbar, or other copies holding the icon) and the log folder.
 - **The app could not exit while that message was open.** It was a message box, which runs its own modal loop, so WPF could not finish exiting until OK was clicked. On 2026-10-16 an `--exit` logged "UI exiting", but the process stayed alive until the user clicked OK. A restart to update would have waited the same way, and uninstalling only got past it by stopping the app after 20 s. The message (same text, warning icon and OK button) is now a small window of the app, which the app closes when it exits.
+- **A copy running as administrator ignored every launch that wasn't, without a word.** Starting the app again, `--exit` or a capture switch from a normal prompt did nothing (seen on 2026-10-16 while troubleshooting the tray icon). Later launches hand their command over through a pipe that .NET restricts to the token's default owner. For an elevated process that owner is Administrators, not the user, so only elevated processes can open its pipe. That stays: otherwise any program the user runs could make an elevated process capture, record or exit. Such a launch now shows a message saying the copy runs as administrator and how to use or close it, then exits with code 1. The log also notes when a copy starts as administrator.
+- **An elevated launch couldn't reach a normal copy either.** `--exit` from an administrator prompt failed with "not owned by the current user", because .NET's own check expected the pipe to belong to Administrators. The launch now checks the pipe's owner itself: the user, or Administrators when the launch is elevated too. It connects for identification only, so the copy it reaches can't act as it.
 
 ### Tested
-- **551 automated tests** (549 pass, 2 explicit). New: the usual icon id is pinned to its 1.0.0 value; fallback ids differ from it, from each other and from another path's, and don't change with the path's case. The message after the last refusal is shown while the UI thread exits the way the app does; the thread must finish within 10 s and the message must close (with a message box in its place, this test fails after 10 s). The message names the log folder.
-- **Manual on this PC**: the conflict reproduced with two copies of the development build at one path, one in Claude's virtualized AppData and one in the real AppData. The fix was confirmed on it (see TESTING.md).
-- **Manual on this PC**: `--exit` while the message was open exited in about 1 s, with a temporary build that always gives up after 2 attempts (see TESTING.md).
+- **561 automated tests** (559 pass, 2 explicit). New:
+  - the usual icon id is pinned to its 1.0.0 value; fallback ids differ from it, from each other and from another path's, and don't change with the path's case;
+  - the message after the last refusal is shown while the UI thread exits the way the app does; the thread must finish within 10 s and the message must close (with a message box in its place, this test fails after 10 s);
+  - that message names the log folder;
+  - a command reaches a pipe created like the instance's;
+  - nothing listening is "no answer";
+  - a pipe that shuts the user out reads as a copy running as administrator;
+  - which pipe owners a normal and an elevated launch accept;
+  - the messages name the switch and say how to close the copy.
+- **Manual on this PC**: the tray icon conflict reproduced with two copies of the development build at one path, one in Claude's virtualized AppData and one in the real AppData. The fix was confirmed on it (see TESTING.md).
+- **Manual on this PC**: `--exit` while the tray icon message was open exited in about 1 s, with a temporary build that always gives up after 2 attempts (see TESTING.md).
+- **Manual on this PC** (see TESTING.md). With the fixed build running as administrator, a normal start, `--exit` and `--capture-region` each showed the message and exited with code 1; 1.0.0's `--exit` exited silently. With a normal copy running, an elevated `--exit` closed it, where 1.0.0's failed.
+
+### Known limitations
+- Uninstalling can't close a copy that runs as administrator: Windows refuses both the exit request and ending the process (both are logged). Close it from its tray icon first.

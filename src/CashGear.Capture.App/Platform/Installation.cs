@@ -64,7 +64,7 @@ internal static class InstallHooks
         }
 
         log.Information("Uninstalling: asking the running copy to exit");
-        InstancePipeClient.TrySend(InstanceNames.PipeName, InstanceCommand.Exit, TimeSpan.FromSeconds(3));
+        InstancePipeClient.Send(InstanceNames.PipeName, InstanceCommand.Exit, TimeSpan.FromSeconds(3));
         var waited = Stopwatch.StartNew();
         while (RunningFrom(installRoot).Count > 0 && waited.Elapsed < grace)
         {

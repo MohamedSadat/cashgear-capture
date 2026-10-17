@@ -1,3 +1,4 @@
+using System.Windows;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.SingleInstance;
@@ -27,7 +28,14 @@ public static class Program
             if (!guard.IsPrimary)
             {
                 log.Information("Another instance is running; forwarding {Command}", command);
-                return InstancePipeClient.TrySend(InstanceNames.PipeName, command, TimeSpan.FromSeconds(3)) ? 0 : 1;
+                var handOff = InstancePipeClient.Send(InstanceNames.PipeName, command, TimeSpan.FromSeconds(3));
+                if (handOff == HandOffResult.InstanceElevated)
+                {
+                    // Exiting silently made the launch (or --exit) look ignored.
+                    MessageBox.Show(HandOffMessages.InstanceElevated(command), HandOffMessages.Caption, MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+
+                return handOff == HandOffResult.Delivered ? 0 : 1;
             }
 
             if (command == InstanceCommand.Exit)
@@ -37,9 +45,10 @@ public static class Program
             }
 
             log.Information(
-                "Starting CashGear Capture {Version} (PID {ProcessId}) on {Os} from {Path}{Install}",
+                "Starting CashGear Capture {Version} (PID {ProcessId}{Elevated}) on {Os} from {Path}{Install}",
                 BuildInfo.Version,
                 Environment.ProcessId,
+                Elevation.IsElevated ? ", as administrator" : string.Empty,
                 Environment.OSVersion.VersionString,
                 AppContext.BaseDirectory,
                 install.FirstRun ? " (first run after install)" : install.UpdatedTo is { } v ? $" (updated to {v})" : string.Empty);
