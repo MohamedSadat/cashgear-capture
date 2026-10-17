@@ -13,8 +13,8 @@ namespace CashGear.Capture.Media;
 /// throws and returns quickly for levels nobody wants.
 /// </summary>
 /// <remarks>
-/// Warnings and errors logged on a thread inside <see cref="Capture"/> are also collected, so a failed call can say
-/// what FFmpeg said about it (for example why a hardware encoder won't open).
+/// Messages logged on a thread inside <see cref="Capture"/> (warnings and errors, or more) are also collected, so a
+/// failed call can say what FFmpeg said about it (for example why a hardware encoder won't open).
 /// </remarks>
 public static unsafe partial class FfmpegLog
 {
@@ -27,10 +27,13 @@ public static unsafe partial class FfmpegLog
     private static List<string>? _captured;
 
     [ThreadStatic]
+    private static int _captureLevel;
+
+    [ThreadStatic]
     private static bool _midLine;
 
-    /// <summary>Starts collecting this thread's FFmpeg warnings and errors until the scope is disposed.</summary>
-    public static Scope Capture() => new();
+    /// <summary>Starts collecting this thread's FFmpeg messages up to <paramref name="maxLevel"/> (warnings and errors by default) until the scope is disposed.</summary>
+    public static Scope Capture(int maxLevel = ffmpeg.AV_LOG_WARNING) => new(Math.Min(maxLevel, ffmpeg.AV_LOG_INFO));
 
     /// <summary>Installs the callback once per process; later calls only replace the logger.</summary>
     internal static void Install(ILogger logger)
@@ -60,7 +63,7 @@ public static unsafe partial class FfmpegLog
                 : level <= ffmpeg.AV_LOG_WARNING ? LogLevel.Information
                 : LogLevel.Debug;
             var logger = Volatile.Read(ref _logger);
-            var capture = _captured is not null && level <= ffmpeg.AV_LOG_WARNING;
+            var capture = _captured is not null && level <= _captureLevel;
             if (!capture && !logger.IsEnabled(logLevel))
             {
                 return;
@@ -97,12 +100,15 @@ public static unsafe partial class FfmpegLog
     public sealed class Scope : IDisposable
     {
         private readonly List<string>? _outer;
+        private readonly int _outerLevel;
         private readonly List<string> _messages = [];
 
-        internal Scope()
+        internal Scope(int maxLevel)
         {
             _outer = _captured;
+            _outerLevel = _captureLevel;
             _captured = _messages;
+            _captureLevel = maxLevel;
         }
 
         public IReadOnlyList<string> Messages => _messages;
@@ -115,6 +121,7 @@ public static unsafe partial class FfmpegLog
             if (ReferenceEquals(_captured, _messages))
             {
                 _captured = _outer;
+                _captureLevel = _outerLevel;
             }
         }
     }
