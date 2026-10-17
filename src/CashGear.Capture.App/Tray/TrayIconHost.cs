@@ -1,3 +1,4 @@
+using System.Media;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -6,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Interop.Native;
 using H.NotifyIcon;
 using H.NotifyIcon.Core;
@@ -14,16 +16,22 @@ using Microsoft.Extensions.Logging;
 namespace CashGear.Capture.App.Tray;
 
 /// <summary>Owns the notification-area icon defined in <c>TrayIconResources.xaml</c>.</summary>
-internal sealed partial class TrayIconHost(IUiDispatcher ui, ILogger<TrayIconHost> logger) : ITrayNotifier, IDisposable
+internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISettingsService settings, ILogger<TrayIconHost> logger)
+    : ITrayNotifier, IDisposable
 {
     /// <summary>How long to keep trying when Windows refuses the icon (e.g. the taskbar isn't up yet at sign-in).</summary>
     private static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(2);
     private const int MaxAttempts = 60;
 
+    /// <summary>Icon ids tried for one program file: its usual id, then fallbacks for when another copy holds it.</summary>
+    internal const int IdSlots = 3;
+
     private TaskbarIcon? _icon;
     private System.Drawing.Icon? _image;
     private Action? _onClick;
     private DispatcherTimer? _retry;
+    private TrayIconRefusedWindow? _refused;
+    private Guid[] _ids = [];
     private int _attempts;
     private bool _created;
     private (string Title, string Message, NotificationKind Kind, Action? OnClick)? _pending;
@@ -49,7 +57,8 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, ILogger<TrayIconHos
             _image = new System.Drawing.Icon(stream, size, size);
         }
 
-        icon.Id = IconId(Environment.ProcessPath ?? AppContext.BaseDirectory);
+        var programPath = Environment.ProcessPath ?? AppContext.BaseDirectory;
+        _ids = [.. Enumerable.Range(0, IdSlots).Select(slot => IconId(programPath, slot))];
         icon.Icon = _image;
         icon.TrayBalloonTipClicked += OnNotificationClicked;
         _icon = icon;
@@ -57,14 +66,20 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, ILogger<TrayIconHos
     }
 
     /// <summary>
-    /// The icon's identity for Windows, one per program file. Windows ties an icon GUID to the program that last
-    /// used it and refuses it from any other path while that file exists. H.NotifyIcon's default GUID comes from the
-    /// assembly name, so a development build and the installed copy (same name, other folders) locked each other
-    /// out and the installed app started without an icon. The installed copy always runs from <c>current\</c>, so
-    /// it keeps its GUID across updates and Windows keeps the user's "always show this icon" choice.
+    /// The icon's identity for Windows, one per program file. Windows ties an icon GUID to the program file that first
+    /// used it and refuses it from any other file, even after that file is deleted. H.NotifyIcon's default GUID comes
+    /// from the assembly name, so a development build and the installed copy (same name, other folders) locked each
+    /// other out and the installed app started without an icon. The installed copy always runs from <c>current\</c>,
+    /// so it keeps its GUID across updates and Windows keeps the user's "always show this icon" choice.
+    /// <para>
+    /// Two copies can still report the same path: one installed from a packaged app's shell (e.g. Claude's) lands in
+    /// that app's virtualized AppData but sees the real AppData path. Whichever starts first takes slot 0, so the
+    /// other falls back to slot 1 (and so on). Slot 0 keeps the original formula so existing installs keep their id.
+    /// </para>
     /// </summary>
-    internal static Guid IconId(string programPath) =>
-        new(SHA256.HashData(Encoding.UTF8.GetBytes("CashGear.Capture tray icon|" + programPath.ToUpperInvariant()))[..16]);
+    internal static Guid IconId(string programPath, int slot = 0) =>
+        new(SHA256.HashData(Encoding.UTF8.GetBytes(
+            "CashGear.Capture tray icon|" + programPath.ToUpperInvariant() + (slot == 0 ? "" : "|" + slot)))[..16]);
 
     private void TryCreate()
     {
@@ -74,42 +89,65 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, ILogger<TrayIconHos
         }
 
         _attempts++;
-        try
+        InvalidOperationException? refusal = null;
+        for (var slot = 0; slot < _ids.Length; slot++)
         {
-            // Efficiency mode (on by default in H.NotifyIcon) drops the process to idle priority — bad for capture latency.
-            _icon.ForceCreate(enablesEfficiencyMode: false);
+            _icon.Id = _ids[slot];
+            try
+            {
+                // Efficiency mode (on by default in H.NotifyIcon) drops the process to idle priority — bad for capture latency.
+                _icon.ForceCreate(enablesEfficiencyMode: false);
+            }
+            catch (InvalidOperationException ex)
+            {
+                refusal ??= ex;
+                continue;
+            }
+
             _created = true;
             _retry?.Stop();
             LogCreated(_image?.Width ?? 0, _icon.Id, _attempts);
+            if (slot > 0)
+            {
+                LogFallbackId(_ids[0], slot);
+            }
+
             if (_pending is { } pending)
             {
                 _pending = null;
                 Notify(pending.Title, pending.Message, pending.Kind, pending.OnClick);
             }
+
+            return;
         }
-        catch (InvalidOperationException ex)
+
+        if (_attempts == 1)
         {
-            if (_attempts == 1)
-            {
-                LogCreateFailed(ex);
-            }
-
-            if (_attempts >= MaxAttempts)
-            {
-                _retry?.Stop();
-                LogGaveUp(_attempts);
-                MessageBox.Show(
-                    "CashGear Capture is running, but Windows did not let it add its icon to the notification area.\n\n" +
-                    "The capture hotkeys still work. Restarting the app (or Windows) usually brings the icon back.",
-                    "CashGear Capture",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            _retry ??= new DispatcherTimer(RetryInterval, DispatcherPriority.Background, (_, _) => TryCreate(), Dispatcher.CurrentDispatcher);
-            _retry.Start();
+            LogCreateFailed(refusal!);
         }
+
+        if (_attempts >= MaxAttempts)
+        {
+            _retry?.Stop();
+            LogGaveUp(_attempts);
+            SystemSounds.Exclamation.Play(); // what the warning message box used to play
+            ShowRefusedWarning();
+            return;
+        }
+
+        _retry ??= new DispatcherTimer(RetryInterval, DispatcherPriority.Background, (_, _) => TryCreate(), Dispatcher.CurrentDispatcher);
+        _retry.Start();
+    }
+
+    /// <summary>The warning after the last refusal. Returns at once; <see cref="Dispose"/> closes it when the app exits.</summary>
+    internal TrayIconRefusedWindow ShowRefusedWarning()
+    {
+        var window = new TrayIconRefusedWindow(paths.LogDirectory, settings.Current.Appearance.Theme);
+        window.Closed += (_, _) => _refused = null;
+        _refused = window;
+        window.Show();
+        window.Activate();
+        return window;
     }
 
     public void Notify(string title, string message, NotificationKind kind = NotificationKind.Info, Action? onClick = null)
@@ -143,6 +181,7 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, ILogger<TrayIconHos
     public void Dispose()
     {
         _retry?.Stop();
+        _refused?.Close();
         if (_icon is null)
         {
             return;
@@ -194,7 +233,10 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, ILogger<TrayIconHos
     [LoggerMessage(Level = LogLevel.Information, Message = "Tray icon created ({Size} px, id {Id}, attempt {Attempt})")]
     private partial void LogCreated(int size, Guid id, int attempt);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Windows refused the tray icon; retrying every 2 s")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Tray icon id {Usual} is held by another copy of the program; using fallback id {Slot}")]
+    private partial void LogFallbackId(Guid usual, int slot);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Windows refused the tray icon under every id; retrying every 2 s")]
     private partial void LogCreateFailed(Exception ex);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Gave up adding the tray icon after {Attempts} attempts")]

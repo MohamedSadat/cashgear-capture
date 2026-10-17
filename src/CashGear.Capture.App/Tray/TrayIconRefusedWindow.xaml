@@ -1,0 +1,12 @@
+<Window x:Class="CashGear.Capture.App.Tray.TrayIconRefusedWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CashGear Capture" SizeToContent="WidthAndHeight" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen">
+  <DockPanel Margin="20,18,20,16">
+    <Button DockPanel.Dock="Bottom" HorizontalAlignment="Right" Margin="0,16,0,0" MinWidth="90"
+            Content="OK" IsDefault="True" IsCancel="True" Click="OnOkClick" />
+    <Image x:Name="WarningIcon" DockPanel.Dock="Left" Width="32" Height="32" VerticalAlignment="Top" Margin="0,0,14,0" />
+    <TextBlock x:Name="MessageText" MaxWidth="420" TextWrapping="Wrap" />
+  </DockPanel>
+</Window>

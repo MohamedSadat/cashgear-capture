@@ -248,3 +248,16 @@ These need display-setting changes, so they are left for a manual run:
 5. Run `dotnet test --solution CashGear.Capture.sln` in each layout. The interactive tests re-derive expectations from the live layout; `RegionOverlayWindowTests` checks overlay placement, pixel mapping and 1:1 display on every monitor.
 6. Capture Region from the tray: drag a rectangle that crosses from one monitor onto the other, then click a window on the 150% monitor. Check the logged rectangle and the file size, then check that the loupe and label look the same size on both monitors.
 7. Restore the original layout.
+
+## Tray icon conflict after 1.0.0 (2026-10-16)
+
+Same PC. Setup.exe for 1.0.0 had been run from a shell started by Claude's desktop app, a packaged (MSIX) app. Windows redirected the install into `%LocalAppData%\Packages\Claude_…\LocalCache\Local\CashGear.Capture`, but that copy saw `%LocalAppData%\CashGear.Capture`. Commands that need the real AppData were run outside the package through `Win32_Process.Create`.
+
+| Check | Result |
+|---|---|
+| Setup.exe run from Explorer: "Windows refused the tray icon" for 2 minutes, then the warning. A restart at 22:35 was refused the same way | fail (the bug) |
+| Hidden copy deleted, installed 1.0.0 started again from outside the package | still refused (Windows doesn't free the id when the file is deleted) |
+| Development build copied to one path twice, in Claude's LocalCache and in the real AppData, without ffmpeg. The LocalCache copy, started inside the package, got the usual id `168fe1c9…` | pass (claims the id like the hidden install did) |
+| The real copy at the same path, started outside the package: usual id refused, "held by another copy … using fallback id 1", icon created on attempt 1 as `ddd3206e…` | pass (1.0.0 only tries the usual id, so it failed here) |
+| Both test copies exited with `--exit` and deleted | done |
+| 2026-10-17, the message after the last refusal: a temporary copy of the development build in the scratch folder (not committed) that always refuses the icon, gives up after 2 attempts, and uses its own instance names and data folders, so the installed app kept running. `--exit` sent while the message was open: "Received instance command Exit", "UI exiting" 43 ms later, "Shutdown complete" 60 ms after that, process gone 1.05 s after the `--exit` copy started. Same again with a screenshot: same text, warning icon and OK button | pass (1.0.0 stayed alive until OK was clicked) |

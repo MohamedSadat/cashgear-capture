@@ -23,4 +23,31 @@ public sealed class TrayIconHostTests
         TrayIconHost.IconId(Installed).Should().Be(TrayIconHost.IconId(Installed.ToLowerInvariant()));
         TrayIconHost.IconId(Installed).Should().NotBe(Guid.Empty);
     }
+
+    [Fact]
+    public void The_usual_id_is_the_one_existing_installs_already_have()
+    {
+        // Pinned: changing it would give every install a new icon and drop the user's "always show this icon" choice.
+        TrayIconHost.IconId(Installed, slot: 0).Should().Be(TrayIconHost.IconId(Installed));
+        TrayIconHost.IconId(Installed).Should().Be(Guid.Parse("bec2e136-3638-24d3-a2d1-04b3aa277fcc"));
+    }
+
+    [Fact]
+    public void Fallback_ids_differ_from_the_usual_one_and_from_each_other()
+    {
+        // A copy installed into a packaged app's virtualized AppData reports the same path as the real install, so the
+        // path alone can't keep them apart; whichever starts second needs another id that Windows hasn't tied to a file.
+        var ids = Enumerable.Range(0, TrayIconHost.IdSlots).Select(slot => TrayIconHost.IconId(Installed, slot)).ToList();
+
+        ids.Should().HaveCount(TrayIconHost.IdSlots).And.OnlyHaveUniqueItems().And.NotContain(Guid.Empty);
+        ids.Should().NotIntersectWith(
+            Enumerable.Range(0, TrayIconHost.IdSlots).Select(slot => TrayIconHost.IconId(Development, slot)));
+    }
+
+    [Fact]
+    public void Fallback_ids_are_stable_for_a_path_whatever_its_case()
+    {
+        // The same fallback every start, so Windows remembers the user's choice for it too.
+        TrayIconHost.IconId(Installed, slot: 1).Should().Be(TrayIconHost.IconId(Installed.ToLowerInvariant(), slot: 1));
+    }
 }
