@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using CashGear.Capture.Audio;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Recording;
@@ -1013,8 +1014,7 @@ public static class RecordingServiceCollectionExtensions
         services.AddSingleton<RecordingStore>();
         services.AddSingleton<IRecordingRecovery, RecordingRecovery>();
         services.AddSingleton<IMouseState, Win32MouseState>();
-        services.AddSingleton<IAudioSourceFactory, WasapiAudioSourceFactory>();
-        services.AddSingleton<IAudioDevices, WasapiAudioDevices>();
+        services.AddAudio();
         services.AddSingleton<IScreenRecorder, ScreenRecorder>();
         return services;
     }

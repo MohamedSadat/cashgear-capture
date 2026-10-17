@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Screen recording: a continuous Windows.Graphics.Capture session and WASAPI sound (NAudio's Core Audio interop), encoded and written inside the app by CashGear.Capture.Media. -->
+  <!-- Screen recording: a continuous Windows.Graphics.Capture session and sound from CashGear.Capture.Audio, encoded and written inside the app by CashGear.Capture.Media. -->
   <PropertyGroup>
     <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
     <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
@@ -8,14 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CashGear.Capture.Audio\CashGear.Capture.Audio.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Engine\CashGear.Capture.Engine.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Interop\CashGear.Capture.Interop.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Media\CashGear.Capture.Media.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="NAudio.Wasapi" />
   </ItemGroup>
 
   <ItemGroup>
