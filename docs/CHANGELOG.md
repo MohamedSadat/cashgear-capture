@@ -563,7 +563,7 @@ Lifts Phase 7's "No audio" limitation.
 - Hardware encoders are untested with sound here (none works on this PC).
 - If Windows' privacy settings block desktop apps from the microphone, the microphone isn't recorded (the notification says how to allow it).
 
-## Fixes after 1.0.0 (2026-10-16)
+## 1.0.1 — Fixes after 1.0.0 (2026-10-17)
 
 ### Fixed
 - **The tray icon could still be refused after installing**, for good, with "Windows did not let it add its icon" after 2 minutes. An earlier copy had been installed from a shell started by a packaged app (Claude's desktop app). Windows redirects that app's AppData writes, so the copy landed in `%LocalAppData%\Packages\<package>\LocalCache\Local\CashGear.Capture` while still seeing the usual path. Both copies therefore computed the same icon id, and Windows had tied it to the hidden copy's file. Restarting the real install didn't help, and neither did deleting the hidden copy. When the usual id is refused, the app now tries two fallback ids, each stable for its path. The usual id is unchanged, so existing installs keep their "always show this icon" choice.
