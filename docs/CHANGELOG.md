@@ -588,3 +588,175 @@ Lifts Phase 7's "No audio" limitation.
 
 ### Known limitations
 - Uninstalling can't close a copy that runs as administrator: Windows refuses both the exit request and ending the process (both are logged). Close it from its tray icon first.
+
+## Phase 10 — Recording engine v2 (2026-10-17)
+
+The first phase of the extended plan. Screen recording no longer runs `ffmpeg.exe`. FFmpeg now runs inside the app, every picture and sound packet is stamped with one clock, the file being recorded survives a crash, and an encoder that fails mid-recording is replaced.
+
+### Added
+- **FFmpeg inside the app** (new project `CashGear.Capture.Media`, FFmpeg.AutoGen 9.0.1.1):
+  - The libraries come from an LGPL v3 shared build of FFmpeg 9.0.2 (BtbN, month-end autobuild, SHA-256 pinned in `tools\get-ffmpeg.ps1`).
+  - Only `avutil`, `swresample`, `swscale`, `avcodec` and `avformat` ship, in `ffmpeg\`, with their licence texts. See [LICENSES.md](LICENSES.md) for the decision and the source.
+  - `FfmpegRuntime` loads them on first use and refuses a library of the wrong major version. When FFmpeg is missing, recording says so and everything else works.
+  - FFmpeg's log goes to the app log. A failed call says what FFmpeg said, e.g. "Cannot load cuMemAllocAsync" for NVENC with an old driver.
+- **One clock for picture and sound.**
+  - Each picture from Windows.Graphics.Capture keeps the time Windows captured it (`SystemRelativeTime`). That is the same QPC clock WASAPI stamps sound with, read through `RecordingClock`.
+  - A `FrameGrid` turns those pictures into constant-frame-rate video:
+    - a picture lands on the frame nearest its capture;
+    - a frame is made 50 ms after its time, so late pictures still make it;
+    - a still screen repeats the last picture;
+    - a picture captured during a pause shows from the resume, so a change made while paused isn't lost.
+  - If encoding falls far behind, frames are skipped and their timestamps left out (the picture holds still). The sound is never cut to match, so it stays in sync after the gap.
+- **Pipeline.**
+  - **Capture.** Each picture Windows sends is cropped on the GPU into a pooled texture and queued, one per video frame: a newer picture for the same frame replaces the older one.
+  - **Video thread.** Reads back only the pictures it encodes, draws the click highlights, converts BGRA to NV12 with BT.709 limited-range colours (swscale's default would be BT.601), and encodes.
+  - **Sound thread.** Encodes the mix and/or each source to AAC, 80 ms behind the clock.
+  - **Writer thread.** Owns the file. The threads never wait for each other.
+- **Encoders**, found by test-encoding eight 256×256 frames with each:
+  - **Order for Automatic:** NVENC (H.264; HEVC and AV1 when chosen), Intel Quick Sync, AMD AMF, then Windows' Media Foundation with the GPU vendor's hardware encoder, then Media Foundation's software encoder (part of Windows), then OpenH264.
+  - **Settings › Recording › Encoder** offers Automatic, Software only, or any encoder. The list shows which work here, and Media Foundation's hardware encoder is shown by name.
+  - **Re-checking.** Results are cached in `%LocalAppData%\CashGear\Capture\encoders.json`, keyed by the FFmpeg build, every graphics adapter with its driver version, and the Windows build. **Check again** repeats the detection.
+  - **Opening.** At Start the chosen encoder is opened at the real size; if that fails, the next one is tried.
+- **Quality presets** Small / Balanced / High / Near lossless replace the 15–35 number, mapped to each encoder's own scale.
+  - Media Foundation's values were measured on this PC by SSIM against the old x264 settings (CRF 30 / 23 / 18): hardware quality 35 / 50 / 65 / 90, software 55 / 72 / 88 / 100.
+  - Detection checks that a Media Foundation encoder honours its quality setting, and gives it a bit rate if it doesn't.
+- **Encoder failure mid-recording.**
+  - The failed encoder's segment is finished, the next working encoder continues in a new segment, and the rest is saved as `name (part 2).mp4`.
+  - A notification says so at the time, and the saved notification names both parts.
+  - A 2 s watchdog catches an encoder call that never returns.
+- **Crash-safe recording.**
+  - Recordings are written as they happen to fragmented MP4 in `%LocalAppData%\CashGear\Capture\Recordings\Temp\<time>-<id>\`. A fragment is cut at least every second and every packet is flushed. A manifest records where the recording was going, and a lock file is held while it is written.
+  - **Stop.** Each segment is copied (no re-encoding) into the final MP4, with the index at the front (`+faststart`). The file is written as `.partial` and renamed, then the temporary folder is removed. If saving fails, the folder is kept for recovery.
+  - **Recovery.** A folder whose lock opens belongs to a recording the app never finished: closed, crashed, or the PC lost power. A few seconds after start-up a notification offers to save it, and so does tray › **Save Interrupted Recordings**. It is saved where it was going, up to about a second before the interruption. A file cut short is recognised by its missing fragment index.
+- **Sound tracks.** With system audio and a microphone, Settings › Recording › With both offers:
+  - one mixed track (the default, plays everywhere);
+  - a track per source (for editors);
+  - the mix followed by each source.
+
+  Tracks are titled ("Mixed", "System audio", "Microphone"), and only the first is played by default. A single source is always one track.
+- **Toolbar.** A sound button opens a panel inside the toolbar (so it stays out of the recording) with mute and a 0–200% volume for each source. The volumes are kept for the next recording.
+- **An unplugged device** during a recording leaves silence on its tracks. A notification says so, and the recording goes on.
+- **The display stays on while recording.** Like a video player, the recorder asks Windows not to turn the display off or sleep for lack of input (`SetThreadExecutionState`, held by the recording's video thread). When the display goes off, Windows stops drawing the screen, so a recording made without touching the mouse or keyboard froze when the power plan turned the display off.
+- **Saving state.** The tray says "Saving the Recording…" while a stopped recording is saved, and a new recording waits for it.
+- **Settings schema 3.**
+  - `recording.quality` is a preset; a version 2 file's number becomes the nearest one: ≤17 Near lossless, 18–21 High, 22–26 Balanced, ≥27 Small.
+  - `recording.encoder` is an id (`auto`, `software`, `h264_mf_hw`, …); "Auto" and "Software" carry over.
+  - New `recording.tracks`, `recording.systemAudioGain` and `recording.microphoneGain`.
+- **`tools\SyncTest`**, the acceptance test for recording:
+  - A square flashes on the primary monitor at the start of each beep. The beeps are timed by the sound card's clock, and each flash is placed by that clock read against QPC.
+  - The real recorder records the monitor; the file is then decoded, and each flash is paired with its beep.
+  - It reports offset, spread, drift and CPU, records with a microphone and track layout when asked, and recovers and analyzes a run that was killed.
+- **Uninstall** no longer looks for `ffmpeg` processes; there are none.
+
+### Deviations from the spec
+- **Temporary file: fragmented MP4, not MKV** (the spec allows either).
+  - FFmpeg's Matroska muxer stores timestamps in milliseconds, so 30 fps frames would alternate 33/34 ms.
+  - Fragmented MP4 keeps exact 1/fps and 1/48000 timestamps, and saving is a plain copy.
+  - A kill loses about a second either way.
+- **No zero-copy GPU path yet.**
+  - Pictures are cropped on the GPU, and only those that are encoded are read back to the CPU. Click highlights and the BT.709 conversion run on the CPU.
+  - With the GPU's encoder this used 1.9% of the CPU here (0.46 of 24 logical CPUs, every frame read back; below), so the D3D11 frames path (FFmpeg 9's `h264_mf` accepts D3D11 textures) is left for Phase 18's performance work.
+- **More encoders than the spec lists.** The LGPL build has no x264, and NVENC/QSV/AMF don't work on this PC (the NVIDIA driver is too old for FFmpeg's NVENC). Windows' Media Foundation encoders are added between the vendors' encoders and OpenH264:
+  - the GPU's encoder through Windows, which works here: NVIDIA H.264 Encoder MFT;
+  - Microsoft's software encoder, licensed with Windows.
+- **The detection test is 256×256**, not 64×64: some hardware encoders refuse very small pictures.
+- **Detection results go to `encoders.json` in `%LocalAppData%`**, not the settings file. They describe this PC, and settings.json is roaming.
+- **A second encoder means a second file.** Segments from different encoders have different codec headers (SPS/PPS), which one MP4 track can't hold. Each part starts at 0.
+- **The `CashGear.Capture.Audio` project is left to Phase 11.**
+  - The spec puts the WASAPI wrapper that exposes `qpcPosition` there. That wrapper already exists in Recording (the capture loop of "Sound in screen recordings").
+  - Phase 11 brings the code that belongs in that project: device management, process loopback, noise suppression.
+- **`RecordingClock` is the shared clock.** There is no separate `IMediaClock` interface: nothing else implements it.
+- **AAC only.** Opus isn't offered, since MP4 players expect AAC.
+- **Not done here:** turning off the yellow capture border needs Windows 11 (this PC is Windows 10 19045), and recovering a capture after the GPU is reset is left to Phase 18.
+
+### Fixed during development
+- **Lost pictures.**
+  - The capture queue first held the newest 3 pictures. Windows sends a picture whenever anything on the monitor changes, here 60 a second, so the queue was refilled every 50 ms: exactly the frame grid's wait.
+  - The picture a frame needed had always been dropped by the time it was due, and a change made during a pause never showed.
+  - It now keeps one picture per frame.
+- **A crash on encoder fallback.** An encoder switch read a property of the encoder it had just closed, and the exception escaped the video thread and ended the process (here, the test host). Recording threads now catch everything and stop the recording instead.
+- **A cut-short file counted as complete.** FFmpeg's MP4 reader reports the end of a cut-short file as a normal end. The remuxer now also checks for the fragment index.
+- **Lost track titles.** They come back from an MP4 as `name`, so they were lost in the copy to the final file.
+- **First packet late.** Microsoft's software H.264 encoder holds back 16 frames (about 0.5 s) before its first packet. A segment's start is now taken from that packet, not from the frame counter.
+- **The display turning off froze the recording.** The first 60-minute test froze at 29:38: the power plan turned the display off after 30 minutes without input, and Windows stopped drawing the screen. The recorder now keeps the display on while it records.
+- **README.** It had a raw carriage return where `artifacts\releases` should be (since Phase 9).
+
+### Tested
+- **656 automated tests** (654 pass, 2 explicit). New:
+  - Media (25):
+    - loading and refusing the libraries, FFmpeg's error text, per-thread log capture;
+    - every encoder that works here gives one decodable packet per frame;
+    - BT.709 colours;
+    - Media Foundation presets change the size;
+    - AAC framing;
+    - flashes on their exact frames and beeps within 2 ms through the temporary file and the remux;
+    - 10 random truncations recovering to within 2 s of the cut;
+    - titled tracks with one default;
+    - Arabic and emoji paths;
+    - a second part starting at 0;
+    - an unwritable file reported.
+  - Core:
+    - encoder preferences and preset tables, the legacy quality map, the detection cache;
+    - the recording store and part names;
+    - the frame grid (nearest frame, the 50 ms wait, catching up, skipping as a gap, stopping, 1,800 frames a minute);
+    - pictures during a pause;
+    - the mixer's gain and per-source outputs, the track layouts;
+    - settings schema 3 and migration.
+  - App:
+    - detection and its cache;
+    - usable encoders in order;
+    - recovery (whole, cut short, a taken name, a recording still being written, discard);
+    - the interrupted-recording prompts;
+    - Settings' encoder list and re-check;
+    - the toolbar's sound panel;
+    - both windows opened on the desktop.
+  - Real recordings:
+    - a change made during a pause shows after resume;
+    - an unplugged microphone leaves silence and a warning;
+    - an injected encoder failure gives two playable parts;
+    - a stalled encoder skips frames but keeps all the sound;
+    - temporary files are removed after saving;
+    - all of Phase 7's and "Sound in recordings" recording tests, on the new engine.
+- **Manual on this PC with SyncTest** (Windows 10 22H2, GTX 1650 with driver 457.51, Xeon E5-2680 v3 with 24 logical CPUs; Automatic picked the Windows hardware encoder, i.e. NVIDIA's MFT). See TESTING.md.
+  - **Two 60-minute runs** at 1920×1080 and 30 fps, Automatic (NVIDIA MFT), system audio, 3 pauses of 5 s. Each file is 3,600.03 s with 108,001 frames, 0 dropped, and every beep (1,800 / 1,801).
+    - **Run 1.** The first 29:38 was paired: 890 claps, drift −4.8 ms on the fitted line and −4.9 ms from the first 5 minutes to the last, offset −44.9 ms (sd 5.2).
+      - Then the power plan turned the display off (30 minutes without input), Windows stopped drawing the screen, and the video froze.
+      - Fixed: the recorder now keeps the display on.
+    - **Run 2, with the fix.** The display was still asleep at the start and came back at 22:50.
+      - From there to the end (1,116 claps) the offset was −40.2 ms in every 10-minute stretch: drift 0.0 ms at the end of the hour.
+      - CPU 1.6% (0.39 cores).
+  - **10 minutes with the software encoder** (Microsoft's H264 Encoder MFT) and a square repainting every frame: 18,001 frames, 0 dropped, 300 of 300 claps.
+    - Every offset is −82 or −49 ms, one frame apart, and the first and last minutes are both −82.0 ms: no drift.
+    - The fitted line says −10.5 ms only because a run of flashes landed a frame early in minutes 1–4.
+  - **Killed with Stop-Process five times and recovered:**
+    - after 12 s → 11.0 s saved;
+    - after 25 s → 24.0 s;
+    - after 1.5 s → 1.0 s;
+    - during a pause at 10 s of recording → 9.0 s;
+    - at 60 fps after 40 s → 39.0 s.
+
+    Every file was complete and decoded without errors, and each kept its sync (offsets −32 to −17 ms, drift under 1 frame).
+  - **ZOOM H5 unplugged from USB** 30 s into a 3-minute recording of system audio and its microphone (track layout Both). Both sources reported once; the recording ran its full 180.03 s with 0 frames dropped. All three tracks (Mixed, System audio, Microphone) are 180.03 s long and silent (−91 dB) after the unplug.
+  - **CPU at 1920×1080, 30 fps,** with a square repainting every frame, so Windows sends a new picture every frame and each one is read back. Measured for the whole SyncTest process, including its own drawing:
+    - GPU encoder (NVIDIA MFT): 1.9% of 24 logical CPUs (0.46 cores) over 5 minutes, 9,001 frames, 0 dropped.
+    - Microsoft's software encoder: 4.1% (0.99 cores).
+    - On a normal desktop the hour-long runs used 1.5–1.6%.
+    - The target is under 10% (2.4 cores here).
+  - **The offset between beep and flash is constant within a run** (−34 to −82 ms across runs). It is the time the flash takes to reach the screen (WPF, then DWM, a frame or two) against the sound card's output delay, which differs between the H5 and the PC's speakers and with the load. Drift is the change over a run.
+
+### Known limitations
+- **Hardware encoders through FFmpeg are untested here.**
+  - NVENC, Quick Sync and AMF all fail on this PC: the driver is too old for NVENC, and there is no Intel or AMD GPU.
+  - Only the NVIDIA encoder through Media Foundation was tested.
+  - Each is used only after its own test encode passes, so one that fails is skipped.
+- **Changing encoder mid-recording saves a second file.**
+- **Recovery.** A recording killed in its first second may have nothing to recover (the first fragment isn't written yet). Otherwise about the last second is lost.
+- **Separate source tracks** are for editors: players play the first track only.
+- **Default output device.** System audio still comes from the device that was the default when recording started; a device switched to during a recording isn't followed (Phase 11).
+- **Recording stops (and is saved) when:**
+  - the monitor's resolution changes below the recorded area;
+  - the GPU is reset;
+  - the disk is full.
+- **OpenH264.** On Windows N editions without the Media Feature Pack, only OpenH264 is left, and it has no constant-quality mode: it gets a bit rate per pixel, so files are larger.
+- **Bigger download.** The FFmpeg libraries are about 120 MB, against the 105 MB `ffmpeg.exe` they replace. Setup.exe is 130.8 MB (1.0.1: 118 MB).
+- **Harmless FFmpeg log line.** FFmpeg logs "UDTA parsing failed retrying raw" (information level) when reading the track titles back; the titles read correctly.

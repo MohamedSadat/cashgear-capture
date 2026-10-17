@@ -8,7 +8,7 @@ dotnet test --solution CashGear.Capture.sln
 
 Tests tagged `Category=Interactive` need a logged-in, unlocked desktop. They skip themselves when none is available or when `CASHGEAR_SKIP_INTERACTIVE=1`. On Windows 10 the WGC tests flash a yellow border around each monitor — expected.
 
-The recording tests use the real ffmpeg from `tools\ffmpeg` (run `tools\get-ffmpeg.ps1`) and skip without it. Tests that capture the screen run one at a time (a Windows 10 capture border would otherwise show up in another test's pixels); the region-overlay pixel test can also fail while another app draws over the screen (for example a "using your computer" indicator).
+The recording and Media tests use the real FFmpeg libraries from `tools\ffmpeg` (run `tools\get-ffmpeg.ps1`), plus that build's `ffmpeg.exe` and `ffprobe.exe` to check files independently, and skip without them. Encoder detection for the recorder tests is cached in `%TEMP%\cashgear-tests\encoders`. Tests that capture the screen run one at a time (a Windows 10 capture border would otherwise show up in another test's pixels); the region-overlay pixel test can also fail while another app draws over the screen (for example a "using your computer" indicator).
 
 The WGC leak soak test is explicit:
 
@@ -24,6 +24,22 @@ dotnet test --project tests/CashGear.Capture.App.Tests -- --explicit only
 
 The other recording tests with sound use a generated tone (no sound is played) or real system audio with whatever is playing.
 
+### Recording acceptance: `tools\SyncTest`
+
+SyncTest records the primary monitor with the real recorder while a 240 px square in its top-left corner turns white whenever a 50 ms 1 kHz beep starts on the default output device (every 2 s). The beeps are placed by the sound card's clock and each flash is timed from that clock read against QPC, so the stimulus itself can't drift. It then decodes the file and pairs each flash with its beep. The report gives the constant offset (the screen shows the flash a frame or so after the beep is heard: display delay, not recorder error), its spread (whole frames, at 30 fps ±33 ms) and the drift (a fitted line, and the first versus the last 5 minutes), plus the process's CPU while recording. Results go to `artifacts\synctest` (`.report.txt`, `.offsets.csv` per file). Keep other sound off during a run: the beep detector takes 30% of the track's loudest sound as its threshold.
+
+```powershell
+$sync = "tools\SyncTest\bin\Release\net10.0-windows10.0.22621.0\CashGear.Capture.SyncTest.exe"
+dotnet build tools\SyncTest -c Release
+& $sync run --minutes 60 --pauses 3                    # drift over an hour (auto encoder), 3 pauses of 5 s
+& $sync run --minutes 5 --busy --encoder h264_mf_hw    # CPU: a square repaints every frame, so every picture is read back
+& $sync run --seconds 600 --out artifacts\synctest\k1  # then Stop-Process -Force it, and:
+& $sync recover --out artifacts\synctest\k1           # saves what the killed run left, and analyzes it
+& $sync analyze <file.mp4>
+```
+
+Other options: `--fps 15|30|60`, `--encoder auto|software|<id>`, `--quality Small|Balanced|High|Lossless`, `--microphone default|<id>`, `--tracks Mixed|Separate|Both`, `--interval <s>`.
+
 ## Manual test matrix
 
 | Configuration | Status |
@@ -33,7 +49,7 @@ The other recording tests with sound use a generated tone (no sound is played) o
 | Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); fresh install **pending** |
+| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); fresh install **pending** |
 | Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
@@ -248,6 +264,57 @@ These need display-setting changes, so they are left for a manual run:
 5. Run `dotnet test --solution CashGear.Capture.sln` in each layout. The interactive tests re-derive expectations from the live layout; `RegionOverlayWindowTests` checks overlay placement, pixel mapping and 1:1 display on every monitor.
 6. Capture Region from the tray: drag a rectangle that crosses from one monitor onto the other, then click a window on the 150% monitor. Check the logged rectangle and the file size, then check that the loupe and label look the same size on both monitors.
 7. Restore the original layout.
+
+## Phase 10 results (2026-10-17)
+
+Same PC as above: Windows 10 Pro 22H2 (19045), Xeon E5-2680 v3 (12 cores, 24 logical CPUs), GeForce GTX 1650 with driver 457.51, two monitors at 100% (`DISPLAY2` primary 1920×1080). FFmpeg is the LGPL shared build `n9.0.2-17-g2a571b6068-20260930`. Sound goes to "Headphones (H5)" and the microphone is "Microphone (H5)", a ZOOM H5 over USB.
+
+Encoder detection here:
+
+| Encoder | Result |
+|---|---|
+| `h264_nvenc`, `hevc_nvenc`, `av1_nvenc` | fail: "Cannot load cuMemAllocAsync" (the driver is older than FFmpeg's NVENC needs) |
+| `h264_qsv` | fail: "Error creating a MFX session: -9" (no Intel GPU) |
+| `h264_amf` | fail: "DLL amfrt64.dll failed to open" (no AMD GPU) |
+| `h264_mf_hw`, `hevc_mf_hw` | **work**: NVIDIA H.264 / HEVC Encoder MFT (the GPU's encoder through Media Foundation); quality mode honoured |
+| `h264_mf` | **works**: Microsoft's H264 Encoder MFT (software); quality mode honoured |
+| `libopenh264` | **works** |
+
+Automatic therefore records with `h264_mf_hw`.
+
+Media Foundation quality calibration (testsrc2 1920×1080 at 30 fps, 4 s, SSIM against the source, compared with the old x264 settings):
+
+| | x264 CRF 30 | x264 CRF 23 | x264 CRF 18 |
+|---|---|---|---|
+| x264 (old) | 0.9833, 1.1 MB | 0.9938, 2.9 MB | 0.9973, 4.6 MB |
+| NVIDIA MFT, quality 40 / 55 / 65 | 0.9912 (q40) | 0.9952 (q55) | 0.9969 (q65) |
+| Microsoft MFT, quality 55 / 75 / 90 | 0.9855 (q55) | 0.9949 (q75) | 0.9976 (q90) |
+| OpenH264 2 / 4 / 8 Mbit/s | 0.9739 | 0.9831 | 0.9922 |
+
+The presets (Small / Balanced / High / Near lossless) use hardware quality 35 / 50 / 65 / 90, software 55 / 72 / 88 / 100, and OpenH264 0.05 / 0.1 / 0.18 / 0.35 bits per pixel.
+
+| Check (SyncTest unless noted) | Result |
+|---|---|
+| 30 s trial, 1920×1080 at 30 fps, Automatic (NVIDIA MFT), system audio: 901 frames, 0 dropped; 15 flashes, 15 beeps, all paired; offset −34.0 ms (sd 0.0), drift 0.0 ms | pass |
+| 60 minutes, 1920×1080 at 30 fps, Automatic, system audio, 3 pauses of 5 s (`run --minutes 60 --pauses 3`), run 1 | pass for the 29:38 the screen was drawn: 890 claps, drift −4.8 ms (fit) / −4.9 ms (first to last 5 min), offset −44.9 ms (sd 5.2). Then the power plan turned the display off (30 min without input; `VIDEOIDLE` 1800 s) and the video froze: 54,455 frames repeated. Led to the display-on request |
+| The same, run 2, with the recorder keeping the display on (`SystemExecutionState` 0x3 while recording) | pass: the display was still off at the start and came back at 22:50; from there 1,116 claps, offset −40.2 ms in every 10-minute stretch to the end, drift 0.0 ms. 108,001 frames, 0 dropped, 1,801 beeps, CPU 1.6% (0.39 cores), 187.7 MB |
+| 10 minutes with the software encoder and a square repainting every frame (`--minutes 10 --busy --encoder software`) | pass: 18,001 frames, 0 dropped, 300 of 300 claps; offsets −82 or −49 ms (a frame apart), first and last minutes both −82.0 ms; CPU 4.1% (0.99 cores) |
+| CPU: 5 minutes with the NVIDIA MFT and a square repainting every frame (`--minutes 5 --busy --encoder h264_mf_hw`; every picture read back) | pass: 1.9% of 24 logical CPUs (0.46 cores) for the whole process, 9,001 frames, 0 dropped, 150 of 150 claps, drift 0.0 ms. Target < 10% |
+| Killed (`Stop-Process -Force`) after 12 s, 25 s and 1.5 s of recording, during a pause at 10 s of recording (`--pauses 1`), and at 60 fps after 40 s; then `recover` | pass: 11.0 s, 24.0 s, 1.0 s, 9.0 s, 39.0 s saved; each "cut short", decodes without errors, offsets −32 to −17 ms, no drift |
+| H5 USB cable pulled 30 s into a 3-minute recording with system audio + the H5 microphone (`--microphone default --tracks Both`) | pass: "system audio (Headphones (H5)) stopped working … The recording continues without it." and the same for the microphone, once each; 180.03 s recorded, 5,401 frames, 0 dropped; Mixed, System audio and Microphone tracks each 180.03 s, silent (−91 dB) after the unplug |
+| Recorder tests on the desktop (`ScreenRecorderTests`, 14): pause, change during a pause, microphone failure, encoder fault giving two parts, stalled encoder, sound placement, release while a frame waits | pass |
+| Settings window's Recording tab and the toolbar's sound panel opened on the desktop by the tests | pass |
+| `tools\package.ps1 -OutputDir artifacts\package-check` (version 1.0.1, unsigned) | pass: `ffmpeg\` holds exactly the five LGPL libraries, `LICENSE.txt` and `COPYING.GPLv3` (checked by the script); Setup.exe 130.8 MB (1.0.1: 118 MB). Not installed: installing from a session shell lands in Claude's virtualized AppData (see "Tray icon conflict after 1.0.0") |
+| Explicit `Real_sound_played_while_recording_lands_where_it_was_played` (beeps through the H5) | 4 of 5 runs pass (481,600 sound frames, beeps within 30 ms across the pause). The first, right after the packaging run, found no sound stream in the file and left no log; not reproduced since |
+
+Notes:
+- **The offset is constant, not drift.** In the file the beep is 17–34 ms before the flash: the flash is drawn by WPF and composed by DWM a frame or so after it is asked for, while the beep's time comes from the sound card. At 30 fps the flash lands on whole frames, so single offsets vary by up to a frame (33 ms); the drift figures come from a line fitted through all of them.
+- **SyncTest beeps go to the default output device**, and the H5 is that device here. Unplugging it ended the beeps and flashes too ("Beeps stopped: The audio device has been disconnected…"), which is why the unplug run pairs only the first 12 claps.
+- **The kill runs' logs only show the first progress line.** Progress is printed every minute for runs over 5 minutes, and they were killed earlier; the time recorded is the time waited after the first line.
+
+### Pending: hardware encoders through FFmpeg
+NVENC needs a current NVIDIA driver here. Quick Sync and AMF need an Intel or an AMD GPU. After installing one, Settings › Recording › **Check again**, then:
+`SyncTest run --minutes 5 --busy --encoder h264_nvenc` (or `h264_qsv`, `h264_amf`). The report gives the CPU figure.
 
 ## Tray icon conflict after 1.0.0 (2026-10-16)
 

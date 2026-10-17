@@ -17,12 +17,13 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 8 | Capture Text: Windows OCR to the clipboard, English + Arabic in one area | done |
 | 9 | Capture history, delayed capture with countdown, live light/dark, clickable notifications, installer + updates (Velopack) | done (fresh Windows 10/11 install pending) |
 | — | Sound in screen recordings: system audio and a microphone, AAC, kept in sync through pauses | done |
+| 10 | Recording engine v2: FFmpeg in-process (LGPL), timestamped frames, crash-safe temp file + recovery, encoder detection and fallback, sound tracks per source | done |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
 ## Install
 
-Run `CashGear.Capture-win-Setup.exe`. No administrator rights are needed: the app installs for the current user in `%LocalAppData%\CashGear.Capture`, adds Start menu and desktop shortcuts, and starts. Look for its icon in the notification area (under ^ if Windows hides it). It brings its own .NET runtime and ffmpeg. Remove it from Settings › Apps (Apps & Features); a running copy is closed first.
+Run `CashGear.Capture-win-Setup.exe`. No administrator rights are needed: the app installs for the current user in `%LocalAppData%\CashGear.Capture`, adds Start menu and desktop shortcuts, and starts. Look for its icon in the notification area (under ^ if Windows hides it). It brings its own .NET runtime and FFmpeg. Remove it from Settings › Apps (Apps & Features); a running copy is closed first.
 
 Until the build is signed, Windows SmartScreen may say "Windows protected your PC" for a downloaded Setup.exe (More info › Run anyway).
 
@@ -30,7 +31,7 @@ Until the build is signed, Windows SmartScreen may say "Windows protected your P
 
 - Windows 10 2004 (build 19041) or later, x64
 - .NET SDK 10.0.401+ (pinned in `global.json`)
-- For screen recording: ffmpeg. Run `tools\get-ffmpeg.ps1` once (it downloads a pinned, checksum-verified build into the git-ignored `tools\ffmpeg`); the build copies it next to the app as `ffmpeg\`. Without it everything else works and recording says what is missing.
+- For screen recording: FFmpeg's libraries. Run `tools\get-ffmpeg.ps1` once (it downloads a pinned, checksum-verified LGPL build into the git-ignored `tools\ffmpeg`); the build copies the five libraries the app uses next to it as `ffmpeg\`. Without them everything else works and recording says what is missing. See [docs/LICENSES.md](docs/LICENSES.md).
 
 ## Build, test, run
 
@@ -49,10 +50,10 @@ powershell -File tools\package.ps1                       # version from Director
 powershell -File tools\package.ps1 -Version 1.0.1 -UpdateFeedUrl https://downloads.example.com/capture
 ```
 
-- **Output.** The script publishes the app self-contained (win-x64, single-file exe plus WPF's and SkiaSharp's native DLLs, `ffmpeg\`, `THIRD-PARTY-NOTICES.txt`). Velopack (`vpk`, a local dotnet tool pinned in `dotnet-tools.json`) then writes `artifactseleases\`: `CashGear.Capture-win-Setup.exe`, a portable zip, the full and delta `.nupkg` files and `releases.win.json`. Keep that folder between releases; deltas are made against the previous version in it.
-- **Updates.** `-UpdateFeedUrl` builds in where installed copies look for updates: an https address or a shared folder holding the contents of `artifactseleases`. It can be overridden by `updates.feedUrl` in settings.json. Without one, the app doesn't check. Installed copies check a minute after start and then daily (Settings › General can turn that off or check now), download in the background, and offer tray › **Restart to Update**. A downloaded update is otherwise installed at the next start.
+- **Output.** The script publishes the app self-contained (win-x64, single-file exe plus WPF's and SkiaSharp's native DLLs, `ffmpeg\`, `THIRD-PARTY-NOTICES.txt`). Velopack (`vpk`, a local dotnet tool pinned in `dotnet-tools.json`) then writes `artifacts\releases\`: `CashGear.Capture-win-Setup.exe`, a portable zip, the full and delta `.nupkg` files and `releases.win.json`. Keep that folder between releases; deltas are made against the previous version in it.
+- **Updates.** `-UpdateFeedUrl` builds in where installed copies look for updates: an https address or a shared folder holding the contents of `artifacts\releases`. It can be overridden by `updates.feedUrl` in settings.json. Without one, the app doesn't check. Installed copies check a minute after start and then daily (Settings › General can turn that off or check now), download in the background, and offer tray › **Restart to Update**. A downloaded update is otherwise installed at the next start.
 - **Signing.** Pass `-SignParams "/a /fd sha256 /tr http://timestamp.digicert.com /td sha256 /f cert.pfx /p …"` (signtool arguments), `-SignTemplate "<any command with {{file}}>"` or `-AzureTrustedSignFile metadata.json`. A build server can set `CASHGEAR_SIGN_PARAMS`, `CASHGEAR_SIGN_TEMPLATE` or `CASHGEAR_AZURE_SIGN_FILE` instead. The app's binaries, the updater and Setup.exe are all signed.
-- **Leaving ffmpeg out.** `-NoFfmpeg` packages without it; recording then explains what is missing. ffmpeg is a GPL build run as a separate program; its licence ships in `ffmpeg\LICENSE`.
+- **Leaving FFmpeg out.** `-NoFfmpeg` packages without it; recording then explains what is missing. FFmpeg is an LGPL v3 build loaded as separate DLLs (replaceable); its licence texts ship in `ffmpeg\`, and [docs/LICENSES.md](docs/LICENSES.md) says where its source is.
 - **Icon.** `tools\make-icon.ps1` redraws `src\CashGear.Capture.App\Assets\app.ico`.
 
 The app starts hidden in the system tray. Command-line switches forward to the running instance:
@@ -89,7 +90,7 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 |---|---|
 | Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
 | Capture | Capture delay (also in the tray), hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
-| Recording | Frames per second (15/30/60), quality, encoder (hardware when available, or x264), pointer, click highlights, sound (system audio on/off, microphone: none, the Windows default or a connected one), where ffmpeg is |
+| Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer, click highlights, sound (system audio on/off, microphone: none, the Windows default or a connected one; with both, one mixed track, a track per source, or both), FFmpeg's version |
 | Hotkeys | Record hotkeys; each shows whether it is active |
 | General | Start with Windows, text recognition language (Automatic or one installed language), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file |
 
@@ -124,11 +125,13 @@ Tray › **Scrolling Capture** (or `Ctrl+Shift+PrintScreen`): click the window o
 Tray › **Record Screen…** (or `Shift+PrintScreen`): drag the area to record, or click a window or a monitor, and press Enter. A small toolbar at the top of the screen shows the time and has **Pause** and **Stop**; it is never in the video. Stop (or the hotkey again) saves an MP4 (H.264) to the capture folder and says how long and how big it is.
 
 - One monitor at a time (Windows.Graphics.Capture); an area that spans two is limited to the monitor holding its centre. On Windows 10 Windows draws a yellow border around the recorded monitor.
-- The encoder is chosen by trying them: NVIDIA, Intel or AMD hardware when it works, otherwise x264 on the CPU.
-- The video has a constant frame rate; when the screen is still, the same picture repeats. If encoding falls behind, frames are skipped and the notification says how many.
-- **Sound.** System audio (what you hear on the default output device) is recorded by default. A microphone can be added in Settings › Recording. Both are saved in the MP4 as AAC (48 kHz stereo, mixed into one track).
-  - The toolbar shows a level meter and, with a microphone, a **Mute mic** button.
+- **Encoding** happens inside the app (FFmpeg). Which encoders work is found out once (Settings › Recording shows the result, and **Check again** repeats it after a driver update): the graphics card's own encoder (NVIDIA, Intel, AMD), then the card's encoder through Windows (Media Foundation), then Windows' software encoder, then OpenH264. If the encoder stops working in the middle, the next one takes over and the rest is saved as a second file, "name (part 2).mp4".
+- **Timing.** Every picture and every sound packet is stamped with the time Windows captured it, on one clock, so they stay together however long the recording runs. The video has a constant frame rate; when the screen is still, the same picture repeats. If encoding falls far behind, frames are skipped (the picture holds still for a moment) but the sound never is.
+- **Crash-safe.** While recording, the video is written to a temporary file in `%LocalAppData%\CashGear\Capture\Recordings\Temp` that survives the app being closed or the PC losing power, losing about a second. Stop turns it into the MP4. A recording left behind is found when the app starts: a notification, and tray › **Save Interrupted Recordings**, save it where it was going.
+- **Sound.** System audio (what you hear on the default output device) is recorded by default. A microphone can be added in Settings › Recording. Both are saved in the MP4 as AAC (48 kHz stereo): mixed into one track, or (Settings) a track per source for editing, or both.
+  - The toolbar shows a level meter and, with a microphone, a **Mute mic** button. Its sound button opens volume (0–200%) and mute for each source; the volumes are kept for the next recording.
   - Sound is kept on the recording's clock: silences stay silent, Pause pauses the sound too, and the sound and picture end together.
+  - A device unplugged during a recording leaves silence; a notification says so and the recording goes on.
   - If no sound device is available, the video is recorded without sound and the notification says why. With system audio off and no microphone, the MP4 has no sound track.
 
 ## Capture Text
@@ -177,12 +180,15 @@ src/CashGear.Capture.Core       Models, interfaces, settings, pixel math (net10.
 src/CashGear.Capture.Interop    All P/Invoke + COM declarations
 src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enumeration
 src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom (net10.0, no WPF)
-src/CashGear.Capture.Recording  Screen recording: WGC frames -> ffmpeg (H.264 MP4), WASAPI sound -> a named pipe (AAC)
-tools/get-ffmpeg.ps1            Downloads the pinned ffmpeg build into tools/ffmpeg (not committed)
+src/CashGear.Capture.Media      FFmpeg in-process (FFmpeg.AutoGen): encoders, crash-safe writer, remux, decoding (net10.0)
+src/CashGear.Capture.Recording  Screen recording: timestamped WGC pictures + WASAPI sound -> encoders -> temp file -> MP4; recovery
+tools/get-ffmpeg.ps1            Downloads the pinned LGPL FFmpeg build into tools/ffmpeg (not committed)
+tools/SyncTest                  Recording acceptance test: flashes + beeps, then sync, drift, CPU (docs/TESTING.md)
+tools/licenses                  License texts shipped with FFmpeg
 tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
 tools/make-icon.ps1             Draws the app icon
 src/CashGear.Capture.App        WPF app: tray, windows, view models, output
-tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, App)
+tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, App)
 ```
 
 ## Files on disk
@@ -193,4 +199,6 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | Logs | `%LocalAppData%\CashGear\Capture\logs\` |
 | Captures (default) | `Pictures\CashGear Capture\` |
 | Capture history | `%LocalAppData%\CashGear\Capture\history\` |
+| Recordings in progress (and ones a crash left) | `%LocalAppData%\CashGear\Capture\Recordings\Temp\` |
+| Which encoders work here | `%LocalAppData%\CashGear\Capture\encoders.json` |
 | Installed app (Setup.exe) | `%LocalAppData%\CashGear.Capture\` (removed by uninstall; the rows above are kept) |
