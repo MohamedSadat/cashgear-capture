@@ -48,4 +48,5 @@ public sealed class EncoderCache(AppPaths paths)
 
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(EncoderCacheFile))]
+[JsonSerializable(typeof(RecordingManifest))]
 internal sealed partial class RecordingJsonContext : JsonSerializerContext;
