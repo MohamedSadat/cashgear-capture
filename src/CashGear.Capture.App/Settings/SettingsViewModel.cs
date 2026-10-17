@@ -363,7 +363,34 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private AppChoice? _recordingApp;
 
+    /// <summary>Silence the microphone between words.</summary>
     [ObservableProperty]
+    private bool _microphoneGate;
+
+    /// <summary>The level (dBFS) above which the gate opens.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(GateThresholdText))]
+    private double _gateThresholdDb;
+
+    /// <summary>Even out loud and quiet speech.</summary>
+    [ObservableProperty]
+    private bool _microphoneCompressor;
+
+    /// <summary>Never let the microphone clip.</summary>
+    [ObservableProperty]
+    private bool _microphoneLimiter;
+
+    public string GateThresholdText => $"{GateThresholdDb:0} dB";
+
+    public double MinGateThresholdDb => MicrophoneProcessing.MinGateThresholdDb;
+
+    public double MaxGateThresholdDb => MicrophoneProcessing.MaxGateThresholdDb;
+
+    /// <summary>The microphone's processing applies: a microphone is chosen.</summary>
+    public bool HasMicrophone => RecordingMicrophone?.Id is not null;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMicrophone))]
     private DeviceChoice? _recordingMicrophone;
 
     /// <summary>The output device whose sound is recorded (Id null: Windows' default).</summary>
@@ -576,6 +603,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             SystemAudioScope = RecordingSystemAudioScope,
             SystemAudioApp = RecordingApp?.Exe,
             SystemAudioAppName = RecordingApp?.Name,
+            MicrophoneProcessing = (current.Recording.MicrophoneProcessing ?? new MicrophoneProcessing()) with
+            {
+                NoiseGate = MicrophoneGate,
+                GateThresholdDb = (int)Math.Round(GateThresholdDb),
+                Compressor = MicrophoneCompressor,
+                Limiter = MicrophoneLimiter,
+            },
             Microphone = RecordingMicrophone?.Id,
             Tracks = RecordingTracks,
         },
@@ -614,6 +648,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             Microphones.Add(RecordingMicrophone);
         }
 
+        var processing = s.Recording.MicrophoneProcessing ?? new MicrophoneProcessing();
+        MicrophoneGate = processing.NoiseGate;
+        GateThresholdDb = processing.GateThresholdDb;
+        MicrophoneCompressor = processing.Compressor;
+        MicrophoneLimiter = processing.Limiter;
         RecordingSystemAudioScope = SystemAudioScopes.Contains(s.Recording.SystemAudioScope) ? s.Recording.SystemAudioScope : SystemAudioScope.All;
         RefreshApps(s.Recording.SystemAudioApp, s.Recording.SystemAudioAppName);
         RecordingOutput = OutputDevices.FirstOrDefault(d => string.Equals(d.Id, s.Recording.SystemAudioDevice, StringComparison.OrdinalIgnoreCase));

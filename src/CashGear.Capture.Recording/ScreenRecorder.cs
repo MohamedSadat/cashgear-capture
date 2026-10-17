@@ -45,8 +45,11 @@ internal sealed partial class ScreenRecorder(
     WgcInterop interop,
     IMouseState mouse,
     IAudioSourceFactory audio,
-    ILoggerFactory loggers) : IScreenRecorder
+    ILoggerFactory loggers,
+    MicrophoneProcessors? processors = null) : IScreenRecorder
 {
+    private readonly MicrophoneProcessors _processors = processors ?? new MicrophoneProcessors();
+
     private static readonly TimeSpan FinishTimeout = TimeSpan.FromSeconds(60);
 
     private readonly ILogger _logger = loggers.CreateLogger<ScreenRecorder>();
@@ -89,6 +92,18 @@ internal sealed partial class ScreenRecorder(
     {
         get => _session?.Track(RecordingSound.System)?.Gain ?? 1;
         set => _session?.Track(RecordingSound.System)?.Gain = value;
+    }
+
+    public MicrophoneProcessing? MicrophoneProcessing
+    {
+        get => _session?.MicrophoneChain?.Settings;
+        set
+        {
+            if (value is not null && _session?.MicrophoneChain is { } chain)
+            {
+                chain.Settings = value;
+            }
+        }
     }
 
     public bool IsSaving => _saving is not null;
@@ -162,8 +177,11 @@ internal sealed partial class ScreenRecorder(
                 parts.Stream = await WgcAreaStream.StartAsync(
                     interop, options.Monitor, area, options.IncludeCursor, loggers, ct, timestamp => grid.SlotOf(clock.MapInstant(timestamp))).ConfigureAwait(false);
 
+                var chain = options.MicrophoneProcessing is { } processing && sources.Any(s => s.Kind == RecordingSound.Microphone)
+                    ? _processors.Create(processing)
+                    : null;
                 var session = new Session(
-                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, fallbacks, parts, manifest, tracks, soundNote, mouse, _logger);
+                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, fallbacks, parts, manifest, tracks, soundNote, chain, mouse, _logger);
                 session.Failed += (_, e) => OnFailed(e);
                 session.Start();
                 _session = session;
@@ -454,9 +472,11 @@ internal sealed partial class ScreenRecorder(
             RecordingManifest manifest,
             IReadOnlyList<SoundTrack> tracks,
             string? soundNote,
+            MicrophoneChain? microphoneChain,
             IMouseState mouse,
             ILogger logger)
         {
+            MicrophoneChain = microphoneChain;
             _owner = owner;
             _options = options;
             _format = format;
@@ -500,6 +520,9 @@ internal sealed partial class ScreenRecorder(
 
         public double SaveProgress => Volatile.Read(ref _saveProgress);
 
+        /// <summary>The microphone's processing, when it has any.</summary>
+        public MicrophoneChain? MicrophoneChain { get; }
+
         /// <summary>Raised (on a worker thread) when recording can't go on, e.g. the disk is full.</summary>
         public event EventHandler<Exception>? Failed;
 
@@ -526,7 +549,16 @@ internal sealed partial class ScreenRecorder(
             foreach (var source in _parts.Sources)
             {
                 var track = _sourceTracks[source.Kind];
-                source.Start((samples, start, discontinuity) => OnSound(track, samples, start, discontinuity), (status, message) => OnSoundStatus(status, message));
+                AudioDataHandler place = (samples, start, discontinuity) => OnSound(track, samples, start, discontinuity);
+                if (source.Kind == RecordingSound.Microphone && MicrophoneChain is { } chain)
+                {
+                    // Processed on the capture thread; each block keeps the time its sound was captured.
+                    source.Start((samples, start, discontinuity) => chain.Process(samples, start, discontinuity, place), (status, message) => OnSoundStatus(status, message));
+                }
+                else
+                {
+                    source.Start(place, (status, message) => OnSoundStatus(status, message));
+                }
             }
         }
 
@@ -590,6 +622,7 @@ internal sealed partial class ScreenRecorder(
 
             LogStopStep("sound done");
             _parts.Sources.ForEach(s => s.Dispose());
+            MicrophoneChain?.Dispose();
             await Task.Run(() => _writer.Complete(timeout)).ConfigureAwait(false);
             _writer.Dispose();
             LogStopStep($"temporary file finished, {_writer.Segments.Count} segment(s)");

@@ -174,7 +174,8 @@ public sealed partial class RecordingController
                 recording.SystemAudioDevice,
                 recording.SystemAudioScope,
                 recording.SystemAudioApp,
-                recording.SystemAudioAppName);
+                recording.SystemAudioAppName,
+                recording.MicrophoneProcessing);
             await _recorder.StartAsync(options, ct).ConfigureAwait(false);
             await _ui.InvokeAsync(() => ShowToolbar(monitor, current.Appearance.Theme)).ConfigureAwait(false);
         }

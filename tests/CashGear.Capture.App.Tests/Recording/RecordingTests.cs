@@ -140,6 +140,9 @@ internal static class TestFfmpeg
 /// </summary>
 internal sealed class ToneBursts(RecordingSound kind, params (double Start, double Length)[] bursts) : IAudioSource
 {
+    /// <summary>The tone's peak (0.5 unless set; above 1 to test clipping).</summary>
+    public float Amplitude { get; init; } = 0.5f;
+
     private const int Packet = 480;
     private Thread? _thread;
     private volatile bool _stopping;
@@ -181,7 +184,7 @@ internal sealed class ToneBursts(RecordingSound kind, params (double Start, doub
                 for (var i = 0; i < Packet; i++)
                 {
                     var t = (next + i) / 48000.0;
-                    var value = Sounding(t) ? 0.5f * (float)Math.Sin(2 * Math.PI * 1000 * t) : 0f;
+                    var value = Sounding(t) ? Amplitude * (float)Math.Sin(2 * Math.PI * 1000 * t) : 0f;
                     samples[i * 2] = value;
                     samples[(i * 2) + 1] = value;
                 }
@@ -393,6 +396,8 @@ internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : 
     public float MicrophoneGain { get; set; } = 1;
 
     public float SystemAudioGain { get; set; } = 1;
+
+    public MicrophoneProcessing? MicrophoneProcessing { get; set; }
 
     public bool IsSaving => false;
 
@@ -886,6 +891,30 @@ public sealed class ScreenRecorderTests : IDisposable
         var frames = reader.VideoLuma();
         frames.Where(f => f.Time < 0.9).Should().OnlyContain(f => f.Luma < 60, "black before the pause");
         frames.Where(f => f.Time >= 1.1).Should().NotBeEmpty().And.OnlyContain(f => f.Luma > 200, "white from the resume on");
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task The_microphone_is_limited_without_moving_in_time()
+    {
+        var (recorder, options) = Create(sound: new FakeSound(microphone: () => new ToneBursts(RecordingSound.Microphone, (1.0, 0.5)) { Amplitude = 1.8f }));
+        var ct = TestContext.Current.CancellationToken;
+
+        await recorder.StartAsync(options with { Microphone = "test", MicrophoneProcessing = new MicrophoneProcessing() }, ct);
+        recorder.MicrophoneProcessing.Should().Be(new MicrophoneProcessing());
+        await UntilRecorded(recorder, 1.2, ct);
+        recorder.MicrophoneProcessing = new MicrophoneProcessing(Compressor: true);
+        recorder.MicrophoneProcessing!.Compressor.Should().BeTrue("changed while recording");
+        await UntilRecorded(recorder, 2, ct);
+        var result = await recorder.StopAsync(ct);
+
+        var sound = TestFfmpeg.DecodeSound(result.Path);
+        // The decoded mono is (L + R) / √2: identical channels come out √2 louder than each.
+        static double Peak(float[] sound, double from, double to) =>
+            sound.Skip((int)(from * 48000)).Take((int)((to - from) * 48000)).Max(Math.Abs) / Math.Sqrt(2);
+
+        Peak(sound, 1.02, 1.18).Should().BeInRange(0.85, 0.92, "limited to -1 dB (0.891), not clipped at 1.8");
+        Peak(sound, 1.4, 1.5).Should().BeInRange(0.4, 0.6, "the compressor switched on while recording: 29 dB over the threshold at 3:1 is -19 dB, +8 dB make-up");
+        TestFfmpeg.Onsets(sound, 0.1f).Should().ContainSingle().Which.Should().BeApproximately(1.0, 0.01, "the chain's 2 ms delay is taken out of the timestamps");
     }
 
     [Fact(Timeout = 60_000)]

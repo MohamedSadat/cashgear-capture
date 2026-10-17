@@ -1,5 +1,6 @@
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Settings;
 
 namespace CashGear.Capture.Core.Recording;
 
@@ -37,6 +38,7 @@ public enum SystemAudioScope
 /// <param name="SystemAudioScope">All of system audio, or only (or all but) one app's sound.</param>
 /// <param name="SystemAudioApp">The app for <paramref name="SystemAudioScope"/>: its program file name, e.g. <c>spotify.exe</c>.</param>
 /// <param name="SystemAudioAppName">The app's name for messages, e.g. "Spotify".</param>
+/// <param name="MicrophoneProcessing">What is done to the microphone's sound (null: nothing).</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="Settings.RecordingSettings.DefaultMicrophone"/> or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 public sealed record RecordingOptions(
@@ -56,7 +58,8 @@ public sealed record RecordingOptions(
     string? SystemAudioDevice = null,
     SystemAudioScope SystemAudioScope = SystemAudioScope.All,
     string? SystemAudioApp = null,
-    string? SystemAudioAppName = null);
+    string? SystemAudioAppName = null,
+    MicrophoneProcessing? MicrophoneProcessing = null);
 
 /// <param name="Path">The (first) file saved.</param>
 /// <param name="FramesDropped">Frames skipped because encoding fell behind (the picture holds still for that long).</param>
@@ -112,6 +115,9 @@ public interface IScreenRecorder
 
     /// <summary>System audio's volume, 1 as captured (0 to 4).</summary>
     float SystemAudioGain { get; set; }
+
+    /// <summary>What is done to the microphone now; changes are heard at once (null when there is no microphone).</summary>
+    MicrophoneProcessing? MicrophoneProcessing { get; set; }
 
     /// <summary>True while a stopped recording is being saved; <see cref="SaveProgress"/> says how far (0 to 1).</summary>
     bool IsSaving { get; }

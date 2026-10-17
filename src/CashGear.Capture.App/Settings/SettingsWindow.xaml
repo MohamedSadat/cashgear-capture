@@ -216,6 +216,20 @@
                         HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" Margin="0,8,0,0" AutomationProperties.Name="Microphone" />
             </Grid>
             <TextBlock Style="{StaticResource Hint}" Text="{Binding SpeakersStatus}" />
+
+            <TextBlock Text="Microphone processing" FontWeight="SemiBold" Margin="0,12,0,4" />
+            <StackPanel IsEnabled="{Binding HasMicrophone}">
+              <StackPanel Orientation="Horizontal" Margin="0,2">
+                <CheckBox Content="Noise gate: silence the microphone between words, below" IsChecked="{Binding MicrophoneGate}" VerticalAlignment="Center" />
+                <Slider Width="140" Margin="8,0,0,0" Minimum="{Binding MinGateThresholdDb}" Maximum="{Binding MaxGateThresholdDb}" SmallChange="1" LargeChange="5"
+                        Value="{Binding GateThresholdDb}" IsSnapToTickEnabled="True" TickFrequency="1" IsEnabled="{Binding MicrophoneGate}" VerticalAlignment="Center"
+                        AutomationProperties.Name="Noise gate threshold" />
+                <TextBlock Text="{Binding GateThresholdText}" Margin="8,0,0,0" VerticalAlignment="Center" MinWidth="44" />
+              </StackPanel>
+              <CheckBox Margin="0,2" Content="Compressor: even out loud and quiet speech" IsChecked="{Binding MicrophoneCompressor}" />
+              <CheckBox Margin="0,2" Content="Limiter: never let the microphone go above −1 dB (no clipping)" IsChecked="{Binding MicrophoneLimiter}" />
+            </StackPanel>
+            <TextBlock Style="{StaticResource Hint}" Text="Applied to the microphone as it is recorded, in this order. The gate threshold is a peak level: set it between the room's noise and your quietest word. The microphone is held back 2 ms (10 ms more with noise suppression), and the recording takes that out, so it stays in sync." />
             <TextBlock Style="{StaticResource Hint}" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}"
                        Text="Only one app records that app's sound (and that of the programs it starts) on whichever device it plays, and nothing else: no notifications, no other apps. All sound except one app leaves out, say, a call or music you don't want in the video. The app is found by its program when the recording starts, and followed if it starts or restarts later." />
             <Grid Margin="0,8,0,0">

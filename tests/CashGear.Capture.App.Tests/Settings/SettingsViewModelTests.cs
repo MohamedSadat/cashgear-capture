@@ -458,6 +458,36 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Microphone_processing_is_loaded_and_saved_keeping_what_settings_does_not_show()
+    {
+        _settings.Current = _settings.Current with
+        {
+            Recording = new RecordingSettings(
+                Microphone: "default",
+                MicrophoneProcessing: new MicrophoneProcessing(NoiseSuppression: true, NoiseSuppressionStrength: 60, NoiseGate: true, GateThresholdDb: -50)),
+        };
+        using var vm = Create(new FakeAudioDevices());
+
+        vm.HasMicrophone.Should().BeTrue();
+        vm.MicrophoneGate.Should().BeTrue();
+        vm.GateThresholdDb.Should().Be(-50);
+        vm.GateThresholdText.Should().Be("-50 dB");
+        vm.MicrophoneCompressor.Should().BeFalse();
+        vm.MicrophoneLimiter.Should().BeTrue("on by default");
+
+        vm.GateThresholdDb = -38.4;
+        vm.MicrophoneCompressor = true;
+        vm.MicrophoneLimiter = false;
+        await vm.ApplyCommand.ExecuteAsync(null);
+
+        _settings.Current.Recording.MicrophoneProcessing.Should().Be(
+            new MicrophoneProcessing(NoiseSuppression: true, NoiseSuppressionStrength: 60, NoiseGate: true, GateThresholdDb: -38, Compressor: true, Limiter: false));
+
+        vm.RecordingMicrophone = vm.Microphones.Single(m => m.Id is null);
+        vm.HasMicrophone.Should().BeFalse("processing only applies to a microphone");
+    }
+
+    [Fact]
     public void Without_process_loopback_only_all_sound_is_offered()
     {
         _settings.Current = _settings.Current with

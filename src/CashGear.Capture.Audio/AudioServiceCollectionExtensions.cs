@@ -14,6 +14,7 @@ public static class AudioServiceCollectionExtensions
         services.AddSingleton<IAudioApps>(s => s.GetRequiredService<AudioApps>());
         services.AddSingleton<IAudioSourceFactory, WasapiAudioSourceFactory>();
         services.AddSingleton<IAudioDevices, WasapiAudioDevices>();
+        services.AddSingleton<MicrophoneProcessors>();
         return services;
     }
 }

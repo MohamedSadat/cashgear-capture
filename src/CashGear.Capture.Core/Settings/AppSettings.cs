@@ -161,6 +161,7 @@ public enum AppTheme
 /// <param name="SystemAudioScope">All of system audio, or only (or all but) one app's sound.</param>
 /// <param name="SystemAudioApp">The app for <paramref name="SystemAudioScope"/>, by program file name (<c>spotify.exe</c>).</param>
 /// <param name="SystemAudioAppName">The app's name as shown in Settings and messages.</param>
+/// <param name="MicrophoneProcessing">Noise suppression, noise gate, compressor and limiter for the microphone.</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="DefaultMicrophone"/> for the Windows default, or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 /// <param name="SystemAudioGain">System audio's volume in recordings, 1 as captured (0 to 4; set on the recording toolbar).</param>
@@ -179,9 +180,13 @@ public sealed record RecordingSettings(
     string? SystemAudioDevice = null,
     Recording.SystemAudioScope SystemAudioScope = Recording.SystemAudioScope.All,
     string? SystemAudioApp = null,
-    string? SystemAudioAppName = null)
+    string? SystemAudioAppName = null,
+    MicrophoneProcessing? MicrophoneProcessing = null)
 {
     public const float MaxGain = 4;
+
+    /// <summary>Never null when made by the constructor (or read from a file), so settings compare by value.</summary>
+    public MicrophoneProcessing? MicrophoneProcessing { get; init; } = MicrophoneProcessing ?? new MicrophoneProcessing();
 
     /// <summary><see cref="Microphone"/> value for "whichever microphone Windows uses by default".</summary>
     public const string DefaultMicrophone = "default";
@@ -195,6 +200,7 @@ public sealed record RecordingSettings(
         Encoder = string.IsNullOrWhiteSpace(Encoder) ? Recording.EncoderPresets.Auto : Encoder.Trim().ToLowerInvariant(),
         Microphone = string.IsNullOrWhiteSpace(Microphone) ? null : Microphone.Trim(),
         SystemAudioDevice = string.IsNullOrWhiteSpace(SystemAudioDevice) ? null : SystemAudioDevice.Trim(),
+        MicrophoneProcessing = (MicrophoneProcessing ?? new MicrophoneProcessing()).Normalize(),
         SystemAudioApp = string.IsNullOrWhiteSpace(SystemAudioApp) ? null : SystemAudioApp.Trim().ToLowerInvariant(),
         SystemAudioAppName = string.IsNullOrWhiteSpace(SystemAudioAppName) ? null : SystemAudioAppName.Trim(),
         // Without an app there is nothing to pick out: all of system audio.
@@ -205,6 +211,39 @@ public sealed record RecordingSettings(
     };
 
     private static float Gain(float value) => float.IsFinite(value) ? Math.Clamp(value, 0, MaxGain) : 1;
+}
+
+/// <summary>
+/// What is done to the microphone's sound before it is recorded, in this order: noise suppression (RNNoise), noise
+/// gate, compressor, limiter. Only the limiter is on by default: below −1 dBFS it changes nothing.
+/// </summary>
+/// <param name="NoiseSuppression">Remove steady background noise (fans, hum, keyboard) with RNNoise.</param>
+/// <param name="NoiseSuppressionStrength">How much of it (percent, 0 to 100): 100 removes all it can; less leaves some of the original in.</param>
+/// <param name="NoiseGate">Silence the microphone between words.</param>
+/// <param name="GateThresholdDb">The level (dBFS) above which the gate lets the sound through (−80 to −10).</param>
+/// <param name="Compressor">Even out loud and quiet speech.</param>
+/// <param name="Limiter">Never let the microphone go above −1 dBFS (no clipping).</param>
+public sealed record MicrophoneProcessing(
+    bool NoiseSuppression = false,
+    int NoiseSuppressionStrength = 100,
+    bool NoiseGate = false,
+    int GateThresholdDb = MicrophoneProcessing.DefaultGateThresholdDb,
+    bool Compressor = false,
+    bool Limiter = true)
+{
+    public const int DefaultGateThresholdDb = -45;
+    public const int MinGateThresholdDb = -80;
+    public const int MaxGateThresholdDb = -10;
+
+    /// <summary>Whether anything changes the sound at all.</summary>
+    [JsonIgnore]
+    public bool DoesAnything => NoiseSuppression || NoiseGate || Compressor || Limiter;
+
+    public MicrophoneProcessing Normalize() => this with
+    {
+        NoiseSuppressionStrength = Math.Clamp(NoiseSuppressionStrength, 0, 100),
+        GateThresholdDb = Math.Clamp(GateThresholdDb, MinGateThresholdDb, MaxGateThresholdDb),
+    };
 }
 
 /// <summary>Capture Text (OCR).</summary>
