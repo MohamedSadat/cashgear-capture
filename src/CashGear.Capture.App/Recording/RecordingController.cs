@@ -81,6 +81,7 @@ public sealed partial class RecordingController
         _logger = logger;
         _recorder.StateChanged += (_, _) => StateChanged?.Invoke(this, EventArgs.Empty);
         _recorder.Warning += (_, message) => _notifier.Notify("Recording", message, NotificationKind.Warning);
+        _recorder.Notice += (_, message) => _notifier.Notify("Recording", message, NotificationKind.Info);
         _recorder.Failed += (_, message) =>
         {
             _notifier.Notify("Recording stopped", message + " What was recorded is being saved.", NotificationKind.Error);
@@ -169,7 +170,8 @@ public sealed partial class RecordingController
                 recording.Microphone,
                 recording.Tracks,
                 recording.SystemAudioGain,
-                recording.MicrophoneGain);
+                recording.MicrophoneGain,
+                recording.SystemAudioDevice);
             await _recorder.StartAsync(options, ct).ConfigureAwait(false);
             await _ui.InvokeAsync(() => ShowToolbar(monitor, current.Appearance.Theme)).ConfigureAwait(false);
         }

@@ -29,8 +29,8 @@ public sealed record OcrLanguageChoice(string? Tag, string Label)
     public override string ToString() => Label;
 }
 
-/// <summary>An entry of the microphone list: a device ID, <see cref="RecordingSettings.DefaultMicrophone"/>, or null for none.</summary>
-public sealed record MicrophoneChoice(string? Id, string Label)
+/// <summary>An entry of a sound device list: a device ID, or for microphones <see cref="RecordingSettings.DefaultMicrophone"/> or null for none, and for output devices null for Windows' default.</summary>
+public sealed record DeviceChoice(string? Id, string Label)
 {
     public override string ToString() => Label;
 }

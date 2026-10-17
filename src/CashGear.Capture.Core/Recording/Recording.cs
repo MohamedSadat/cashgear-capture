@@ -20,6 +20,7 @@ public enum RecordingSound
 /// <param name="Encoder"><see cref="EncoderPresets.Auto"/>, <see cref="EncoderPresets.Software"/> or an encoder's id.</param>
 /// <param name="OutputPath">The .mp4 file to write (later parts, if the encoder changes, are named after it).</param>
 /// <param name="SystemAudio">Record what the PC plays.</param>
+/// <param name="SystemAudioDevice">The output device whose sound is recorded: a device ID, or null for Windows' default (followed when it changes).</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="Settings.RecordingSettings.DefaultMicrophone"/> or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 public sealed record RecordingOptions(
@@ -35,7 +36,8 @@ public sealed record RecordingOptions(
     string? Microphone = null,
     AudioTrackLayout Tracks = AudioTrackLayout.Mixed,
     float SystemAudioGain = 1,
-    float MicrophoneGain = 1);
+    float MicrophoneGain = 1,
+    string? SystemAudioDevice = null);
 
 /// <param name="Path">The (first) file saved.</param>
 /// <param name="FramesDropped">Frames skipped because encoding fell behind (the picture holds still for that long).</param>
@@ -106,6 +108,9 @@ public interface IScreenRecorder
     /// <summary>Something the user should know while recording continues, e.g. a microphone was unplugged (on any thread).</summary>
     event EventHandler<string>? Warning;
 
+    /// <summary>Good news while recording, e.g. an unplugged microphone is back, or system audio follows a new default device (on any thread).</summary>
+    event EventHandler<string>? Notice;
+
     /// <summary>The recording can't go on (e.g. the disk is full): stop it to save what was recorded (on any thread).</summary>
     event EventHandler<string>? Failed;
 
@@ -144,6 +149,9 @@ public interface IAudioDevices
     /// <summary>The microphones (and other inputs) connected now.</summary>
     IReadOnlyList<AudioDevice> Microphones();
 
-    /// <summary>The default output device, which "system audio" records; null if there is none.</summary>
-    AudioDevice? Speakers();
+    /// <summary>The output devices connected now, whose sound "system audio" can record.</summary>
+    IReadOnlyList<AudioDevice> Outputs();
+
+    /// <summary>Windows' default output device, which system audio records unless another is chosen; null if there is none.</summary>
+    AudioDevice? DefaultOutput();
 }

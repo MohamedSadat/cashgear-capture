@@ -99,6 +99,8 @@ internal sealed partial class ScreenRecorder(
 
     public event EventHandler<string>? Warning;
 
+    public event EventHandler<string>? Notice;
+
     public event EventHandler<string>? Failed;
 
     public float TakeSoundLevel() => _session?.TakeSoundLevel() ?? 0;
@@ -261,7 +263,7 @@ internal sealed partial class ScreenRecorder(
         var problems = new List<string>();
         if (options.SystemAudio)
         {
-            Add(audio.OpenSystemAudio());
+            Add(audio.OpenSystemAudio(options.SystemAudioDevice));
         }
 
         if (options.Microphone is { } microphone)
@@ -277,15 +279,16 @@ internal sealed partial class ScreenRecorder(
         var note = string.Join(" ", problems) + (sources.Count == 0 ? " The video has no sound." : string.Empty);
         return (sources, note);
 
-        void Add((IAudioSource? Source, string? Problem) opened)
+        void Add(AudioOpenResult opened)
         {
             if (opened.Source is { } source)
             {
                 sources.Add(source);
             }
-            else if (opened.Problem is { } problem)
+
+            if (opened.Note is { } note)
             {
-                problems.Add(problem);
+                problems.Add(note);
             }
         }
     }
@@ -297,6 +300,8 @@ internal sealed partial class ScreenRecorder(
         LogWarning(message);
         Warning?.Invoke(this, message);
     }
+
+    private void OnNotice(string message) => Notice?.Invoke(this, message);
 
     private void OnFailed(Exception e)
     {
@@ -499,7 +504,7 @@ internal sealed partial class ScreenRecorder(
             foreach (var source in _parts.Sources)
             {
                 var track = _sourceTracks[source.Kind];
-                source.Start((samples, start, discontinuity) => OnSound(track, samples, start, discontinuity), ex => OnSoundFailed(source, ex));
+                source.Start((samples, start, discontinuity) => OnSound(track, samples, start, discontinuity), (status, message) => OnSoundStatus(status, message));
             }
         }
 
@@ -867,11 +872,20 @@ internal sealed partial class ScreenRecorder(
             }
         }
 
-        private void OnSoundFailed(IAudioSource source, Exception ex)
+        /// <summary>A source's device stopped, came back or was replaced: tell the user now, and note it (with the time) for the saved notification.</summary>
+        private void OnSoundStatus(AudioSourceStatus status, string message)
         {
             var at = Clock.Elapsed;
-            _soundNote = $"Sound from {source.Name} stopped at {(int)at.TotalMinutes}:{at.Seconds:00} ({ex.Message.Trim()}).";
-            _owner.OnWarning($"{source.Name} stopped working ({ex.Message.Trim()}). The recording continues without it.");
+            var note = $"At {(int)at.TotalMinutes}:{at.Seconds:00}: {message}";
+            _soundNote = _soundNote is null ? note : _soundNote + " " + note;
+            if (status == AudioSourceStatus.Lost)
+            {
+                _owner.OnWarning(message);
+            }
+            else
+            {
+                _owner.OnNotice(message);
+            }
         }
 
         private void WriteSound()

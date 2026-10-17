@@ -13,6 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="NAudio.Wasapi" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="..\CashGear.Capture.Engine.Tests\InteractiveDesktop.cs" Link="InteractiveDesktop.cs" />
   </ItemGroup>
 

@@ -148,7 +148,7 @@ internal sealed class ToneBursts(RecordingSound kind, params (double Start, doub
 
     public RecordingSound Kind => kind;
 
-    public void Start(AudioDataHandler data, Action<Exception> failed)
+    public void Start(AudioDataHandler data, AudioStatusHandler status)
     {
         var origin = Stopwatch.GetTimestamp();
         _thread = new Thread(() => Run(origin, data)) { IsBackground = true };
@@ -192,7 +192,7 @@ internal sealed class ToneBursts(RecordingSound kind, params (double Start, doub
     }
 }
 
-/// <summary>A microphone that hums until it is "unplugged" after <paramref name="after"/> seconds, then reports the failure once and goes quiet.</summary>
+/// <summary>A microphone that hums until it is "unplugged" after <paramref name="after"/> seconds, then reports the loss once and goes quiet.</summary>
 internal sealed class Unplugged(double after) : IAudioSource
 {
     private Thread? _thread;
@@ -202,7 +202,7 @@ internal sealed class Unplugged(double after) : IAudioSource
 
     public RecordingSound Kind => RecordingSound.Microphone;
 
-    public void Start(AudioDataHandler data, Action<Exception> failed)
+    public void Start(AudioDataHandler data, AudioStatusHandler status)
     {
         var origin = Stopwatch.GetTimestamp();
         _thread = new Thread(() =>
@@ -214,7 +214,7 @@ internal sealed class Unplugged(double after) : IAudioSource
                 Thread.Sleep(10);
                 if (Stopwatch.GetElapsedTime(origin).TotalSeconds >= after)
                 {
-                    failed(new IOException("The device was removed."));
+                    status(AudioSourceStatus.Lost, "test microphone stopped working (The device was removed.). Its sound is silent in the recording until it is back.");
                     return;
                 }
 
@@ -240,11 +240,11 @@ internal sealed class FakeSound(Func<IAudioSource>? system = null, Func<IAudioSo
 {
     public const string NoDevice = "No sound output device was found, so system audio isn't recorded.";
 
-    public (IAudioSource? Source, string? Problem) OpenSystemAudio() => system is null ? (null, NoDevice) : (system(), null);
+    public AudioOpenResult OpenSystemAudio(string? device) => system is null ? AudioOpenResult.Failed(NoDevice) : new AudioOpenResult(system(), null);
 
-    public (IAudioSource? Source, string? Problem) OpenMicrophone(string id) => microphone is null
-        ? (null, "The microphone chosen in Settings isn't connected, so it isn't recorded.")
-        : (microphone(), null);
+    public AudioOpenResult OpenMicrophone(string id) => microphone is null
+        ? AudioOpenResult.Failed("The microphone chosen in Settings isn't connected, so it isn't recorded.")
+        : new AudioOpenResult(microphone(), null);
 }
 
 public sealed class EncoderServiceTests : IDisposable
@@ -396,6 +396,12 @@ internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : 
     }
 
     public event EventHandler<string>? Warning
+    {
+        add { }
+        remove { }
+    }
+
+    public event EventHandler<string>? Notice
     {
         add { }
         remove { }
@@ -961,8 +967,8 @@ public sealed class ScreenRecorderTests : IDisposable
         recorder.IsRecording.Should().BeTrue();
         var result = await recorder.StopAsync(ct);
 
-        warnings.Should().ContainSingle().Which.Should().Contain("test microphone stopped working").And.Contain("continues");
-        result.SoundNote.Should().Contain("test microphone stopped at 0:01");
+        warnings.Should().ContainSingle().Which.Should().Contain("test microphone stopped working").And.Contain("silent");
+        result.SoundNote.Should().Contain("At 0:01: test microphone stopped working");
         var streams = TestFfmpeg.Streams(result.Path);
         streams.Single(s => s.Type == "audio").Duration.Should().BeApproximately(streams.Single(s => s.Type == "video").Duration, 0.1);
         TestFfmpeg.Onsets(TestFfmpeg.DecodeSound(result.Path), 0.1f).Should().ContainSingle().Which.Should().BeApproximately(2.0, 0.1, "system audio carried on");
@@ -1027,8 +1033,9 @@ public sealed class ScreenRecorderTests : IDisposable
     [Fact(Timeout = 60_000)]
     public async Task Real_system_audio_gives_a_sound_track_even_when_nothing_plays()
     {
-        var factory = new WasapiAudioSourceFactory(_loggers.CreateLogger<WasapiAudioSourceFactory>());
-        Assert.SkipWhen(new WasapiAudioDevices(NullLogger<WasapiAudioDevices>.Instance).Speakers() is null, "This PC has no sound output device.");
+        using var watcher = new AudioDeviceWatcher(NullLogger<AudioDeviceWatcher>.Instance);
+        var factory = new WasapiAudioSourceFactory(watcher, _loggers);
+        Assert.SkipWhen(new WasapiAudioDevices(NullLogger<WasapiAudioDevices>.Instance).DefaultOutput() is null, "This PC has no sound output device.");
         var (recorder, options) = Create(sound: factory);
         var ct = TestContext.Current.CancellationToken;
 
@@ -1048,8 +1055,9 @@ public sealed class ScreenRecorderTests : IDisposable
     [Fact(Explicit = true, Timeout = 90_000)]
     public async Task Real_sound_played_while_recording_lands_where_it_was_played()
     {
-        var factory = new WasapiAudioSourceFactory(_loggers.CreateLogger<WasapiAudioSourceFactory>());
-        Assert.SkipWhen(new WasapiAudioDevices(NullLogger<WasapiAudioDevices>.Instance).Speakers() is null, "This PC has no sound output device.");
+        using var watcher = new AudioDeviceWatcher(NullLogger<AudioDeviceWatcher>.Instance);
+        var factory = new WasapiAudioSourceFactory(watcher, _loggers);
+        Assert.SkipWhen(new WasapiAudioDevices(NullLogger<WasapiAudioDevices>.Instance).DefaultOutput() is null, "This PC has no sound output device.");
         var (recorder, options) = Create(sound: factory);
         var ct = TestContext.Current.CancellationToken;
         Directory.CreateDirectory(_folder);

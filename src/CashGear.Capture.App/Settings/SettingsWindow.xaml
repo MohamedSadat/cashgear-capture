@@ -191,9 +191,16 @@
                 <ColumnDefinition Width="220" />
                 <ColumnDefinition />
               </Grid.ColumnDefinitions>
-              <TextBlock Text="Microphone" VerticalAlignment="Center" />
-              <ComboBox Grid.Column="1" ItemsSource="{Binding Microphones}" SelectedItem="{Binding RecordingMicrophone}" DisplayMemberPath="Label"
-                        HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Microphone" />
+              <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+              </Grid.RowDefinitions>
+              <TextBlock Text="System audio from" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding RecordingOutput}" DisplayMemberPath="Label"
+                        HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" IsEnabled="{Binding RecordSystemAudio}" AutomationProperties.Name="System audio from" />
+              <TextBlock Grid.Row="1" Text="Microphone" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Microphones}" SelectedItem="{Binding RecordingMicrophone}" DisplayMemberPath="Label"
+                        HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" Margin="0,8,0,0" AutomationProperties.Name="Microphone" />
             </Grid>
             <TextBlock Style="{StaticResource Hint}" Text="{Binding SpeakersStatus}" />
             <Grid Margin="0,8,0,0">

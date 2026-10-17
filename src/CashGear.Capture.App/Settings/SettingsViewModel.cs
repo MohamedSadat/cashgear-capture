@@ -70,13 +70,18 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IsFfmpegMissing = encoders is null || encoders.Problem is not null;
         Microphones =
         [
-            new MicrophoneChoice(null, "None"),
-            new MicrophoneChoice(RecordingSettings.DefaultMicrophone, "Default microphone (Windows setting)"),
-            .. (audio?.Microphones() ?? []).Select(m => new MicrophoneChoice(m.Id, m.Name)),
+            new DeviceChoice(null, "None"),
+            new DeviceChoice(RecordingSettings.DefaultMicrophone, "Default microphone (Windows setting)"),
+            .. (audio?.Microphones() ?? []).Select(m => new DeviceChoice(m.Id, m.Name)),
         ];
-        SpeakersStatus = audio?.Speakers() is { } speakers
-            ? $"System audio is what plays on {speakers.Name}, the default output device."
-            : "No sound output device was found; recordings will have no system audio until one is connected.";
+        OutputDevices =
+        [
+            new DeviceChoice(null, "Default output device (follows Windows)"),
+            .. (audio?.Outputs() ?? []).Select(d => new DeviceChoice(d.Id, d.Name)),
+        ];
+        SpeakersStatus = audio?.DefaultOutput() is { } speakers
+            ? $"The default output device is {speakers.Name} now. If another becomes the default during a recording, system audio follows it; a device that is unplugged is recorded again when it is back."
+            : "No sound output device was found; system audio is silent until one is connected.";
         _settings = settings;
         _paths = paths;
         _hotkeys = hotkeys;
@@ -160,9 +165,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public string FfmpegStatus { get; }
 
     /// <summary>None, the Windows default and each microphone connected (plus a saved one that isn't).</summary>
-    public ObservableCollection<MicrophoneChoice> Microphones { get; }
+    public ObservableCollection<DeviceChoice> Microphones { get; }
 
-    /// <summary>Which device system audio comes from.</summary>
+    /// <summary>Windows' default output device, and each one connected (plus a saved one that isn't).</summary>
+    public ObservableCollection<DeviceChoice> OutputDevices { get; }
+
+    /// <summary>Which device system audio comes from by default, and how devices are followed.</summary>
     public string SpeakersStatus { get; }
 
     public bool IsFfmpegMissing { get; }
@@ -300,7 +308,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private bool _recordSystemAudio;
 
     [ObservableProperty]
-    private MicrophoneChoice? _recordingMicrophone;
+    private DeviceChoice? _recordingMicrophone;
+
+    /// <summary>The output device whose sound is recorded (Id null: Windows' default).</summary>
+    [ObservableProperty]
+    private DeviceChoice? _recordingOutput;
 
     /// <summary>Scrolling capture: pause after each scroll.</summary>
     [ObservableProperty]
@@ -504,6 +516,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             ShowClicks = RecordingShowClicks,
             Encoder = RecordingEncoder?.Id ?? EncoderPresets.Auto,
             SystemAudio = RecordSystemAudio,
+            SystemAudioDevice = RecordingOutput?.Id,
             Microphone = RecordingMicrophone?.Id,
             Tracks = RecordingTracks,
         },
@@ -538,9 +551,17 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         RecordingMicrophone = Microphones.FirstOrDefault(m => string.Equals(m.Id, s.Recording.Microphone, StringComparison.OrdinalIgnoreCase));
         if (RecordingMicrophone is null)
         {
-            RecordingMicrophone = new MicrophoneChoice(s.Recording.Microphone, "The microphone chosen before (not connected)");
+            RecordingMicrophone = new DeviceChoice(s.Recording.Microphone, "The microphone chosen before (not connected)");
             Microphones.Add(RecordingMicrophone);
         }
+
+        RecordingOutput = OutputDevices.FirstOrDefault(d => string.Equals(d.Id, s.Recording.SystemAudioDevice, StringComparison.OrdinalIgnoreCase));
+        if (RecordingOutput is null)
+        {
+            RecordingOutput = new DeviceChoice(s.Recording.SystemAudioDevice, "The output device chosen before (not connected)");
+            OutputDevices.Add(RecordingOutput);
+        }
+
         ScrollMaxHeight = s.Capture.ScrollMaxHeight;
         IncludeCursor = s.Capture.IncludeCursor;
         IncludeWindowShadow = s.Capture.IncludeWindowShadow;

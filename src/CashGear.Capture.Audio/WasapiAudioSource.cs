@@ -14,7 +14,7 @@ namespace CashGear.Capture.Audio;
 /// NAudio provides only the Core Audio interop; this loop replaces its <c>WasapiCapture</c>, which drops the
 /// timestamps, polls every 50 ms and can throw from its capture thread when a device disappears.
 /// </summary>
-internal sealed partial class WasapiAudioSource : IAudioSource
+internal sealed partial class WasapiAudioSource : IAudioEndpoint
 {
     private static readonly TimeSpan BufferLength = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(10);
@@ -37,24 +37,21 @@ internal sealed partial class WasapiAudioSource : IAudioSource
     private volatile bool _stopping;
     private bool _started;
 
-    private WasapiAudioSource(MMDevice device, AudioClient client, RecordingSound kind, string name, ILogger logger)
+    private WasapiAudioSource(MMDevice device, AudioClient client, string name, ILogger logger)
     {
         _device = device;
         _client = client;
         _capture = client.AudioCaptureClient;
         _logger = logger;
-        Kind = kind;
         Name = name;
     }
 
     public string Name { get; }
 
-    public RecordingSound Kind { get; }
-
     /// <summary>Initializes the device for capture; takes ownership of <paramref name="device"/>.</summary>
     /// <exception cref="UnauthorizedAccessException">Windows privacy settings block the microphone.</exception>
     /// <exception cref="COMException">The device can't be used (in use exclusively, gone, ...).</exception>
-    public static WasapiAudioSource Open(MMDevice device, bool loopback, RecordingSound kind, string name, ILogger logger)
+    public static WasapiAudioSource Open(MMDevice device, bool loopback, string name, ILogger logger)
     {
         var client = device.CreateAudioClient();
         try
@@ -68,7 +65,7 @@ internal sealed partial class WasapiAudioSource : IAudioSource
                 0,
                 WaveFormat.CreateIeeeFloatWaveFormat(AudioMixer.SampleRate, AudioMixer.Channels),
                 Guid.Empty);
-            return new WasapiAudioSource(device, client, kind, name, logger);
+            return new WasapiAudioSource(device, client, name, logger);
         }
         catch
         {

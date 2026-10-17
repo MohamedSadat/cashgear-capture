@@ -8,30 +8,11 @@ namespace CashGear.Capture.Audio;
 /// <summary>The sound devices Windows has now, for the settings window.</summary>
 internal sealed partial class WasapiAudioDevices(ILogger<WasapiAudioDevices> logger) : IAudioDevices
 {
-    public IReadOnlyList<AudioDevice> Microphones()
-    {
-        try
-        {
-            using var devices = new MMDeviceEnumerator();
-            var list = new List<AudioDevice>();
-            foreach (var device in devices.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
-            {
-                using (device)
-                {
-                    list.Add(new AudioDevice(device.ID, device.FriendlyName));
-                }
-            }
+    public IReadOnlyList<AudioDevice> Microphones() => List(DataFlow.Capture);
 
-            return list;
-        }
-        catch (COMException ex)
-        {
-            LogListFailed(ex);
-            return [];
-        }
-    }
+    public IReadOnlyList<AudioDevice> Outputs() => List(DataFlow.Render);
 
-    public AudioDevice? Speakers()
+    public AudioDevice? DefaultOutput()
     {
         try
         {
@@ -50,6 +31,29 @@ internal sealed partial class WasapiAudioDevices(ILogger<WasapiAudioDevices> log
         {
             LogListFailed(ex);
             return null;
+        }
+    }
+
+    private IReadOnlyList<AudioDevice> List(DataFlow flow)
+    {
+        try
+        {
+            using var devices = new MMDeviceEnumerator();
+            var list = new List<AudioDevice>();
+            foreach (var device in devices.EnumerateAudioEndPoints(flow, DeviceState.Active))
+            {
+                using (device)
+                {
+                    list.Add(new AudioDevice(device.ID, device.FriendlyName));
+                }
+            }
+
+            return list;
+        }
+        catch (COMException ex)
+        {
+            LogListFailed(ex);
+            return [];
         }
     }
 

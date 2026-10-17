@@ -374,29 +374,36 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Microphones.Select(m => m.Label).Should().Equal("None", "Default microphone (Windows setting)", "Microphone (H5)", "Line In");
         vm.RecordingMicrophone!.Id.Should().BeNull("no microphone by default");
         vm.SpeakersStatus.Should().Contain("Speakers (Realtek)");
+        vm.OutputDevices.Select(d => d.Label).Should().Equal("Default output device (follows Windows)", "Speakers (Realtek)", "Headphones (H5)");
+        vm.RecordingOutput!.Id.Should().BeNull("Windows' default by default");
 
         vm.RecordSystemAudio = false;
         vm.RecordingMicrophone = vm.Microphones.Single(m => m.Label == "Microphone (H5)");
+        vm.RecordingOutput = vm.OutputDevices.Single(d => d.Label == "Headphones (H5)");
         await vm.ApplyCommand.ExecuteAsync(null);
 
         _settings.Current.Recording.SystemAudio.Should().BeFalse();
         _settings.Current.Recording.Microphone.Should().Be("{mic-1}");
+        _settings.Current.Recording.SystemAudioDevice.Should().Be("{out-2}");
     }
 
     [Fact]
     public async Task A_microphone_that_is_not_connected_stays_chosen()
     {
-        _settings.Current = _settings.Current with { Recording = new RecordingSettings(Microphone: "{unplugged}") };
+        _settings.Current = _settings.Current with { Recording = new RecordingSettings(Microphone: "{unplugged}", SystemAudioDevice: "{gone}") };
         using var vm = Create(new FakeAudioDevices(new AudioDevice("{mic-1}", "Microphone (H5)")) { HasSpeakers = false });
 
         vm.RecordingMicrophone!.Id.Should().Be("{unplugged}");
         vm.RecordingMicrophone.Label.Should().Contain("not connected");
         vm.Microphones.Should().Contain(vm.RecordingMicrophone);
         vm.SpeakersStatus.Should().StartWith("No sound output device");
+        vm.RecordingOutput!.Id.Should().Be("{gone}");
+        vm.RecordingOutput.Label.Should().Contain("not connected");
 
         vm.RecordingQuality = QualityPreset.Small;
         await vm.ApplyCommand.ExecuteAsync(null);
         _settings.Current.Recording.Microphone.Should().Be("{unplugged}", "only choosing another microphone replaces it");
+        _settings.Current.Recording.SystemAudioDevice.Should().Be("{gone}");
     }
 
     [Fact]
@@ -482,6 +489,8 @@ public sealed class SettingsViewModelTests : IDisposable
 
         public IReadOnlyList<AudioDevice> Microphones() => microphones;
 
-        public AudioDevice? Speakers() => HasSpeakers ? new AudioDevice("{out}", "Speakers (Realtek)") : null;
+        public IReadOnlyList<AudioDevice> Outputs() => HasSpeakers ? [new AudioDevice("{out}", "Speakers (Realtek)"), new AudioDevice("{out-2}", "Headphones (H5)")] : [];
+
+        public AudioDevice? DefaultOutput() => HasSpeakers ? new AudioDevice("{out}", "Speakers (Realtek)") : null;
     }
 }
