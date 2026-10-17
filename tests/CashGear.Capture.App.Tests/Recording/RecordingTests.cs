@@ -236,9 +236,18 @@ internal sealed class Unplugged(double after) : IAudioSource
 }
 
 /// <summary>Sound devices for the recorder tests: sources from factory functions, or a reason each is missing.</summary>
-internal sealed class FakeSound(Func<IAudioSource>? system = null, Func<IAudioSource>? microphone = null) : IAudioSourceFactory
+internal sealed class FakeSound(Func<IAudioSource>? system = null, Func<IAudioSource>? microphone = null, Func<string, bool, AudioOpenResult>? app = null) : IAudioSourceFactory
 {
     public const string NoDevice = "No sound output device was found, so system audio isn't recorded.";
+
+    /// <summary>The app sound asked for: program file and whether it is left out.</summary>
+    public List<(string Exe, bool Exclude)> AppRequests { get; } = [];
+
+    public AudioOpenResult OpenAppAudio(string exe, string appName, bool exclude)
+    {
+        AppRequests.Add((exe, exclude));
+        return app is null ? AudioOpenResult.Failed("Recording one app's sound isn't available.") : app(exe, exclude);
+    }
 
     public AudioOpenResult OpenSystemAudio(string? device) => system is null ? AudioOpenResult.Failed(NoDevice) : new AudioOpenResult(system(), null);
 
@@ -946,6 +955,24 @@ public sealed class ScreenRecorderTests : IDisposable
     }
 
     [Fact(Timeout = 60_000)]
+    public async Task One_app_is_asked_for_and_its_track_is_named_after_it_and_leaving_one_out_falls_back_to_all_sound()
+    {
+        var sound = new FakeSound(
+            system: () => new ToneBursts(RecordingSound.System, (0.5, 0.2)),
+            app: (_, exclude) => exclude ? AudioOpenResult.Failed("Leaving one app out isn't available.") : new AudioOpenResult(new ToneBursts(RecordingSound.System, (0.5, 0.2)), null));
+        var (recorder, options) = Create(sound: sound);
+        var ct = TestContext.Current.CancellationToken;
+
+        await recorder.StartAsync(options with { SystemAudio = true, SystemAudioScope = SystemAudioScope.AllExceptApp, SystemAudioApp = "discord.exe", SystemAudioAppName = "Discord" }, ct);
+        recorder.Sound.Should().Be(RecordingSound.System);
+        recorder.SoundNote.Should().Be("Leaving one app out isn't available. All system audio is recorded instead.");
+        await UntilRecorded(recorder, 1, ct);
+        await recorder.StopAsync(ct);
+
+        sound.AppRequests.Should().Equal(("discord.exe", true));
+    }
+
+    [Fact(Timeout = 60_000)]
     public async Task An_unplugged_microphone_leaves_silence_and_a_warning_while_recording_goes_on()
     {
         var (recorder, options) = Create(sound: new FakeSound(
@@ -1034,7 +1061,7 @@ public sealed class ScreenRecorderTests : IDisposable
     public async Task Real_system_audio_gives_a_sound_track_even_when_nothing_plays()
     {
         using var watcher = new AudioDeviceWatcher(NullLogger<AudioDeviceWatcher>.Instance);
-        var factory = new WasapiAudioSourceFactory(watcher, _loggers);
+        var factory = new WasapiAudioSourceFactory(watcher, new AudioApps(NullLogger<AudioApps>.Instance), _loggers);
         Assert.SkipWhen(new WasapiAudioDevices(NullLogger<WasapiAudioDevices>.Instance).DefaultOutput() is null, "This PC has no sound output device.");
         var (recorder, options) = Create(sound: factory);
         var ct = TestContext.Current.CancellationToken;
@@ -1056,7 +1083,7 @@ public sealed class ScreenRecorderTests : IDisposable
     public async Task Real_sound_played_while_recording_lands_where_it_was_played()
     {
         using var watcher = new AudioDeviceWatcher(NullLogger<AudioDeviceWatcher>.Instance);
-        var factory = new WasapiAudioSourceFactory(watcher, _loggers);
+        var factory = new WasapiAudioSourceFactory(watcher, new AudioApps(NullLogger<AudioApps>.Instance), _loggers);
         Assert.SkipWhen(new WasapiAudioDevices(NullLogger<WasapiAudioDevices>.Instance).DefaultOutput() is null, "This PC has no sound output device.");
         var (recorder, options) = Create(sound: factory);
         var ct = TestContext.Current.CancellationToken;

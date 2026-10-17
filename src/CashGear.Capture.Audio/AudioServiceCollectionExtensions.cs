@@ -10,6 +10,8 @@ public static class AudioServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         services.AddSingleton<AudioDeviceWatcher>();
+        services.AddSingleton<AudioApps>();
+        services.AddSingleton<IAudioApps>(s => s.GetRequiredService<AudioApps>());
         services.AddSingleton<IAudioSourceFactory, WasapiAudioSourceFactory>();
         services.AddSingleton<IAudioDevices, WasapiAudioDevices>();
         return services;

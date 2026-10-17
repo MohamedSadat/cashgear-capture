@@ -407,6 +407,71 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task One_app_can_be_chosen_for_system_audio()
+    {
+        var apps = new FakeApps(new AudioApp("spotify.exe", "Spotify", PlayingSound: true), new AudioApp("chrome.exe", "Google Chrome"));
+        using var vm = Create(new FakeAudioDevices(), apps: apps);
+
+        vm.SystemAudioScopes.Should().Equal(SystemAudioScope.All, SystemAudioScope.OnlyApp, SystemAudioScope.AllExceptApp);
+        vm.RecordingSystemAudioScope.Should().Be(SystemAudioScope.All);
+        vm.IsOutputChoiceEnabled.Should().BeTrue();
+        vm.IsAppChoiceEnabled.Should().BeFalse();
+        vm.Apps.Select(a => a.Label).Should().Equal("Spotify (playing sound)", "Google Chrome");
+
+        vm.RecordingSystemAudioScope = SystemAudioScope.OnlyApp;
+        vm.IsAppChoiceEnabled.Should().BeTrue();
+        vm.IsOutputChoiceEnabled.Should().BeFalse("only the app is recorded, on whatever device it plays to");
+        vm.HasErrors.Should().BeTrue("an app has to be chosen");
+        vm.Errors.Should().Contain("choose the app");
+
+        vm.RecordingApp = vm.Apps[0];
+        vm.HasErrors.Should().BeFalse();
+        await vm.ApplyCommand.ExecuteAsync(null);
+
+        _settings.Current.Recording.SystemAudioScope.Should().Be(SystemAudioScope.OnlyApp);
+        _settings.Current.Recording.SystemAudioApp.Should().Be("spotify.exe");
+        _settings.Current.Recording.SystemAudioAppName.Should().Be("Spotify");
+
+        vm.RecordSystemAudio = false;
+        vm.IsAppChoiceEnabled.Should().BeFalse();
+        vm.HasErrors.Should().BeFalse();
+    }
+
+    [Fact]
+    public void An_app_that_is_not_running_stays_chosen_and_is_found_after_a_refresh()
+    {
+        _settings.Current = _settings.Current with
+        {
+            Recording = new RecordingSettings(SystemAudioScope: SystemAudioScope.AllExceptApp, SystemAudioApp: "discord.exe", SystemAudioAppName: "Discord"),
+        };
+        var apps = new FakeApps(new AudioApp("chrome.exe", "Google Chrome"));
+        using var vm = Create(apps: apps);
+
+        vm.RecordingSystemAudioScope.Should().Be(SystemAudioScope.AllExceptApp);
+        vm.RecordingApp!.Label.Should().Be("Discord (not running)");
+
+        apps.Running = [new AudioApp("chrome.exe", "Google Chrome"), new AudioApp("discord.exe", "Discord", PlayingSound: true)];
+        vm.RefreshAppsCommand.Execute(null);
+
+        vm.Apps.Select(a => a.Label).Should().Equal("Google Chrome", "Discord (playing sound)");
+        vm.RecordingApp!.Exe.Should().Be("discord.exe");
+    }
+
+    [Fact]
+    public void Without_process_loopback_only_all_sound_is_offered()
+    {
+        _settings.Current = _settings.Current with
+        {
+            Recording = new RecordingSettings(SystemAudioScope: SystemAudioScope.OnlyApp, SystemAudioApp: "spotify.exe"),
+        };
+        using var vm = Create(apps: new FakeApps { IsSupported = false });
+
+        vm.IsAppAudioSupported.Should().BeFalse();
+        vm.SystemAudioScopes.Should().Equal(SystemAudioScope.All);
+        vm.RecordingSystemAudioScope.Should().Be(SystemAudioScope.All);
+    }
+
+    [Fact]
     public void Recording_a_hotkey_pauses_global_hotkeys_until_done()
     {
         using var vm = Create();
@@ -456,8 +521,17 @@ public sealed class SettingsViewModelTests : IDisposable
         _settings.Current.Updates.FeedUrl.Should().Be(@"\\server\capture-releases", "the address is only edited in the file and must survive");
     }
 
-    private SettingsViewModel Create(IAudioDevices? audio = null, IRecordingEncoders? encoders = null) =>
-        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance, encoders: encoders, audio: audio);
+    private SettingsViewModel Create(IAudioDevices? audio = null, IRecordingEncoders? encoders = null, IAudioApps? apps = null) =>
+        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance, encoders: encoders, audio: audio, apps: apps);
+
+    private sealed class FakeApps(params AudioApp[] running) : IAudioApps
+    {
+        public bool IsSupported { get; init; } = true;
+
+        public IReadOnlyList<AudioApp> Running { get; set; } = running;
+
+        public IReadOnlyList<AudioApp> List() => Running;
+    }
 
     private sealed class FakeEncoders(IReadOnlyList<EncoderProbe> detected) : IRecordingEncoders
     {

@@ -42,6 +42,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly UpdateService? _updates;
     private readonly IRecordingEncoders? _encoders;
     private readonly IScreenRecorder? _recorder;
+    private readonly IAudioApps? _apps;
     private readonly SynchronizationContext? _context;
     private IDisposable? _hotkeySuspension;
 
@@ -56,8 +57,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IOcrService? ocr = null,
         UpdateService? updates = null,
         IAudioDevices? audio = null,
-        IScreenRecorder? recorder = null)
+        IScreenRecorder? recorder = null,
+        IAudioApps? apps = null)
     {
+        _apps = apps;
+        IsAppAudioSupported = apps?.IsSupported == true;
+        SystemAudioScopes = IsAppAudioSupported ? Enum.GetValues<SystemAudioScope>() : [SystemAudioScope.All];
         _updates = updates;
         _encoders = encoders;
         _recorder = recorder;
@@ -173,6 +178,21 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>Which device system audio comes from by default, and how devices are followed.</summary>
     public string SpeakersStatus { get; }
 
+    /// <summary>All sound, and (where Windows can) only one app or all but one app.</summary>
+    public IReadOnlyList<SystemAudioScope> SystemAudioScopes { get; }
+
+    /// <summary>Windows can record one app's sound by itself (Windows 10 2004 and later).</summary>
+    public bool IsAppAudioSupported { get; }
+
+    /// <summary>The apps running now (plus the one chosen before, if it isn't), for recording one app's sound.</summary>
+    public ObservableCollection<AppChoice> Apps { get; } = [];
+
+    /// <summary>The app list applies: system audio is on and limited to (or excludes) one app.</summary>
+    public bool IsAppChoiceEnabled => RecordSystemAudio && RecordingSystemAudioScope != SystemAudioScope.All;
+
+    /// <summary>The output device list applies: system audio is on and records all sound.</summary>
+    public bool IsOutputChoiceEnabled => RecordSystemAudio && RecordingSystemAudioScope == SystemAudioScope.All;
+
     public bool IsFfmpegMissing { get; }
 
     /// <summary>Lists the encoder choices with what detection found, keeping <paramref name="selectedId"/> selected (or the current choice).</summary>
@@ -221,6 +241,33 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
                 : "Works on this PC: " + string.Join(", ", working) + ".";
         }
     }
+
+    /// <summary>Lists the running apps again, keeping the chosen one.</summary>
+    [RelayCommand]
+    private void RefreshApps() => RefreshApps(RecordingApp?.Exe, RecordingApp?.Name);
+
+    /// <summary>Lists the apps running now and selects <paramref name="exe"/>; an app that isn't running stays listed and chosen.</summary>
+    private void RefreshApps(string? exe, string? name)
+    {
+        Apps.Clear();
+        foreach (var app in _apps?.List() ?? [])
+        {
+            Apps.Add(new AppChoice(app.Exe, app.Name, app.PlayingSound ? $"{app.Name} (playing sound)" : app.Name));
+        }
+
+        RecordingApp = exe is null ? null : Apps.FirstOrDefault(a => string.Equals(a.Exe, exe, StringComparison.OrdinalIgnoreCase));
+        if (RecordingApp is null && exe is not null)
+        {
+            RecordingApp = new AppChoice(exe, name ?? exe, $"{name ?? exe} (not running)");
+            Apps.Insert(0, RecordingApp);
+        }
+    }
+
+    partial void OnRecordingSystemAudioScopeChanged(SystemAudioScope value) => Revalidate();
+
+    partial void OnRecordingAppChanged(AppChoice? value) => Revalidate();
+
+    partial void OnRecordSystemAudioChanged(bool value) => Revalidate();
 
     private bool CanRedetectEncoders() => _encoders is { Problem: null } && !IsDetectingEncoders && _recorder?.IsRecording != true;
 
@@ -305,7 +352,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private EncoderChoice? _recordingEncoder;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAppChoiceEnabled), nameof(IsOutputChoiceEnabled))]
     private bool _recordSystemAudio;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAppChoiceEnabled), nameof(IsOutputChoiceEnabled))]
+    private SystemAudioScope _recordingSystemAudioScope;
+
+    /// <summary>The app whose sound is recorded by itself (or left out).</summary>
+    [ObservableProperty]
+    private AppChoice? _recordingApp;
 
     [ObservableProperty]
     private DeviceChoice? _recordingMicrophone;
@@ -517,6 +573,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             Encoder = RecordingEncoder?.Id ?? EncoderPresets.Auto,
             SystemAudio = RecordSystemAudio,
             SystemAudioDevice = RecordingOutput?.Id,
+            SystemAudioScope = RecordingSystemAudioScope,
+            SystemAudioApp = RecordingApp?.Exe,
+            SystemAudioAppName = RecordingApp?.Name,
             Microphone = RecordingMicrophone?.Id,
             Tracks = RecordingTracks,
         },
@@ -555,6 +614,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             Microphones.Add(RecordingMicrophone);
         }
 
+        RecordingSystemAudioScope = SystemAudioScopes.Contains(s.Recording.SystemAudioScope) ? s.Recording.SystemAudioScope : SystemAudioScope.All;
+        RefreshApps(s.Recording.SystemAudioApp, s.Recording.SystemAudioAppName);
         RecordingOutput = OutputDevices.FirstOrDefault(d => string.Equals(d.Id, s.Recording.SystemAudioDevice, StringComparison.OrdinalIgnoreCase));
         if (RecordingOutput is null)
         {
@@ -605,6 +666,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         if (!SaveToFile && !CopyToClipboard && !OpenEditor)
         {
             errors.Add("After capture: choose at least one of \"Open in the editor\", \"Save to file\" and \"Copy to clipboard\".");
+        }
+
+        if (IsAppChoiceEnabled && RecordingApp is null)
+        {
+            errors.Add("Sound: choose the app whose sound is recorded (or left out), or record all sound.");
         }
 
         errors.AddRange(ValidateHotkeys());

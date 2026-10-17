@@ -144,7 +144,7 @@ internal sealed partial class ScreenRecorder(
                 // Sound devices are opened off the caller's (possibly UI) thread.
                 var (sources, soundNote) = await Task.Run(() => OpenSound(options), ct).ConfigureAwait(false);
                 parts.Sources.AddRange(sources);
-                var tracks = SoundTracks.For(options.Tracks, sources.Select(SourceTitle).ToList());
+                var tracks = SoundTracks.For(options.Tracks, sources.Select(s => SourceTitle(s, options)).ToList());
                 foreach (var _ in tracks)
                 {
                     parts.Audio.Add(AudioEncoder.Open(parts.Audio.Count + 1));
@@ -254,7 +254,11 @@ internal sealed partial class ScreenRecorder(
     private static VideoEncoder Open(EncoderCandidate candidate, EncoderProbe probe, VideoFormat format, QualityPreset quality) =>
         VideoEncoder.Open(candidate, format, EncoderPresets.Options(candidate, quality, format.Width, format.Height, format.Fps, probe.QualityMode));
 
-    private static string SourceTitle(IAudioSource source) => source.Kind == RecordingSound.Microphone ? "Microphone" : "System audio";
+    /// <summary>A track's title: "Microphone", "System audio", or the app's name when only its sound is recorded.</summary>
+    private static string SourceTitle(IAudioSource source, RecordingOptions options) =>
+        source.Kind == RecordingSound.Microphone ? "Microphone"
+        : options.SystemAudioScope == SystemAudioScope.OnlyApp && source is AppAudioSource ? options.SystemAudioAppName ?? "System audio"
+        : "System audio";
 
     /// <summary>The sound devices the options ask for; any that can't be used are explained in the note instead.</summary>
     private (List<IAudioSource> Sources, string? Note) OpenSound(RecordingOptions options)
@@ -263,7 +267,25 @@ internal sealed partial class ScreenRecorder(
         var problems = new List<string>();
         if (options.SystemAudio)
         {
-            Add(audio.OpenSystemAudio(options.SystemAudioDevice));
+            if (options.SystemAudioScope != SystemAudioScope.All && options.SystemAudioApp is { } app)
+            {
+                var exclude = options.SystemAudioScope == SystemAudioScope.AllExceptApp;
+                var opened = audio.OpenAppAudio(app, options.SystemAudioAppName ?? app, exclude);
+                if (opened.Source is null && exclude)
+                {
+                    // Leaving one app out isn't possible here: recording everything is closer than nothing.
+                    problems.Add($"{opened.Note} All system audio is recorded instead.");
+                    Add(audio.OpenSystemAudio(options.SystemAudioDevice));
+                }
+                else
+                {
+                    Add(opened);
+                }
+            }
+            else
+            {
+                Add(audio.OpenSystemAudio(options.SystemAudioDevice));
+            }
         }
 
         if (options.Microphone is { } microphone)

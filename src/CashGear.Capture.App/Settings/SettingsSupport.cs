@@ -36,6 +36,12 @@ public sealed record DeviceChoice(string? Id, string Label)
 }
 
 /// <summary>An encoder setting: <c>auto</c>, <c>software</c> or an encoder's id, with what detection found.</summary>
+/// <summary>An entry of the app list for recording one app's sound: its program file (<c>spotify.exe</c>) and name.</summary>
+public sealed record AppChoice(string Exe, string Name, string Label)
+{
+    public override string ToString() => Label;
+}
+
 public sealed record EncoderChoice(string Id, string Label)
 {
     public override string ToString() => Label;
@@ -60,6 +66,9 @@ public sealed class EnumLabelConverter : IValueConverter
         Core.Recording.AudioTrackLayout.Mixed => "One track with everything (plays everywhere)",
         Core.Recording.AudioTrackLayout.Separate => "One track per source (for editing)",
         Core.Recording.AudioTrackLayout.Both => "The mix, then one track per source",
+        Core.Recording.SystemAudioScope.All => "All sound",
+        Core.Recording.SystemAudioScope.OnlyApp => "Only one app",
+        Core.Recording.SystemAudioScope.AllExceptApp => "All sound except one app",
         ImageFileFormat.Jpeg => "JPEG",
         ImageFileFormat.Bmp => "BMP",
         CaptureBackend.Auto => "Automatic (recommended)",

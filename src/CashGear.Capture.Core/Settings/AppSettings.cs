@@ -158,6 +158,9 @@ public enum AppTheme
 /// <param name="Encoder"><c>auto</c> (the best that works here), <c>software</c>, or an encoder's id (see <see cref="Recording.EncoderPresets"/>).</param>
 /// <param name="SystemAudio">Record what the PC plays.</param>
 /// <param name="SystemAudioDevice">The output device whose sound is recorded: a device ID, or null for Windows' default output device (followed when it changes).</param>
+/// <param name="SystemAudioScope">All of system audio, or only (or all but) one app's sound.</param>
+/// <param name="SystemAudioApp">The app for <paramref name="SystemAudioScope"/>, by program file name (<c>spotify.exe</c>).</param>
+/// <param name="SystemAudioAppName">The app's name as shown in Settings and messages.</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="DefaultMicrophone"/> for the Windows default, or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 /// <param name="SystemAudioGain">System audio's volume in recordings, 1 as captured (0 to 4; set on the recording toolbar).</param>
@@ -173,7 +176,10 @@ public sealed record RecordingSettings(
     Recording.AudioTrackLayout Tracks = Recording.AudioTrackLayout.Mixed,
     float SystemAudioGain = 1,
     float MicrophoneGain = 1,
-    string? SystemAudioDevice = null)
+    string? SystemAudioDevice = null,
+    Recording.SystemAudioScope SystemAudioScope = Recording.SystemAudioScope.All,
+    string? SystemAudioApp = null,
+    string? SystemAudioAppName = null)
 {
     public const float MaxGain = 4;
 
@@ -189,6 +195,10 @@ public sealed record RecordingSettings(
         Encoder = string.IsNullOrWhiteSpace(Encoder) ? Recording.EncoderPresets.Auto : Encoder.Trim().ToLowerInvariant(),
         Microphone = string.IsNullOrWhiteSpace(Microphone) ? null : Microphone.Trim(),
         SystemAudioDevice = string.IsNullOrWhiteSpace(SystemAudioDevice) ? null : SystemAudioDevice.Trim(),
+        SystemAudioApp = string.IsNullOrWhiteSpace(SystemAudioApp) ? null : SystemAudioApp.Trim().ToLowerInvariant(),
+        SystemAudioAppName = string.IsNullOrWhiteSpace(SystemAudioAppName) ? null : SystemAudioAppName.Trim(),
+        // Without an app there is nothing to pick out: all of system audio.
+        SystemAudioScope = Enum.IsDefined(SystemAudioScope) && !string.IsNullOrWhiteSpace(SystemAudioApp) ? SystemAudioScope : Recording.SystemAudioScope.All,
         Tracks = Enum.IsDefined(Tracks) ? Tracks : Recording.AudioTrackLayout.Mixed,
         SystemAudioGain = Gain(SystemAudioGain),
         MicrophoneGain = Gain(MicrophoneGain),

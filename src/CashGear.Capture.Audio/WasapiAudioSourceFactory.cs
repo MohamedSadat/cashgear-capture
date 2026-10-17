@@ -10,7 +10,7 @@ namespace CashGear.Capture.Audio;
 /// Opens WASAPI endpoints for a recording: an output device's loopback (system audio) and microphones, each as a
 /// <see cref="FollowingAudioSource"/> that follows Windows' default device or waits for an unplugged one.
 /// </summary>
-internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watcher, ILoggerFactory loggers) : IAudioSourceFactory
+internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watcher, AudioApps apps, ILoggerFactory loggers) : IAudioSourceFactory
 {
     private readonly ILogger _logger = loggers.CreateLogger<WasapiAudioSourceFactory>();
 
@@ -19,6 +19,46 @@ internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watche
 
     public AudioOpenResult OpenMicrophone(string id) =>
         Open(RecordingSound.Microphone, DataFlow.Capture, id == RecordingSettings.DefaultMicrophone ? null : id, "Microphone");
+
+    public AudioOpenResult OpenAppAudio(string exe, string appName, bool exclude)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(exe);
+        if (!apps.IsSupported)
+        {
+            return AudioOpenResult.Failed($"Recording {(exclude ? "all sound except one app" : "one app's sound")} needs Windows 10 version 2004 or later.");
+        }
+
+        var root = apps.FindRoot(exe);
+        var target = root ?? (exclude ? Environment.ProcessId : 0);
+        var first = target == 0 ? new EndpointOpened(null, null, Missing: "not running") : OpenProcess(target, exclude, appName);
+        if (first.Problem is { } problem)
+        {
+            return AudioOpenResult.Failed(problem);
+        }
+
+        var source = new AppAudioSource(
+            exe, appName, exclude, (process, leaveOut) => OpenProcess(process, leaveOut, appName), apps.FindRoot, watcher, first, target,
+            loggers.CreateLogger<AppAudioSource>());
+        var note = root is not null ? null
+            : exclude ? $"{appName} isn't running, so all sound is recorded; once it starts, its sound is left out."
+            : $"{appName} isn't running, so its sound is silent until it starts.";
+        return new AudioOpenResult(source, note);
+    }
+
+    /// <summary>Process loopback for <paramref name="process"/>'s tree (or everything else).</summary>
+    internal EndpointOpened OpenProcess(int process, bool exclude, string appName)
+    {
+        var name = exclude ? $"system audio except {appName}" : $"{appName}'s sound";
+        try
+        {
+            return new EndpointOpened(WasapiAudioSource.OpenProcessLoopback(process, exclude, name, _logger), process.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+        catch (Exception ex) when (ex is COMException or PlatformNotSupportedException or InvalidOperationException or ArgumentException)
+        {
+            LogOpenFailed(ex, name);
+            return new EndpointOpened(null, null, Problem: $"{name} couldn't be recorded ({ex.Message.Trim()}).");
+        }
+    }
 
     /// <summary>Opens one endpoint of <paramref name="flow"/>: <paramref name="id"/>, or (null) the default one now.</summary>
     internal EndpointOpened OpenEndpoint(DataFlow flow, string? id)

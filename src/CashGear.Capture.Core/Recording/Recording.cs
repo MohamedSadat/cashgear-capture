@@ -15,12 +15,28 @@ public enum RecordingSound
     Microphone = 2,
 }
 
+/// <summary>Which of the PC's sound "system audio" records.</summary>
+public enum SystemAudioScope
+{
+    /// <summary>Everything an output device plays (its loopback).</summary>
+    All,
+
+    /// <summary>Only what one app (and the processes it started) plays, on any device.</summary>
+    OnlyApp,
+
+    /// <summary>Everything except what one app (and the processes it started) plays.</summary>
+    AllExceptApp,
+}
+
 /// <param name="Monitor">The monitor recorded (Windows.Graphics.Capture records one monitor at a time).</param>
 /// <param name="Area">The part of the monitor recorded, in virtual-screen pixels; even width and height.</param>
 /// <param name="Encoder"><see cref="EncoderPresets.Auto"/>, <see cref="EncoderPresets.Software"/> or an encoder's id.</param>
 /// <param name="OutputPath">The .mp4 file to write (later parts, if the encoder changes, are named after it).</param>
 /// <param name="SystemAudio">Record what the PC plays.</param>
 /// <param name="SystemAudioDevice">The output device whose sound is recorded: a device ID, or null for Windows' default (followed when it changes).</param>
+/// <param name="SystemAudioScope">All of system audio, or only (or all but) one app's sound.</param>
+/// <param name="SystemAudioApp">The app for <paramref name="SystemAudioScope"/>: its program file name, e.g. <c>spotify.exe</c>.</param>
+/// <param name="SystemAudioAppName">The app's name for messages, e.g. "Spotify".</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="Settings.RecordingSettings.DefaultMicrophone"/> or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 public sealed record RecordingOptions(
@@ -37,7 +53,10 @@ public sealed record RecordingOptions(
     AudioTrackLayout Tracks = AudioTrackLayout.Mixed,
     float SystemAudioGain = 1,
     float MicrophoneGain = 1,
-    string? SystemAudioDevice = null);
+    string? SystemAudioDevice = null,
+    SystemAudioScope SystemAudioScope = SystemAudioScope.All,
+    string? SystemAudioApp = null,
+    string? SystemAudioAppName = null);
 
 /// <param name="Path">The (first) file saved.</param>
 /// <param name="FramesDropped">Frames skipped because encoding fell behind (the picture holds still for that long).</param>
@@ -142,6 +161,20 @@ public interface IRecordingEncoders
 
 /// <summary>A sound device as Windows names it.</summary>
 public sealed record AudioDevice(string Id, string Name);
+
+/// <summary>A program whose sound can be recorded by itself: its file name (<c>spotify.exe</c>) and a name for people.</summary>
+/// <param name="PlayingSound">It has sound open on an output device now.</param>
+public sealed record AudioApp(string Exe, string Name, bool PlayingSound = false);
+
+/// <summary>The apps running now whose sound can be recorded (or left out) by itself.</summary>
+public interface IAudioApps
+{
+    /// <summary>Whether Windows can record one app's sound (process loopback, Windows 10 2004 and later).</summary>
+    bool IsSupported { get; }
+
+    /// <summary>Programs with a window or with sound open, one entry per program, by name.</summary>
+    IReadOnlyList<AudioApp> List();
+}
 
 /// <summary>The sound devices a recording can use.</summary>
 public interface IAudioDevices

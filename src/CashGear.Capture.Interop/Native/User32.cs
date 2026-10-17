@@ -111,6 +111,9 @@ public static unsafe partial class User32
     [LibraryImport(Dll, SetLastError = true)]
     public static partial int GetWindowTextW(nint hwnd, char* buffer, int maxCount);
 
+    [LibraryImport(Dll)]
+    public static partial int GetWindowTextLengthW(nint hwnd);
+
     [LibraryImport(Dll, SetLastError = true)]
     public static partial int GetClassNameW(nint hwnd, char* buffer, int maxCount);
 

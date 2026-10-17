@@ -28,7 +28,7 @@ internal sealed partial class WasapiAudioSource : IAudioEndpoint
 
     private static readonly long MaxStampAge = Stopwatch.Frequency * 5;
 
-    private readonly MMDevice _device;
+    private readonly MMDevice? _device;
     private readonly AudioClient _client;
     private readonly AudioCaptureClient _capture;
     private readonly ILogger _logger;
@@ -37,7 +37,7 @@ internal sealed partial class WasapiAudioSource : IAudioEndpoint
     private volatile bool _stopping;
     private bool _started;
 
-    private WasapiAudioSource(MMDevice device, AudioClient client, string name, ILogger logger)
+    private WasapiAudioSource(MMDevice? device, AudioClient client, string name, ILogger logger)
     {
         _device = device;
         _client = client;
@@ -74,6 +74,40 @@ internal sealed partial class WasapiAudioSource : IAudioEndpoint
         }
     }
 
+    /// <summary>
+    /// Initializes process loopback: what process <paramref name="processId"/> and the processes it started play
+    /// (<paramref name="exclude"/>: everything else), on whichever devices they play to. Windows 10 2004 and later.
+    /// </summary>
+    /// <exception cref="COMException">Windows refused (an older Windows, or the audio service).</exception>
+    public static WasapiAudioSource OpenProcessLoopback(int processId, bool exclude, string name, ILogger logger)
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
+        {
+            throw new PlatformNotSupportedException("Recording one app's sound needs Windows 10 version 2004 or later.");
+        }
+
+        // The activation completes on a Windows thread; nothing here waits on a UI thread.
+        var client = AudioClient.ActivateProcessLoopbackAsync(
+            (uint)processId, exclude ? ProcessLoopbackMode.ExcludeTargetProcessTree : ProcessLoopbackMode.IncludeTargetProcessTree).GetAwaiter().GetResult();
+        try
+        {
+            // Process loopback has no mix format of its own: it takes the one asked for (converted by Windows).
+            client.Initialize(
+                AudioClientShareMode.Shared,
+                AudioClientStreamFlags.Loopback | AudioClientStreamFlags.AutoConvertPcm,
+                BufferLength.Ticks,
+                0,
+                WaveFormat.CreateIeeeFloatWaveFormat(AudioMixer.SampleRate, AudioMixer.Channels),
+                Guid.Empty);
+            return new WasapiAudioSource(null, client, name, logger);
+        }
+        catch
+        {
+            client.Dispose();
+            throw;
+        }
+    }
+
     public void Start(AudioDataHandler data, Action<Exception> failed)
     {
         _client.Start();
@@ -100,7 +134,7 @@ internal sealed partial class WasapiAudioSource : IAudioEndpoint
 
         _capture.Dispose();
         _client.Dispose();
-        _device.Dispose();
+        _device?.Dispose();
     }
 
     /// <summary>A QPC value in 100 ns units (as WASAPI gives it) as a <see cref="Stopwatch"/> timestamp, without overflowing.</summary>

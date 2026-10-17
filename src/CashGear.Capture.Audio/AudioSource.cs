@@ -49,6 +49,12 @@ public interface IAudioSourceFactory
 
     /// <summary>A microphone: a device ID, or <see cref="RecordingSettings.DefaultMicrophone"/> (followed when Windows' default changes).</summary>
     AudioOpenResult OpenMicrophone(string id);
+
+    /// <summary>
+    /// One app's sound by itself, or (<paramref name="exclude"/>) everything except it, whichever devices it plays to.
+    /// <paramref name="exe"/> is its program file name (<c>spotify.exe</c>); it is followed if it starts or restarts later.
+    /// </summary>
+    AudioOpenResult OpenAppAudio(string exe, string appName, bool exclude);
 }
 
 /// <param name="Source">The source, or null when there is nothing to record.</param>

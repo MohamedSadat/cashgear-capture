@@ -100,6 +100,25 @@ public sealed class RecordingSettingsTests
         new RecordingSettings(Microphone: RecordingSettings.DefaultMicrophone).Normalize().Microphone.Should().Be("default");
     }
 
+    [Fact]
+    public void The_output_device_and_one_app_are_kept_and_an_app_scope_without_an_app_is_all_sound()
+    {
+        var settings = new RecordingSettings(
+            SystemAudioDevice: " {0.0.0.00000000}.{out} ", SystemAudioScope: SystemAudioScope.OnlyApp, SystemAudioApp: " Spotify.EXE ", SystemAudioAppName: " Spotify ").Normalize();
+
+        settings.SystemAudioDevice.Should().Be("{0.0.0.00000000}.{out}");
+        settings.SystemAudioScope.Should().Be(SystemAudioScope.OnlyApp);
+        settings.SystemAudioApp.Should().Be("spotify.exe");
+        settings.SystemAudioAppName.Should().Be("Spotify");
+        new RecordingSettings(SystemAudioScope: SystemAudioScope.AllExceptApp, SystemAudioApp: " ").Normalize().SystemAudioScope.Should().Be(SystemAudioScope.All);
+        new RecordingSettings(SystemAudioScope: (SystemAudioScope)9, SystemAudioApp: "a.exe").Normalize().SystemAudioScope.Should().Be(SystemAudioScope.All);
+        new RecordingSettings(SystemAudioDevice: "").Normalize().SystemAudioDevice.Should().BeNull();
+
+        var text = JsonSerializer.Serialize(new AppSettings { Recording = settings }, SettingsJsonContext.Default.AppSettings);
+        text.Should().Contain("\"systemAudioScope\": \"OnlyApp\"").And.Contain("\"systemAudioApp\": \"spotify.exe\"");
+        JsonSerializer.Deserialize(text, SettingsJsonContext.Default.AppSettings)!.Normalize().Recording.Should().Be(settings);
+    }
+
     [Theory]
     [InlineData(15, QualityPreset.Lossless)]
     [InlineData(20, QualityPreset.High)]

@@ -26,7 +26,7 @@ public sealed class WasapiDeviceTests
         InteractiveDesktop.Require();
         Assert.SkipWhen(new WasapiAudioDevices(NullLogger<WasapiAudioDevices>.Instance).DefaultOutput() is null, "This PC has no sound output device.");
         using var watcher = new AudioDeviceWatcher(NullLogger<AudioDeviceWatcher>.Instance);
-        var factory = new WasapiAudioSourceFactory(watcher, NullLoggerFactory.Instance);
+        var factory = new WasapiAudioSourceFactory(watcher, new AudioApps(NullLogger<AudioApps>.Instance), NullLoggerFactory.Instance);
 
         var opened = factory.OpenSystemAudio(device: null);
 
@@ -46,7 +46,7 @@ public sealed class WasapiDeviceTests
     {
         InteractiveDesktop.Require();
         using var watcher = new AudioDeviceWatcher(NullLogger<AudioDeviceWatcher>.Instance);
-        var factory = new WasapiAudioSourceFactory(watcher, NullLoggerFactory.Instance);
+        var factory = new WasapiAudioSourceFactory(watcher, new AudioApps(NullLogger<AudioApps>.Instance), NullLoggerFactory.Instance);
 
         var opened = factory.OpenMicrophone("{0.0.1.00000000}.{00000000-0000-0000-0000-000000000000}");
 

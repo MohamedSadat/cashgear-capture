@@ -194,15 +194,30 @@
               <Grid.RowDefinitions>
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="System audio from" VerticalAlignment="Center" />
-              <ComboBox Grid.Column="1" ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding RecordingOutput}" DisplayMemberPath="Label"
-                        HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" IsEnabled="{Binding RecordSystemAudio}" AutomationProperties.Name="System audio from" />
-              <TextBlock Grid.Row="1" Text="Microphone" VerticalAlignment="Center" Margin="0,8,0,0" />
-              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Microphones}" SelectedItem="{Binding RecordingMicrophone}" DisplayMemberPath="Label"
+              <TextBlock Text="System audio" VerticalAlignment="Center" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding SystemAudioScopes}" SelectedItem="{Binding RecordingSystemAudioScope}" ItemTemplate="{StaticResource EnumItem}"
+                        HorizontalAlignment="Left" MinWidth="260" IsEnabled="{Binding RecordSystemAudio}" AutomationProperties.Name="Which system audio"
+                        Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}" />
+              <TextBlock Grid.Row="1" Text="App" VerticalAlignment="Center" Margin="0,8,0,0" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}" />
+              <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}">
+                <ComboBox ItemsSource="{Binding Apps}" SelectedItem="{Binding RecordingApp}" DisplayMemberPath="Label"
+                          MinWidth="260" MaxWidth="420" IsEnabled="{Binding IsAppChoiceEnabled}" AutomationProperties.Name="App" />
+                <Button Content="Refresh" Command="{Binding RefreshAppsCommand}" Margin="8,0,0,0" Padding="10,2" IsEnabled="{Binding IsAppChoiceEnabled}"
+                        ToolTip="List the apps running now (start the app first if it isn't listed)" />
+              </StackPanel>
+              <TextBlock Grid.Row="2" Text="System audio from" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding RecordingOutput}" DisplayMemberPath="Label"
+                        HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" Margin="0,8,0,0" IsEnabled="{Binding IsOutputChoiceEnabled}" AutomationProperties.Name="System audio from" />
+              <TextBlock Grid.Row="3" Text="Microphone" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Microphones}" SelectedItem="{Binding RecordingMicrophone}" DisplayMemberPath="Label"
                         HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" Margin="0,8,0,0" AutomationProperties.Name="Microphone" />
             </Grid>
             <TextBlock Style="{StaticResource Hint}" Text="{Binding SpeakersStatus}" />
+            <TextBlock Style="{StaticResource Hint}" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}"
+                       Text="Only one app records that app's sound (and that of the programs it starts) on whichever device it plays, and nothing else: no notifications, no other apps. All sound except one app leaves out, say, a call or music you don't want in the video. The app is found by its program when the recording starts, and followed if it starts or restarts later." />
             <Grid Margin="0,8,0,0">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
