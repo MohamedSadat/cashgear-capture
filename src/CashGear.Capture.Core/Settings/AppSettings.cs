@@ -82,6 +82,9 @@ public enum FullScreenOutput
 /// <param name="DelaySeconds">Wait this long before every capture (time to open a menu or hover a tooltip).</param>
 /// <param name="ScrollSettleMs">Scrolling capture: how long to let the page settle after each scroll before capturing.</param>
 /// <param name="ScrollMaxHeight">Scrolling capture: stop once the stitched image is this tall (pixels).</param>
+/// <param name="FixedRegionWidth">Fixed-size region: the width last used (pixels).</param>
+/// <param name="FixedRegionHeight">Fixed-size region: the height last used (pixels).</param>
+/// <param name="CornerRadius">Rounded region: the corner radius last used (pixels).</param>
 public sealed record CaptureSettings(
     CaptureBackend Backend = CaptureBackend.Auto,
     bool IncludeCursor = false,
@@ -91,8 +94,14 @@ public sealed record CaptureSettings(
     bool IncludeWindowShadow = false,
     int DelaySeconds = 0,
     int ScrollSettleMs = CaptureSettings.DefaultScrollSettleMs,
-    int ScrollMaxHeight = CaptureSettings.DefaultScrollMaxHeight)
+    int ScrollMaxHeight = CaptureSettings.DefaultScrollMaxHeight,
+    int FixedRegionWidth = 800,
+    int FixedRegionHeight = 600,
+    int CornerRadius = CaptureSettings.DefaultCornerRadius)
 {
+    public const int DefaultCornerRadius = 16;
+    public const int MaxFixedRegionSide = 20_000;
+    public const int MaxCornerRadius = Selection.RegionSelectionModel.MaxCornerRadius;
     public const int DefaultHideDelayMs = 200;
     public const int DefaultScrollSettleMs = 250;
     public const int DefaultScrollMaxHeight = 20_000;
@@ -113,7 +122,13 @@ public sealed record CaptureSettings(
         DelaySeconds = Math.Clamp(DelaySeconds, 0, MaxDelaySeconds),
         ScrollSettleMs = Math.Clamp(ScrollSettleMs, 0, MaxScrollSettleMs),
         ScrollMaxHeight = Math.Clamp(ScrollMaxHeight, MinScrollMaxHeight, MaxScrollMaxHeight),
+        FixedRegionWidth = Math.Clamp(FixedRegionWidth, 1, MaxFixedRegionSide),
+        FixedRegionHeight = Math.Clamp(FixedRegionHeight, 1, MaxFixedRegionSide),
+        CornerRadius = Math.Clamp(CornerRadius, 0, MaxCornerRadius),
     };
+
+    [JsonIgnore]
+    public Geometry.PixelSize FixedRegionSize => new(FixedRegionWidth, FixedRegionHeight);
 }
 
 /// <param name="Folder">Folder for saved captures; null means <see cref="AppPaths.DefaultCaptureDirectory"/>. Environment variables are expanded.</param>

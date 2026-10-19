@@ -26,11 +26,36 @@ public enum SelectionMode
 
     /// <summary>Only windows can be picked; a click on one confirms at once.</summary>
     WindowOnly,
+
+    /// <summary>A frame of a set size follows the cursor; click to place it, drag to move it, Enter to finish.</summary>
+    FixedSize,
+
+    /// <summary>Draw an outline with the button held down; letting go finishes.</summary>
+    Freehand,
+
+    /// <summary>Click the corners of a polygon; double-click, Enter or a click on the first corner finishes.</summary>
+    Polygon,
+
+    /// <summary>As <see cref="RegionOrWindow"/>, with rounded corners (the mouse wheel sets the radius).</summary>
+    RoundedRectangle,
+
+    /// <summary>A part of a window (a control, a panel) under the cursor; the mouse wheel goes out to what contains it.</summary>
+    Object,
+
+    /// <summary>One pixel: a click picks it (the colour picker).</summary>
+    Point,
 }
 
-/// <param name="Bounds">The chosen rectangle in virtual-screen physical pixels.</param>
+/// <param name="Bounds">The chosen rectangle in virtual-screen physical pixels (the bounds of <see cref="Shape"/> when there is one).</param>
 /// <param name="Window">The window it was picked from, when it was picked by clicking a window and left unchanged.</param>
-public sealed record RegionSelectionResult(PixelRect Bounds, WindowInfo? Window);
+public sealed record RegionSelectionResult(PixelRect Bounds, WindowInfo? Window)
+{
+    /// <summary>The outline when the selection isn't a plain rectangle.</summary>
+    public CaptureShape? Shape { get; init; }
+
+    /// <summary>What was picked in <see cref="SelectionMode.Object"/> (e.g. <c>button "OK"</c>).</summary>
+    public string? ObjectName { get; init; }
+}
 
 /// <summary>
 /// The region-selection state machine behind the overlay, in virtual-screen physical pixels and free of any UI
@@ -42,12 +67,19 @@ public sealed record RegionSelectionResult(PixelRect Bounds, WindowInfo? Window)
 /// <item>While selected: nudge / resize by keyboard, double-click inside or <see cref="Confirm"/> to finish.</item>
 /// </list>
 /// In <see cref="SelectionMode.WindowOnly"/> there is no dragging and no monitor fallback: clicking a highlighted
-/// window confirms it immediately.
+/// window confirms it immediately. <see cref="SelectionMode.RoundedRectangle"/> works like
+/// <see cref="SelectionMode.RegionOrWindow"/> and rounds the corners of the result (the mouse wheel sets the radius).
 /// Not thread-safe; drive it from one thread.
 /// </summary>
-public sealed class RegionSelectionModel
+public sealed class RegionSelectionModel : ISelectionModel
 {
     public const int DefaultDragThreshold = 3;
+
+    /// <summary>The largest corner radius the wheel sets (pixels).</summary>
+    public const int MaxCornerRadius = 400;
+
+    /// <summary>How much one wheel notch changes the corner radius (pixels).</summary>
+    public const int RadiusStep = 2;
 
     private readonly IReadOnlyList<PixelRect> _monitors;
     private readonly IReadOnlyList<WindowInfo> _windows;
@@ -61,22 +93,23 @@ public sealed class RegionSelectionModel
         IReadOnlyList<WindowInfo> windows,
         PixelPoint initialCursor,
         int dragThreshold = DefaultDragThreshold,
-        SelectionMode mode = SelectionMode.RegionOrWindow)
+        SelectionMode mode = SelectionMode.RegionOrWindow,
+        int cornerRadius = 0)
     {
-        ArgumentNullException.ThrowIfNull(monitorBounds);
         ArgumentNullException.ThrowIfNull(windows);
         ArgumentOutOfRangeException.ThrowIfNegative(dragThreshold);
-
-        _monitors = monitorBounds.Where(m => !m.IsEmpty).ToList();
-        if (_monitors.Count == 0)
+        if (mode is not (SelectionMode.RegionOrWindow or SelectionMode.WindowOnly or SelectionMode.RoundedRectangle))
         {
-            throw new ArgumentException("At least one monitor is required.", nameof(monitorBounds));
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "Use the model for that mode (SelectionModels.Create).");
         }
+
+        _monitors = SelectionMath.ValidMonitors(monitorBounds);
 
         // Topmost first, so the first hit is the visible window.
         _windows = windows.Where(w => !w.IsMinimized && !w.Bounds.IsEmpty).OrderBy(w => w.ZOrder).ToList();
         _dragThreshold = dragThreshold;
         Mode = mode;
+        CornerRadius = Math.Clamp(cornerRadius, 0, MaxCornerRadius);
         VirtualBounds = VirtualScreen.GetBounds(_monitors);
         Cursor = Clamp(initialCursor);
         UpdateHover();
@@ -88,6 +121,9 @@ public sealed class RegionSelectionModel
     public PixelRect VirtualBounds { get; }
 
     public SelectionMode Mode { get; }
+
+    /// <summary><see cref="SelectionMode.RoundedRectangle"/>: the corner radius (pixels; the wheel changes it).</summary>
+    public int CornerRadius { get; private set; }
 
     public SelectionPhase Phase { get; private set; } = SelectionPhase.Hovering;
 
@@ -108,6 +144,26 @@ public sealed class RegionSelectionModel
     public RegionSelectionResult? Result { get; private set; }
 
     public bool IsFinished => Phase is SelectionPhase.Confirmed or SelectionPhase.Cancelled;
+
+    public SelectionView View
+    {
+        get
+        {
+            var lit = Highlight;
+            var title = Phase == SelectionPhase.Hovering && HoverWindow is { Title.Length: > 0 } window ? "   " + Truncate(window.Title, 60) : string.Empty;
+            var rounded = Mode == SelectionMode.RoundedRectangle;
+            return new SelectionView
+            {
+                Lit = lit,
+                LitShape = rounded && !lit.IsEmpty && CornerRadius > 0 ? CaptureShape.RoundedRectangle(lit, CornerRadius) : null,
+                Label = lit.IsEmpty ? null : $"{lit.Width} × {lit.Height}{(rounded ? $"   radius {CornerRadius}" : string.Empty)}{title}",
+                Hint = rounded ? "Mouse wheel: corner radius" : null,
+                Tracking = Phase is SelectionPhase.Hovering or SelectionPhase.Dragging,
+            };
+        }
+    }
+
+    private bool AllowsDrag => Mode != SelectionMode.WindowOnly;
 
     public void PointerMoved(PixelPoint point)
     {
@@ -221,11 +277,11 @@ public sealed class RegionSelectionModel
         switch (Phase)
         {
             case SelectionPhase.Selected:
-                Result = new RegionSelectionResult(Selection, _selectedWindow);
+                Result = Finished(Selection, _selectedWindow);
                 break;
             case SelectionPhase.Hovering when !HoverBounds.IsEmpty:
                 Selection = HoverBounds;
-                Result = new RegionSelectionResult(HoverBounds, HoverWindow);
+                Result = Finished(HoverBounds, HoverWindow);
                 break;
             default:
                 return false;
@@ -250,13 +306,66 @@ public sealed class RegionSelectionModel
         Raise();
     }
 
+    /// <summary><see cref="SelectionMode.RoundedRectangle"/>: each notch changes the corner radius by <see cref="RadiusStep"/>.</summary>
+    public void Wheel(int notches)
+    {
+        if (Mode != SelectionMode.RoundedRectangle || IsFinished || notches == 0)
+        {
+            return;
+        }
+
+        var radius = Math.Clamp(CornerRadius + (notches * RadiusStep), 0, MaxCornerRadius);
+        if (radius != CornerRadius)
+        {
+            CornerRadius = radius;
+            Raise();
+        }
+    }
+
+    /// <summary>
+    /// Enter confirms. Once something is selected, arrows nudge it (Shift: resize it from its right/bottom edge);
+    /// Ctrl makes every step 10 px. Before that, arrows are left to the overlay (it moves the pointer).
+    /// </summary>
+    public bool KeyPressed(SelectionKey key, SelectionModifiers modifiers)
+    {
+        if (key == SelectionKey.Enter)
+        {
+            Confirm();
+            return true;
+        }
+
+        if (!SelectionMath.IsArrow(key) || Phase != SelectionPhase.Selected)
+        {
+            return false;
+        }
+
+        var (dx, dy) = SelectionMath.Direction(key);
+        var step = SelectionMath.Step(modifiers);
+        if (modifiers.HasFlag(SelectionModifiers.Shift))
+        {
+            ResizeBy(dx * step, dy * step);
+        }
+        else
+        {
+            Nudge(dx * step, dy * step);
+        }
+
+        return true;
+    }
+
+    private RegionSelectionResult Finished(PixelRect bounds, WindowInfo? window) =>
+        new(bounds, window)
+        {
+            Shape = Mode == SelectionMode.RoundedRectangle && CornerRadius > 0 ? CaptureShape.RoundedRectangle(bounds, CornerRadius) : null,
+        };
+
     private void MoveCursor(PixelPoint point)
     {
         Cursor = Clamp(point);
         switch (Phase)
         {
             case SelectionPhase.Hovering or SelectionPhase.Selected
-                when _pressed && Mode == SelectionMode.RegionOrWindow && Distance(_anchor, Cursor) > _dragThreshold:
+                when _pressed && AllowsDrag && SelectionMath.Distance(_anchor, Cursor) > _dragThreshold:
                 Phase = SelectionPhase.Dragging;
                 _selectedWindow = null;
                 HoverBounds = PixelRect.Empty;
@@ -316,11 +425,9 @@ public sealed class RegionSelectionModel
     private static PixelRect DragRect(PixelPoint a, PixelPoint b) =>
         PixelRect.FromLTRB(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Max(a.X, b.X) + 1, Math.Max(a.Y, b.Y) + 1);
 
-    private static int Distance(PixelPoint a, PixelPoint b) => Math.Max(Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
+    private PixelPoint Clamp(PixelPoint point) => SelectionMath.Clamp(point, VirtualBounds);
 
-    private PixelPoint Clamp(PixelPoint point) => new(
-        Math.Clamp(point.X, VirtualBounds.X, VirtualBounds.Right - 1),
-        Math.Clamp(point.Y, VirtualBounds.Y, VirtualBounds.Bottom - 1));
+    private static string Truncate(string text, int max) => text.Length <= max ? text : string.Concat(text.AsSpan(0, max - 1), "…");
 
     private void Raise() => Changed?.Invoke(this, EventArgs.Empty);
 }

@@ -20,6 +20,9 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
 {
     private bool _isOpen; // UI thread only
 
+    /// <summary>An overlay is showing (UI thread; for tests that drive it).</summary>
+    internal bool IsOpen => _isOpen;
+
     /// <summary>
     /// Opens the overlay. Must be called on the UI thread. Completes with null when the user cancels (Esc,
     /// right-click), when <paramref name="ct"/> fires, or when the display layout changes — and straight away when an
@@ -31,9 +34,19 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
         IReadOnlyList<MonitorInfo> monitors,
         IReadOnlyList<WindowInfo> windows,
         SelectionMode mode = SelectionMode.RegionOrWindow,
+        CancellationToken ct = default) =>
+        SelectAsync(frozen, monitors, windows, new SelectionOptions(mode), ct);
+
+    /// <summary>As above, with the options of the capture mode (fixed sizes, corner radius).</summary>
+    public Task<RegionSelectionResult?> SelectAsync(
+        CapturedImage frozen,
+        IReadOnlyList<MonitorInfo> monitors,
+        IReadOnlyList<WindowInfo> windows,
+        SelectionOptions options,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(frozen);
+        ArgumentNullException.ThrowIfNull(options);
         if (_isOpen)
         {
             LogAlreadyOpen();
@@ -43,7 +56,7 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
         var dispatcher = Dispatcher.CurrentDispatcher;
         var displays = monitors.DistinctBy(m => m.Bounds).ToList();
         var bounds = displays.Select(m => m.Bounds).ToList();
-        var model = new RegionSelectionModel(bounds, windows, CursorPosition(), mode: mode);
+        var model = SelectionModels.Create(options, bounds, windows, CursorPosition());
         var completion = new TaskCompletionSource<RegionSelectionResult?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var virtualBounds = model.VirtualBounds;
@@ -70,7 +83,7 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
 
             if (model.Result is { } result)
             {
-                LogSelected(result.Bounds, result.Window?.Title);
+                LogSelected(options.Mode, result.Bounds, result.Window?.Title, result.Shape?.Kind);
             }
             else
             {
@@ -91,7 +104,7 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
         // process may take the foreground (tray click, hotkey, or a launch that called AllowSetForegroundWindow).
         var activated = overlay.Activate();
         Keyboard.Focus(overlay);
-        LogOpened(virtualBounds, displays.Count, windows.Count, model.Cursor, activated);
+        LogOpened(options.Mode, virtualBounds, displays.Count, windows.Count, model.Cursor, activated);
 
         return completion.Task;
     }
@@ -121,11 +134,11 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
         return ((uint)px[3] << 24) | ((uint)px[2] << 16) | ((uint)px[1] << 8) | px[0];
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Region overlay opened over {Bounds} ({Monitors} monitor(s), {Windows} pickable window(s), cursor {Cursor}, activated {Activated})")]
-    private partial void LogOpened(PixelRect bounds, int monitors, int windows, PixelPoint cursor, bool activated);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Selection overlay ({Mode}) opened over {Bounds} ({Monitors} monitor(s), {Windows} pickable window(s), cursor {Cursor}, activated {Activated})")]
+    private partial void LogOpened(SelectionMode mode, PixelRect bounds, int monitors, int windows, PixelPoint cursor, bool activated);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Region selected {Bounds} (window: {Window})")]
-    private partial void LogSelected(PixelRect bounds, string? window);
+    [LoggerMessage(Level = LogLevel.Information, Message = "{Mode} selected {Bounds} (window: {Window}, shape: {Shape})")]
+    private partial void LogSelected(SelectionMode mode, PixelRect bounds, string? window, ShapeKind? shape);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Region selection cancelled")]
     private partial void LogCancelled();

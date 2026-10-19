@@ -17,6 +17,12 @@
         <MenuItem Header="Capture _Full Screen" Command="{Binding CaptureFullScreenCommand}" InputGestureText="{Binding FullScreenHotkey}" />
         <MenuItem Header="_Scrolling Capture" Command="{Binding CaptureScrollingCommand}" InputGestureText="{Binding ScrollingHotkey}" />
         <MenuItem Header="Capture _Text" Command="{Binding CaptureTextCommand}" InputGestureText="{Binding TextHotkey}" />
+        <MenuItem Header="_More Captures">
+          <MenuItem Header="_Fixed-Size Region" Command="{Binding CaptureFixedRegionCommand}" />
+          <MenuItem Header="F_reehand Region" Command="{Binding CaptureFreehandCommand}" />
+          <MenuItem Header="_Polygon Region" Command="{Binding CapturePolygonCommand}" />
+          <MenuItem Header="R_ounded Region" Command="{Binding CaptureRoundedRegionCommand}" />
+        </MenuItem>
         <MenuItem Header="{Binding DelayHeader}" ItemsSource="{Binding DelayChoices}">
           <MenuItem.ItemContainerStyle>
             <Style TargetType="MenuItem">

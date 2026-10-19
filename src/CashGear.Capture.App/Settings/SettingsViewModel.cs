@@ -6,11 +6,13 @@ using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Capture;
+using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Ocr;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Recording;
+using CashGear.Capture.Core.Selection;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Overlays.Webcam;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -149,6 +151,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public IReadOnlyList<int> DelayChoices { get; } = [0, 1, 2, 3, 5, 10, 15, 30];
 
     public IReadOnlyList<int> HideDelayChoices { get; } = [0, 100, 200, 300, 500, 1000];
+
+    /// <summary>The fixed-size region's ready-made sizes (any other can be typed).</summary>
+    public IReadOnlyList<string> FixedSizeChoices { get; } = [.. FixedSizes.Presets.Select(s => s.ToString())];
+
+    /// <summary>Corner radii offered (one set with the mouse wheel on the screen is added in order).</summary>
+    public ObservableCollection<int> CornerRadiusChoices { get; } = [0, 4, 8, 12, 16, 24, 32, 48, 64];
 
     /// <summary>How many captures the history keeps (a value set by hand in settings.json is added).</summary>
     public ObservableCollection<CountChoice> HistorySizes { get; } =
@@ -357,6 +365,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private int _hideDelayMs;
+
+    /// <summary>The fixed-size region's size as text, e.g. <c>800 × 600</c>.</summary>
+    [ObservableProperty]
+    private string _fixedRegionSize = string.Empty;
+
+    [ObservableProperty]
+    private int _cornerRadius;
 
     [ObservableProperty]
     private OcrLanguageChoice? _ocrLanguage;
@@ -759,6 +774,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     partial void OnFileNameTemplateChanged(string value) => Revalidate();
 
+    partial void OnFixedRegionSizeChanged(string value) => Revalidate();
+
     partial void OnSaveToFileChanged(bool value) => Revalidate();
 
     partial void OnCopyToClipboardChanged(bool value) => Revalidate();
@@ -850,6 +867,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             DelaySeconds = DelaySeconds,
             ScrollSettleMs = ScrollSettleMs,
             ScrollMaxHeight = ScrollMaxHeight,
+            FixedRegionWidth = PixelSize.TryParse(FixedRegionSize, out var size) ? size.Width : current.Capture.FixedRegionWidth,
+            FixedRegionHeight = PixelSize.TryParse(FixedRegionSize, out size) ? size.Height : current.Capture.FixedRegionHeight,
+            CornerRadius = CornerRadius,
         },
         Output = current.Output with
         {
@@ -903,6 +923,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         OpenEditor = s.AfterCapture.OpenEditor;
         DelaySeconds = s.Capture.DelaySeconds;
         HideDelayMs = s.Capture.HideDelayMs;
+        FixedRegionSize = s.Capture.FixedRegionSize.ToString();
+        if (!CornerRadiusChoices.Contains(s.Capture.CornerRadius))
+        {
+            CornerRadiusChoices.Insert(CornerRadiusChoices.Count(r => r < s.Capture.CornerRadius), s.Capture.CornerRadius);
+        }
+
+        CornerRadius = s.Capture.CornerRadius;
         ScrollSettleMs = s.Capture.ScrollSettleMs;
         // A language set by hand but not installed still shows (and is kept) rather than silently becoming Automatic.
         OcrLanguage = OcrLanguages.FirstOrDefault(l => string.Equals(l.Tag, s.Ocr.Language, StringComparison.OrdinalIgnoreCase))
@@ -978,6 +1005,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             {
                 errors.Add("Folder: use a full path such as D:\\Screenshots (or leave it empty for the default).");
             }
+        }
+
+        if (!PixelSize.TryParse(FixedRegionSize, out var fixedSize) || fixedSize.Width > CaptureSettings.MaxFixedRegionSide || fixedSize.Height > CaptureSettings.MaxFixedRegionSide)
+        {
+            errors.Add("Fixed-size region: write the size as width × height in pixels, e.g. 800 × 600.");
         }
 
         if (!SaveToFile && !CopyToClipboard && !OpenEditor)

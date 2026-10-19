@@ -151,6 +151,18 @@ public sealed partial class TrayViewModel : ObservableObject
     [RelayCommand]
     private Task CaptureRegionAsync() => _coordinator.CaptureRegionAsync();
 
+    [RelayCommand]
+    private Task CaptureFixedRegionAsync() => _coordinator.CaptureFixedRegionAsync();
+
+    [RelayCommand]
+    private Task CaptureFreehandAsync() => _coordinator.CaptureFreehandAsync();
+
+    [RelayCommand]
+    private Task CapturePolygonAsync() => _coordinator.CapturePolygonAsync();
+
+    [RelayCommand]
+    private Task CaptureRoundedRegionAsync() => _coordinator.CaptureRoundedRegionAsync();
+
     /// <summary>Pick a window on the overlay, then capture its own content.</summary>
     [RelayCommand]
     private Task CaptureWindowAsync() => _coordinator.CaptureWindowAsync();

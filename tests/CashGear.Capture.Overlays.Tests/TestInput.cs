@@ -49,6 +49,29 @@ internal static unsafe class TestInput
     public static bool Click(int x, int y) =>
         Send(Mouse(x, y, MoveFlag), Mouse(x, y, LeftDownFlag), Mouse(x, y, LeftUpFlag));
 
+    /// <summary>Two clicks there, quickly enough to be a double-click.</summary>
+    public static bool DoubleClick(int x, int y)
+    {
+        var first = Click(x, y);
+        Thread.Sleep(30);
+        return first && Click(x, y);
+    }
+
+    /// <summary>Clicks the right button there.</summary>
+    public static bool RightClick(int x, int y) =>
+        Send(Mouse(x, y, MoveFlag), Mouse(x, y, 0x0008 /* RIGHTDOWN */), Mouse(x, y, 0x0010 /* RIGHTUP */));
+
+    /// <summary>Turns the mouse wheel by <paramref name="notches"/> (positive: away from the user) where the pointer is.</summary>
+    public static bool Wheel(int notches)
+    {
+        var input = new INPUT
+        {
+            type = User32.InputMouse,
+            mi = new MOUSEINPUT { mouseData = unchecked((uint)(notches * User32.WheelDelta)), dwFlags = User32.MouseEventFWheel },
+        };
+        return Send(input);
+    }
+
     /// <summary>Presses the left button at the first point, moves through the others, and lets go at the last.</summary>
     public static bool Drag((int X, int Y)[] points)
     {

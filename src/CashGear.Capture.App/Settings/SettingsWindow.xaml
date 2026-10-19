@@ -118,6 +118,25 @@
             <CheckBox Margin="0,2" Content="Include the mouse cursor" IsChecked="{Binding IncludeCursor}" />
             <CheckBox Margin="0,2" Content="Add a drop shadow to window captures" IsChecked="{Binding IncludeWindowShadow}" />
 
+            <TextBlock Style="{StaticResource Section}" Text="Shapes" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+              </Grid.RowDefinitions>
+              <TextBlock Text="Fixed-size region" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding FixedSizeChoices}" IsEditable="True" Text="{Binding FixedRegionSize, UpdateSourceTrigger=PropertyChanged}"
+                        HorizontalAlignment="Left" MinWidth="160" AutomationProperties.Name="Fixed-size region" />
+              <TextBlock Grid.Row="1" Text="Rounded region corners" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CornerRadiusChoices}" SelectedItem="{Binding CornerRadius}" ItemStringFormat="{}{0} px"
+                        HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="Corner radius" />
+            </Grid>
+            <TextBlock Style="{StaticResource Hint}" Text="Any size can be typed (width × height). On the screen, Tab switches between the sizes and the mouse wheel changes the corner radius; the last ones used are kept. Freehand, polygon, rounded and menu captures are transparent outside their shape, so they are saved as PNG whatever the format on the Output tab." />
+
             <TextBlock Style="{StaticResource Section}" Text="Full screen" />
             <ComboBox ItemsSource="{Binding FullScreenOutputs}" SelectedItem="{Binding FullScreenOutput}" ItemTemplate="{StaticResource EnumItem}"
                       HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Full screen output" />

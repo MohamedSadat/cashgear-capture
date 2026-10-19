@@ -145,7 +145,25 @@ public sealed partial class CaptureCoordinator
     /// Freezes the screen, lets the user pick a rectangle or window on the overlay, and crops the result from the
     /// frozen image — pixel-exact, with no second capture.
     /// </summary>
-    public Task CaptureRegionAsync(CancellationToken ct = default) => RunAsync(async current =>
+    public Task CaptureRegionAsync(CancellationToken ct = default) => CaptureSelectionAsync(CaptureMode.Region, ct);
+
+    /// <summary>A frame of a set size (the last size used; Tab picks another on the overlay).</summary>
+    public Task CaptureFixedRegionAsync(CancellationToken ct = default) => CaptureSelectionAsync(CaptureMode.FixedRegion, ct);
+
+    /// <summary>An outline drawn by hand; transparent outside it.</summary>
+    public Task CaptureFreehandAsync(CancellationToken ct = default) => CaptureSelectionAsync(CaptureMode.Freehand, ct);
+
+    /// <summary>A polygon clicked corner by corner; transparent outside it.</summary>
+    public Task CapturePolygonAsync(CancellationToken ct = default) => CaptureSelectionAsync(CaptureMode.Polygon, ct);
+
+    /// <summary>A rectangle (or window) with rounded corners; transparent outside them.</summary>
+    public Task CaptureRoundedRegionAsync(CancellationToken ct = default) => CaptureSelectionAsync(CaptureMode.RoundedRegion, ct);
+
+    /// <summary>
+    /// The captures chosen on the frozen screen: the overlay works in the mode's way, and the result is cropped from
+    /// the frozen image (pixel-exact, no second capture) and made transparent outside its shape.
+    /// </summary>
+    private Task CaptureSelectionAsync(CaptureMode mode, CancellationToken ct) => RunAsync(async current =>
     {
         using var hidden = await PrepareAsync(current, hideOwnUi: true, ct).ConfigureAwait(false);
 
@@ -154,28 +172,82 @@ public sealed partial class CaptureCoordinator
         var windows = _windows.GetVisibleWindows();
         using var frozen = await _capture.CaptureAllMonitorsAsync(ct).ConfigureAwait(false);
 
-        var selection = await _ui.InvokeAsync(() => _regionSelector.SelectAsync(frozen, displays, windows, ct: ct)).ConfigureAwait(false);
+        var options = OptionsFor(mode, current.Capture);
+        var selection = await _ui.InvokeAsync(() => _regionSelector.SelectAsync(frozen, displays, windows, options, ct)).ConfigureAwait(false);
         if (selection is null)
         {
             return; // cancelled by the user; nothing to report
         }
 
-        using var image = frozen.Crop(VirtualScreen.ToLocal(selection.Bounds, frozen.Metadata.SourceBounds));
-        var onMonitor = displays.FirstOrDefault(m => m.Bounds.Contains(selection.Bounds));
-        var covered = displays.Select(m => m.Bounds).Distinct().Sum(b => b.Intersect(selection.Bounds).Area);
-        image.Metadata = image.Metadata with
-        {
-            Kind = selection.Window is null ? CaptureKind.Region : CaptureKind.Window,
-            WindowTitle = selection.Window?.Title,
-            MonitorName = onMonitor?.ShortName,
-            IsPrimaryMonitor = onMonitor?.IsPrimary ?? false,
-            Dpi = onMonitor?.Scale ?? DpiScale.Identity,
-            HasTransparency = covered < selection.Bounds.Area,
-        };
+        await RememberChoicesAsync(mode, selection, current.Capture).ConfigureAwait(false);
+        var kind = selection.Window is null ? CaptureKind.Region : CaptureKind.Window;
+        using var image = Cut(frozen, selection.Bounds, selection.Shape, displays, kind, selection.Window?.Title);
         LogRegionCaptured(selection.Bounds, image.Metadata.Kind);
 
         await DeliverAsync(image, [image], current, hidden, ct).ConfigureAwait(false);
     });
+
+    /// <summary>
+    /// Crops <paramref name="bounds"/> from <paramref name="source"/> (a capture covering it, in virtual-screen
+    /// pixels) and makes it transparent outside <paramref name="shape"/>. The metadata names the monitor it lies on.
+    /// </summary>
+    internal static CapturedImage Cut(
+        CapturedImage source, PixelRect bounds, CaptureShape? shape, IReadOnlyList<MonitorInfo> displays, CaptureKind kind, string? title)
+    {
+        var image = source.Crop(VirtualScreen.ToLocal(bounds, source.Metadata.SourceBounds));
+        var shaped = shape is not null && !shape.IsRectangle;
+        if (shaped)
+        {
+            ShapeMask.Apply(image, shape!);
+        }
+
+        var onMonitor = displays.FirstOrDefault(m => m.Bounds.Contains(bounds));
+        var covered = displays.Select(m => m.Bounds).Distinct().Sum(b => b.Intersect(bounds).Area);
+        image.Metadata = image.Metadata with
+        {
+            Kind = kind,
+            WindowTitle = title,
+            MonitorName = onMonitor?.ShortName,
+            IsPrimaryMonitor = onMonitor?.IsPrimary ?? false,
+            Dpi = onMonitor?.Scale ?? DpiScale.Identity,
+            HasTransparency = covered < bounds.Area || shaped,
+            IsNonRectangular = shaped,
+        };
+        return image;
+    }
+
+    private static SelectionOptions OptionsFor(CaptureMode mode, CaptureSettings capture)
+    {
+        var (sizes, index) = FixedSizes.With(capture.FixedRegionSize);
+        var selection = mode switch
+        {
+            CaptureMode.FixedRegion => SelectionMode.FixedSize,
+            CaptureMode.Freehand => SelectionMode.Freehand,
+            CaptureMode.Polygon => SelectionMode.Polygon,
+            CaptureMode.RoundedRegion => SelectionMode.RoundedRectangle,
+            _ => SelectionMode.RegionOrWindow,
+        };
+        return new SelectionOptions(selection) { FixedSizes = sizes, FixedSizeIndex = index, CornerRadius = capture.CornerRadius };
+    }
+
+    /// <summary>The fixed size or corner radius chosen on the overlay is where the next such capture starts.</summary>
+    private Task RememberChoicesAsync(CaptureMode mode, RegionSelectionResult selection, CaptureSettings capture)
+    {
+        if (mode == CaptureMode.FixedRegion
+            && (selection.Bounds.Width, selection.Bounds.Height) is var (width, height)
+            && (width, height) != (capture.FixedRegionWidth, capture.FixedRegionHeight))
+        {
+            return _settings.UpdateAsync(s => s with { Capture = s.Capture with { FixedRegionWidth = width, FixedRegionHeight = height } });
+        }
+
+        var radius = selection.Shape?.Radius ?? 0;
+        if (mode == CaptureMode.RoundedRegion && radius != capture.CornerRadius)
+        {
+            return _settings.UpdateAsync(s => s with { Capture = s.Capture with { CornerRadius = radius } });
+        }
+
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// Lets the user pick a window on the overlay, then captures that window's own content (WGC sees it even
@@ -415,7 +487,7 @@ public sealed partial class CaptureCoordinator
             foreach (var file in files)
             {
                 var name = FileNameTemplate.Expand(template, Context(file), _counter.Next);
-                var options = new SaveOptions(folder, name, current.Output.Format, current.Output.JpegQuality);
+                var options = new SaveOptions(folder, name, FormatFor(file, current.Output), current.Output.JpegQuality);
                 saved.Add(await _output.SaveAsync(file, options, ct).ConfigureAwait(false)
                     ?? throw new OperationCanceledException("Save was cancelled."));
             }
@@ -428,7 +500,7 @@ public sealed partial class CaptureCoordinator
         }
 
         // Kept in the history while the rest happens; the image must stay alive until both are done.
-        var pngCopy = current.Output.Format == ImageFileFormat.Png ? savedAs : null;
+        var pngCopy = FormatFor(primary, current.Output) == ImageFileFormat.Png ? savedAs : null;
         var history = _history.AddAsync(primary, savedAs, pngCopy, CancellationToken.None);
         try
         {
@@ -456,6 +528,10 @@ public sealed partial class CaptureCoordinator
             await history.ConfigureAwait(false);
         }
     }
+
+    /// <summary>The configured format, except that a shaped capture is always PNG (the only format that keeps its transparency).</summary>
+    private static ImageFileFormat FormatFor(CapturedImage image, OutputSettings output) =>
+        image.Metadata.IsNonRectangular ? ImageFileFormat.Png : output.Format;
 
     /// <summary>The configured template, or the default if a hand edit broke it; several files from one capture get {monitor} so their names differ.</summary>
     private string Template(OutputSettings output, bool distinguishMonitors)

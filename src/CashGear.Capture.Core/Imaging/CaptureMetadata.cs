@@ -25,6 +25,9 @@ public sealed record CaptureMetadata
 
     public string? WindowTitle { get; init; }
 
-    /// <summary>True when some pixels are deliberately transparent (gaps between monitors).</summary>
+    /// <summary>True when some pixels are deliberately transparent (gaps between monitors, outside a shape).</summary>
     public bool HasTransparency { get; init; }
+
+    /// <summary>A freehand, polygon, rounded or menu capture: transparent outside its shape, so it is always saved as PNG.</summary>
+    public bool IsNonRectangular { get; init; }
 }

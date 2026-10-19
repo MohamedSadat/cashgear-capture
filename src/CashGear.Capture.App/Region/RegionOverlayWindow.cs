@@ -26,23 +26,26 @@ namespace CashGear.Capture.App.Region;
 /// <item>Opaque, not layered (AllowsTransparency): the background is the screenshot itself. That keeps it fast
 /// and lets display affinity exclude it from capture.</item>
 /// </list>
-/// Only low-level input handling lives here; the selection logic is <see cref="RegionSelectionModel"/>.
+/// Only low-level input handling lives here; the selection logic is the <see cref="ISelectionModel"/> (one per mode).
 /// </summary>
 internal sealed partial class RegionOverlayWindow : Window
 {
+    private const int WheelNotch = 120;
+
     private readonly PixelRect _virtual;
-    private readonly RegionSelectionModel _model;
+    private readonly ISelectionModel _model;
     private readonly Grid _canvas;
     private readonly RegionOverlayVisual _visual;
     private readonly ILogger _logger;
     private nint _hwnd;
+    private int _wheel; // part of a notch left over (high-resolution wheels)
 
     /// <param name="background">The frozen virtual-screen image, exactly <paramref name="virtualBounds"/> in pixels.</param>
     public RegionOverlayWindow(
         PixelRect virtualBounds,
         IReadOnlyList<MonitorInfo> monitors,
         BitmapSource background,
-        RegionSelectionModel model,
+        ISelectionModel model,
         Func<PixelPoint, uint?> colorAt,
         ILogger logger)
     {
@@ -59,6 +62,7 @@ internal sealed partial class RegionOverlayWindow : Window
         Background = Brushes.Black;
         Cursor = Cursors.Cross;
         Focusable = true;
+        KeyboardNavigation.SetTabNavigation(this, KeyboardNavigationMode.None); // Tab is the fixed-size frame's key
 
         // Approximate placement in DIPs; OnSourceInitialized moves the HWND onto the exact physical rectangle.
         WindowStartupLocation = WindowStartupLocation.Manual;
@@ -178,61 +182,74 @@ internal sealed partial class RegionOverlayWindow : Window
         e.Handled = true;
     }
 
-    protected override void OnKeyDown(KeyEventArgs e)
+    protected override void OnMouseWheel(MouseWheelEventArgs e)
     {
-        base.OnKeyDown(e);
-        var key = e.Key == Key.System ? e.SystemKey : e.Key;
-        switch (key)
+        base.OnMouseWheel(e);
+        _wheel += e.Delta;
+        var notches = _wheel / WheelNotch;
+        if (notches != 0)
         {
-            case Key.Escape:
-                _model.Cancel();
-                break;
-            case Key.Enter:
-                _model.Confirm();
-                break;
-            case Key.Left:
-                Arrow(-1, 0);
-                break;
-            case Key.Right:
-                Arrow(1, 0);
-                break;
-            case Key.Up:
-                Arrow(0, -1);
-                break;
-            case Key.Down:
-                Arrow(0, 1);
-                break;
-            default:
-                return;
+            _wheel -= notches * WheelNotch;
+            _model.Wheel(notches);
+        }
+
+        e.Handled = true;
+    }
+
+    /// <summary>Esc cancels; Enter, Backspace, Tab and the arrows go to the model (Tab is caught early, before focus navigation).</summary>
+    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    {
+        base.OnPreviewKeyDown(e);
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (key == Key.Escape)
+        {
+            _model.Cancel();
+            e.Handled = true;
+            return;
+        }
+
+        SelectionKey? selectionKey = key switch
+        {
+            Key.Enter => SelectionKey.Enter,
+            Key.Back => SelectionKey.Backspace,
+            Key.Tab => SelectionKey.Tab,
+            Key.Left => SelectionKey.Left,
+            Key.Right => SelectionKey.Right,
+            Key.Up => SelectionKey.Up,
+            Key.Down => SelectionKey.Down,
+            _ => null,
+        };
+        if (selectionKey is not { } pressed)
+        {
+            return;
+        }
+
+        var modifiers = (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? SelectionModifiers.Shift : SelectionModifiers.None)
+            | (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) ? SelectionModifiers.Control : SelectionModifiers.None);
+        if (!_model.KeyPressed(pressed, modifiers) && pressed is SelectionKey.Left or SelectionKey.Right or SelectionKey.Up or SelectionKey.Down)
+        {
+            MovePointer(pressed, modifiers);
         }
 
         e.Handled = true;
     }
 
     /// <summary>
-    /// Arrows nudge the selection (Shift: resize it) once one exists; before that they move the mouse cursor by a
-    /// pixel for precise placement. Ctrl makes every step 10 px.
+    /// Arrows the model doesn't use move the mouse cursor by a pixel (Ctrl: 10) for precise placement; the system
+    /// turns the move into a mouse-move message, which updates the model.
     /// </summary>
-    private void Arrow(int dx, int dy)
+    private void MovePointer(SelectionKey key, SelectionModifiers modifiers)
     {
-        var step = Keyboard.Modifiers.HasFlag(ModifierKeys.Control) ? 10 : 1;
-        if (_model.Phase == SelectionPhase.Selected)
+        var step = modifiers.HasFlag(SelectionModifiers.Control) ? 10 : 1;
+        var (dx, dy) = key switch
         {
-            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
-            {
-                _model.ResizeBy(dx * step, dy * step);
-            }
-            else
-            {
-                _model.Nudge(dx * step, dy * step);
-            }
-
-            return;
-        }
-
-        // The system turns the move into a mouse-move message, which updates the model.
+            SelectionKey.Left => (-step, 0),
+            SelectionKey.Right => (step, 0),
+            SelectionKey.Up => (0, -step),
+            _ => (0, step),
+        };
         var cursor = _model.Cursor;
-        User32.SetCursorPos(cursor.X + (dx * step), cursor.Y + (dy * step));
+        User32.SetCursorPos(cursor.X + dx, cursor.Y + dy);
     }
 
     private PixelPoint ToVirtual(Point canvasPoint) => DpiHelper.ToPixel(canvasPoint).Offset(_virtual.X, _virtual.Y);
