@@ -131,7 +131,7 @@ internal static class Program
 
         var output = Path.Combine(options.Out, $"synctest-{DateTime.Now:yyyyMMdd-HHmmss}.mp4");
         var recording = new RecordingOptions(
-            monitor, area, options.Fps, options.Quality, IncludeCursor: false, ShowClicks: false, options.Encoder, output, SystemAudio: true,
+            monitor, area, options.Fps, options.Quality, IncludeCursor: false, options.Encoder, output, SystemAudio: true,
             Microphone: options.Microphone, Tracks: options.Tracks);
         var process = Process.GetCurrentProcess();
         await recorder.StartAsync(recording);

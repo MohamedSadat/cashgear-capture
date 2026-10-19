@@ -148,6 +148,29 @@ public sealed class RecordingClock(TimeProvider time)
         }
     }
 
+    /// <summary>
+    /// The recording time of something that happened at <paramref name="timestamp"/> (a click, a key, a webcam
+    /// picture), or false when it happened before the start, during a pause or after the stop: unlike a picture of
+    /// the screen, an event from a pause isn't shown when recording resumes.
+    /// </summary>
+    public bool TryMap(long timestamp, out TimeSpan recorded)
+    {
+        lock (_gate)
+        {
+            foreach (var segment in _segments)
+            {
+                if (timestamp >= segment.Start && timestamp < segment.End)
+                {
+                    recorded = time.GetElapsedTime(0, segment.RecordedBefore + timestamp - segment.Start);
+                    return true;
+                }
+            }
+        }
+
+        recorded = default;
+        return false;
+    }
+
     private static long CeilDiv(long a, long b) => (a + b - 1) / b;
 
     /// <summary>A stretch of running clock: real timestamps (End is MaxValue while running) and the recorded time before it.</summary>

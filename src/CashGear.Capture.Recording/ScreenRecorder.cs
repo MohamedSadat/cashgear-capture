@@ -3,35 +3,17 @@ using CashGear.Capture.Audio;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Engine.Capture.Wgc;
 using CashGear.Capture.Interop.Native;
 using CashGear.Capture.Media;
+using CashGear.Capture.Overlays.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Recording;
-
-/// <summary>The mouse as the click highlighter needs it.</summary>
-public readonly record struct MouseSnapshot(PixelPoint Cursor, bool LeftDown, bool LeftClicked, bool RightDown, bool RightClicked);
-
-public interface IMouseState
-{
-    MouseSnapshot Read();
-}
-
-internal sealed unsafe class Win32MouseState : IMouseState
-{
-    public MouseSnapshot Read()
-    {
-        POINT p;
-        User32.GetCursorPos(&p);
-        var left = User32.GetAsyncKeyState(User32.VkLButton);
-        var right = User32.GetAsyncKeyState(User32.VkRButton);
-        return new MouseSnapshot(new PixelPoint(p.X, p.Y), (left & 0x8000) != 0, (left & 1) != 0, (right & 0x8000) != 0, (right & 1) != 0);
-    }
-}
 
 /// <summary>
 /// Records an area of one monitor to MP4, encoding inside the app (FFmpeg). Pictures from a
@@ -44,7 +26,6 @@ internal sealed partial class ScreenRecorder(
     IRecordingEncoders encoders,
     RecordingStore store,
     WgcInterop interop,
-    IMouseState mouse,
     IAudioSourceFactory audio,
     ILoggerFactory loggers,
     MicrophoneProcessors? processors = null) : IScreenRecorder
@@ -174,10 +155,25 @@ internal sealed partial class ScreenRecorder(
                     parts.Audio.Add(AudioEncoder.Open(parts.Audio.Count + 1));
                 }
 
+                var overlays = options.Overlays;
                 var manifest = new RecordingManifest(
                     Guid.NewGuid().ToString("N")[..8], DateTimeOffset.Now, output, width, height, options.Fps, [], [.. tracks.Select(t => t.Title)],
-                    NormalizeLoudness: options.NormalizeLoudness && tracks.Count > 0);
+                    NormalizeLoudness: options.NormalizeLoudness && tracks.Count > 0,
+                    Metadata: overlays?.WriteMetadata == true ? MetadataJournal.FileName : null);
                 parts.Folder = store.Create(manifest);
+                if (manifest.Metadata is { } journal)
+                {
+                    parts.Journal = new MetadataJournal(
+                        Path.Combine(parts.Folder.Directory, journal),
+                        new MetadataHeader(
+                            options.Fps,
+                            new MetadataArea(area.X, area.Y, area.Width, area.Height),
+                            options.Monitor.Scale.ScaleX,
+                            CursorInVideo: options.IncludeCursor,
+                            OverlaysInVideo: overlays!.DrawsLive,
+                            overlays!.KeystrokeSettings.Mode));
+                }
+
                 parts.Writer = new MediaWriter(
                     parts.Folder.SegmentPath,
                     [.. parts.Audio.Select((a, i) => StreamSetup.From(a, tracks[i].Title, i == 0))],
@@ -191,7 +187,7 @@ internal sealed partial class ScreenRecorder(
                     ? _processors.Create(processing)
                     : null;
                 var session = new Session(
-                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, fallbacks, parts, manifest, tracks, soundNote, chain, mouse, _logger);
+                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, fallbacks, parts, manifest, tracks, soundNote, chain, loggers, _logger);
                 session.Failed += (_, e) => OnFailed(e);
                 session.Start();
                 _session = session;
@@ -389,11 +385,14 @@ internal sealed partial class ScreenRecorder(
 
         public WgcAreaStream? Stream { get; set; }
 
+        public MetadataJournal? Journal { get; set; }
+
         public void Add(VideoEncoder video) => Video.Add(video);
 
         public void Dispose(bool deleteFolder)
         {
             Stream?.Dispose();
+            Journal?.Dispose();
             Sources.ForEach(s => s.Dispose());
             Writer?.Complete(FinishTimeout);
             Writer?.Dispose();
@@ -441,13 +440,15 @@ internal sealed partial class ScreenRecorder(
         private readonly MediaWriter _writer;
         private readonly RecordingFolder _folder;
         private readonly IReadOnlyList<SoundTrack> _tracks;
-        private readonly IMouseState _mouse;
+        private readonly ILoggerFactory _loggers;
         private readonly ILogger _logger;
         private readonly FrameGrid _grid;
         private readonly object _gridGate = new();
-        private readonly ClickHighlighter _clicks = new();
         private readonly ManualResetEventSlim _running = new(initialState: true);
-        private readonly Stopwatch _wallClock = new();
+        private readonly OverlaySettings? _overlays;
+        private readonly InputTimeline? _timeline;
+        private readonly MetadataJournal? _journal;
+        private readonly CursorLibrary _cursors = new();
         private readonly AudioMixer? _mixer;
         private readonly Dictionary<RecordingSound, AudioTrack> _sourceTracks = [];
         private readonly List<string> _encoderNames = [];
@@ -456,6 +457,7 @@ internal sealed partial class ScreenRecorder(
         private VideoEncoder _video;
         private FrameConverter _converter;
         private Timer? _watchdog;
+        private InputRecorder? _input;
         private Thread? _videoThread;
         private Thread? _soundThread;
         private volatile bool _stopping;
@@ -483,10 +485,18 @@ internal sealed partial class ScreenRecorder(
             IReadOnlyList<SoundTrack> tracks,
             string? soundNote,
             MicrophoneChain? microphoneChain,
-            IMouseState mouse,
+            ILoggerFactory loggers,
             ILogger logger)
         {
             MicrophoneChain = microphoneChain;
+            _loggers = loggers;
+            _overlays = options.Overlays;
+            _journal = parts.Journal;
+            if (_overlays?.NeedsInput == true)
+            {
+                _timeline = new InputTimeline(InputRecorder.PointerNow());
+            }
+
             _owner = owner;
             _options = options;
             _format = format;
@@ -499,7 +509,6 @@ internal sealed partial class ScreenRecorder(
             _manifest = manifest;
             _tracks = tracks;
             _soundNote = soundNote;
-            _mouse = mouse;
             _logger = logger;
             Clock = clock;
             _grid = grid;
@@ -568,8 +577,8 @@ internal sealed partial class ScreenRecorder(
             Winmm.TimeBeginPeriod(1); // 1 ms sleeps: frames on time even at 60 fps
             _timerPeriod = true;
             Clock.Start();
-            _wallClock.Start();
-            _videoThread = new Thread(WriteVideo) { IsBackground = true, Name = "Recording video", Priority = ThreadPriority.AboveNormal };
+            StartInput();
+            _videoThread =new Thread(WriteVideo) { IsBackground = true, Name = "Recording video", Priority = ThreadPriority.AboveNormal };
             _videoThread.Start();
             _watchdog = new Timer(_ => Watch(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
             if (_mixer is null)
@@ -594,6 +603,16 @@ internal sealed partial class ScreenRecorder(
                 }
             }
         }
+
+        /// <summary>While true, keys aren't shown or kept.</summary>
+        public bool KeystrokesPaused
+        {
+            get => _input?.KeystrokesPaused ?? false;
+            set => _input?.KeystrokesPaused = value;
+        }
+
+        /// <summary>Drawing on the screen started or stopped.</summary>
+        public void SetDrawing(bool on) => _input?.SetDrawing(on);
 
         public void Pause()
         {
@@ -644,6 +663,8 @@ internal sealed partial class ScreenRecorder(
             }
 
             LogStopStep($"video done ({videoDone}), {_grid.Written} frames");
+            _input?.Dispose();
+            _journal?.Dispose();
             _watchdog?.Dispose();
             EndTimerPeriod();
             _stream.Dispose();
@@ -711,7 +732,27 @@ internal sealed partial class ScreenRecorder(
                 Sound,
                 _soundNote,
                 saved.Files,
-                note);
+                note,
+                saved.MetadataPath);
+        }
+
+        /// <summary>Follows the mouse (and keys) for the overlays and the metadata. If Windows refuses the hooks, the recording goes on without.</summary>
+        private void StartInput()
+        {
+            if (_timeline is null || _overlays is null)
+            {
+                return;
+            }
+
+            try
+            {
+                _input = InputRecorder.Start(Clock, _timeline, _journal, _overlays.KeystrokeSettings, _cursors, _loggers);
+            }
+            catch (InvalidOperationException e)
+            {
+                LogInputFailed(e);
+                _note = "Clicks and keys couldn't be followed (" + e.Message + ").";
+            }
         }
 
         private static async Task<bool> JoinAsync(Thread? thread, TimeSpan timeout) =>
@@ -734,7 +775,7 @@ internal sealed partial class ScreenRecorder(
             Kernel32.SetThreadExecutionState(Kernel32.EsContinuous | Kernel32.EsSystemRequired | Kernel32.EsDisplayRequired);
             var packets = new List<EncodedPacket>();
             var picture = new byte[_format.Width * _format.Height * 4];
-            var marked = _options.ShowClicks ? new byte[picture.Length] : null;
+            var marked = _overlays is { BurnIn: true } && _overlays.ClickSettings.Enabled && _timeline is not null ? new byte[picture.Length] : null;
             Picture? current = null;
             try
             {
@@ -771,15 +812,17 @@ internal sealed partial class ScreenRecorder(
                     }
 
                     var frame = picture;
-                    if (marked is not null)
+                    if (_timeline is not null)
                     {
-                        var m = _mouse.Read();
-                        var now = _wallClock.Elapsed;
-                        _clicks.Update(now, m.Cursor, m.LeftDown, m.LeftClicked, m.RightDown, m.RightClicked);
-                        if (_clicks.IsActive(now))
+                        var time = _grid.TimeOf(step.Slot);
+                        if (_journal is not null)
                         {
-                            picture.CopyTo(marked, 0);
-                            _clicks.Draw(marked, _format.Width, _format.Height, new PixelPoint(_options.Area.X, _options.Area.Y), now, _options.Monitor.Scale.ScaleX);
+                            var pointer = _timeline.Pointer(time);
+                            _journal.Frame(step.Slot, pointer.At, pointer.Shape, pointer.Visible);
+                        }
+
+                        if (marked is not null && DrawClicks(picture, marked, time))
+                        {
                             frame = marked;
                         }
                     }
@@ -811,6 +854,31 @@ internal sealed partial class ScreenRecorder(
 
                 Kernel32.SetThreadExecutionState(Kernel32.EsContinuous);
             }
+        }
+
+        /// <summary>Copies <paramref name="picture"/> into <paramref name="marked"/> with the clicks showing at <paramref name="time"/>; false if none show.</summary>
+        private bool DrawClicks(byte[] picture, byte[] marked, TimeSpan time)
+        {
+            var clicks = _timeline!.Clicks(time, ClickHighlighter.FadeOut);
+            if (clicks.Count == 0)
+            {
+                return false;
+            }
+
+            picture.CopyTo(marked, 0);
+            var pointer = _timeline.Pointer(time).At;
+            foreach (var click in clicks)
+            {
+                var strength = click.Up is { } up ? 1 - ((time - up) / ClickHighlighter.FadeOut) : 1;
+                var at = click.Up is null ? pointer : click.At; // a held button follows a drag
+                if (strength > 0)
+                {
+                    ClickHighlighter.DrawCircle(
+                        marked, _format.Width, _format.Height, at.X - _options.Area.X, at.Y - _options.Area.Y, _options.Monitor.Scale.ScaleX, strength, click.Button != PointerButton.Right);
+                }
+            }
+
+            return true;
         }
 
         /// <summary>Takes the pictures due by frame <paramref name="slot"/>, keeping the newest; true if it is a new one.</summary>
@@ -1103,6 +1171,9 @@ internal sealed partial class ScreenRecorder(
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "Could not update the recording's manifest")]
         private partial void LogManifestFailed(Exception e);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Input hooks for the overlays could not be installed")]
+        private partial void LogInputFailed(Exception e);
     }
 }
 
@@ -1115,7 +1186,6 @@ public static class RecordingServiceCollectionExtensions
         services.AddSingleton<IRecordingEncoders, EncoderService>();
         services.AddSingleton<RecordingStore>();
         services.AddSingleton<IRecordingRecovery, RecordingRecovery>();
-        services.AddSingleton<IMouseState, Win32MouseState>();
         services.AddAudio();
         services.AddSingleton<IScreenRecorder, ScreenRecorder>();
         return services;

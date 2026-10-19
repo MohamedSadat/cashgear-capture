@@ -211,10 +211,115 @@ public static unsafe partial class User32
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetIconInfo(nint icon, ICONINFO* info);
 
+    public const int IdcArrow = 32512;
+    public const int IdcIBeam = 32513;
+
+    /// <summary>A system cursor (<paramref name="instance"/> 0, <paramref name="name"/> e.g. <see cref="IdcArrow"/>); shared, never destroyed.</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial nint LoadCursorW(nint instance, nint name);
+
     [LibraryImport(Dll, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool DrawIconEx(
         nint hdc, int x, int y, nint icon, int width, int height, uint stepIfAniCur, nint flickerFreeBrush, uint flags);
+
+    // --- Low-level input hooks and WinEvents ---------------------------------------------------------
+
+    public const int WhKeyboardLl = 13;
+    public const int WhMouseLl = 14;
+    public const int HcAction = 0;
+
+    public const int WmKeyDown = 0x0100;
+    public const int WmKeyUp = 0x0101;
+    public const int WmSysKeyDown = 0x0104;
+    public const int WmSysKeyUp = 0x0105;
+    public const int WmMouseMove = 0x0200;
+    public const int WmLButtonDown = 0x0201;
+    public const int WmLButtonUp = 0x0202;
+    public const int WmRButtonDown = 0x0204;
+    public const int WmRButtonUp = 0x0205;
+    public const int WmMButtonDown = 0x0207;
+    public const int WmMButtonUp = 0x0208;
+    public const int WmMouseWheel = 0x020A;
+    public const int WmXButtonDown = 0x020B;
+    public const int WmXButtonUp = 0x020C;
+    public const uint WmQuit = 0x0012;
+
+    /// <summary><c>LLKHF_INJECTED</c>: the key came from <c>SendInput</c>.</summary>
+    public const uint LlkhfInjected = 0x10;
+
+    /// <summary><c>LLMHF_INJECTED</c>: the mouse event came from <c>SendInput</c>.</summary>
+    public const uint LlmhfInjected = 0x01;
+
+    public const uint EventSystemForeground = 0x0003;
+    public const uint EventObjectFocus = 0x8005;
+    public const uint WinEventOutOfContext = 0x0000;
+    public const uint WinEventSkipOwnProcess = 0x0002;
+
+    /// <summary><c>MAPVK_VK_TO_VSC</c>.</summary>
+    public const uint MapVkToVsc = 0;
+
+    /// <summary><c>ToUnicodeEx</c> flag (Windows 10 1607+): don't change the keyboard state, so dead keys still work in the app typed into.</summary>
+    public const uint ToUnicodeNoStateChange = 0x4;
+
+    public const int VkCapital = 0x14;
+    public const int VkNumLock = 0x90;
+
+    /// <summary>Installs a hook; <paramref name="module"/> is this program's module (low-level hooks run in this thread).</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial nint SetWindowsHookExW(int idHook, delegate* unmanaged[Stdcall]<int, nint, nint, nint> callback, nint module, uint threadId);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool UnhookWindowsHookEx(nint hook);
+
+    [LibraryImport(Dll)]
+    public static partial nint CallNextHookEx(nint hook, int code, nint wParam, nint lParam);
+
+    /// <summary>Waits for the next message of this thread; 0 for <see cref="WmQuit"/>, -1 on error.</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial int GetMessageW(MSG* message, nint hwnd, uint filterMin, uint filterMax);
+
+    [LibraryImport(Dll)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool TranslateMessage(MSG* message);
+
+    [LibraryImport(Dll)]
+    public static partial nint DispatchMessageW(MSG* message);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool PostThreadMessageW(uint threadId, uint message, nint wParam, nint lParam);
+
+    /// <summary>Out-of-context WinEvents are delivered to this thread's message loop.</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial nint SetWinEventHook(
+        uint eventMin,
+        uint eventMax,
+        nint module,
+        delegate* unmanaged[Stdcall]<nint, uint, nint, int, int, uint, uint, void> callback,
+        uint processId,
+        uint threadId,
+        uint flags);
+
+    [LibraryImport(Dll)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool UnhookWinEvent(nint hook);
+
+    /// <summary>The text a key types; positive: characters written, 0: none, negative: a dead key.</summary>
+    [LibraryImport(Dll)]
+    public static partial int ToUnicodeEx(uint virtualKey, uint scanCode, byte* keyState, char* buffer, int bufferSize, uint flags, nint layout);
+
+    /// <summary>The keyboard layout of a thread (0: this one).</summary>
+    [LibraryImport(Dll)]
+    public static partial nint GetKeyboardLayout(uint threadId);
+
+    [LibraryImport(Dll)]
+    public static partial uint MapVirtualKeyExW(uint code, uint mapType, nint layout);
+
+    /// <summary>The key's state as this thread's input last saw it; low bit: toggled (Caps Lock on).</summary>
+    [LibraryImport(Dll)]
+    public static partial short GetKeyState(int virtualKey);
 
     // --- Desktop -------------------------------------------------------------------------------------
 

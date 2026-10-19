@@ -168,7 +168,6 @@ public sealed partial class RecordingController
                 recording.Fps,
                 recording.Quality,
                 recording.IncludeCursor,
-                recording.ShowClicks,
                 recording.Encoder,
                 OutputPath(current, monitor, title),
                 recording.SystemAudio,
@@ -181,7 +180,8 @@ public sealed partial class RecordingController
                 recording.SystemAudioApp,
                 recording.SystemAudioAppName,
                 recording.MicrophoneProcessing,
-                recording.NormalizeLoudness);
+                recording.NormalizeLoudness,
+                current.Overlays);
             await _recorder.StartAsync(options, ct).ConfigureAwait(false);
             if (recording.PushToTalk is { } talk && HotkeyGesture.TryParse(talk, out var key) && _recorder.Sound.HasFlag(RecordingSound.Microphone))
             {

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+    <!-- WPF for the test windows (a password box, a text box); same PerMonitorV2 manifest as the app, so hook positions are physical pixels. -->
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
+    <ProjectReference Include="..\..\src\CashGear.Capture.Interop\CashGear.Capture.Interop.csproj" />
+    <ProjectReference Include="..\..\src\CashGear.Capture.Overlays\CashGear.Capture.Overlays.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\CashGear.Capture.Engine.Tests\InteractiveDesktop.cs" Link="InteractiveDesktop.cs" />
+    <Compile Include="..\CashGear.Capture.App.Tests\StaDispatcher.cs" Link="StaDispatcher.cs" />
+  </ItemGroup>
+
+</Project>

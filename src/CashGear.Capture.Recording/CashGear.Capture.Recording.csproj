@@ -13,6 +13,7 @@
     <ProjectReference Include="..\CashGear.Capture.Engine\CashGear.Capture.Engine.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Interop\CashGear.Capture.Interop.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Media\CashGear.Capture.Media.csproj" />
+    <ProjectReference Include="..\CashGear.Capture.Overlays\CashGear.Capture.Overlays.csproj" />
   </ItemGroup>
 
   <ItemGroup>

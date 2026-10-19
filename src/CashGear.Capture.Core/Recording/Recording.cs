@@ -43,13 +43,13 @@ public enum SystemAudioScope
 /// <param name="NormalizeLoudness">Even out each sound track to −16 LUFS when the recording is saved.</param>
 /// <param name="Microphone">The microphone to record: null for none, <see cref="Settings.RecordingSettings.DefaultMicrophone"/> or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
+/// <param name="Overlays">Clicks, pointer, keystrokes and webcam drawn over the video and/or kept in the metadata file (null: none, and no metadata).</param>
 public sealed record RecordingOptions(
     MonitorInfo Monitor,
     PixelRect Area,
     int Fps,
     QualityPreset Quality,
     bool IncludeCursor,
-    bool ShowClicks,
     string Encoder,
     string OutputPath,
     bool SystemAudio = false,
@@ -62,7 +62,8 @@ public sealed record RecordingOptions(
     string? SystemAudioApp = null,
     string? SystemAudioAppName = null,
     MicrophoneProcessing? MicrophoneProcessing = null,
-    bool NormalizeLoudness = false);
+    bool NormalizeLoudness = false,
+    OverlaySettings? Overlays = null);
 
 /// <param name="Path">The (first) file saved.</param>
 /// <param name="FramesDropped">Frames skipped because encoding fell behind (the picture holds still for that long).</param>
@@ -73,6 +74,7 @@ public sealed record RecordingOptions(
 /// <param name="SoundNote">Why sound that was asked for is missing (no device, device removed), or null.</param>
 /// <param name="Parts">Every file saved, in order: more than one when the encoder failed and another took over.</param>
 /// <param name="Note">Anything else the user should know: the encoder changed, or the recording stopped early.</param>
+/// <param name="MetadataPath">The metadata file saved next to the video (<c>name.cgmeta.json</c>), or null.</param>
 public sealed record RecordingResult(
     string Path,
     TimeSpan Duration,
@@ -84,7 +86,8 @@ public sealed record RecordingResult(
     RecordingSound Sound = RecordingSound.None,
     string? SoundNote = null,
     IReadOnlyList<string>? Parts = null,
-    string? Note = null)
+    string? Note = null,
+    string? MetadataPath = null)
 {
     public double DropRate => FramesWritten + FramesDropped == 0 ? 0 : (double)FramesDropped / (FramesWritten + FramesDropped);
 

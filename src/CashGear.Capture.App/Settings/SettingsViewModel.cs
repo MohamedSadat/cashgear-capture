@@ -862,7 +862,6 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             Fps = RecordingFps,
             Quality = RecordingQuality,
             IncludeCursor = RecordingIncludeCursor,
-            ShowClicks = RecordingShowClicks,
             Encoder = RecordingEncoder?.Id ?? EncoderPresets.Auto,
             SystemAudio = RecordSystemAudio,
             SystemAudioDevice = RecordingOutput?.Id,
@@ -882,6 +881,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             },
             Microphone = RecordingMicrophone?.Id,
             Tracks = RecordingTracks,
+        },
+        Overlays = current.Overlays with
+        {
+            Clicks = current.Overlays.ClickSettings with { Enabled = RecordingShowClicks },
         },
         Ocr = new OcrSettings(OcrLanguage?.Tag),
         History = new HistorySettings(HistorySize?.Value ?? current.History.MaxItems),
@@ -907,7 +910,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         RecordingQuality = s.Recording.Quality;
         RecordingTracks = s.Recording.Tracks;
         RecordingIncludeCursor = s.Recording.IncludeCursor;
-        RecordingShowClicks = s.Recording.ShowClicks;
+        RecordingShowClicks = s.Overlays.ClickSettings.Enabled;
         RefreshEncoders(s.Recording.Encoder);
         RecordSystemAudio = s.Recording.SystemAudio;
         // A microphone that isn't connected now stays selected (and saved) rather than silently becoming None.

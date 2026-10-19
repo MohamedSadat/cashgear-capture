@@ -257,7 +257,8 @@ public sealed class SettingsViewModelTests : IDisposable
     {
         _settings.Current = _settings.Current with
         {
-            Recording = new RecordingSettings(15, QualityPreset.Small, false, false, "software", MicrophoneGain: 1.5f),
+            Recording = new RecordingSettings(15, QualityPreset.Small, false, "software", MicrophoneGain: 1.5f),
+            Overlays = new OverlaySettings(Clicks: new ClickOverlaySettings(Enabled: false)),
         };
         using var vm = Create();
         vm.RecordingFps.Should().Be(15);
@@ -274,7 +275,8 @@ public sealed class SettingsViewModelTests : IDisposable
         await vm.ApplyCommand.ExecuteAsync(null);
 
         _settings.Current.Recording.Should().Be(new RecordingSettings(
-            60, QualityPreset.High, false, true, "h264_mf_hw", Tracks: AudioTrackLayout.Both, MicrophoneGain: 1.5f));
+            60, QualityPreset.High, false, "h264_mf_hw", Tracks: AudioTrackLayout.Both, MicrophoneGain: 1.5f));
+        _settings.Current.Overlays.ClickSettings.Enabled.Should().BeTrue();
     }
 
     [Fact]

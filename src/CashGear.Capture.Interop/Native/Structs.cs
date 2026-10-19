@@ -158,6 +158,52 @@ public struct ICONINFO
     public nint hbmColor;
 }
 
+/// <summary>What a low-level mouse hook gets: the pointer in per-monitor-aware screen pixels.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct MSLLHOOKSTRUCT
+{
+    public POINT pt;
+    public uint mouseData;
+    public uint flags;
+    public uint time;
+    public nuint dwExtraInfo;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct KBDLLHOOKSTRUCT
+{
+    public uint vkCode;
+    public uint scanCode;
+    public uint flags;
+    public uint time;
+    public nuint dwExtraInfo;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct MSG
+{
+    public nint hwnd;
+    public uint message;
+    public nint wParam;
+    public nint lParam;
+    public uint time;
+    public POINT pt;
+    public uint lPrivate;
+}
+
+/// <summary><c>BITMAP</c>, as <c>GetObjectW</c> describes a bitmap.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct BITMAP
+{
+    public int bmType;
+    public int bmWidth;
+    public int bmHeight;
+    public int bmWidthBytes;
+    public ushort bmPlanes;
+    public ushort bmBitsPixel;
+    public nint bmBits;
+}
+
 /// <summary>One process of a Toolhelp32 snapshot.</summary>
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 public unsafe struct PROCESSENTRY32W

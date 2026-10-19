@@ -4,7 +4,8 @@ namespace CashGear.Capture.Media;
 
 /// <param name="Truncated">The temporary file ended in the middle (a crash): everything readable before that point was saved.</param>
 /// <param name="Loudness">The sound tracks evened out to −16 LUFS, by stream index, with what they measured before (empty if not asked).</param>
-public sealed record RemuxResult(string Path, TimeSpan Duration, long Bytes, bool Truncated, IReadOnlyDictionary<int, LoudnessMeasurement>? Loudness = null);
+/// <param name="Start">The recording time (seconds) the part starts at: its first picture, which the finished file shows at 0.</param>
+public sealed record RemuxResult(string Path, TimeSpan Duration, long Bytes, bool Truncated, IReadOnlyDictionary<int, LoudnessMeasurement>? Loudness = null, double Start = 0);
 
 /// <summary>
 /// Turns a temporary recording file into the finished MP4: the packets are copied as they are (no re-encoding), the
@@ -164,7 +165,7 @@ public static unsafe class Remuxer
             var bytes = new FileInfo(partial).Length;
             File.Move(partial, destination, overwrite: false);
             progress?.Report(1);
-            return new RemuxResult(destination, TimeSpan.FromSeconds(end), bytes, truncated, normalizeLoudness ? normalized : null);
+            return new RemuxResult(destination, TimeSpan.FromSeconds(end), bytes, truncated, normalizeLoudness ? normalized : null, start);
         }
         finally
         {

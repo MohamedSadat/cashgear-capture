@@ -79,7 +79,7 @@ public sealed class RecordingSettingsTests
     public void Defaults_and_normalizing()
     {
         new RecordingSettings().Should().Be(new RecordingSettings(
-            30, QualityPreset.Balanced, true, true, "auto", SystemAudio: true, Microphone: null, Tracks: AudioTrackLayout.Mixed, SystemAudioGain: 1, MicrophoneGain: 1));
+            30, QualityPreset.Balanced, true, "auto", SystemAudio: true, Microphone: null, Tracks: AudioTrackLayout.Mixed, SystemAudioGain: 1, MicrophoneGain: 1));
 
         var odd = new RecordingSettings(
             Fps: 50, Quality: (QualityPreset)9, Encoder: "  H264_MF_HW ", Tracks: (AudioTrackLayout)7, SystemAudioGain: 9, MicrophoneGain: float.NaN).Normalize();
@@ -137,7 +137,7 @@ public sealed class RecordingSettingsTests
         settings.Recording.Fps.Should().Be(60);
         settings.Recording.SystemAudio.Should().BeFalse();
         settings.Recording.Tracks.Should().Be(AudioTrackLayout.Mixed);
-        settings.SchemaVersion.Should().Be(3);
+        settings.SchemaVersion.Should().Be(AppSettings.CurrentSchemaVersion);
     }
 
     [Fact]

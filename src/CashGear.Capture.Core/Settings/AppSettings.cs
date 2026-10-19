@@ -15,9 +15,10 @@ public sealed record AppSettings
 {
     /// <summary>
     /// 2: <c>output.copyToClipboard</c> moved to <c>afterCapture</c>. 3: <c>recording.quality</c> is a preset instead of a
-    /// number, and <c>recording.encoder</c> an encoder id (see <see cref="SettingsMigration"/>).
+    /// number, and <c>recording.encoder</c> an encoder id. 4: <c>recording.showClicks</c> moved to
+    /// <c>overlays.clicks.enabled</c> (see <see cref="SettingsMigration"/>).
     /// </summary>
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
@@ -32,6 +33,9 @@ public sealed record AppSettings
     public AppearanceSettings Appearance { get; init; } = new();
 
     public RecordingSettings Recording { get; init; } = new();
+
+    /// <summary>Clicks, pointer, keystrokes, webcam and the on-screen pen in recordings.</summary>
+    public OverlaySettings Overlays { get; init; } = new();
 
     public OcrSettings Ocr { get; init; } = new();
 
@@ -49,6 +53,7 @@ public sealed record AppSettings
         Hotkeys = (Hotkeys ?? new HotkeySettings()).Normalize(),
         Appearance = (Appearance ?? new AppearanceSettings()).Normalize(),
         Recording = (Recording ?? new RecordingSettings()).Normalize(),
+        Overlays = (Overlays ?? new OverlaySettings()).Normalize(),
         Ocr = (Ocr ?? new OcrSettings()).Normalize(),
         History = (History ?? new HistorySettings()).Normalize(),
         Updates = (Updates ?? new UpdateSettings()).Normalize(),
@@ -154,7 +159,6 @@ public enum AppTheme
 /// <param name="Fps">Frames per second: 15, 30 or 60.</param>
 /// <param name="Quality">Small files to near lossless; Balanced is a good balance.</param>
 /// <param name="IncludeCursor">Show the mouse pointer.</param>
-/// <param name="ShowClicks">Draw a circle where the mouse is clicked.</param>
 /// <param name="Encoder"><c>auto</c> (the best that works here), <c>software</c>, or an encoder's id (see <see cref="Recording.EncoderPresets"/>).</param>
 /// <param name="SystemAudio">Record what the PC plays.</param>
 /// <param name="SystemAudioDevice">The output device whose sound is recorded: a device ID, or null for Windows' default output device (followed when it changes).</param>
@@ -172,7 +176,6 @@ public sealed record RecordingSettings(
     int Fps = 30,
     Recording.QualityPreset Quality = Recording.QualityPreset.Balanced,
     bool IncludeCursor = true,
-    bool ShowClicks = true,
     string Encoder = Recording.EncoderPresets.Auto,
     bool SystemAudio = true,
     string? Microphone = null,

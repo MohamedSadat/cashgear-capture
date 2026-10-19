@@ -20,6 +20,15 @@ public static partial class Kernel32
     [LibraryImport(Dll)]
     public static partial uint SetThreadExecutionState(uint flags);
 
+    // --- Modules and threads ----
+
+    /// <summary>A loaded module's handle; null for the program itself.</summary>
+    [LibraryImport(Dll, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    public static partial nint GetModuleHandleW(string? name);
+
+    [LibraryImport(Dll)]
+    public static partial uint GetCurrentThreadId();
+
     // --- Process list (Toolhelp32) ----
 
     public const uint Th32csSnapProcess = 0x00000002;

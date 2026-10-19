@@ -28,6 +28,7 @@
     <Compile Include="..\CashGear.Capture.Core.Tests\Stitching\SyntheticPage.cs" Link="Scrolling\SyntheticPage.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\SyntheticRecording.cs" Link="Recording\SyntheticRecording.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\TestMedia.cs" Link="Recording\TestMedia.cs" />
+    <Compile Include="..\CashGear.Capture.Overlays.Tests\TestInput.cs" Link="Recording\TestInput.cs" />
   </ItemGroup>
 
   <!-- Noise suppression loads RNNoise from rnnoise\ next to the app (BSD-3-Clause; built from the pinned source by tools\get-rnnoise.ps1). Without it there is no noise suppression. -->

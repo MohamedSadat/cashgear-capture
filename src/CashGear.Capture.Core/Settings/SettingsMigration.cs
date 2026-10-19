@@ -48,6 +48,24 @@ public static class SettingsMigration
             }
         }
 
+        if (version < 4 && Property(root, "recording") is JsonObject recorded && Remove(recorded, "showClicks") is { } showClicks)
+        {
+            // v4: clicks are one of the recording overlays.
+            if (Property(root, "overlays") is not JsonObject overlays)
+            {
+                overlays = [];
+                root["overlays"] = overlays;
+            }
+
+            if (Property(overlays, "clicks") is not JsonObject clicks)
+            {
+                clicks = [];
+                overlays["clicks"] = clicks;
+            }
+
+            SetIfMissing(clicks, "enabled", showClicks);
+        }
+
         return version;
     }
 

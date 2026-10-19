@@ -38,4 +38,12 @@ public static unsafe partial class Gdi32
     [LibraryImport(Dll)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GdiFlush();
+
+    /// <summary>Copies a bitmap's rows (as <paramref name="info"/> describes them) into <paramref name="bits"/>; returns the rows copied.</summary>
+    [LibraryImport(Dll)]
+    public static partial int GetDIBits(nint hdc, nint bitmap, uint start, uint lines, void* bits, BITMAPINFO* info, uint usage);
+
+    /// <summary>Describes a GDI object (a <see cref="BITMAP"/> for a bitmap); returns the bytes written.</summary>
+    [LibraryImport(Dll)]
+    public static partial int GetObjectW(nint handle, int size, void* buffer);
 }

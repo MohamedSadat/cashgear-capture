@@ -1,3 +1,4 @@
+using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Media;
@@ -9,7 +10,8 @@ namespace CashGear.Capture.Recording;
 public sealed record InterruptedRecording(string Directory, RecordingManifest Manifest);
 
 /// <summary>What recovering saved: the files (none if nothing was readable) and whether any was cut short.</summary>
-public sealed record RecoveredRecording(IReadOnlyList<string> Files, TimeSpan Duration, bool Truncated);
+/// <param name="MetadataPath">The metadata file saved next to the first file, or null when the recording kept none.</param>
+public sealed record RecoveredRecording(IReadOnlyList<string> Files, TimeSpan Duration, bool Truncated, string? MetadataPath = null);
 
 /// <summary>Finds recordings that were never saved and saves what they hold.</summary>
 public interface IRecordingRecovery
@@ -38,9 +40,13 @@ internal sealed partial class RecordingRecovery(RecordingStore store, FfmpegRunt
         LogDiscarded(recording.Directory);
     }
 
-    /// <summary>Saves each segment as a part, like a normal stop does. Segments with nothing readable are skipped.</summary>
+    /// <summary>
+    /// Saves each segment as a part, like a normal stop does. Segments with nothing readable are skipped. The
+    /// metadata journal, if there is one, becomes <c>name.cgmeta.json</c> next to the first part.
+    /// </summary>
     internal static RecoveredRecording Save(string directory, RecordingManifest manifest, IProgress<double>? progress, CancellationToken ct)
     {
+        var parts = new List<MetadataPart>();
         var files = new List<string>();
         var duration = TimeSpan.Zero;
         var truncated = false;
@@ -59,6 +65,7 @@ internal sealed partial class RecordingRecovery(RecordingStore store, FfmpegRunt
                 var result = Remuxer.Remux(
                     segments[i], destination, progress is null ? null : new Progress<double>(p => progress.Report((part + p) / segments.Count)), ct, manifest.NormalizeLoudness);
                 files.Add(result.Path);
+                parts.Add(new MetadataPart(Path.GetFileName(result.Path), Math.Round(result.Start, 6)));
                 duration += result.Duration;
                 truncated |= result.Truncated;
             }
@@ -69,7 +76,32 @@ internal sealed partial class RecordingRecovery(RecordingStore store, FfmpegRunt
             }
         }
 
-        return new RecoveredRecording(files, duration, truncated);
+        return new RecoveredRecording(files, duration, truncated, SaveMetadata(directory, manifest, files, parts));
+    }
+
+    /// <summary>Writes the recording's metadata next to its first file; null when there is none (or it can't be written).</summary>
+    private static string? SaveMetadata(string directory, RecordingManifest manifest, List<string> files, List<MetadataPart> parts)
+    {
+        if (manifest.Metadata is not { } journal || files.Count == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            if (MetadataJournal.Read(Path.Combine(directory, journal), files[0], parts) is not { } metadata)
+            {
+                return null;
+            }
+
+            var path = RecordingMetadata.PathFor(files[0]);
+            metadata.Save(path);
+            return path;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null; // the video is what matters; the metadata is a bonus
+        }
     }
 
     private RecoveredRecording Recover(InterruptedRecording recording, CancellationToken ct)

@@ -7,6 +7,7 @@ using CashGear.Capture.Audio;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Hotkeys;
+using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Engine.Capture.Wgc;
@@ -689,10 +690,19 @@ public sealed class RecordingRecoveryTests : IDisposable
     private RecordingRecovery Recovery() => new(_store, TestFfmpeg.Runtime(), NullLogger<RecordingRecovery>.Instance);
 
     /// <summary>A recording whose app went away before saving: its folder with a written segment, and no lock held.</summary>
-    private void Interrupted(double seconds, double? cutAt = null, bool normalizeLoudness = false, float tone = 0)
+    private void Interrupted(double seconds, double? cutAt = null, bool normalizeLoudness = false, float tone = 0, Action<MetadataJournal>? journal = null)
     {
-        var manifest = new RecordingManifest("abc12345", DateTimeOffset.Now, Output, 640, 360, 30, ["segment-001.mp4"], ["Mixed"], normalizeLoudness);
+        var manifest = new RecordingManifest(
+            "abc12345", DateTimeOffset.Now, Output, 640, 360, 30, ["segment-001.mp4"], ["Mixed"], normalizeLoudness, journal is null ? null : MetadataJournal.FileName);
         using var folder = _store.Create(manifest);
+        if (journal is not null)
+        {
+            using var written = new MetadataJournal(
+                Path.Combine(folder.Directory, MetadataJournal.FileName),
+                new MetadataHeader(30, new MetadataArea(0, 0, 640, 360), 1, CursorInVideo: true, OverlaysInVideo: true, KeystrokeMode.Shortcuts));
+            journal(written);
+        }
+
         new SyntheticRecording { Directory = folder.Directory, Seconds = seconds, ToneLevel = tone }.Write();
         if (cutAt is { } fraction)
         {
@@ -719,6 +729,26 @@ public sealed class RecordingRecoveryTests : IDisposable
         TestFfmpeg.Probe(Output).Frames.Should().Be(90);
         Directory.Exists(found[0].Directory).Should().BeFalse();
         recovery.Find().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_recovered_recording_gets_its_metadata_file_too()
+    {
+        TestFfmpeg.Require();
+        Interrupted(2, journal: j =>
+        {
+            j.Frame(0, new PixelPoint(10, 10), 0, visible: true);
+            j.Key(new KeyCaption(1, TimeSpan.FromSeconds(1), "Ctrl + S"));
+        });
+        var recovery = Recovery();
+
+        var saved = await recovery.RecoverAsync(recovery.Find().Single(), TestContext.Current.CancellationToken);
+
+        saved.MetadataPath.Should().Be(Path.Combine(_root, "videos", "Interrupted.cgmeta.json"));
+        var metadata = RecordingMetadata.Load(saved.MetadataPath!);
+        metadata.Video.Should().Be("Interrupted.mp4");
+        metadata.Parts.Should().Equal(new MetadataPart("Interrupted.mp4", 0));
+        metadata.Keys.Should().ContainSingle().Which.Text.Should().Be("Ctrl + S");
     }
 
     [Fact]
@@ -809,20 +839,15 @@ public sealed class ScreenRecorderTests : IDisposable
         }
     }
 
-    private sealed class NoClicks : IMouseState
-    {
-        public MouseSnapshot Read() => default;
-    }
-
     private (ScreenRecorder Recorder, RecordingOptions Options) Create(int fps = 30, IAudioSourceFactory? sound = null, string encoder = EncoderPresets.Software)
     {
         InteractiveDesktop.Require();
         TestFfmpeg.Require();
         var monitor = new Win32MonitorService(NullLogger<Win32MonitorService>.Instance).GetMonitors().First(m => m.IsPrimary);
         var area = new PixelRect(monitor.Bounds.X + 100, monitor.Bounds.Y + 100, 320, 240);
-        var recorder = new ScreenRecorder(TestFfmpeg.Encoders, _store, _interop, new NoClicks(), sound ?? new FakeSound(), _loggers);
+        var recorder = new ScreenRecorder(TestFfmpeg.Encoders, _store, _interop, sound ?? new FakeSound(), _loggers);
         _log.LogInformation("Test {Name}", TestContext.Current.Test?.TestDisplayName);
-        var options = new RecordingOptions(monitor, area, fps, QualityPreset.Balanced, IncludeCursor: false, ShowClicks: true, encoder, Path.Combine(_folder, "test.mp4"));
+        var options = new RecordingOptions(monitor, area, fps, QualityPreset.Balanced, IncludeCursor: false, encoder, Path.Combine(_folder, "test.mp4"));
         return (recorder, options);
     }
 
@@ -862,6 +887,49 @@ public sealed class ScreenRecorderTests : IDisposable
         result.Sound.Should().Be(RecordingSound.None);
         result.SoundNote.Should().BeNull();
         Directory.GetDirectories(_store.Root).Should().BeEmpty("the temporary files are removed once saved");
+    }
+
+    /// <summary>The metadata track: a row per frame with the pointer, and a click inside the area at the time it was made.</summary>
+    [Fact(Timeout = 60_000)]
+    public async Task The_metadata_file_has_the_pointer_on_every_frame_and_the_clicks()
+    {
+        var (recorder, options) = Create();
+        var ct = TestContext.Current.CancellationToken;
+        RecordingResult? result = null;
+        TimeSpan clickedAt = default;
+        var click = new PixelPoint(options.Area.X + 100, options.Area.Y + 60);
+        await StaDispatcher.RunAsync(async () =>
+        {
+            var cover = Square(options.Area.X - 20, options.Area.Y - 20, 400, options.Monitor.Scale.ScaleX);
+            try
+            {
+                await Task.Delay(300, ct);
+                await recorder.StartAsync(options with { Overlays = new OverlaySettings(BurnIn: false) }, ct);
+                await UntilRecorded(recorder, 0.8, ct);
+                clickedAt = recorder.Elapsed;
+                Assert.SkipUnless(Overlays.Tests.TestInput.Click(click.X, click.Y), "SendInput was blocked.");
+                await UntilRecorded(recorder, 1.5, ct);
+                result = await recorder.StopAsync(ct);
+            }
+            finally
+            {
+                cover.Close();
+            }
+        });
+
+        result!.MetadataPath.Should().Be(RecordingMetadata.PathFor(result.Path));
+        var metadata = RecordingMetadata.Load(result.MetadataPath!);
+        metadata.Frames.Should().HaveCount((int)result.FramesWritten, "one row per frame written");
+        metadata.Frames.Select(f => f[0]).Should().BeInAscendingOrder();
+        (metadata.Fps, metadata.Area).Should().Be((30, new MetadataArea(options.Area.X, options.Area.Y, options.Area.Width, options.Area.Height)));
+        (metadata.CursorInVideo, metadata.OverlaysInVideo, metadata.Keystrokes).Should().Be((false, false, KeystrokeMode.Off));
+        var pressed = metadata.Clicks.Should().ContainSingle().Subject;
+        (pressed.X, pressed.Y, pressed.Button).Should().Be((100, 60, PointerButton.Left));
+        pressed.T.Should().BeApproximately(clickedAt.TotalSeconds, 0.1);
+        pressed.Up.Should().BeGreaterThanOrEqualTo(pressed.T);
+        metadata.Frames.Last()[1..3].Should().Equal(100, 60);
+        metadata.Keys.Should().BeEmpty("keystrokes are off");
+        metadata.Focus.Should().NotBeEmpty("the app in front at the start");
     }
 
     [Fact]
