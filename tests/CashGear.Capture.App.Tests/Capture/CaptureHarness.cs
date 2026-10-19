@@ -187,6 +187,12 @@ internal sealed class TestWindowService : IWindowService
     public WindowInfo? GetWindow(nint hwnd) => _real.GetWindow(hwnd);
 
     public bool IsOccluded(nint hwnd) => _real.IsOccluded(hwnd);
+
+    /// <summary>When set, menus of this process count, as if this window were in front.</summary>
+    public nint MenusOf { get; set; }
+
+    public IReadOnlyList<WindowInfo> GetOpenMenus() =>
+        MenusOf == 0 ? _real.GetOpenMenus() : _real.GetOpenMenus(includeOwnProcess: true, MenusOf);
 }
 
 /// <summary>Keeps a copy of every image copied, saved or opened in the editor, and every text copied.</summary>

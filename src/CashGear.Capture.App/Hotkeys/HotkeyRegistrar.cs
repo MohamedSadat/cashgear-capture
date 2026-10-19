@@ -182,6 +182,8 @@ public sealed partial class HotkeyRegistrar(
         HotkeyAction.CaptureFreehand => "Capture Freehand Region",
         HotkeyAction.CapturePolygon => "Capture Polygon Region",
         HotkeyAction.CaptureRoundedRegion => "Capture Rounded Region",
+        HotkeyAction.CaptureObject => "Capture Object (part of a window)",
+        HotkeyAction.CaptureMenu => "Capture Open Menu",
         _ => action.ToString(),
     };
 

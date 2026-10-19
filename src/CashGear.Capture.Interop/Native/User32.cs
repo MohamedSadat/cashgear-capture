@@ -12,9 +12,31 @@ public static unsafe partial class User32
     public const uint MonitorInfoFPrimary = 0x1;
 
     public const int GwlExStyle = -20;
+    public const int GwlStyle = -16;
     public const long WsExToolWindow = 0x80;
     public const long WsExAppWindow = 0x40000;
     public const long WsExTransparent = 0x20;
+    public const long WsExLayered = 0x80000;
+    public const long WsExNoActivate = 0x08000000;
+    public const long WsPopup = 0x80000000;
+    public const long WsCaption = 0x00C00000;
+    public const long WsChild = 0x40000000;
+
+    /// <summary><c>GetWindow</c>: the owner window.</summary>
+    public const uint GwOwner = 4;
+
+    /// <summary><c>SetLayeredWindowAttributes</c>: use the alpha value.</summary>
+    public const uint LwaAlpha = 0x2;
+
+    public const uint MonitorDefaultToNearest = 2;
+
+    public const uint SwpNoSize = 0x0001;
+    public const uint SwpNoMove = 0x0002;
+    public const uint SwpNoZOrder = 0x0004;
+    public const uint SwpShowWindow = 0x0040;
+
+    /// <summary>The class name of a classic (Win32) menu window.</summary>
+    public const string MenuClassName = "#32768";
 
     public const uint GaRoot = 2;
 
@@ -149,6 +171,42 @@ public static unsafe partial class User32
     [LibraryImport(Dll, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool ClientToScreen(nint hwnd, POINT* point);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetLayeredWindowAttributes(nint hwnd, uint colorKey, byte alpha, uint flags);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetWindowDisplayAffinity(nint hwnd, uint* affinity);
+
+    [LibraryImport(Dll)]
+    public static partial nint MonitorFromPoint(POINT point, uint flags);
+
+    [LibraryImport(Dll)]
+    public static partial nint MonitorFromWindow(nint hwnd, uint flags);
+
+    // --- Menus (tests open real ones) ----------------------------------------------------------------
+
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial nint CreatePopupMenu();
+
+    [LibraryImport(Dll, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool AppendMenuW(nint menu, uint flags, nuint id, string? text);
+
+    /// <summary>Shows a popup menu and runs its modal loop until it closes.</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial int TrackPopupMenu(nint menu, uint flags, int x, int y, int reserved, nint owner, nint rect);
+
+    /// <summary>Closes the menu open on the calling thread.</summary>
+    [LibraryImport(Dll)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool EndMenu();
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool DestroyMenu(nint menu);
 
     // --- Hotkeys and synthetic input -----------------------------------------------------------------
 

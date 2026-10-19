@@ -383,7 +383,9 @@ public sealed record HotkeySettings(
     string? CaptureFixedRegion = null,
     string? CaptureFreehand = null,
     string? CapturePolygon = null,
-    string? CaptureRoundedRegion = null)
+    string? CaptureRoundedRegion = null,
+    string? CaptureObject = null,
+    string? CaptureMenu = null)
 {
     public const string DefaultRepeatLastCapture = "Ctrl+Alt+Shift+PrintScreen";
 
@@ -413,6 +415,8 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureFreehand => CaptureFreehand,
         HotkeyAction.CapturePolygon => CapturePolygon,
         HotkeyAction.CaptureRoundedRegion => CaptureRoundedRegion,
+        HotkeyAction.CaptureObject => CaptureObject,
+        HotkeyAction.CaptureMenu => CaptureMenu,
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
@@ -432,6 +436,8 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureFreehand => this with { CaptureFreehand = text },
         HotkeyAction.CapturePolygon => this with { CapturePolygon = text },
         HotkeyAction.CaptureRoundedRegion => this with { CaptureRoundedRegion = text },
+        HotkeyAction.CaptureObject => this with { CaptureObject = text },
+        HotkeyAction.CaptureMenu => this with { CaptureMenu = text },
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 

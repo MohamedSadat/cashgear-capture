@@ -142,6 +142,12 @@ public sealed partial class TrayViewModel : ObservableObject
     [ObservableProperty]
     private string _roundedRegionHotkey = string.Empty;
 
+    [ObservableProperty]
+    private string _objectHotkey = string.Empty;
+
+    [ObservableProperty]
+    private string _menuHotkey = string.Empty;
+
     /// <summary>The Capture Delay submenu; the delay applies to every capture until changed.</summary>
     public IReadOnlyList<DelayChoice> DelayChoices { get; }
 
@@ -180,6 +186,14 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [RelayCommand]
     private Task CaptureRoundedRegionAsync() => _coordinator.CaptureRoundedRegionAsync();
+
+    /// <summary>A part of a window under the cursor (UI Automation).</summary>
+    [RelayCommand]
+    private Task CaptureObjectAsync() => _coordinator.CaptureObjectAsync();
+
+    /// <summary>The menus open when the delay ends.</summary>
+    [RelayCommand]
+    private Task CaptureMenuAsync() => _coordinator.CaptureMenuAsync();
 
     /// <summary>The last capture again: the same kind, the same pixels or window, no selection.</summary>
     [RelayCommand]
@@ -301,6 +315,8 @@ public sealed partial class TrayViewModel : ObservableObject
         FreehandHotkey = Label(HotkeyAction.CaptureFreehand);
         PolygonHotkey = Label(HotkeyAction.CapturePolygon);
         RoundedRegionHotkey = Label(HotkeyAction.CaptureRoundedRegion);
+        ObjectHotkey = Label(HotkeyAction.CaptureObject);
+        MenuHotkey = Label(HotkeyAction.CaptureMenu);
     }
 
     private string Label(HotkeyAction action) =>

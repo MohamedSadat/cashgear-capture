@@ -126,6 +126,7 @@ public static class SelectionModels
             SelectionMode.FixedSize => new FixedRegionSelectionModel(monitorBounds, cursor, options.FixedSizes, options.FixedSizeIndex),
             SelectionMode.Freehand or SelectionMode.Polygon => new ShapeSelectionModel(monitorBounds, cursor, options.Mode),
             SelectionMode.Point => new PointSelectionModel(monitorBounds, cursor),
+            SelectionMode.Object => new ObjectSelectionModel(monitorBounds, windows, cursor),
             _ => new RegionSelectionModel(monitorBounds, windows, cursor, mode: options.Mode, cornerRadius: options.CornerRadius),
         };
     }

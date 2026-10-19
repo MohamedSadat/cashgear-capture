@@ -26,4 +26,7 @@ public interface IWindowService
     /// included, this process's windows excluded) overlaps its frame — i.e. a screen grab would not show it whole.
     /// </summary>
     bool IsOccluded(nint hwnd);
+
+    /// <summary>The menus open now (and their submenus), topmost first; see <see cref="OpenMenus"/>. This process's windows are left out.</summary>
+    IReadOnlyList<WindowInfo> GetOpenMenus();
 }

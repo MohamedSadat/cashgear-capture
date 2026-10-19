@@ -95,7 +95,7 @@ public sealed class AppStateStoreTests : IDisposable
     [Fact]
     public void A_window_is_the_same_only_with_its_handle_class_and_process()
     {
-        var window = new Display.WindowInfo(42, "Doc 1 - Editor", "EditorClass", 77, new PixelRect(0, 0, 10, 10), false, 0);
+        var window = new Core.Display.WindowInfo(42, "Doc 1 - Editor", "EditorClass", 77, new PixelRect(0, 0, 10, 10), false, 0);
         var last = RepeatableCapture.Of(CaptureMode.Window, window);
 
         last.IsSameWindow(window with { Title = "Doc 2 - Editor" }).Should().BeTrue("titles change");

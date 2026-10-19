@@ -178,6 +178,12 @@ public enum HotkeyAction
     CapturePolygon,
 
     CaptureRoundedRegion,
+
+    /// <summary>A part of a window under the pointer (UI Automation).</summary>
+    CaptureObject,
+
+    /// <summary>The menus open when the delay ends.</summary>
+    CaptureMenu,
 }
 
 /// <summary>System-wide hotkeys. Registration and presses happen on the thread that owns the service (the UI thread).</summary>

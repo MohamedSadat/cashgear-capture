@@ -22,6 +22,9 @@
           <MenuItem Header="F_reehand Region" Command="{Binding CaptureFreehandCommand}" InputGestureText="{Binding FreehandHotkey}" />
           <MenuItem Header="_Polygon Region" Command="{Binding CapturePolygonCommand}" InputGestureText="{Binding PolygonHotkey}" />
           <MenuItem Header="R_ounded Region" Command="{Binding CaptureRoundedRegionCommand}" InputGestureText="{Binding RoundedRegionHotkey}" />
+          <Separator />
+          <MenuItem Header="O_bject (Part of a Window)" Command="{Binding CaptureObjectCommand}" InputGestureText="{Binding ObjectHotkey}" />
+          <MenuItem Header="Open _Menu" Command="{Binding CaptureMenuCommand}" InputGestureText="{Binding MenuHotkey}" />
         </MenuItem>
         <MenuItem Header="Repeat _Last Capture" Command="{Binding RepeatLastCaptureCommand}" InputGestureText="{Binding RepeatHotkey}" />
         <MenuItem Header="{Binding DelayHeader}" ItemsSource="{Binding DelayChoices}">

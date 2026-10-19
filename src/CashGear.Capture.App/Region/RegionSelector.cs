@@ -16,7 +16,7 @@ namespace CashGear.Capture.App.Region;
 /// Shows the region-selection overlay (one window over the whole virtual screen) on top of a frozen screenshot and reports what the user
 /// picked. The result is cropped by the caller from the same frozen image, so it is pixel-exact by construction.
 /// </summary>
-public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
+public sealed partial class RegionSelector(IObjectFinder objects, ILogger<RegionSelector> logger)
 {
     private bool _isOpen; // UI thread only
 
@@ -94,6 +94,16 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
         }
 
         model.Changed += OnChanged;
+        if (model is ObjectSelectionModel objectModel)
+        {
+            var lookups = new ObjectLookups(objectModel, objects);
+            objectModel.LookupNeeded += (_, lookup) => lookups.Request(lookup);
+            if (objectModel.HoverWindow is { } first)
+            {
+                lookups.Request(new ObjectLookup(first, objectModel.Cursor));
+            }
+        }
+
         SystemEvents.DisplaySettingsChanged += onDisplayChange; // monitor geometry no longer matches the frozen image
         registration = ct.Register(() => dispatcher.BeginInvoke(model.Cancel));
 
@@ -132,6 +142,51 @@ public sealed partial class RegionSelector(ILogger<RegionSelector> logger)
 
         var px = frozen.GetRow(local.Y).Slice(local.X * CapturedImage.BytesPerPixel, CapturedImage.BytesPerPixel);
         return ((uint)px[3] << 24) | ((uint)px[2] << 16) | ((uint)px[1] << 8) | px[0];
+    }
+
+    /// <summary>
+    /// Asks the object finder for what is under the cursor, one lookup at a time (on the UI thread): a request made
+    /// while one runs replaces any other waiting, so a fast-moving cursor costs one lookup per answer, not per move.
+    /// </summary>
+    private sealed class ObjectLookups(ObjectSelectionModel model, IObjectFinder finder)
+    {
+        private bool _busy;
+        private ObjectLookup? _next;
+
+        public void Request(ObjectLookup lookup)
+        {
+            if (_busy)
+            {
+                _next = lookup;
+                return;
+            }
+
+            _ = RunAsync(lookup);
+        }
+
+        private async Task RunAsync(ObjectLookup lookup)
+        {
+            _busy = true;
+            try
+            {
+                var found = await finder.FindAtAsync(lookup.Window.Handle, lookup.Point);
+                model.SetObjects(lookup.Window.Handle, lookup.Point, found);
+            }
+            catch (OperationCanceledException)
+            {
+                // dropped for a newer one
+            }
+            finally
+            {
+                _busy = false;
+            }
+
+            if (_next is { } next && !model.IsFinished)
+            {
+                _next = null;
+                await RunAsync(next);
+            }
+        }
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Selection overlay ({Mode}) opened over {Bounds} ({Monitors} monitor(s), {Windows} pickable window(s), cursor {Cursor}, activated {Activated})")]

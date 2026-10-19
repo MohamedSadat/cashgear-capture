@@ -17,6 +17,7 @@ public static class EngineServiceCollectionExtensions
 
         services.AddSingleton<IMonitorService, Win32MonitorService>();
         services.AddSingleton<IWindowService, Win32WindowService>();
+        services.AddSingleton<IObjectFinder, Objects.UiaObjectFinder>();
 
         services.AddSingleton<ICaptureCapabilities, WindowsCaptureCapabilities>();
         services.AddSingleton<CaptureBackendSelector>();

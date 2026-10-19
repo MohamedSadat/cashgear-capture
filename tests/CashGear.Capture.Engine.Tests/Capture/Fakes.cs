@@ -119,6 +119,10 @@ internal sealed class FakeWindowService(params WindowInfo[] windows) : IWindowSe
     public WindowInfo? GetWindow(nint hwnd) => windows.FirstOrDefault(w => w.Handle == hwnd);
 
     public bool IsOccluded(nint hwnd) => Occluded.Contains(hwnd);
+
+    public List<WindowInfo> Menus { get; } = [];
+
+    public IReadOnlyList<WindowInfo> GetOpenMenus() => Menus;
 }
 
 /// <summary>Paints the window's frame bounds in BGRA (0x77, 0x77, 0x77, 255), or runs <see cref="Behavior"/>.</summary>

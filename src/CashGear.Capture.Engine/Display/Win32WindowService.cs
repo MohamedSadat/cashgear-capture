@@ -87,6 +87,50 @@ public sealed unsafe class Win32WindowService : IWindowService
         return false;
     }
 
+    public IReadOnlyList<WindowInfo> GetOpenMenus() => GetOpenMenus(includeOwnProcess: false, User32.GetForegroundWindow());
+
+    /// <summary>As <see cref="GetOpenMenus()"/>; tests include their own menus and say which window is in front.</summary>
+    internal IReadOnlyList<WindowInfo> GetOpenMenus(bool includeOwnProcess, nint foreground)
+    {
+        var own = (uint)Environment.ProcessId;
+        var windows = new List<PopupCandidate>(64);
+        var screen = PixelRect.FromLTRB(
+            User32.GetSystemMetrics(User32.SmXVirtualScreen),
+            User32.GetSystemMetrics(User32.SmYVirtualScreen),
+            User32.GetSystemMetrics(User32.SmXVirtualScreen) + User32.GetSystemMetrics(User32.SmCxVirtualScreen),
+            User32.GetSystemMetrics(User32.SmYVirtualScreen) + User32.GetSystemMetrics(User32.SmCyVirtualScreen));
+        foreach (var hwnd in NativeEnumerators.EnumWindows())
+        {
+            if (!User32.IsWindowVisible(hwnd) || IsCloaked(hwnd))
+            {
+                continue;
+            }
+
+            uint processId;
+            User32.GetWindowThreadProcessId(hwnd, &processId);
+            if (processId == 0 || (!includeOwnProcess && processId == own))
+            {
+                continue;
+            }
+
+            var style = (long)User32.GetWindowLongPtrW(hwnd, User32.GwlStyle);
+            var exStyle = (long)User32.GetWindowLongPtrW(hwnd, User32.GwlExStyle);
+            windows.Add(new PopupCandidate(
+                hwnd,
+                GetClassName(hwnd),
+                (int)processId,
+                GetFrameBounds(hwnd),
+                IsPopup: (style & User32.WsPopup) != 0 && (style & User32.WsChild) == 0,
+                HasCaption: (style & User32.WsCaption) == User32.WsCaption,
+                IsClickThrough: (exStyle & User32.WsExTransparent) != 0,
+                Owner: User32.GetWindow(hwnd, User32.GwOwner)));
+        }
+
+        return OpenMenus.Select(windows, foreground, screen)
+            .Select((w, i) => new WindowInfo(w.Handle, GetTitle(w.Handle), w.ClassName, w.ProcessId, w.Bounds, IsMinimized: false, i))
+            .ToList();
+    }
+
     private static bool IsCandidate(nint hwnd)
     {
         if (!User32.IsWindowVisible(hwnd) || IsCloaked(hwnd))

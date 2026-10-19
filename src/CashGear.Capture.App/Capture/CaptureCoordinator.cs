@@ -163,6 +163,42 @@ public sealed partial class CaptureCoordinator
     /// <summary>A rectangle (or window) with rounded corners; transparent outside them.</summary>
     public Task CaptureRoundedRegionAsync(CancellationToken ct = default) => CaptureSelectionAsync(CaptureMode.RoundedRegion, ct);
 
+    /// <summary>A part of a window under the cursor (a button, a panel), as UI Automation knows it; the wheel goes out to what contains it.</summary>
+    public Task CaptureObjectAsync(CancellationToken ct = default) => CaptureSelectionAsync(CaptureMode.Object, ct);
+
+    /// <summary>
+    /// The menus open when the delay (3 s by default) ends, with their submenus, cut from one capture of the screen and
+    /// transparent between them. There is no selection: the menu would close at the first click.
+    /// </summary>
+    public Task CaptureMenuAsync(CancellationToken ct = default) => RunAsync(async current =>
+    {
+        using var hidden = await PrepareAsync(current, CaptureMode.Menu, hideOwnUi: true, ct).ConfigureAwait(false);
+        var menus = _windows.GetOpenMenus();
+        if (menus.Count == 0)
+        {
+            _notifier.Notify(
+                "No open menu",
+                $"No menu was open when the capture was taken. Open the menu during the countdown ({current.Capture.DelayFor(CaptureMode.Menu)} s; Settings › Capture › Delay per kind of capture).",
+                NotificationKind.Warning);
+            return;
+        }
+
+        var displays = _monitors.GetMonitors();
+        using var frozen = await _capture.CaptureAllMonitorsAsync(ct).ConfigureAwait(false);
+        var parts = menus.Select(m => m.Bounds.Intersect(frozen.Metadata.SourceBounds)).Where(b => !b.IsEmpty).ToArray();
+        if (parts.Length == 0)
+        {
+            return; // off every monitor
+        }
+
+        var shape = CaptureShape.Union(parts);
+        var app = _windows.GetWindow(_windows.GetForegroundWindow());
+        using var image = Cut(frozen, shape.Bounds, shape, displays, CaptureKind.Menu, app?.Title is { Length: > 0 } title ? title : null);
+        LogMenusCaptured(menus.Count, shape.Bounds);
+        Remember(new RepeatableCapture(CaptureMode.Menu, shape.Bounds) { Shape = shape });
+        await DeliverAsync(image, [image], current, hidden, ct).ConfigureAwait(false);
+    });
+
     /// <summary>
     /// The captures chosen on the frozen screen: the overlay works in the mode's way, and the result is cropped from
     /// the frozen image (pixel-exact, no second capture) and made transparent outside its shape.
@@ -184,7 +220,7 @@ public sealed partial class CaptureCoordinator
         }
 
         await RememberChoicesAsync(mode, selection, current.Capture).ConfigureAwait(false);
-        var kind = selection.Window is null ? CaptureKind.Region : CaptureKind.Window;
+        var kind = mode == CaptureMode.Object ? CaptureKind.Object : selection.Window is null ? CaptureKind.Region : CaptureKind.Window;
         using var image = Cut(frozen, selection.Bounds, selection.Shape, displays, kind, selection.Window?.Title);
         LogRegionCaptured(selection.Bounds, image.Metadata.Kind);
         Remember(new RepeatableCapture(mode, selection.Bounds)
@@ -234,6 +270,7 @@ public sealed partial class CaptureCoordinator
             CaptureMode.Freehand => SelectionMode.Freehand,
             CaptureMode.Polygon => SelectionMode.Polygon,
             CaptureMode.RoundedRegion => SelectionMode.RoundedRectangle,
+            CaptureMode.Object => SelectionMode.Object,
             _ => SelectionMode.RegionOrWindow,
         };
         return new SelectionOptions(selection) { FixedSizes = sizes, FixedSizeIndex = index, CornerRadius = capture.CornerRadius };
@@ -602,6 +639,9 @@ public sealed partial class CaptureCoordinator
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Captured {Kind} {Bounds} from the frozen screen")]
     private partial void LogRegionCaptured(PixelRect bounds, CaptureKind kind);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Captured {Count} open menu window(s) in {Bounds}")]
+    private partial void LogMenusCaptured(int count, PixelRect bounds);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "File-name template \"{Template}\" is invalid ({Error}); using the default")]
     private partial void LogBadTemplate(string template, string? error);

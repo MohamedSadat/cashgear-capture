@@ -31,6 +31,7 @@ public sealed partial class CaptureCoordinator
         return last.Mode switch
         {
             CaptureMode.FullScreen => CaptureFullScreenAsync(ct),
+            CaptureMode.Menu => CaptureMenuAsync(ct),
             CaptureMode.Window or CaptureMode.ActiveWindow or CaptureMode.Scrolling => RepeatWindowAsync(last, ct),
             CaptureMode.Text => RepeatTextAsync(last, ct),
             _ => RepeatAreaAsync(last, ct),

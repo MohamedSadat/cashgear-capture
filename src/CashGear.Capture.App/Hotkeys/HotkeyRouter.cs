@@ -70,6 +70,14 @@ public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows,
             case HotkeyAction.CaptureRoundedRegion:
                 Run(tray.CaptureRoundedRegionCommand.ExecuteAsync(null));
                 break;
+
+            case HotkeyAction.CaptureObject:
+                Run(tray.CaptureObjectCommand.ExecuteAsync(null));
+                break;
+
+            case HotkeyAction.CaptureMenu:
+                Run(tray.CaptureMenuCommand.ExecuteAsync(null));
+                break;
         }
     }
 
