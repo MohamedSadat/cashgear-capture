@@ -455,6 +455,65 @@
               <Button Grid.Column="1" Content="Add" Margin="8,0,0,0" MinWidth="80" Command="{Binding AddExcludedAppCommand}" />
               <Button Grid.Column="2" Content="Refresh" Margin="8,0,0,0" Command="{Binding RefreshRunningAppsCommand}" />
             </Grid>
+
+            <TextBlock Style="{StaticResource Section}" Text="Webcam" />
+            <CheckBox Margin="0,2" Content="Record the webcam: drawn over the recording, and kept as a video track of its own" IsChecked="{Binding WebcamEnabled}" />
+            <Grid Margin="0,6,0,0" IsEnabled="{Binding WebcamEnabled}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+              </Grid.RowDefinitions>
+              <TextBlock Text="Camera" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ComboBox ItemsSource="{Binding Cameras}" SelectedItem="{Binding Camera}" MinWidth="240" MaxWidth="340" AutomationProperties.Name="Camera" />
+                <Button Content="Refresh" Command="{Binding RefreshCamerasCommand}" Margin="8,0,0,0" Padding="10,2" />
+              </StackPanel>
+              <TextBlock Grid.Row="1" Text="Picture" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
+                <ComboBox ItemsSource="{Binding WebcamSizes}" SelectedItem="{Binding WebcamSize}" MinWidth="120" AutomationProperties.Name="Webcam picture size" />
+                <ComboBox ItemsSource="{Binding WebcamRates}" SelectedItem="{Binding WebcamFps}" ItemStringFormat="{}{0} fps" MinWidth="80" Margin="8,0,0,0"
+                          AutomationProperties.Name="Webcam frame rate" />
+              </StackPanel>
+              <TextBlock Grid.Row="2" Text="Shape" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding WebcamShapes}" SelectedItem="{Binding WebcamShape}" ItemTemplate="{StaticResource EnumItem}"
+                        HorizontalAlignment="Left" MinWidth="160" Margin="0,6,0,0" AutomationProperties.Name="Webcam shape" />
+              <TextBlock Grid.Row="3" Text="Size (share of the height)" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
+                <Slider Minimum="10" Maximum="60" Width="200" Value="{Binding WebcamHeight}" IsSnapToTickEnabled="True" TickFrequency="1"
+                        VerticalAlignment="Center" AutomationProperties.Name="Webcam size" />
+                <TextBlock Text="{Binding WebcamHeight, StringFormat={}{0:0}%}" VerticalAlignment="Center" Margin="8,0,0,0" />
+              </StackPanel>
+              <TextBlock Grid.Row="4" Text="Border" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
+                <ComboBox ItemsSource="{Binding Colors}" SelectedItem="{Binding WebcamBorderColor}" MinWidth="120" AutomationProperties.Name="Webcam border colour" />
+                <Slider Minimum="0" Maximum="12" Width="120" Margin="8,0,0,0" Value="{Binding WebcamBorderWidth}" IsSnapToTickEnabled="True" TickFrequency="1"
+                        VerticalAlignment="Center" AutomationProperties.Name="Webcam border width" />
+                <TextBlock Text="{Binding WebcamBorderWidth, StringFormat={}{0:0} px}" VerticalAlignment="Center" Margin="8,0,0,0" />
+              </StackPanel>
+              <CheckBox Grid.Row="5" Grid.Column="1" Margin="0,8,0,0" Content="Mirror it (its own track stays as the camera sees)" IsChecked="{Binding WebcamMirror}" />
+            </Grid>
+            <TextBlock Style="{StaticResource Hint}" Text="{Binding WebcamStatus}" />
+            <Border x:Name="WebcamArea" Width="320" Height="180" Margin="0,8,0,0" HorizontalAlignment="Left" Background="#FF2B2B2B" ClipToBounds="True"
+                    BorderBrush="#60808080" BorderThickness="1" IsEnabled="{Binding WebcamEnabled}">
+              <Canvas x:Name="WebcamCanvas">
+                <TextBlock Canvas.Left="8" Canvas.Top="6" Text="The recorded area" Foreground="#A0FFFFFF" FontSize="11" />
+                <Border x:Name="WebcamBox" Cursor="SizeAll" MouseLeftButtonDown="OnWebcamDragStart" MouseMove="OnWebcamDrag" MouseLeftButtonUp="OnWebcamDragEnd"
+                        AutomationProperties.Name="Webcam placement">
+                  <Border.Background>
+                    <ImageBrush x:Name="WebcamImage" Stretch="UniformToFill" />
+                  </Border.Background>
+                </Border>
+              </Canvas>
+            </Border>
+            <TextBlock Style="{StaticResource Hint}" Text="Drag the webcam to where it goes. With a camera, its picture shows here while this page is open." />
           </StackPanel>
         </ScrollViewer>
       </TabItem>

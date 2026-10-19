@@ -10,6 +10,7 @@ namespace CashGear.Capture.Core.Recording;
 /// <param name="Tracks">The sound tracks' titles, the default one first.</param>
 /// <param name="NormalizeLoudness">Even out the sound to −16 LUFS when it is saved (also when it is recovered).</param>
 /// <param name="Metadata">The metadata journal in the folder (see <c>MetadataJournal</c>), saved as <c>name.cgmeta.json</c> next to the video; null when none is kept.</param>
+/// <param name="Webcam">The webcam's own video in the folder, saved as a second video track; null without a webcam.</param>
 public sealed record RecordingManifest(
     string Id,
     DateTimeOffset StartedAt,
@@ -20,7 +21,8 @@ public sealed record RecordingManifest(
     IReadOnlyList<string> Segments,
     IReadOnlyList<string> Tracks,
     bool NormalizeLoudness = false,
-    string? Metadata = null);
+    string? Metadata = null,
+    string? Webcam = null);
 
 /// <summary>
 /// The temporary folders recordings are written to (<c>%LocalAppData%\CashGear\Capture\Recordings\Temp</c>), one per

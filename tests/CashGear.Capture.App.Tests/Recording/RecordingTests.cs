@@ -166,6 +166,9 @@ internal sealed class ToneBursts(RecordingSound kind, params (double Start, doub
     /// <summary>The tone's peak (0.5 unless set; above 1 to test clipping).</summary>
     public float Amplitude { get; init; } = 0.5f;
 
+    /// <summary>The timestamp the bursts' times count from (the moment it is started, unless set).</summary>
+    public long? Origin { get; init; }
+
     private const int Packet = 480;
     private Thread? _thread;
     private volatile bool _stopping;
@@ -176,7 +179,7 @@ internal sealed class ToneBursts(RecordingSound kind, params (double Start, doub
 
     public void Start(AudioDataHandler data, AudioStatusHandler status)
     {
-        var origin = Stopwatch.GetTimestamp();
+        var origin = Origin ?? Stopwatch.GetTimestamp();
         _thread = new Thread(() => Run(origin, data)) { IsBackground = true };
         _thread.Start();
     }
@@ -708,11 +711,18 @@ public sealed class RecordingRecoveryTests : IDisposable
     private RecordingRecovery Recovery() => new(_store, TestFfmpeg.Runtime(), NullLogger<RecordingRecovery>.Instance);
 
     /// <summary>A recording whose app went away before saving: its folder with a written segment, and no lock held.</summary>
-    private void Interrupted(double seconds, double? cutAt = null, bool normalizeLoudness = false, float tone = 0, Action<MetadataJournal>? journal = null)
+    private void Interrupted(double seconds, double? cutAt = null, bool normalizeLoudness = false, float tone = 0, Action<MetadataJournal>? journal = null, bool webcam = false)
     {
         var manifest = new RecordingManifest(
-            "abc12345", DateTimeOffset.Now, Output, 640, 360, 30, ["segment-001.mp4"], ["Mixed"], normalizeLoudness, journal is null ? null : MetadataJournal.FileName);
+            "abc12345", DateTimeOffset.Now, Output, 640, 360, 30, ["segment-001.mp4"], ["Mixed"], normalizeLoudness, journal is null ? null : MetadataJournal.FileName,
+            webcam ? WebcamFeed.FileName : null);
         using var folder = _store.Create(manifest);
+        if (webcam)
+        {
+            var camera = new SyntheticRecording { Directory = Path.Combine(_root, "camera"), Seconds = seconds, Format = new VideoFormat(320, 240, 30), Tracks = [] }.Write();
+            File.Move(camera[0].Path, Path.Combine(folder.Directory, WebcamFeed.FileName));
+        }
+
         if (journal is not null)
         {
             using var written = new MetadataJournal(
@@ -747,6 +757,19 @@ public sealed class RecordingRecoveryTests : IDisposable
         TestFfmpeg.Probe(Output).Frames.Should().Be(90);
         Directory.Exists(found[0].Directory).Should().BeFalse();
         recovery.Find().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_recovered_recording_keeps_its_webcam_track()
+    {
+        TestFfmpeg.Require();
+        Interrupted(2, webcam: true);
+        var recovery = Recovery();
+
+        await recovery.RecoverAsync(recovery.Find().Single(), TestContext.Current.CancellationToken);
+
+        using var reader = new MediaReader(Output);
+        reader.Streams.Where(s => s.IsVideo).Select(s => (s.Title, s.Width)).Should().Equal((null, 640), ("Webcam", 320));
     }
 
     [Fact]

@@ -11,6 +11,7 @@ using CashGear.Capture.Interop.Native;
 using CashGear.Capture.Media;
 using CashGear.Capture.Overlays.Input;
 using CashGear.Capture.Overlays.Rendering;
+using CashGear.Capture.Overlays.Webcam;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -29,7 +30,8 @@ internal sealed partial class ScreenRecorder(
     WgcInterop interop,
     IAudioSourceFactory audio,
     ILoggerFactory loggers,
-    MicrophoneProcessors? processors = null) : IScreenRecorder
+    MicrophoneProcessors? processors = null,
+    IWebcams? webcams = null) : IScreenRecorder
 {
     private readonly MicrophoneProcessors _processors = processors ?? new MicrophoneProcessors();
 
@@ -185,11 +187,44 @@ internal sealed partial class ScreenRecorder(
 
                 // Windows draws the pointer unless the overlays must (bigger, or hidden when idle): then the app does.
                 var ownPointer = options.IncludeCursor && overlays is { } o && o.PointerSettings.DrawsOwnPointer && o.NeedsInput;
+                var clock = new RecordingClock(TimeProvider.System);
+                string? webcamNote = null;
+                IWebcamSource? camera = null;
+                if (overlays is { } withWebcam && withWebcam.WebcamSettings.Enabled)
+                {
+                    var settings = withWebcam.WebcamSettings;
+                    var opened = webcams is null
+                        ? WebcamOpenResult.Failed("Webcams aren't available in this copy of the app.")
+                        : await webcams.OpenAsync(settings.Device, settings.Width, settings.Height, settings.Fps, ct).ConfigureAwait(false);
+                    camera = opened.Source;
+                    webcamNote = opened.Note;
+                }
+
                 var manifest = new RecordingManifest(
                     Guid.NewGuid().ToString("N")[..8], DateTimeOffset.Now, output, width, height, options.Fps, [], [.. tracks.Select(t => t.Title)],
                     NormalizeLoudness: options.NormalizeLoudness && tracks.Count > 0,
-                    Metadata: overlays?.WriteMetadata == true ? MetadataJournal.FileName : null);
+                    Metadata: overlays?.WriteMetadata == true ? MetadataJournal.FileName : null,
+                    Webcam: camera is null ? null : WebcamFeed.FileName);
                 parts.Folder = store.Create(manifest);
+                if (camera is not null)
+                {
+                    var candidates = usable.ToList();
+                    parts.Webcam = new WebcamFeed(
+                        camera, clock, options.Fps, parts.Folder.Directory, format => OpenFirst(new Queue<(EncoderCandidate, EncoderProbe)>(candidates), format, options.Quality, _logger), OnWarning, loggers);
+                    try
+                    {
+                        await parts.Webcam.StartAsync(ct).ConfigureAwait(false);
+                    }
+                    catch (Exception e) when (e is TimeoutException or InvalidOperationException or System.Runtime.InteropServices.COMException)
+                    {
+                        webcamNote = $"{camera.Name} sent no picture ({e.Message}), so the recording has no webcam.";
+                        parts.Webcam.Dispose();
+                        parts.Webcam = null;
+                        manifest = manifest with { Webcam = null };
+                        parts.Folder.Save(manifest);
+                    }
+                }
+
                 if (manifest.Metadata is { } journal)
                 {
                     parts.Journal = new MetadataJournal(
@@ -200,15 +235,14 @@ internal sealed partial class ScreenRecorder(
                             options.Monitor.Scale.ScaleX,
                             CursorInVideo: options.IncludeCursor && (!ownPointer || overlays!.BurnIn),
                             OverlaysInVideo: overlays!.DrawsLive,
-                            overlays!.KeystrokeSettings.Mode));
+                            overlays!.KeystrokeSettings.Mode,
+                            parts.Webcam is { } feed ? Placement(overlays.WebcamSettings, feed) : null));
                 }
 
                 parts.Writer = new MediaWriter(
                     parts.Folder.SegmentPath,
                     [.. parts.Audio.Select((a, i) => StreamSetup.From(a, tracks[i].Title, i == 0))],
                     loggers.CreateLogger<MediaWriter>());
-                var clock = new RecordingClock(TimeProvider.System);
-
                 // Keys are shown once their privacy check is done: frames are made a little later so a key lands on its own frame.
                 var grid = new FrameGrid(options.Fps, overlays is { BurnIn: true } && overlays.KeystrokeSettings.Mode != KeystrokeMode.Off ? KeystrokeLag : null);
                 parts.Stream = await WgcAreaStream.StartAsync(
@@ -222,6 +256,12 @@ internal sealed partial class ScreenRecorder(
                 session.Failed += (_, e) => OnFailed(e);
                 session.Start();
                 _session = session;
+                if (webcamNote is not null)
+                {
+                    OnWarning(webcamNote);
+                    session.AddNote(webcamNote);
+                }
+
                 LogStarted(area, options.Monitor.ShortName, options.Fps, video.Candidate.DisplayName, video.Detail ?? "", options.Quality, output, parts.Folder.Directory);
                 LogSound(sources.Count == 0 ? "none" : string.Join(", ", sources.Select(s => s.Name)), string.Join(", ", tracks.Select(t => t.Title)), soundNote ?? string.Empty);
             }
@@ -308,6 +348,10 @@ internal sealed partial class ScreenRecorder(
 
     private static VideoEncoder Open(EncoderCandidate candidate, EncoderProbe probe, VideoFormat format, QualityPreset quality) =>
         VideoEncoder.Open(candidate, format, EncoderPresets.Options(candidate, quality, format.Width, format.Height, format.Fps, probe.QualityMode));
+
+    /// <summary>Where the webcam was drawn, for the metadata (an editor can place it again from its own track).</summary>
+    private static MetadataWebcam Placement(WebcamSettings settings, WebcamFeed feed) => new(
+        WebcamFeed.TrackTitle, settings.Shape, settings.Size, settings.CenterX, settings.CenterY, settings.BorderColor, settings.BorderWidth, settings.Mirror, feed.Width, feed.Height);
 
     /// <summary>A track's title: "Microphone", "System audio", or the app's name when only its sound is recorded.</summary>
     private static string SourceTitle(IAudioSource source, RecordingOptions options) =>
@@ -418,11 +462,14 @@ internal sealed partial class ScreenRecorder(
 
         public MetadataJournal? Journal { get; set; }
 
+        public WebcamFeed? Webcam { get; set; }
+
         public void Add(VideoEncoder video) => Video.Add(video);
 
         public void Dispose(bool deleteFolder)
         {
             Stream?.Dispose();
+            Webcam?.Dispose();
             Journal?.Dispose();
             Sources.ForEach(s => s.Dispose());
             Writer?.Complete(FinishTimeout);
@@ -460,6 +507,9 @@ internal sealed partial class ScreenRecorder(
     private sealed partial class Session
     {
         private const int AudioFrameSize = 1024;
+
+        /// <summary>The timeline of a recording that follows no input (only the webcam is drawn).</summary>
+        private static readonly InputTimeline NoInput = new();
         private static readonly TimeSpan HungEncoder = TimeSpan.FromSeconds(2);
 
         private readonly ScreenRecorder _owner;
@@ -481,6 +531,7 @@ internal sealed partial class ScreenRecorder(
         private readonly MetadataJournal? _journal;
         private readonly CursorLibrary _cursors = new();
         private readonly OverlayPlanner? _planner;
+        private readonly WebcamFeed? _webcam;
         private readonly AudioMixer? _mixer;
         private readonly AudioTrack? _clickTrack;
         private readonly Dictionary<RecordingSound, AudioTrack> _sourceTracks = [];
@@ -527,15 +578,17 @@ internal sealed partial class ScreenRecorder(
             _loggers = loggers;
             _overlays = options.Overlays;
             _journal = parts.Journal;
+            _webcam = parts.Webcam;
             if (_overlays?.NeedsInput == true)
             {
                 _timeline = new InputTimeline(InputRecorder.PointerNow());
-                if (_overlays.BurnIn)
-                {
-                    var planner = new OverlayPlanner(
-                        _overlays, new PixelPoint(options.Area.X, options.Area.Y), options.Monitor.Scale.ScaleX, format.Width, format.Height, ownPointer, webcam: false);
-                    _planner = planner.DrawsAnything ? planner : null;
-                }
+            }
+
+            if (_overlays is { BurnIn: true })
+            {
+                var planner = new OverlayPlanner(
+                    _overlays, new PixelPoint(options.Area.X, options.Area.Y), options.Monitor.Scale.ScaleX, format.Width, format.Height, ownPointer, webcam: _webcam is not null);
+                _planner = planner.DrawsAnything ? planner : null;
             }
 
             _owner = owner;
@@ -624,6 +677,7 @@ internal sealed partial class ScreenRecorder(
             _timerPeriod = true;
             Clock.Start();
             StartInput();
+            _webcam?.StartTrack();
             _videoThread = new Thread(WriteVideo) { IsBackground = true, Name = "Recording video", Priority = ThreadPriority.AboveNormal };
             _videoThread.Start();
             _watchdog = new Timer(_ => Watch(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
@@ -651,6 +705,9 @@ internal sealed partial class ScreenRecorder(
         }
 
         public bool ShowsKeystrokes => _input is not null && _overlays?.KeystrokeSettings.Mode != KeystrokeMode.Off;
+
+        /// <summary>Something the user should know in the saved notification (the webcam couldn't be used).</summary>
+        public void AddNote(string note) => _note = _note is null ? note : _note + " " + note;
 
         /// <summary>While true, keys aren't shown or kept.</summary>
         public bool KeystrokesPaused
@@ -711,6 +768,13 @@ internal sealed partial class ScreenRecorder(
             }
 
             LogStopStep($"video done ({videoDone}), {_grid.Written} frames");
+            if (_webcam is { } webcam)
+            {
+                webcam.Finish(Clock.Elapsed, timeout);
+                webcam.Dispose();
+                LogStopStep($"webcam done, {webcam.Written} frames");
+            }
+
             _input?.Dispose();
             _journal?.Dispose();
             _watchdog?.Dispose();
@@ -857,11 +921,22 @@ internal sealed partial class ScreenRecorder(
 
                     var changed = TakePictures(step.Slot, ref current);
                     var time = _grid.TimeOf(step.Slot);
-                    var scene = _planner?.Plan(_timeline!, time) ?? OverlayScene.Empty;
+                    var scene = _planner?.Plan(_timeline ?? NoInput, time) ?? OverlayScene.Empty;
                     if (!scene.IsEmpty)
                     {
                         // Drawn over the picture on the GPU, then read back.
-                        _stream.Compose(current!, compositor!, scene, null, picture);
+                        var camera = _webcam?.Hold(time);
+                        try
+                        {
+                            _stream.Compose(current!, compositor!, scene, camera?.Picture, picture);
+                        }
+                        finally
+                        {
+                            if (camera is not null)
+                            {
+                                _webcam!.Release(camera);
+                            }
+                        }
                     }
                     else if (changed || composed)
                     {
@@ -1223,6 +1298,7 @@ public static class RecordingServiceCollectionExtensions
         services.AddAudio();
         services.AddSingleton<IScreenRecorder, ScreenRecorder>();
         services.AddSingleton<IOverlayRenderer, OverlayRenderer>();
+        services.AddSingleton<IWebcams, MediaCaptureWebcams>();
         return services;
     }
 }

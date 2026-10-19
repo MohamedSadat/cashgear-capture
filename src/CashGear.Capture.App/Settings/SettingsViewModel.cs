@@ -12,6 +12,7 @@ using CashGear.Capture.Core.Ocr;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Overlays.Webcam;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -67,11 +68,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IScreenRecorder? recorder = null,
         IAudioApps? apps = null,
         IAudioMonitor? monitor = null,
-        IReadOnlyList<string>? fonts = null)
+        IReadOnlyList<string>? fonts = null,
+        IWebcams? webcams = null)
     {
         _apps = apps;
         _monitor = monitor;
-        Overlays = new OverlaySettingsViewModel(apps, fonts ?? []);
+        Overlays = new OverlaySettingsViewModel(apps, fonts ?? [], webcams);
         IsAppAudioSupported = apps?.IsSupported == true;
         SystemAudioScopes = IsAppAudioSupported ? Enum.GetValues<SystemAudioScope>() : [SystemAudioScope.All];
         _updates = updates;

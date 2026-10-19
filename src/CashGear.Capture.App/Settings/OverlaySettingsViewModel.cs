@@ -1,10 +1,23 @@
 using System.Collections.ObjectModel;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Overlays.Webcam;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace CashGear.Capture.App.Settings;
+
+/// <summary>A camera in the list: its device ID (null: the first camera) and name.</summary>
+public sealed record CameraChoice(string? Id, string Label)
+{
+    public override string ToString() => Label;
+}
+
+/// <summary>A webcam picture size.</summary>
+public sealed record SizeChoice(int Width, int Height)
+{
+    public override string ToString() => $"{Width} × {Height}";
+}
 
 /// <summary>A colour in a list: its <c>#RRGGBB</c> value and a name.</summary>
 public sealed record ColorChoice(string Value, string Label)
@@ -21,11 +34,110 @@ public sealed record ColorChoice(string Value, string Label)
 public sealed partial class OverlaySettingsViewModel : ObservableObject
 {
     private readonly IAudioApps? _apps;
+    private readonly IWebcams? _webcams;
 
-    public OverlaySettingsViewModel(IAudioApps? apps, IReadOnlyList<string> fonts)
+    public OverlaySettingsViewModel(IAudioApps? apps, IReadOnlyList<string> fonts, IWebcams? webcams = null)
     {
         _apps = apps;
+        _webcams = webcams;
         Fonts = fonts;
+    }
+
+    /// <summary>Lets the window show the chosen camera in the placement preview.</summary>
+    public IWebcams? Webcams => _webcams;
+
+    public ObservableCollection<CameraChoice> Cameras { get; } = [new CameraChoice(null, "The first camera found")];
+
+    public IReadOnlyList<SizeChoice> WebcamSizes { get; } = [new(640, 360), new(640, 480), new(1280, 720), new(1920, 1080)];
+
+    public IReadOnlyList<int> WebcamRates { get; } = [15, 24, 30, 60];
+
+    public IReadOnlyList<WebcamShape> WebcamShapes { get; } = Enum.GetValues<WebcamShape>();
+
+    [ObservableProperty]
+    private bool _webcamEnabled;
+
+    [ObservableProperty]
+    private CameraChoice? _camera;
+
+    [ObservableProperty]
+    private SizeChoice? _webcamSize;
+
+    [ObservableProperty]
+    private int _webcamFps;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WebcamIsCircle))]
+    private WebcamShape _webcamShape;
+
+    /// <summary>Its height as a share of the recorded area's height, percent.</summary>
+    [ObservableProperty]
+    private double _webcamHeight;
+
+    /// <summary>Where its centre is, percent of the recorded area's width.</summary>
+    [ObservableProperty]
+    private double _webcamCenterX;
+
+    [ObservableProperty]
+    private double _webcamCenterY;
+
+    [ObservableProperty]
+    private ColorChoice? _webcamBorderColor;
+
+    [ObservableProperty]
+    private double _webcamBorderWidth;
+
+    [ObservableProperty]
+    private bool _webcamMirror;
+
+    /// <summary>What the camera list or preview found (no camera, privacy settings), shown under the list.</summary>
+    [ObservableProperty]
+    private string _webcamStatus = string.Empty;
+
+    public bool WebcamIsCircle => WebcamShape == WebcamShape.Circle;
+
+    /// <summary>Lists the cameras connected now, keeping the chosen one (also when it isn't connected).</summary>
+    [RelayCommand]
+    public async Task RefreshCamerasAsync()
+    {
+        var chosen = Camera?.Id;
+        var found = _webcams is null ? [] : await _webcams.ListAsync().ConfigureAwait(true);
+        while (Cameras.Count > 1)
+        {
+            Cameras.RemoveAt(1);
+        }
+
+        foreach (var camera in found)
+        {
+            Cameras.Add(new CameraChoice(camera.Id, camera.Name));
+        }
+
+        Camera = CameraFor(chosen);
+        WebcamStatus = found.Count == 0 ? "No camera is connected now." : string.Empty;
+    }
+
+    /// <summary>Moves the webcam's centre to a point of the preview (shares of the recorded area, 0 to 1).</summary>
+    public void MoveWebcam(double x, double y)
+    {
+        WebcamCenterX = Math.Round(Math.Clamp(x, 0, 1) * 100, 1);
+        WebcamCenterY = Math.Round(Math.Clamp(y, 0, 1) * 100, 1);
+    }
+
+    private CameraChoice CameraFor(string? id)
+    {
+        if (id is null)
+        {
+            return Cameras[0];
+        }
+
+        var known = Cameras.FirstOrDefault(c => c.Id == id);
+        if (known is null)
+        {
+            known = new CameraChoice(id, "The camera chosen before (not connected)");
+            Cameras.Add(known);
+        }
+
+        return known;
     }
 
     /// <summary>The colours offered (a colour set by hand in the settings file is added when loaded).</summary>
@@ -167,6 +279,19 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
         {
             ExcludedApps.Add(app);
         }
+
+        var webcam = s.WebcamSettings;
+        WebcamEnabled = webcam.Enabled;
+        Camera = CameraFor(webcam.Device);
+        WebcamSize = WebcamSizes.FirstOrDefault(c => c.Width == webcam.Width && c.Height == webcam.Height) ?? new SizeChoice(webcam.Width, webcam.Height);
+        WebcamFps = webcam.Fps;
+        WebcamShape = webcam.Shape;
+        WebcamHeight = webcam.Size;
+        WebcamCenterX = webcam.CenterX;
+        WebcamCenterY = webcam.CenterY;
+        WebcamBorderColor = Choice(webcam.BorderColor);
+        WebcamBorderWidth = webcam.BorderWidth;
+        WebcamMirror = webcam.Mirror;
     }
 
     /// <summary>The edited values applied on top of <paramref name="current"/> (webcam and drawing settings are kept).</summary>
@@ -204,6 +329,21 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
                 FontSize = (int)Math.Round(KeystrokeSize),
                 FadeSeconds = Math.Round(KeystrokeFade, 1),
                 ExcludedApps = [.. ExcludedApps],
+            },
+            Webcam = current.WebcamSettings with
+            {
+                Enabled = WebcamEnabled,
+                Device = Camera?.Id,
+                Width = WebcamSize?.Width ?? 1280,
+                Height = WebcamSize?.Height ?? 720,
+                Fps = WebcamFps,
+                Shape = WebcamShape,
+                Size = (int)Math.Round(WebcamHeight),
+                CenterX = Math.Round(WebcamCenterX, 1),
+                CenterY = Math.Round(WebcamCenterY, 1),
+                BorderColor = WebcamBorderColor?.Value ?? WebcamSettings.DefaultBorderColor,
+                BorderWidth = (int)Math.Round(WebcamBorderWidth),
+                Mirror = WebcamMirror,
             },
         };
     }

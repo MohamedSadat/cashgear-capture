@@ -60,10 +60,15 @@ internal sealed partial class RecordingRecovery(RecordingStore store, FfmpegRunt
             var destination = PartNames.Unique(PartNames.Part(manifest.OutputPath, files.Count + 1));
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             var part = i;
+
+            // The webcam's track goes with the part it was recorded during (a later part starts at its own time).
+            var webcam = manifest.Webcam is { } file
+                ? new RemuxExtra(Path.Combine(directory, file), WebcamFeed.TrackTitle, i + 1 < segments.Count ? Remuxer.StartOf(segments[i + 1]) : double.MaxValue)
+                : null;
             try
             {
                 var result = Remuxer.Remux(
-                    segments[i], destination, progress is null ? null : new Progress<double>(p => progress.Report((part + p) / segments.Count)), ct, manifest.NormalizeLoudness);
+                    segments[i], destination, progress is null ? null : new Progress<double>(p => progress.Report((part + p) / segments.Count)), ct, manifest.NormalizeLoudness, webcam);
                 files.Add(result.Path);
                 parts.Add(new MetadataPart(Path.GetFileName(result.Path), Math.Round(result.Start, 6)));
                 duration += result.Duration;

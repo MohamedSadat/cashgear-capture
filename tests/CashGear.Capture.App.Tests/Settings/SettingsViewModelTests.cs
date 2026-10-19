@@ -388,6 +388,68 @@ public sealed class SettingsViewModelTests : IDisposable
         });
     }
 
+    [Fact]
+    public async Task Webcam_settings_are_loaded_and_saved_and_its_place_moved()
+    {
+        _settings.Current = _settings.Current with
+        {
+            Overlays = new OverlaySettings(Webcam: new WebcamSettings(Enabled: true, Device: "gone", Width: 640, Height: 480, Shape: WebcamShape.RoundedRectangle)),
+        };
+        using var vm = Create(webcams: new Recording.FakeWebcams(() => null));
+        var overlays = vm.Overlays;
+        overlays.WebcamEnabled.Should().BeTrue();
+        overlays.Camera!.Label.Should().Be("The camera chosen before (not connected)", "a camera that isn't connected stays chosen");
+        overlays.WebcamSize.Should().Be(new SizeChoice(640, 480));
+        await overlays.RefreshCamerasAsync();
+        overlays.Cameras.Select(c => c.Label).Should().Contain("test camera");
+        overlays.Camera!.Id.Should().Be("gone");
+
+        overlays.Camera = overlays.Cameras.Single(c => c.Id == "test");
+        overlays.WebcamShape = WebcamShape.Circle;
+        overlays.WebcamHeight = 40;
+        overlays.MoveWebcam(0.25, 1.4);
+        overlays.WebcamMirror = false;
+        await vm.ApplyCommand.ExecuteAsync(null);
+
+        var saved = _settings.Current.Overlays.WebcamSettings;
+        (saved.Device, saved.Shape, saved.Size, saved.CenterX, saved.CenterY, saved.Mirror, saved.Width).Should().Be(("test", WebcamShape.Circle, 40, 25.0, 100.0, false, 640));
+    }
+
+    /// <summary>The webcam's placement preview shows the camera's picture while the page is open and the webcam on.</summary>
+    [Fact(Timeout = 30_000)]
+    [Trait("Category", CashGear.Capture.Engine.Tests.InteractiveDesktop.Category)]
+    public Task The_overlays_tab_previews_the_webcam_and_lets_go_of_it()
+    {
+        CashGear.Capture.Engine.Tests.InteractiveDesktop.Require();
+        _settings.Current = _settings.Current with { Overlays = new OverlaySettings(Webcam: new WebcamSettings(Enabled: true)) };
+        Recording.FakeCamera? camera = null;
+        return StaDispatcher.RunAsync(async () =>
+        {
+            using var vm = Create(webcams: new Recording.FakeWebcams(() => camera = new Recording.FakeCamera(System.Diagnostics.Stopwatch.GetTimestamp(), [])));
+            var window = new SettingsWindow(vm, AppTheme.Light);
+            try
+            {
+                window.Show();
+                var tabs = FindAll<System.Windows.Controls.TabControl>(window).Single();
+                tabs.SelectedItem = tabs.Items.Cast<System.Windows.Controls.TabItem>().Single(t => (string)t.Header == "Overlays");
+                await Task.Delay(800, TestContext.Current.CancellationToken);
+
+                var box = (System.Windows.Controls.Border)window.FindName("WebcamBox");
+                box.Background.Should().BeOfType<System.Windows.Media.ImageBrush>("the camera's picture is shown");
+                ((System.Windows.Media.ImageBrush)box.Background).ImageSource.Should().NotBeNull();
+                box.Width.Should().BeApproximately(WebcamSettings.DefaultSize / 100.0 * 180, 0.01, "a circle as tall as its share of the area");
+
+                vm.Overlays.WebcamEnabled = false;
+                await Task.Delay(100, TestContext.Current.CancellationToken);
+                camera!.Disposed.Should().BeTrue("turning the webcam off lets go of the camera");
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
     /// <summary>The Overlays tab's XAML loads and its choices are bound to the settings.</summary>
     [Fact(Timeout = 30_000)]
     [Trait("Category", CashGear.Capture.Engine.Tests.InteractiveDesktop.Category)]
@@ -764,8 +826,9 @@ public sealed class SettingsViewModelTests : IDisposable
         _settings.Current.Updates.FeedUrl.Should().Be(@"\\server\capture-releases", "the address is only edited in the file and must survive");
     }
 
-    private SettingsViewModel Create(IAudioDevices? audio = null, IRecordingEncoders? encoders = null, IAudioApps? apps = null, IAudioMonitor? monitor = null) =>
-        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance, encoders: encoders, audio: audio, apps: apps, monitor: monitor);
+    private SettingsViewModel Create(
+        IAudioDevices? audio = null, IRecordingEncoders? encoders = null, IAudioApps? apps = null, IAudioMonitor? monitor = null, CashGear.Capture.Overlays.Webcam.IWebcams? webcams = null) =>
+        new(_settings, _paths, _registrar, _startup, _picker, NullLogger<SettingsViewModel>.Instance, encoders: encoders, audio: audio, apps: apps, monitor: monitor, webcams: webcams);
 
     /// <summary>Records what it is asked to listen to; levels and the test recording are set by the test.</summary>
     private sealed class FakeMonitor : IAudioMonitor
