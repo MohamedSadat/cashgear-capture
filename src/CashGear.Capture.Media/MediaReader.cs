@@ -10,6 +10,69 @@ public sealed record MediaStreamInfo(int Index, bool IsVideo, string Codec, stri
 /// <summary>Receives decoded sound mixed to mono, starting at <paramref name="time"/> seconds.</summary>
 public delegate void MonoSoundHandler(double time, int sampleRate, ReadOnlySpan<float> samples);
 
+/// <summary>Receives a decoded picture as top-down BGRA, shown at <paramref name="time"/> seconds.</summary>
+public delegate void BgraFrameHandler(double time, int width, int height, ReadOnlySpan<byte> bgra);
+
+/// <summary>
+/// Turns decoded pictures (any size and pixel format; BT.709 limited range, as the recorder writes) into top-down
+/// BGRA. Reuses its buffer and swscale context while the pictures keep their size and format.
+/// </summary>
+public sealed unsafe class BgraConverter : IDisposable
+{
+    private readonly byte*[] _planes = new byte*[4];
+    private readonly int[] _strides = new int[4];
+    private SwsContext* _context;
+    private (int Width, int Height, int Format) _shape;
+    private byte[] _buffer = [];
+
+    public ReadOnlySpan<byte> Convert(AVFrame* frame)
+    {
+        var shape = (frame->width, frame->height, frame->format);
+        if (_context is null || shape != _shape)
+        {
+            ffmpeg.sws_freeContext(_context);
+            _context = ffmpeg.sws_getContext(
+                frame->width, frame->height, (AVPixelFormat)frame->format,
+                frame->width, frame->height, AVPixelFormat.AV_PIX_FMT_BGRA,
+                (int)SwsFlags.SWS_POINT, null, null, null);
+            if (_context is null)
+            {
+                throw new FfmpegException($"swscale can't convert {(AVPixelFormat)frame->format} to BGRA.");
+            }
+
+            var yuv = *(int4*)ffmpeg.sws_getCoefficients(ffmpeg.SWS_CS_ITU709);
+            var rgb = *(int4*)ffmpeg.sws_getCoefficients(ffmpeg.SWS_CS_DEFAULT);
+            ffmpeg.sws_setColorspaceDetails(_context, in yuv, 0, in rgb, 1, 0, 1 << 16, 1 << 16);
+            _shape = shape;
+            _buffer = new byte[frame->width * frame->height * 4];
+        }
+
+        fixed (byte* destination = _buffer)
+        {
+            _planes[0] = destination;
+            _strides[0] = frame->width * 4;
+            var source = new byte*[8];
+            var sourceStrides = new int[8];
+            for (uint i = 0; i < 8; i++)
+            {
+                source[i] = frame->data[i];
+                sourceStrides[i] = frame->linesize[i];
+            }
+
+            ffmpeg.sws_scale(_context, source, sourceStrides, 0, frame->height, _planes, _strides);
+        }
+
+        return _buffer;
+    }
+
+    public void Dispose()
+    {
+        var context = _context;
+        _context = null;
+        ffmpeg.sws_freeContext(context);
+    }
+}
+
 /// <summary>
 /// Reads a recording back by decoding it: what the tests and the sync test check a file with. Not used while
 /// recording.
@@ -90,6 +153,22 @@ public sealed unsafe class MediaReader : IDisposable
             result.Add((frame->best_effort_timestamp * TimeBase(Video.Index), (double)sum / (w * h)));
         });
         return result;
+    }
+
+    /// <summary>
+    /// Decodes a video stream (the first by default) and hands each picture over as top-down BGRA rows of
+    /// <c>width * 4</c> bytes, with its time in seconds. The buffer is reused: copy what you keep.
+    /// </summary>
+    public void ReadVideo(BgraFrameHandler onFrame, int streamIndex = -1)
+    {
+        ArgumentNullException.ThrowIfNull(onFrame);
+        var index = streamIndex >= 0 ? streamIndex : Video.Index;
+        using var converter = new BgraConverter();
+        Decode(index, frame =>
+        {
+            var bgra = converter.Convert(frame);
+            onFrame(frame->best_effort_timestamp * TimeBase(index), frame->width, frame->height, bgra);
+        });
     }
 
     /// <summary>Decodes a sound stream to mono (the channels averaged), with the time of its first sample in seconds.</summary>

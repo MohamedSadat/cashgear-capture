@@ -54,6 +54,11 @@
           </Style>
         </TextBlock.Style>
       </TextBlock>
+      <ToggleButton IsChecked="{Binding KeystrokesShown}" Margin="6,0,0,0" MinWidth="34" Focusable="False"
+                    ToolTip="{Binding KeystrokesToolTip}" AutomationProperties.Name="Show keystrokes"
+                    Visibility="{Binding HasKeystrokes, Converter={StaticResource Visible}}">
+        <TextBlock Text="&#xE765;" FontFamily="Segoe MDL2 Assets" />
+      </ToggleButton>
       <Button Command="{Binding ToggleSoundPanelCommand}" Margin="6,0,0,0" MinWidth="34" Focusable="False"
               ToolTip="Volume and mute for each sound source" AutomationProperties.Name="Sound settings"
               Visibility="{Binding HasSound, Converter={StaticResource Visible}}">

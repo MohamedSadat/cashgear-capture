@@ -66,10 +66,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IAudioDevices? audio = null,
         IScreenRecorder? recorder = null,
         IAudioApps? apps = null,
-        IAudioMonitor? monitor = null)
+        IAudioMonitor? monitor = null,
+        IReadOnlyList<string>? fonts = null)
     {
         _apps = apps;
         _monitor = monitor;
+        Overlays = new OverlaySettingsViewModel(apps, fonts ?? []);
         IsAppAudioSupported = apps?.IsSupported == true;
         SystemAudioScopes = IsAppAudioSupported ? Enum.GetValues<SystemAudioScope>() : [SystemAudioScope.All];
         _updates = updates;
@@ -124,6 +126,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             updates.StateChanged += OnUpdateStateChanged;
         }
     }
+
+    /// <summary>Settings › Overlays.</summary>
+    public OverlaySettingsViewModel Overlays { get; }
 
     /// <summary>Raised when the window should close (after OK or Cancel).</summary>
     public event EventHandler? CloseRequested;
@@ -365,9 +370,6 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _recordingIncludeCursor;
-
-    [ObservableProperty]
-    private bool _recordingShowClicks;
 
     [ObservableProperty]
     private EncoderChoice? _recordingEncoder;
@@ -882,10 +884,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             Microphone = RecordingMicrophone?.Id,
             Tracks = RecordingTracks,
         },
-        Overlays = current.Overlays with
-        {
-            Clicks = current.Overlays.ClickSettings with { Enabled = RecordingShowClicks },
-        },
+        Overlays = Overlays.Build(current.Overlays),
         Ocr = new OcrSettings(OcrLanguage?.Tag),
         History = new HistorySettings(HistorySize?.Value ?? current.History.MaxItems),
         Updates = current.Updates with { CheckAutomatically = CheckForUpdates },
@@ -910,7 +909,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         RecordingQuality = s.Recording.Quality;
         RecordingTracks = s.Recording.Tracks;
         RecordingIncludeCursor = s.Recording.IncludeCursor;
-        RecordingShowClicks = s.Overlays.ClickSettings.Enabled;
+        Overlays.Load(s.Overlays);
         RefreshEncoders(s.Recording.Encoder);
         RecordSystemAudio = s.Recording.SystemAudio;
         // A microphone that isn't connected now stays selected (and saved) rather than silently becoming None.

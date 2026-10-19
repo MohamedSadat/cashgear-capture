@@ -134,6 +134,12 @@ public interface IScreenRecorder
     /// <summary>The microphone's noise suppression can be turned on (RNNoise is there and a microphone is recorded).</summary>
     bool CanSuppressNoise { get; }
 
+    /// <summary>Keystrokes are followed in this recording (shown, or kept in its metadata).</summary>
+    bool ShowsKeystrokes { get; }
+
+    /// <summary>While true, keys aren't shown or kept (the toolbar's switch, e.g. while typing a password the app can't tell).</summary>
+    bool KeystrokesPaused { get; set; }
+
     /// <summary>True while a stopped recording is being saved; <see cref="SaveProgress"/> says how far (0 to 1).</summary>
     bool IsSaving { get; }
 

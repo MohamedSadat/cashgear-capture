@@ -16,6 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Vortice.Direct3D11" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="..\CashGear.Capture.Engine.Tests\InteractiveDesktop.cs" Link="InteractiveDesktop.cs" />
     <Compile Include="..\CashGear.Capture.App.Tests\StaDispatcher.cs" Link="StaDispatcher.cs" />
   </ItemGroup>

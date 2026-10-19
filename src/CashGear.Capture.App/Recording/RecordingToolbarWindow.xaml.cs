@@ -105,6 +105,25 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     /// <summary>The microphone is only heard while a key is held.</summary>
     public bool HasPushToTalk => _pushToTalk is not null;
 
+    /// <summary>Keystrokes are shown (or kept) in this recording, so they can be paused here.</summary>
+    public bool HasKeystrokes => _recorder.ShowsKeystrokes;
+
+    /// <summary>Keys are shown now (off: paused, e.g. while typing something private).</summary>
+    public bool KeystrokesShown
+    {
+        get => !_recorder.KeystrokesPaused;
+        set
+        {
+            _recorder.KeystrokesPaused = !value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(KeystrokesToolTip));
+        }
+    }
+
+    public string KeystrokesToolTip => KeystrokesShown
+        ? "Keystrokes are shown. Click to stop showing them for a while (e.g. to type something private)."
+        : "Keystrokes are hidden. Click to show them again.";
+
     /// <summary>"Hold F13 to talk", or "Talking" while it is held.</summary>
     public string PushToTalkText => IsTalking ? "Talking" : $"Hold {_pushToTalk?.Key} to talk";
 

@@ -10,6 +10,7 @@ using CashGear.Capture.Engine.Capture.Wgc;
 using CashGear.Capture.Interop.Native;
 using CashGear.Capture.Media;
 using CashGear.Capture.Overlays.Input;
+using CashGear.Capture.Overlays.Rendering;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -33,6 +34,9 @@ internal sealed partial class ScreenRecorder(
     private readonly MicrophoneProcessors _processors = processors ?? new MicrophoneProcessors();
 
     private static readonly TimeSpan FinishTimeout = TimeSpan.FromSeconds(60);
+
+    /// <summary>How long after its time a frame is made when keystrokes are shown (see <see cref="FrameGrid.Lag"/>).</summary>
+    private static readonly TimeSpan KeystrokeLag = TimeSpan.FromMilliseconds(100);
 
     private readonly ILogger _logger = loggers.CreateLogger<ScreenRecorder>();
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -83,6 +87,20 @@ internal sealed partial class ScreenRecorder(
     }
 
     public bool CanSuppressNoise => _session?.MicrophoneChain?.CanSuppressNoise ?? false;
+
+    public bool ShowsKeystrokes => _session?.ShowsKeystrokes ?? false;
+
+    public bool KeystrokesPaused
+    {
+        get => _session?.KeystrokesPaused ?? false;
+        set
+        {
+            if (_session is { } session)
+            {
+                session.KeystrokesPaused = value;
+            }
+        }
+    }
 
     public MicrophoneProcessing? MicrophoneProcessing
     {
@@ -149,13 +167,24 @@ internal sealed partial class ScreenRecorder(
                 // Sound devices are opened off the caller's (possibly UI) thread.
                 var (sources, soundNote) = await Task.Run(() => OpenSound(options), ct).ConfigureAwait(false);
                 parts.Sources.AddRange(sources);
-                var tracks = SoundTracks.For(options.Tracks, sources.Select(s => SourceTitle(s, options)).ToList());
+                var overlays = options.Overlays;
+                var clickSound = overlays is { ClickSettings.Sound: true };
+
+                // Click sounds are one more source: in the mix, or a track of their own when sources get tracks.
+                var titles = sources.Select(s => SourceTitle(s, options)).ToList();
+                if (clickSound)
+                {
+                    titles.Add(ClickSound.Title);
+                }
+
+                var tracks = SoundTracks.For(options.Tracks, titles);
                 foreach (var _ in tracks)
                 {
                     parts.Audio.Add(AudioEncoder.Open(parts.Audio.Count + 1));
                 }
 
-                var overlays = options.Overlays;
+                // Windows draws the pointer unless the overlays must (bigger, or hidden when idle): then the app does.
+                var ownPointer = options.IncludeCursor && overlays is { } o && o.PointerSettings.DrawsOwnPointer && o.NeedsInput;
                 var manifest = new RecordingManifest(
                     Guid.NewGuid().ToString("N")[..8], DateTimeOffset.Now, output, width, height, options.Fps, [], [.. tracks.Select(t => t.Title)],
                     NormalizeLoudness: options.NormalizeLoudness && tracks.Count > 0,
@@ -169,7 +198,7 @@ internal sealed partial class ScreenRecorder(
                             options.Fps,
                             new MetadataArea(area.X, area.Y, area.Width, area.Height),
                             options.Monitor.Scale.ScaleX,
-                            CursorInVideo: options.IncludeCursor,
+                            CursorInVideo: options.IncludeCursor && (!ownPointer || overlays!.BurnIn),
                             OverlaysInVideo: overlays!.DrawsLive,
                             overlays!.KeystrokeSettings.Mode));
                 }
@@ -179,15 +208,17 @@ internal sealed partial class ScreenRecorder(
                     [.. parts.Audio.Select((a, i) => StreamSetup.From(a, tracks[i].Title, i == 0))],
                     loggers.CreateLogger<MediaWriter>());
                 var clock = new RecordingClock(TimeProvider.System);
-                var grid = new FrameGrid(options.Fps);
+
+                // Keys are shown once their privacy check is done: frames are made a little later so a key lands on its own frame.
+                var grid = new FrameGrid(options.Fps, overlays is { BurnIn: true } && overlays.KeystrokeSettings.Mode != KeystrokeMode.Off ? KeystrokeLag : null);
                 parts.Stream = await WgcAreaStream.StartAsync(
-                    interop, options.Monitor, area, options.IncludeCursor, loggers, ct, timestamp => grid.SlotOf(clock.MapInstant(timestamp))).ConfigureAwait(false);
+                    interop, options.Monitor, area, options.IncludeCursor && !ownPointer, loggers, ct, timestamp => grid.SlotOf(clock.MapInstant(timestamp))).ConfigureAwait(false);
 
                 var chain = options.MicrophoneProcessing is { } processing && sources.Any(s => s.Kind == RecordingSound.Microphone)
                     ? _processors.Create(processing)
                     : null;
                 var session = new Session(
-                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, fallbacks, parts, manifest, tracks, soundNote, chain, loggers, _logger);
+                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, fallbacks, parts, manifest, tracks, soundNote, chain, ownPointer, clickSound, loggers, _logger);
                 session.Failed += (_, e) => OnFailed(e);
                 session.Start();
                 _session = session;
@@ -449,7 +480,9 @@ internal sealed partial class ScreenRecorder(
         private readonly InputTimeline? _timeline;
         private readonly MetadataJournal? _journal;
         private readonly CursorLibrary _cursors = new();
+        private readonly OverlayPlanner? _planner;
         private readonly AudioMixer? _mixer;
+        private readonly AudioTrack? _clickTrack;
         private readonly Dictionary<RecordingSound, AudioTrack> _sourceTracks = [];
         private readonly List<string> _encoderNames = [];
         private readonly CancellationTokenSource _abort = new();
@@ -485,6 +518,8 @@ internal sealed partial class ScreenRecorder(
             IReadOnlyList<SoundTrack> tracks,
             string? soundNote,
             MicrophoneChain? microphoneChain,
+            bool ownPointer,
+            bool clickSound,
             ILoggerFactory loggers,
             ILogger logger)
         {
@@ -495,6 +530,12 @@ internal sealed partial class ScreenRecorder(
             if (_overlays?.NeedsInput == true)
             {
                 _timeline = new InputTimeline(InputRecorder.PointerNow());
+                if (_overlays.BurnIn)
+                {
+                    var planner = new OverlayPlanner(
+                        _overlays, new PixelPoint(options.Area.X, options.Area.Y), options.Monitor.Scale.ScaleX, format.Width, format.Height, ownPointer, webcam: false);
+                    _planner = planner.DrawsAnything ? planner : null;
+                }
             }
 
             _owner = owner;
@@ -515,7 +556,7 @@ internal sealed partial class ScreenRecorder(
             _converter = new FrameConverter(format.Width, format.Height, video.PixelFormat);
             _encoderNames.Add(video.Candidate.DisplayName);
             _writer.Failed += (_, e) => Fail(e);
-            if (parts.Sources.Count > 0)
+            if (parts.Sources.Count > 0 || clickSound)
             {
                 _mixer = new AudioMixer();
                 foreach (var source in parts.Sources)
@@ -524,6 +565,11 @@ internal sealed partial class ScreenRecorder(
                     track.Gain = source.Kind == RecordingSound.Microphone ? options.MicrophoneGain : options.SystemAudioGain;
                     _sourceTracks[source.Kind] = track;
                     Sound |= source.Kind;
+                }
+
+                if (clickSound)
+                {
+                    _clickTrack = _mixer.AddTrack(ClickSound.Title); // after the sources: the order SoundTracks.For was given
                 }
             }
         }
@@ -578,7 +624,7 @@ internal sealed partial class ScreenRecorder(
             _timerPeriod = true;
             Clock.Start();
             StartInput();
-            _videoThread =new Thread(WriteVideo) { IsBackground = true, Name = "Recording video", Priority = ThreadPriority.AboveNormal };
+            _videoThread = new Thread(WriteVideo) { IsBackground = true, Name = "Recording video", Priority = ThreadPriority.AboveNormal };
             _videoThread.Start();
             _watchdog = new Timer(_ => Watch(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
             if (_mixer is null)
@@ -603,6 +649,8 @@ internal sealed partial class ScreenRecorder(
                 }
             }
         }
+
+        public bool ShowsKeystrokes => _input is not null && _overlays?.KeystrokeSettings.Mode != KeystrokeMode.Off;
 
         /// <summary>While true, keys aren't shown or kept.</summary>
         public bool KeystrokesPaused
@@ -746,7 +794,8 @@ internal sealed partial class ScreenRecorder(
 
             try
             {
-                _input = InputRecorder.Start(Clock, _timeline, _journal, _overlays.KeystrokeSettings, _cursors, _loggers);
+                Action<TimeSpan, PointerButton>? pressed = _clickTrack is { } clicks ? (time, button) => PlaceClick(clicks, time, button) : null;
+                _input = InputRecorder.Start(Clock, _timeline, _journal, _overlays.KeystrokeSettings, _cursors, _loggers, pressed);
             }
             catch (InvalidOperationException e)
             {
@@ -775,7 +824,8 @@ internal sealed partial class ScreenRecorder(
             Kernel32.SetThreadExecutionState(Kernel32.EsContinuous | Kernel32.EsSystemRequired | Kernel32.EsDisplayRequired);
             var packets = new List<EncodedPacket>();
             var picture = new byte[_format.Width * _format.Height * 4];
-            var marked = _overlays is { BurnIn: true } && _overlays.ClickSettings.Enabled && _timeline is not null ? new byte[picture.Length] : null;
+            var compositor = _planner is null ? null : new OverlayCompositor(_stream.Device, _format.Width, _format.Height, _cursors);
+            var composed = false;
             Picture? current = null;
             try
             {
@@ -806,31 +856,30 @@ internal sealed partial class ScreenRecorder(
                     }
 
                     var changed = TakePictures(step.Slot, ref current);
-                    if (changed)
+                    var time = _grid.TimeOf(step.Slot);
+                    var scene = _planner?.Plan(_timeline!, time) ?? OverlayScene.Empty;
+                    if (!scene.IsEmpty)
+                    {
+                        // Drawn over the picture on the GPU, then read back.
+                        _stream.Compose(current!, compositor!, scene, null, picture);
+                    }
+                    else if (changed || composed)
                     {
                         _stream.Read(current!, picture);
                     }
 
-                    var frame = picture;
-                    if (_timeline is not null)
+                    var repeated = !changed && scene.IsEmpty && !composed;
+                    composed = !scene.IsEmpty;
+                    if (_journal is not null)
                     {
-                        var time = _grid.TimeOf(step.Slot);
-                        if (_journal is not null)
-                        {
-                            var pointer = _timeline.Pointer(time);
-                            _journal.Frame(step.Slot, pointer.At, pointer.Shape, pointer.Visible);
-                        }
-
-                        if (marked is not null && DrawClicks(picture, marked, time))
-                        {
-                            frame = marked;
-                        }
+                        var pointer = _timeline!.Pointer(time);
+                        _journal.Frame(step.Slot, pointer.At, pointer.Shape, pointer.Visible);
                     }
 
-                    Encode(step.Slot, frame, packets);
+                    Encode(step.Slot, picture, packets);
                     lock (_gridGate)
                     {
-                        _grid.Produced(repeated: !changed);
+                        _grid.Produced(repeated);
                     }
                 }
 
@@ -852,33 +901,18 @@ internal sealed partial class ScreenRecorder(
                     _stream.Release(current);
                 }
 
+                compositor?.Dispose();
                 Kernel32.SetThreadExecutionState(Kernel32.EsContinuous);
             }
         }
 
-        /// <summary>Copies <paramref name="picture"/> into <paramref name="marked"/> with the clicks showing at <paramref name="time"/>; false if none show.</summary>
-        private bool DrawClicks(byte[] picture, byte[] marked, TimeSpan time)
+        /// <summary>A button was pressed (input thread): its click sound goes on the click track at that time.</summary>
+        private void PlaceClick(AudioTrack track, TimeSpan time, PointerButton button)
         {
-            var clicks = _timeline!.Clicks(time, ClickHighlighter.FadeOut);
-            if (clicks.Count == 0)
+            if (_mixer is { } mixer)
             {
-                return false;
+                mixer.Place(track, ClickSound.For(button), AudioSchedule.FrameAt(time));
             }
-
-            picture.CopyTo(marked, 0);
-            var pointer = _timeline.Pointer(time).At;
-            foreach (var click in clicks)
-            {
-                var strength = click.Up is { } up ? 1 - ((time - up) / ClickHighlighter.FadeOut) : 1;
-                var at = click.Up is null ? pointer : click.At; // a held button follows a drag
-                if (strength > 0)
-                {
-                    ClickHighlighter.DrawCircle(
-                        marked, _format.Width, _format.Height, at.X - _options.Area.X, at.Y - _options.Area.Y, _options.Monitor.Scale.ScaleX, strength, click.Button != PointerButton.Right);
-                }
-            }
-
-            return true;
         }
 
         /// <summary>Takes the pictures due by frame <paramref name="slot"/>, keeping the newest; true if it is a new one.</summary>
@@ -1049,7 +1083,7 @@ internal sealed partial class ScreenRecorder(
             var mixer = _mixer!;
             var mixed = new float[AudioFrameSize * AudioMixer.Channels];
             var alone = _tracks.Any(t => t.Source is not null)
-                ? _parts.Sources.Select(_ => new float[AudioFrameSize * AudioMixer.Channels]).ToArray()
+                ? mixer.Tracks.Select(_ => new float[AudioFrameSize * AudioMixer.Channels]).ToArray()
                 : [];
             var packets = new List<EncodedPacket>();
             var heartbeat = Stopwatch.StartNew();

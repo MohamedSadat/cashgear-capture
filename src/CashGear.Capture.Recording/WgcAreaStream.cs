@@ -4,7 +4,9 @@ using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Recording;
+using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Engine.Capture.Wgc;
+using CashGear.Capture.Overlays.Rendering;
 using Microsoft.Extensions.Logging;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -39,7 +41,9 @@ internal sealed partial class WgcAreaStream : IDisposable
     private static readonly TimeSpan FirstFrameTimeout = TimeSpan.FromSeconds(5);
 
     private readonly object _gate = new();
-    private readonly object _readGate = new();
+
+    /// <summary>Serializes reading back and drawing overlays (the capture thread's copies rely on the device's multithread protection).</summary>
+    private readonly object _contextGate = new();
     private readonly D3DDeviceManager _devices;
     private readonly PixelRect _crop;
     private readonly TaskCompletionSource _firstFrame = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -78,6 +82,9 @@ internal sealed partial class WgcAreaStream : IDisposable
 
     /// <summary>Pictures replaced by a newer one for the same frame, or dropped because the recorder was far behind.</summary>
     public long Skipped => Interlocked.Read(ref _skipped);
+
+    /// <summary>The stream's own D3D11 device (overlays are drawn with it).</summary>
+    public ID3D11Device Device => _resources!.Device;
 
     /// <summary>Starts capturing <paramref name="area"/> of <paramref name="monitor"/> and waits for the first picture.</summary>
     /// <param name="slotOf">The video frame a picture captured at a timestamp belongs to; pictures for the same frame replace each other.</param>
@@ -150,25 +157,46 @@ internal sealed partial class WgcAreaStream : IDisposable
     }
 
     /// <summary>Copies a picture into <paramref name="destination"/> as top-down BGRA rows of <c>Width * 4</c> bytes.</summary>
-    public unsafe void Read(Picture picture, Span<byte> destination)
+    public void Read(Picture picture, Span<byte> destination)
     {
-        lock (_readGate)
+        lock (_contextGate)
         {
             ThrowIfFailed();
-            var context = _resources!.Context;
-            context.CopyResource(_staging!, picture.Texture);
-            var mapped = context.Map(_staging!, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
-            try
-            {
-                var rowBytes = Width * 4;
-                var pitch = (int)mapped.RowPitch;
-                var source = new ReadOnlySpan<byte>((byte*)mapped.DataPointer, (pitch * (Height - 1)) + rowBytes);
-                Core.Imaging.PixelBuffer.CopyRows(source, pitch, destination, rowBytes, rowBytes, Height);
-            }
-            finally
-            {
-                context.Unmap(_staging!, 0);
-            }
+            ReadBack(picture.Texture, destination);
+        }
+    }
+
+    /// <summary>
+    /// Copies a picture with <paramref name="scene"/> drawn over it (by <paramref name="compositor"/>, made on
+    /// <see cref="Device"/>) into <paramref name="destination"/>, like <see cref="Read"/>.
+    /// </summary>
+    public void Compose(Picture picture, OverlayCompositor compositor, OverlayScene scene, WebcamPicture? webcam, Span<byte> destination)
+    {
+        ArgumentNullException.ThrowIfNull(compositor);
+        lock (_contextGate)
+        {
+            ThrowIfFailed();
+            compositor.Compose(_resources!.Context, picture.Texture, scene, webcam);
+            ReadBack(compositor.Target, destination);
+        }
+    }
+
+    /// <summary>Reads a texture of the area's size back as top-down BGRA (under the context lock).</summary>
+    private unsafe void ReadBack(ID3D11Texture2D texture, Span<byte> destination)
+    {
+        var context = _resources!.Context;
+        context.CopyResource(_staging!, texture);
+        var mapped = context.Map(_staging!, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
+        try
+        {
+            var rowBytes = Width * 4;
+            var pitch = (int)mapped.RowPitch;
+            var source = new ReadOnlySpan<byte>((byte*)mapped.DataPointer, (pitch * (Height - 1)) + rowBytes);
+            Core.Imaging.PixelBuffer.CopyRows(source, pitch, destination, rowBytes, rowBytes, Height);
+        }
+        finally
+        {
+            context.Unmap(_staging!, 0);
         }
     }
 
@@ -308,6 +336,9 @@ internal sealed partial class WgcAreaStream : IDisposable
 
                 using (var texture = WgcInterop.GetTexture(frame.Surface))
                 {
+                    // Not under the context lock: Windows may hold the device's own lock while it calls here, and the
+                    // video thread holds the context lock while it waits for the device (reading back, drawing).
+                    // The device is multithread-protected, so this copy is serialized with theirs anyway.
                     _resources!.Context.CopySubresourceRegion(
                         target, 0, 0, 0, 0, texture, 0, new Box(_crop.X, _crop.Y, 0, _crop.Right, _crop.Bottom, 1));
                 }

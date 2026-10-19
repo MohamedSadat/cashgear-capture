@@ -23,11 +23,15 @@ public sealed class SettingsWindowService(IServiceProvider services, ISettingsSe
         }
 
         // Created per window and disposed by it; ActivatorUtilities keeps the container from holding on to it.
-        var viewModel = ActivatorUtilities.CreateInstance<SettingsViewModel>(services);
+        var viewModel = ActivatorUtilities.CreateInstance<SettingsViewModel>(services, InstalledFonts());
         var window = new SettingsWindow(viewModel, settings.Current.Appearance.Theme);
         window.Closed += (_, _) => _window = null;
         _window = window;
         window.Show();
         window.Activate();
     }
+
+    /// <summary>The font families installed here, by name (for the keystroke overlay).</summary>
+    private static IReadOnlyList<string> InstalledFonts() =>
+        [.. System.Windows.Media.Fonts.SystemFontFamilies.Select(f => f.Source).Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.CurrentCultureIgnoreCase)];
 }

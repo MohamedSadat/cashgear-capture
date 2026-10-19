@@ -58,6 +58,9 @@ public partial class SettingsWindow : Window, IThemedWindow
         }
     }
 
+    /// <summary>The running apps are listed when the list opens (not when the window does: listing them takes a moment).</summary>
+    private void OnExcludedAppsOpened(object? sender, EventArgs e) => _viewModel.Overlays.RefreshRunningApps();
+
     private void OnHotkeyBoxGotFocus(object sender, KeyboardFocusChangedEventArgs e) => _viewModel.BeginHotkeyRecording();
 
     private void OnHotkeyBoxLostFocus(object sender, KeyboardFocusChangedEventArgs e) => _viewModel.EndHotkeyRecording();

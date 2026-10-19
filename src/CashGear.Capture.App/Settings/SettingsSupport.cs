@@ -53,6 +53,16 @@ public sealed record CountChoice(int Value, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>True for false and false for true (a radio button for the "off" side of a setting).</summary>
+public sealed class InverseBooleanConverter : IValueConverter
+{
+    public static InverseBooleanConverter Instance { get; } = new();
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is not true;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => value is not true;
+}
+
 /// <summary>Friendly names for the enums shown in the settings window.</summary>
 public sealed class EnumLabelConverter : IValueConverter
 {
@@ -80,6 +90,20 @@ public sealed class EnumLabelConverter : IValueConverter
         AppTheme.System => "Use the Windows setting",
         AppTheme.Light => "Light",
         AppTheme.Dark => "Dark",
+        PointerEffect.None => "None",
+        PointerEffect.Halo => "A halo around it",
+        PointerEffect.Spotlight => "A spotlight on it (the rest dimmed)",
+        KeystrokeMode.Off => "Nothing",
+        KeystrokeMode.Shortcuts => "Shortcuts (Ctrl, Alt or Win + a key, F-keys, Esc)",
+        KeystrokeMode.AllKeys => "All keys, including typing",
+        OverlayAnchor.BottomCenter => "Bottom centre",
+        OverlayAnchor.BottomLeft => "Bottom left",
+        OverlayAnchor.BottomRight => "Bottom right",
+        OverlayAnchor.TopCenter => "Top centre",
+        OverlayAnchor.TopLeft => "Top left",
+        OverlayAnchor.TopRight => "Top right",
+        WebcamShape.Circle => "Circle",
+        WebcamShape.RoundedRectangle => "Rounded rectangle",
         _ => value?.ToString() ?? string.Empty,
     };
 

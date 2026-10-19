@@ -269,7 +269,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         vm.RecordingFps = 60;
         vm.RecordingQuality = QualityPreset.High;
-        vm.RecordingShowClicks = true;
+        vm.Overlays.ClicksEnabled = true;
         vm.RecordingTracks = AudioTrackLayout.Both;
         vm.RecordingEncoder = vm.Encoders.Single(e => e.Id == "h264_mf_hw");
         await vm.ApplyCommand.ExecuteAsync(null);
@@ -277,6 +277,47 @@ public sealed class SettingsViewModelTests : IDisposable
         _settings.Current.Recording.Should().Be(new RecordingSettings(
             60, QualityPreset.High, false, "h264_mf_hw", Tracks: AudioTrackLayout.Both, MicrophoneGain: 1.5f));
         _settings.Current.Overlays.ClickSettings.Enabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Overlay_settings_are_loaded_and_saved_and_excluded_apps_edited()
+    {
+        _settings.Current = _settings.Current with
+        {
+            Overlays = new OverlaySettings(
+                Clicks: new ClickOverlaySettings(LeftColor: "#123456", Sound: true),
+                Keystrokes: new KeystrokeOverlaySettings(ExcludedApps: ["keepass.exe"])),
+        };
+        using var vm = Create();
+        var overlays = vm.Overlays;
+        overlays.BurnIn.Should().BeTrue();
+        overlays.LeftColor!.Label.Should().Be("Custom (#123456)", "a colour set by hand is kept and listed");
+        overlays.Colors.Should().Contain(overlays.LeftColor);
+        overlays.ClickSound.Should().BeTrue();
+        overlays.ExcludedApps.Should().Equal("keepass.exe");
+
+        overlays.BurnIn = false;
+        overlays.PointerEffect = PointerEffect.Spotlight;
+        overlays.PointerScale = 1.5;
+        overlays.KeystrokeMode = KeystrokeMode.AllKeys;
+        overlays.KeystrokePosition = OverlayAnchor.TopRight;
+        overlays.NewExcludedApp = "Bitwarden (Bitwarden.exe)";
+        overlays.AddExcludedAppCommand.Execute(null);
+        overlays.NewExcludedApp = "1Password";
+        overlays.AddExcludedAppCommand.Execute(null);
+        overlays.NewExcludedApp = "keepass.exe";
+        overlays.AddExcludedAppCommand.CanExecute(null).Should().BeFalse("already there");
+        overlays.RemoveExcludedAppCommand.Execute("keepass.exe");
+        await vm.ApplyCommand.ExecuteAsync(null);
+
+        var saved = _settings.Current.Overlays;
+        saved.BurnIn.Should().BeFalse();
+        saved.ClickSettings.LeftColor.Should().Be("#123456");
+        saved.PointerSettings.Effect.Should().Be(PointerEffect.Spotlight);
+        saved.PointerSettings.Scale.Should().Be(1.5);
+        saved.KeystrokeSettings.Mode.Should().Be(KeystrokeMode.AllKeys);
+        saved.KeystrokeSettings.Position.Should().Be(OverlayAnchor.TopRight);
+        saved.KeystrokeSettings.ExcludedApps.Should().Equal("1password.exe", "bitwarden.exe");
     }
 
     [Fact]
@@ -339,6 +380,43 @@ public sealed class SettingsViewModelTests : IDisposable
                 await Task.Delay(100, TestContext.Current.CancellationToken);
                 await vm.MonitorWork;
                 monitor.Listening.Should().BeFalse("another page stops them");
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    /// <summary>The Overlays tab's XAML loads and its choices are bound to the settings.</summary>
+    [Fact(Timeout = 30_000)]
+    [Trait("Category", CashGear.Capture.Engine.Tests.InteractiveDesktop.Category)]
+    public Task The_settings_window_shows_the_overlays_tab()
+    {
+        CashGear.Capture.Engine.Tests.InteractiveDesktop.Require();
+        _settings.Current = _settings.Current with
+        {
+            Overlays = new OverlaySettings(BurnIn: false, Keystrokes: new KeystrokeOverlaySettings(KeystrokeMode.Shortcuts)),
+        };
+        return StaDispatcher.RunAsync(async () =>
+        {
+            using var vm = Create();
+            var window = new SettingsWindow(vm, AppTheme.Light);
+            try
+            {
+                window.Show();
+                var tabs = FindAll<System.Windows.Controls.TabControl>(window).Single();
+                tabs.SelectedItem = tabs.Items.Cast<System.Windows.Controls.TabItem>().Single(t => (string)t.Header == "Overlays");
+                window.UpdateLayout();
+                await Task.Delay(300, TestContext.Current.CancellationToken);
+
+                var boxes = FindAll<System.Windows.Controls.ComboBox>(window).Where(b => b.IsVisible).ToList();
+                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Keystrokes shown" && Equals(b.SelectedItem, KeystrokeMode.Shortcuts));
+                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Pointer effect" && Equals(b.SelectedItem, PointerEffect.None));
+                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Left button colour" && b.SelectedItem is ColorChoice);
+                var radios = FindAll<System.Windows.Controls.RadioButton>(window).ToList();
+                radios.Should().ContainSingle(r => r.IsChecked == true && ((string)r.Content).StartsWith("Keep the video clean", StringComparison.Ordinal));
+                FindAll<System.Windows.Controls.ListBox>(window).Single().Items.Count.Should().Be(KeystrokeOverlaySettings.DefaultExcludedApps.Count);
             }
             finally
             {

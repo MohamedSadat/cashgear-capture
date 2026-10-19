@@ -446,6 +446,10 @@ internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : 
 
     public bool CanSuppressNoise { get; set; }
 
+    public bool ShowsKeystrokes { get; set; }
+
+    public bool KeystrokesPaused { get; set; }
+
     public bool IsSaving => false;
 
     public double SaveProgress => 0;
@@ -487,6 +491,20 @@ internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : 
 
 public sealed class RecordingToolbarTests
 {
+    [Fact]
+    public void Keystrokes_can_be_hidden_for_a_while_from_the_toolbar()
+    {
+        var recorder = new FakeRecorder(RecordingSound.None) { ShowsKeystrokes = true };
+        var toolbar = new RecordingToolbarViewModel(recorder, () => { }, () => { });
+
+        toolbar.HasKeystrokes.Should().BeTrue();
+        toolbar.KeystrokesShown.Should().BeTrue();
+        toolbar.KeystrokesShown = false;
+        recorder.KeystrokesPaused.Should().BeTrue();
+        toolbar.KeystrokesToolTip.Should().StartWith("Keystrokes are hidden");
+        new RecordingToolbarViewModel(new FakeRecorder(RecordingSound.None), () => { }, () => { }).HasKeystrokes.Should().BeFalse();
+    }
+
     [Fact]
     public void Sound_shows_a_meter_per_source_and_the_microphone_can_be_muted()
     {
