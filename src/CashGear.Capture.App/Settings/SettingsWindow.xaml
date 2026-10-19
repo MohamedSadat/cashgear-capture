@@ -672,6 +672,25 @@
                     HorizontalAlignment="Left" MinWidth="320" AutomationProperties.Name="Text recognition language" />
           <TextBlock Style="{StaticResource Hint}" Text="Automatic reads the area with each of your Windows languages and takes every line from the language that matches its script, so Arabic and English in one area both work. More languages: Windows Settings › Time &amp; language › Language › (language) › Options › Optical character recognition." />
 
+          <TextBlock Style="{StaticResource Section}" Text="Screen tools" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="220" />
+              <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition />
+              <RowDefinition />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Ruler: pixels per inch" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" ItemsSource="{Binding RulerDpiChoices}" SelectedItem="{Binding RulerDpi}" DisplayMemberPath="Label"
+                      HorizontalAlignment="Left" MinWidth="280" AutomationProperties.Name="Ruler pixels per inch" />
+            <TextBlock Grid.Row="1" Text="Colour picker copies as" VerticalAlignment="Center" Margin="0,8,0,0" />
+            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding ColorFormats}" SelectedItem="{Binding ColorCopyFormat}" ItemTemplate="{StaticResource EnumItem}"
+                      HorizontalAlignment="Left" MinWidth="280" Margin="0,8,0,0" AutomationProperties.Name="Colour picker copies as" />
+          </Grid>
+          <TextBlock Style="{StaticResource Hint}" Text="Inches and centimetres on the ruler follow Windows' scale of the monitor it is on. To measure real inches on the glass, set your screen's pixels per inch (its width in pixels divided by its width in inches). Tools are in tray › Tools and on the capture toolbar; set hotkeys for them on the Hotkeys tab." />
+
           <TextBlock Style="{StaticResource Section}" Text="Appearance" />
           <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" ItemTemplate="{StaticResource EnumItem}"
                     HorizontalAlignment="Left" MinWidth="220" AutomationProperties.Name="Theme" />

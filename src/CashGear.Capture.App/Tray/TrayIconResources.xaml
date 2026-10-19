@@ -29,6 +29,12 @@
         <MenuItem Header="Repeat _Last Capture" Command="{Binding RepeatLastCaptureCommand}" InputGestureText="{Binding RepeatHotkey}" />
         <MenuItem Header="Capture _Toolbar" IsCheckable="True" IsChecked="{Binding IsToolbarVisible, Mode=OneWay}"
                   Command="{Binding ToggleToolbarCommand}" InputGestureText="{Binding ToolbarHotkey}" />
+        <MenuItem Header="T_ools">
+          <MenuItem Header="_Magnifier" Command="{Binding ToggleMagnifierCommand}" InputGestureText="{Binding MagnifierHotkey}" />
+          <MenuItem Header="_Colour Picker" Command="{Binding PickColorCommand}" InputGestureText="{Binding ColorPickerHotkey}" />
+          <MenuItem Header="Screen _Ruler" IsCheckable="True" IsChecked="{Binding IsRulerVisible, Mode=OneWay}" Command="{Binding ToggleRulerCommand}" InputGestureText="{Binding RulerHotkey}" />
+          <MenuItem Header="Cross_hair" IsCheckable="True" IsChecked="{Binding IsCrosshairVisible, Mode=OneWay}" Command="{Binding ToggleCrosshairCommand}" InputGestureText="{Binding CrosshairHotkey}" />
+        </MenuItem>
         <MenuItem Header="{Binding DelayHeader}" ItemsSource="{Binding DelayChoices}">
           <MenuItem.ItemContainerStyle>
             <Style TargetType="MenuItem">

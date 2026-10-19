@@ -65,6 +65,13 @@ public sealed class SettingsViewModelTests : IDisposable
 
         _settings.Current.Tools.ShowToolbarAtStartup.Should().BeTrue();
 
+        vm.RulerDpi!.Value.Should().Be(0, "automatic at first");
+        vm.RulerDpi = vm.RulerDpiChoices.Single(c => c.Value == 144);
+        vm.ColorCopyFormat = Core.Imaging.ColorFormat.CSharp;
+        await vm.ApplyCommand.ExecuteAsync(null);
+        _settings.Current.Tools.RulerDpi.Should().Be(144);
+        _settings.Current.Tools.ColorCopyFormat.Should().Be(Core.Imaging.ColorFormat.CSharp);
+
         var capture = _settings.Current.Capture;
         capture.DelayFor(CaptureMode.Menu).Should().Be(2, "back to the general delay");
         capture.DelayFor(CaptureMode.Object).Should().Be(5);
@@ -97,7 +104,9 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Backend.Should().Be(CaptureBackend.Gdi);
         vm.Theme.Should().Be(AppTheme.Dark);
         vm.StartWithWindows.Should().BeTrue();
-        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen", "Ctrl+Shift+D", "Ctrl+Alt+Shift+PrintScreen", "", "", "", "", "", "", "", "");
+        vm.Hotkeys.Select(h => h.Text).Take(8).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen", "Ctrl+Shift+D", "Ctrl+Alt+Shift+PrintScreen");
+        vm.Hotkeys.Skip(8).Should().OnlyContain(h => h.Text.Length == 0, "the other modes, the toolbar and the tools have no hotkey at first");
+        vm.Hotkeys.Should().HaveCount(Enum.GetValues<HotkeyAction>().Length);
         vm.Hotkeys.Single(h => h.Action == HotkeyAction.ToggleDrawing).Status.Should().Be("Works while recording");
         vm.HasErrors.Should().BeFalse();
     }

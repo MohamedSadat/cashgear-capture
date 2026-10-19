@@ -237,6 +237,8 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
 
     private void OnAfterCapture(object sender, RoutedEventArgs e) => Open((ContextMenu)Resources["AfterMenu"], AfterButton);
 
+    private void OnTools(object sender, RoutedEventArgs e) => Open((ContextMenu)Resources["ToolsMenu"], ToolsButton);
+
     private void OnFixedSizes(object sender, MouseButtonEventArgs e)
     {
         Open((ContextMenu)Resources["SizesMenu"], FixedButton);

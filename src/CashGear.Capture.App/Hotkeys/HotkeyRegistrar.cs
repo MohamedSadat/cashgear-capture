@@ -185,6 +185,10 @@ public sealed partial class HotkeyRegistrar(
         HotkeyAction.CaptureObject => "Capture Object (part of a window)",
         HotkeyAction.CaptureMenu => "Capture Open Menu",
         HotkeyAction.ToggleToolbar => "Show or Hide the Capture Toolbar",
+        HotkeyAction.Magnifier => "Screen Magnifier",
+        HotkeyAction.ColorPicker => "Colour Picker",
+        HotkeyAction.Ruler => "Show or Hide the Screen Ruler",
+        HotkeyAction.Crosshair => "Show or Hide the Crosshair",
         _ => action.ToString(),
     };
 

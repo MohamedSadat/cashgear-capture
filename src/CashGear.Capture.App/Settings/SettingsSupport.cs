@@ -121,6 +121,13 @@ public sealed class EnumLabelConverter : IValueConverter
         OverlayAnchor.TopRight => "Top right",
         WebcamShape.Circle => "Circle",
         WebcamShape.RoundedRectangle => "Rounded rectangle",
+        ColorFormat.Hex => "HEX (#1E90FF)",
+        ColorFormat.Rgb => "RGB (rgb(30, 144, 255))",
+        ColorFormat.Hsl => "HSL (hsl(210, 100%, 56%))",
+        ColorFormat.CSharp => "C# (Color.FromArgb(…))",
+        Core.Geometry.RulerUnit.Pixels => "Pixels",
+        Core.Geometry.RulerUnit.Inches => "Inches",
+        Core.Geometry.RulerUnit.Centimetres => "Centimetres",
         _ => value?.ToString() ?? string.Empty,
     };
 

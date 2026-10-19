@@ -187,6 +187,18 @@ public enum HotkeyAction
 
     /// <summary>Show or hide the floating capture toolbar.</summary>
     ToggleToolbar,
+
+    /// <summary>The screen magnifier (a lens following the pointer).</summary>
+    Magnifier,
+
+    /// <summary>Pick a colour anywhere on the screen.</summary>
+    ColorPicker,
+
+    /// <summary>Show or hide the screen ruler.</summary>
+    Ruler,
+
+    /// <summary>Show or hide the crosshair with the pointer's coordinates.</summary>
+    Crosshair,
 }
 
 /// <summary>System-wide hotkeys. Registration and presses happen on the thread that owns the service (the UI thread).</summary>

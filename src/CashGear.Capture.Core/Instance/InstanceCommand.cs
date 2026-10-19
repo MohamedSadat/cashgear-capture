@@ -39,6 +39,14 @@ public enum InstanceCommand
 
     /// <summary>Show or hide the capture toolbar.</summary>
     ToggleToolbar,
+
+    Magnifier,
+
+    ColorPicker,
+
+    Ruler,
+
+    Crosshair,
 }
 
 /// <summary>Maps command-line switches and pipe messages to <see cref="InstanceCommand"/>.</summary>
@@ -62,6 +70,10 @@ public static class InstanceCommandParser
         [InstanceCommand.CaptureObject] = "capture-object",
         [InstanceCommand.CaptureMenu] = "capture-menu",
         [InstanceCommand.ToggleToolbar] = "toolbar",
+        [InstanceCommand.Magnifier] = "magnifier",
+        [InstanceCommand.ColorPicker] = "color-picker",
+        [InstanceCommand.Ruler] = "ruler",
+        [InstanceCommand.Crosshair] = "crosshair",
     };
 
     private static readonly IReadOnlyDictionary<string, InstanceCommand> Commands = Wires.ToDictionary(p => p.Value, p => p.Key);
@@ -73,7 +85,7 @@ public static class InstanceCommandParser
     /// The first recognised switch wins (<c>--exit</c>, <c>--capture-fullscreen</c>, <c>--capture-region</c>,
     /// <c>--capture-window</c>, <c>--capture-scrolling</c>, <c>--record</c>, <c>--capture-text</c>,
     /// <c>--capture-fixed</c>, <c>--capture-freehand</c>, <c>--capture-polygon</c>, <c>--capture-rounded</c>,
-    /// <c>--repeat-last</c>, <c>--capture-object</c>, <c>--capture-menu</c>, <c>--toolbar</c>; <c>-</c> or <c>/</c> prefixes also accepted). No recognised switch means
+    /// <c>--repeat-last</c>, <c>--capture-object</c>, <c>--capture-menu</c>, <c>--toolbar</c>, <c>--magnifier</c>, <c>--color-picker</c>, <c>--ruler</c>, <c>--crosshair</c>; <c>-</c> or <c>/</c> prefixes also accepted). No recognised switch means
     /// <see cref="InstanceCommand.Activate"/>.
     /// </summary>
     public static InstanceCommand FromArgs(IReadOnlyList<string> args)

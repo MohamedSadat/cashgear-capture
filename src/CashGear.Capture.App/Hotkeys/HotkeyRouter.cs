@@ -82,6 +82,22 @@ public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows,
             case HotkeyAction.ToggleToolbar:
                 tray.ToggleToolbarCommand.Execute(null);
                 break;
+
+            case HotkeyAction.Magnifier:
+                tray.ToggleMagnifierCommand.Execute(null);
+                break;
+
+            case HotkeyAction.ColorPicker:
+                Run(tray.PickColorCommand.ExecuteAsync(null));
+                break;
+
+            case HotkeyAction.Ruler:
+                tray.ToggleRulerCommand.Execute(null);
+                break;
+
+            case HotkeyAction.Crosshair:
+                tray.ToggleCrosshairCommand.Execute(null);
+                break;
         }
     }
 

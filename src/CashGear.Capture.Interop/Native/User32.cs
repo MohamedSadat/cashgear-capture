@@ -21,6 +21,7 @@ public static unsafe partial class User32
     public const long WsPopup = 0x80000000;
     public const long WsCaption = 0x00C00000;
     public const long WsChild = 0x40000000;
+    public const long WsSysMenu = 0x00080000;
 
     /// <summary><c>GetWindow</c>: the owner window.</summary>
     public const uint GwOwner = 4;
@@ -175,6 +176,15 @@ public static unsafe partial class User32
     [LibraryImport(Dll, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool SetLayeredWindowAttributes(nint hwnd, uint colorKey, byte alpha, uint flags);
+
+    /// <summary><c>SetWindowLongPtr</c> index of the window procedure.</summary>
+    public const int GwlpWndProc = -4;
+
+    public const uint WmStyleChanging = 0x007C;
+    public const uint WmNcDestroy = 0x0082;
+
+    [LibraryImport(Dll)]
+    public static partial nint CallWindowProcW(nint previous, nint hwnd, uint message, nint wParam, nint lParam);
 
     [LibraryImport(Dll, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

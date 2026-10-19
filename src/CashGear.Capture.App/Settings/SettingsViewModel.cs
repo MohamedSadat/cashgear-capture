@@ -383,6 +383,18 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _showToolbarAtStartup;
 
+    /// <summary>The ruler's pixels per inch: automatic (each monitor's) or a number (a value set by hand is added).</summary>
+    public ObservableCollection<CountChoice> RulerDpiChoices { get; } =
+        [new(0, "Automatic (each monitor's scale: 96 at 100%)"), new(72, "72"), new(96, "96"), new(120, "120"), new(144, "144"), new(192, "192")];
+
+    [ObservableProperty]
+    private CountChoice? _rulerDpi;
+
+    public IReadOnlyList<ColorFormat> ColorFormats { get; } = Enum.GetValues<ColorFormat>();
+
+    [ObservableProperty]
+    private ColorFormat _colorCopyFormat;
+
     [ObservableProperty]
     private OcrLanguageChoice? _ocrLanguage;
 
@@ -921,7 +933,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Ocr = new OcrSettings(OcrLanguage?.Tag),
         History = new HistorySettings(HistorySize?.Value ?? current.History.MaxItems),
         Updates = current.Updates with { CheckAutomatically = CheckForUpdates },
-        Tools = current.Tools with { ShowToolbarAtStartup = ShowToolbarAtStartup },
+        Tools = current.Tools with
+        {
+            ShowToolbarAtStartup = ShowToolbarAtStartup,
+            RulerDpi = RulerDpi?.Value ?? current.Tools.RulerDpi,
+            ColorCopyFormat = ColorCopyFormat,
+        },
     };
 
     private void Load(AppSettings s, bool startWithWindows)
@@ -943,6 +960,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
         CornerRadius = s.Capture.CornerRadius;
         ShowToolbarAtStartup = s.Tools.ShowToolbarAtStartup;
+        ColorCopyFormat = s.Tools.ColorCopyFormat;
+        RulerDpi = RulerDpiChoices.FirstOrDefault(c => c.Value == s.Tools.RulerDpi);
+        if (RulerDpi is null)
+        {
+            RulerDpi = new CountChoice(s.Tools.RulerDpi, s.Tools.RulerDpi.ToString(System.Globalization.CultureInfo.CurrentCulture));
+            RulerDpiChoices.Add(RulerDpi);
+        }
         foreach (var row in ModeDelays)
         {
             var seconds = s.Capture.Delays?.For(row.Mode);

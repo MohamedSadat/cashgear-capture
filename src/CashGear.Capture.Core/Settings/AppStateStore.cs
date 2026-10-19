@@ -17,7 +17,25 @@ public sealed record AppState
 
     /// <summary>Where the capture toolbar was (null: never moved).</summary>
     public Geometry.ToolbarPlacement? Toolbar { get; init; }
+
+    /// <summary>Colours picked, newest first (<c>#RRGGBB</c>, at most <see cref="MaxColors"/>).</summary>
+    public IReadOnlyList<string> Colors { get; init; } = [];
+
+    /// <summary>Where the screen ruler was, how long, which way and in what unit.</summary>
+    public RulerPlacement? Ruler { get; init; }
+
+    /// <summary>The magnifier's zoom last used.</summary>
+    public int MagnifierZoom { get; init; } = Geometry.Magnifier.DefaultZoom;
+
+    public const int MaxColors = 16;
+
+    /// <summary>A copy with <paramref name="hex"/> first in the colour history (once).</summary>
+    public AppState WithColor(string hex) =>
+        this with { Colors = [hex, .. (Colors ?? []).Where(c => !string.Equals(c, hex, StringComparison.OrdinalIgnoreCase)).Take(MaxColors - 1)] };
 }
+
+/// <summary>The screen ruler: its top-left (virtual-screen pixels), its length in pixels, which way and its unit.</summary>
+public sealed record RulerPlacement(int X, int Y, int Length, bool Vertical, Geometry.RulerUnit Unit);
 
 public interface IAppStateStore
 {

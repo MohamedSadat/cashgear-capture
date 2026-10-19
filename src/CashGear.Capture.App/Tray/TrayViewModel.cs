@@ -59,6 +59,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly InterruptedRecordings _interrupted;
     private readonly AddOverlaysController _addOverlays;
     private readonly Toolbar.CaptureToolbarService _toolbar;
+    private readonly Tools.ScreenTools _tools;
     private readonly TimeProvider _time;
 
     public TrayViewModel(
@@ -77,9 +78,16 @@ public sealed partial class TrayViewModel : ObservableObject
         InterruptedRecordings interrupted,
         AddOverlaysController addOverlays,
         Toolbar.CaptureToolbarService toolbar,
+        Tools.ScreenTools tools,
         TimeProvider time)
     {
         _toolbar = toolbar;
+        _tools = tools;
+        _tools.Changed += (_, _) =>
+        {
+            OnPropertyChanged(nameof(IsRulerVisible));
+            OnPropertyChanged(nameof(IsCrosshairVisible));
+        };
         _toolbar.VisibilityChanged += (_, _) => OnPropertyChanged(nameof(IsToolbarVisible));
         _addOverlays = addOverlays;
         _coordinator = coordinator;
@@ -235,6 +243,36 @@ public sealed partial class TrayViewModel : ObservableObject
     [RelayCommand]
     private void ToggleToolbar() => _toolbar.Toggle();
 
+    public bool IsRulerVisible => _tools.IsRulerVisible;
+
+    public bool IsCrosshairVisible => _tools.IsCrosshairVisible;
+
+    [ObservableProperty]
+    private string _magnifierHotkey = string.Empty;
+
+    [ObservableProperty]
+    private string _colorPickerHotkey = string.Empty;
+
+    [ObservableProperty]
+    private string _rulerHotkey = string.Empty;
+
+    [ObservableProperty]
+    private string _crosshairHotkey = string.Empty;
+
+    /// <summary>The screen magnifier (a lens following the pointer; a click closes it).</summary>
+    [RelayCommand]
+    private void ToggleMagnifier() => _tools.ToggleMagnifier();
+
+    /// <summary>Picks a colour anywhere on the screen and copies it.</summary>
+    [RelayCommand]
+    private Task PickColorAsync() => _tools.PickColorAsync();
+
+    [RelayCommand]
+    private void ToggleRuler() => _tools.ToggleRuler();
+
+    [RelayCommand]
+    private void ToggleCrosshair() => _tools.ToggleCrosshair();
+
     [RelayCommand]
     private void OpenHistory() => _historyWindow.Show();
 
@@ -332,6 +370,10 @@ public sealed partial class TrayViewModel : ObservableObject
         ObjectHotkey = Label(HotkeyAction.CaptureObject);
         MenuHotkey = Label(HotkeyAction.CaptureMenu);
         ToolbarHotkey = Label(HotkeyAction.ToggleToolbar);
+        MagnifierHotkey = Label(HotkeyAction.Magnifier);
+        ColorPickerHotkey = Label(HotkeyAction.ColorPicker);
+        RulerHotkey = Label(HotkeyAction.Ruler);
+        CrosshairHotkey = Label(HotkeyAction.Crosshair);
     }
 
     private string Label(HotkeyAction action) =>

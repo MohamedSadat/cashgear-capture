@@ -64,6 +64,18 @@ internal sealed class InstanceCommandDispatcher(
             case InstanceCommand.ToggleToolbar:
                 return ui.InvokeAsync(() => tray.ToggleToolbarCommand.Execute(null));
 
+            case InstanceCommand.Magnifier:
+                return ui.InvokeAsync(() => tray.ToggleMagnifierCommand.Execute(null));
+
+            case InstanceCommand.ColorPicker:
+                return ui.InvokeAsync(() => tray.PickColorCommand.ExecuteAsync(null));
+
+            case InstanceCommand.Ruler:
+                return ui.InvokeAsync(() => tray.ToggleRulerCommand.Execute(null));
+
+            case InstanceCommand.Crosshair:
+                return ui.InvokeAsync(() => tray.ToggleCrosshairCommand.Execute(null));
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(command), command, null);
         }

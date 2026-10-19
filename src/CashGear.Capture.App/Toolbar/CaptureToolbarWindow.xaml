@@ -29,6 +29,12 @@
         </Style>
       </ContextMenu.ItemContainerStyle>
     </ContextMenu>
+    <ContextMenu x:Key="ToolsMenu">
+      <MenuItem Header="_Magnifier" Command="{Binding Tray.ToggleMagnifierCommand}" InputGestureText="{Binding Tray.MagnifierHotkey}" />
+      <MenuItem Header="_Colour Picker" Command="{Binding Tray.PickColorCommand}" InputGestureText="{Binding Tray.ColorPickerHotkey}" />
+      <MenuItem Header="Screen _Ruler" IsCheckable="True" IsChecked="{Binding Tray.IsRulerVisible, Mode=OneWay}" Command="{Binding Tray.ToggleRulerCommand}" InputGestureText="{Binding Tray.RulerHotkey}" />
+      <MenuItem Header="Cross_hair" IsCheckable="True" IsChecked="{Binding Tray.IsCrosshairVisible, Mode=OneWay}" Command="{Binding Tray.ToggleCrosshairCommand}" InputGestureText="{Binding Tray.CrosshairHotkey}" />
+    </ContextMenu>
     <ContextMenu x:Key="AfterMenu">
       <MenuItem Header="Open in the _editor" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding OpenEditor}" />
       <MenuItem Header="_Save to file" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding SaveToFile}" />
@@ -107,6 +113,9 @@
 
     <Border Tag="Separator" Width="1" Height="24" Margin="3,0" Background="#60808080" />
 
+    <Button x:Name="ToolsButton" Click="OnTools" ToolTip="Screen tools: magnifier, colour picker, ruler, crosshair" AutomationProperties.Name="Screen tools">
+      <Path Style="{StaticResource Icon}" Data="M6.5,11.5 A5,5 0 1 1 6.5,1.5 A5,5 0 1 1 6.5,11.5 Z M10,10 L14.5,14.5" />
+    </Button>
     <Button Command="{Binding Tray.RepeatLastCaptureCommand}" ToolTip="{Binding RepeatTip}" AutomationProperties.Name="Repeat last capture">
       <TextBlock Text="&#xE8EE;" Style="{StaticResource Glyph}" />
     </Button>

@@ -66,6 +66,7 @@ internal sealed class CaptureHarness : IDisposable
         services.AddSingleton<ScrollTargetFinder>();
         services.AddSingleton<ScrollingCaptureService>();
         services.AddSingleton<CaptureCoordinator>();
+        services.AddSingleton<App.Tools.ScreenTools>();
         _services = services.BuildServiceProvider();
     }
 

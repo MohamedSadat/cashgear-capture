@@ -135,7 +135,7 @@ public sealed class HotkeyRegistrarSuspendTests
         suspension.Dispose();
         _hotkeys.Registered[HotkeyAction.CaptureRegion].Should().Be(HotkeyGesture.Parse("Ctrl+F9"));
         suspension.Dispose(); // idempotent
-        _hotkeys.Registered.Should().HaveCount(6);
+        _hotkeys.Registered.Should().HaveCount(7);
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public sealed class HotkeyRegistrarSuspendTests
         _hotkeys.Registered.Should().BeEmpty();
 
         outer.Dispose();
-        _hotkeys.Registered.Should().HaveCount(6);
+        _hotkeys.Registered.Should().HaveCount(7);
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public sealed class HotkeyRegistrarSuspendTests
         registrar.SetRecording(true);
         registrar.Active[HotkeyAction.ToggleDrawing].Should().Be(drawing);
         _hotkeys.Registered[HotkeyAction.ToggleDrawing].Should().Be(drawing);
-        _hotkeys.Registered.Should().HaveCount(7, "the others stay");
+        _hotkeys.Registered.Should().HaveCount(8, "the others stay");
         registrar.SetRecording(false);
         _hotkeys.Registered.Should().NotContainKey(HotkeyAction.ToggleDrawing);
         HotkeyRegistrar.Label(HotkeyAction.ToggleDrawing).Should().Be("Draw on Screen (while recording)");

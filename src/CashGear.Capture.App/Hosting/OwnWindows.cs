@@ -21,7 +21,7 @@ internal sealed class WpfOwnWindows(IUiDispatcher ui) : IOwnWindows
     {
         var hidden = Application.Current.Windows
             .OfType<Window>()
-            .Where(w => w.IsVisible && w is not (RegionOverlayWindow or ScrollProgressWindow or RecordingToolbarWindow or Toolbar.CaptureToolbarWindow))
+            .Where(w => w.IsVisible && w is not (RegionOverlayWindow or ScrollProgressWindow or RecordingToolbarWindow or Toolbar.CaptureToolbarWindow or Tools.IScreenToolWindow))
             .ToList();
         foreach (var window in hidden)
         {

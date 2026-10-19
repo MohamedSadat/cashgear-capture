@@ -74,6 +74,27 @@ public sealed class AppStateStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task The_toolbar_ruler_colours_and_zoom_round_trip()
+    {
+        await Create().UpdateAsync(
+            s => s.WithColor("#112233").WithColor("#ABCDEF") with
+            {
+                Toolbar = new ToolbarPlacement(@"\\.\DISPLAY2", 0, 120, DockEdge.Left, true),
+                Ruler = new RulerPlacement(-500, 40, 900, Vertical: true, RulerUnit.Centimetres),
+                MagnifierZoom = 6,
+            },
+            Ct);
+
+        var read = Create().Current;
+        read.Toolbar.Should().Be(new ToolbarPlacement(@"\\.\DISPLAY2", 0, 120, DockEdge.Left, true));
+        read.Ruler.Should().Be(new RulerPlacement(-500, 40, 900, true, RulerUnit.Centimetres));
+        read.Colors.Should().Equal("#ABCDEF", "#112233");
+        read.MagnifierZoom.Should().Be(6);
+        Create().Current.MagnifierZoom.Should().Be(6);
+        new AppState().MagnifierZoom.Should().Be(Magnifier.DefaultZoom);
+    }
+
+    [Fact]
     public async Task An_unreadable_file_means_nothing_is_remembered()
     {
         Directory.CreateDirectory(_paths.DataDirectory);

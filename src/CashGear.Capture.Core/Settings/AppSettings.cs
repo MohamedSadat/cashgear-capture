@@ -66,9 +66,18 @@ public sealed record AppSettings
 
 /// <summary>The capture toolbar and the screen tools.</summary>
 /// <param name="ShowToolbarAtStartup">Show the floating capture toolbar when the app starts.</param>
-public sealed record ToolsSettings(bool ShowToolbarAtStartup = false)
+/// <param name="RulerDpi">The screen ruler's pixels per inch for inches and centimetres; 0 uses each monitor's (96 at 100% scale).</param>
+/// <param name="ColorCopyFormat">How the colour picker copies a picked colour.</param>
+public sealed record ToolsSettings(bool ShowToolbarAtStartup = false, int RulerDpi = 0, ColorFormat ColorCopyFormat = ColorFormat.Hex)
 {
-    public ToolsSettings Normalize() => this;
+    public const int MinRulerDpi = 30;
+    public const int MaxRulerDpi = 1200;
+
+    public ToolsSettings Normalize() => this with
+    {
+        RulerDpi = RulerDpi <= 0 ? 0 : Math.Clamp(RulerDpi, MinRulerDpi, MaxRulerDpi),
+        ColorCopyFormat = Enum.IsDefined(ColorCopyFormat) ? ColorCopyFormat : ColorFormat.Hex,
+    };
 }
 
 /// <summary>What "Capture Full Screen" writes.</summary>
@@ -397,7 +406,11 @@ public sealed record HotkeySettings(
     string? CaptureRoundedRegion = null,
     string? CaptureObject = null,
     string? CaptureMenu = null,
-    string? ToggleToolbar = null)
+    string? ToggleToolbar = null,
+    string? Magnifier = null,
+    string? ColorPicker = null,
+    string? Ruler = null,
+    string? Crosshair = null)
 {
     public const string DefaultRepeatLastCapture = "Ctrl+Alt+Shift+PrintScreen";
 
@@ -430,6 +443,10 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureObject => CaptureObject,
         HotkeyAction.CaptureMenu => CaptureMenu,
         HotkeyAction.ToggleToolbar => ToggleToolbar,
+        HotkeyAction.Magnifier => Magnifier,
+        HotkeyAction.ColorPicker => ColorPicker,
+        HotkeyAction.Ruler => Ruler,
+        HotkeyAction.Crosshair => Crosshair,
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
@@ -452,6 +469,10 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureObject => this with { CaptureObject = text },
         HotkeyAction.CaptureMenu => this with { CaptureMenu = text },
         HotkeyAction.ToggleToolbar => this with { ToggleToolbar = text },
+        HotkeyAction.Magnifier => this with { Magnifier = text },
+        HotkeyAction.ColorPicker => this with { ColorPicker = text },
+        HotkeyAction.Ruler => this with { Ruler = text },
+        HotkeyAction.Crosshair => this with { Crosshair = text },
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
