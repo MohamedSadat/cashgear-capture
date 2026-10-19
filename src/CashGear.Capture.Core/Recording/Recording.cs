@@ -140,6 +140,9 @@ public interface IScreenRecorder
     /// <summary>While true, keys aren't shown or kept (the toolbar's switch, e.g. while typing a password the app can't tell).</summary>
     bool KeystrokesPaused { get; set; }
 
+    /// <summary>Drawing on the screen started or stopped: clicks and keys made meanwhile aren't overlays (the metadata notes it).</summary>
+    void SetDrawing(bool on);
+
     /// <summary>True while a stopped recording is being saved; <see cref="SaveProgress"/> says how far (0 to 1).</summary>
     bool IsSaving { get; }
 

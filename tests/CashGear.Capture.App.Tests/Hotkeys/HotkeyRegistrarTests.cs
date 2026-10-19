@@ -151,6 +151,33 @@ public sealed class HotkeyRegistrarSuspendTests
     }
 
     [Fact]
+    public void The_drawing_key_is_taken_only_while_recording()
+    {
+        using var registrar = Start();
+        var drawing = HotkeyGesture.Parse(HotkeySettings.DefaultToggleDrawing);
+
+        registrar.Active.Should().NotContainKey(HotkeyAction.ToggleDrawing, "other apps keep Ctrl+Shift+D until a recording starts");
+        registrar.Problems.Should().BeEmpty();
+        registrar.SetRecording(true);
+        registrar.Active[HotkeyAction.ToggleDrawing].Should().Be(drawing);
+        _hotkeys.Registered[HotkeyAction.ToggleDrawing].Should().Be(drawing);
+        _hotkeys.Registered.Should().HaveCount(7, "the others stay");
+        registrar.SetRecording(false);
+        _hotkeys.Registered.Should().NotContainKey(HotkeyAction.ToggleDrawing);
+        HotkeyRegistrar.Label(HotkeyAction.ToggleDrawing).Should().Be("Draw on Screen (while recording)");
+    }
+
+    [Fact]
+    public void A_drawing_key_that_another_action_has_is_a_problem_even_before_recording()
+    {
+        _settings.Current = new AppSettings { Hotkeys = new HotkeySettings() with { ToggleDrawing = "Shift+PrintScreen" } };
+
+        using var registrar = Start();
+
+        registrar.Problems[HotkeyAction.ToggleDrawing].Should().Contain("already set for Record Screen");
+    }
+
+    [Fact]
     public void A_single_typing_key_is_refused()
     {
         _settings.Current = new AppSettings { Hotkeys = new HotkeySettings(CaptureRegion: "Q") };

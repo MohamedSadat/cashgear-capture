@@ -514,6 +514,35 @@
               </Canvas>
             </Border>
             <TextBlock Style="{StaticResource Hint}" Text="Drag the webcam to where it goes. With a camera, its picture shows here while this page is open." />
+
+            <TextBlock Style="{StaticResource Section}" Text="Drawing on the screen" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+              </Grid.RowDefinitions>
+              <TextBlock Text="Pen colour" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding Colors}" SelectedItem="{Binding PenColor}" HorizontalAlignment="Left" MinWidth="160"
+                        AutomationProperties.Name="Pen colour" />
+              <TextBlock Grid.Row="1" Text="Pen width" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
+                <Slider Minimum="1" Maximum="20" Width="200" Value="{Binding PenWidth}" IsSnapToTickEnabled="True" TickFrequency="1"
+                        VerticalAlignment="Center" AutomationProperties.Name="Pen width" />
+                <TextBlock Text="{Binding PenWidth, StringFormat={}{0:0} px}" VerticalAlignment="Center" Margin="8,0,0,0" />
+              </StackPanel>
+              <TextBlock Grid.Row="2" Text="Drawings fade away after" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
+                <Slider Minimum="0" Maximum="30" Width="200" Value="{Binding PenFade}" IsSnapToTickEnabled="True" TickFrequency="1"
+                        VerticalAlignment="Center" AutomationProperties.Name="Drawings fade after" />
+                <TextBlock Text="{Binding PenFadeText}" VerticalAlignment="Center" Margin="8,0,0,0" />
+              </StackPanel>
+            </Grid>
+            <TextBlock Style="{StaticResource Hint}" Text="While recording, the Draw on Screen hotkey (Settings › Hotkeys) or the pen on the toolbar lets you draw over the recorded area; the drawing is recorded, the toolbar isn't. Esc ends drawing, Delete clears, Ctrl+Z undoes, 1 to 4 pick pen, highlighter, arrow or rectangle." />
           </StackPanel>
         </ScrollViewer>
       </TabItem>

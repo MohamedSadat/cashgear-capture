@@ -92,6 +92,8 @@ internal sealed partial class ScreenRecorder(
 
     public bool ShowsKeystrokes => _session?.ShowsKeystrokes ?? false;
 
+    public void SetDrawing(bool on) => _session?.SetDrawing(on);
+
     public bool KeystrokesPaused
     {
         get => _session?.KeystrokesPaused ?? false;

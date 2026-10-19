@@ -42,6 +42,10 @@ public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows,
             case HotkeyAction.CaptureText:
                 Run(tray.CaptureTextCommand.ExecuteAsync(null));
                 break;
+
+            case HotkeyAction.ToggleDrawing:
+                tray.ToggleDrawingCommand.Execute(null);
+                break;
         }
     }
 

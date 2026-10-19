@@ -453,6 +453,11 @@ internal sealed class FakeRecorder(RecordingSound sound, string? note = null) : 
 
     public bool KeystrokesPaused { get; set; }
 
+    /// <summary>Drawing on and off, in order.</summary>
+    public List<bool> Drawing { get; } = [];
+
+    public void SetDrawing(bool on) => Drawing.Add(on);
+
     public bool IsSaving => false;
 
     public double SaveProgress => 0;
@@ -935,6 +940,7 @@ public sealed class ScreenRecorderTests : IDisposable
     public async Task The_metadata_file_has_the_pointer_on_every_frame_and_the_clicks()
     {
         var (recorder, options) = Create();
+        using var exclusive = Overlays.Tests.TestInput.Exclusive();
         var ct = TestContext.Current.CancellationToken;
         RecordingResult? result = null;
         TimeSpan clickedAt = default;

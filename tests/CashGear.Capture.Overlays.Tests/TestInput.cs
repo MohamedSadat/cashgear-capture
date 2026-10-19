@@ -10,6 +10,32 @@ namespace CashGear.Capture.Overlays.Tests;
 /// </summary>
 internal static unsafe class TestInput
 {
+    /// <summary>
+    /// Held by every test that sends synthetic input, across the test assemblies (they run side by side): a click or
+    /// key of one test would otherwise land in another's windows or hooks.
+    /// </summary>
+    private static readonly Semaphore InputGate = new(1, 1, @"Local\CashGear.Tests.SyntheticInput");
+
+    /// <summary>Waits until no other test sends input, and holds that until disposed.</summary>
+    public static IDisposable Exclusive()
+    {
+        InputGate.WaitOne(TimeSpan.FromMinutes(3));
+        return new Release();
+    }
+
+    private sealed class Release : IDisposable
+    {
+        private int _released;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _released, 1) == 0)
+            {
+                InputGate.Release();
+            }
+        }
+    }
+
     private const uint MoveFlag = 0x0001;
     private const uint LeftDownFlag = 0x0002;
     private const uint LeftUpFlag = 0x0004;
@@ -22,6 +48,29 @@ internal static unsafe class TestInput
     /// <summary>Moves there and clicks the left button.</summary>
     public static bool Click(int x, int y) =>
         Send(Mouse(x, y, MoveFlag), Mouse(x, y, LeftDownFlag), Mouse(x, y, LeftUpFlag));
+
+    /// <summary>Presses the left button at the first point, moves through the others, and lets go at the last.</summary>
+    public static bool Drag((int X, int Y)[] points)
+    {
+        var inputs = new List<INPUT> { Mouse(points[0].X, points[0].Y, MoveFlag), Mouse(points[0].X, points[0].Y, LeftDownFlag) };
+        foreach (var (x, y) in points.Skip(1))
+        {
+            inputs.Add(Mouse(x, y, MoveFlag));
+        }
+
+        inputs.Add(Mouse(points[^1].X, points[^1].Y, LeftUpFlag));
+        foreach (var input in inputs)
+        {
+            if (!Send(input))
+            {
+                return false;
+            }
+
+            Thread.Sleep(15);
+        }
+
+        return true;
+    }
 
     /// <summary>Presses and releases each key in turn; modifiers in <paramref name="held"/> are held around them.</summary>
     public static bool Keys(ushort[] keys, params ushort[] held)

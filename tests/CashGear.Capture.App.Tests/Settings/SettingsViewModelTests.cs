@@ -53,7 +53,8 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Backend.Should().Be(CaptureBackend.Gdi);
         vm.Theme.Should().Be(AppTheme.Dark);
         vm.StartWithWindows.Should().BeTrue();
-        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen");
+        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen", "Ctrl+Shift+D");
+        vm.Hotkeys.Single(h => h.Action == HotkeyAction.ToggleDrawing).Status.Should().Be("Works while recording");
         vm.HasErrors.Should().BeFalse();
     }
 

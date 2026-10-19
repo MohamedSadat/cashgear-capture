@@ -161,6 +161,9 @@ public enum HotkeyAction
 
     /// <summary>Select an area and copy the text in it (OCR).</summary>
     CaptureText,
+
+    /// <summary>Turn the pen for drawing on the screen on or off; only while recording.</summary>
+    ToggleDrawing,
 }
 
 /// <summary>System-wide hotkeys. Registration and presses happen on the thread that owns the service (the UI thread).</summary>

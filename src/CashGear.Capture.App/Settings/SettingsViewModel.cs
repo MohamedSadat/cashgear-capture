@@ -1046,6 +1046,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             return "Applies when you save";
         }
 
+        if (HotkeyRegistrar.IsRecordingOnly(action) && !_hotkeys.Active.ContainsKey(action) && !_hotkeys.Problems.ContainsKey(action))
+        {
+            return "Works while recording";
+        }
+
         return _hotkeys.Problems.TryGetValue(action, out var problem) ? problem : "Active";
     }
 

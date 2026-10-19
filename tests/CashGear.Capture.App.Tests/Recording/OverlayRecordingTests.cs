@@ -152,6 +152,7 @@ public sealed class OverlayRecordingTests : IDisposable
     {
         InteractiveDesktop.Require();
         TestFfmpeg.Require();
+        using var exclusive = TestInput.Exclusive();
         var monitor = new Win32MonitorService(NullLogger<Win32MonitorService>.Instance).GetMonitors().First(m => m.IsPrimary);
         var area = new PixelRect(monitor.Bounds.X + 100, monitor.Bounds.Y + 100, 320, 240);
         var recorder = new ScreenRecorder(TestFfmpeg.Encoders, _store, _interop, new FakeSound(), _loggers);

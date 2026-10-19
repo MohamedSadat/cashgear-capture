@@ -1,5 +1,6 @@
 using System.IO;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
 using CashGear.Capture.App.Tray;
@@ -44,7 +45,10 @@ public sealed partial class RecordingController
     private readonly TimeProvider _time;
     private readonly ILogger<RecordingController> _logger;
     private readonly IKeyboardState _keyboard;
+    private readonly HotkeyRegistrar? _hotkeys;
     private RecordingToolbarWindow? _toolbar;
+    private DrawingViewModel? _drawing;
+    private DrawingLayerWindow? _layer;
     private PushToTalk? _pushToTalk;
     private bool _stopping;
 
@@ -65,8 +69,10 @@ public sealed partial class RecordingController
         IShell shell,
         TimeProvider time,
         ILogger<RecordingController> logger,
-        IKeyboardState? keyboard = null)
+        IKeyboardState? keyboard = null,
+        HotkeyRegistrar? hotkeys = null)
     {
+        _hotkeys = hotkeys;
         _keyboard = keyboard ?? new Win32KeyboardState();
         _recorder = recorder;
         _encoders = encoders;
@@ -188,7 +194,7 @@ public sealed partial class RecordingController
                 _pushToTalk = new PushToTalk(_recorder, key, _keyboard, _time);
             }
 
-            await _ui.InvokeAsync(() => ShowToolbar(monitor, current.Appearance.Theme)).ConfigureAwait(false);
+            await _ui.InvokeAsync(() => ShowToolbar(monitor, area, current)).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -255,6 +261,9 @@ public sealed partial class RecordingController
             ? Task.CompletedTask
             : _settings.UpdateAsync(s => s with { Recording = s.Recording with { MicrophoneProcessing = processing with { NoiseSuppression = on } } });
     }
+
+    /// <summary>Turns the pen on or off (the hotkey and the toolbar); nothing when not recording.</summary>
+    public void ToggleDrawing() => _ = _ui.InvokeAsync(() => _drawing?.Toggle());
 
     public void TogglePause()
     {
@@ -351,18 +360,50 @@ public sealed partial class RecordingController
         return path;
     }
 
-    private void ShowToolbar(MonitorInfo monitor, AppTheme theme)
+    private void ShowToolbar(MonitorInfo monitor, PixelRect area, AppSettings current)
     {
         CloseToolbar();
-        var viewModel = new RecordingToolbarViewModel(_recorder, TogglePause, () => _ = StopAsync(), _pushToTalk);
-        _toolbar = new RecordingToolbarWindow(viewModel, theme, monitor.WorkArea);
+
+        // The drawing layer covers the recorded area for the whole recording (letting the mouse through until the pen is on).
+        var drawing = new DrawingViewModel(current.Overlays.DrawingSettings);
+        drawing.PropertyChanged += OnDrawingChanged;
+        _drawing = drawing;
+        _layer = new DrawingLayerWindow(drawing, area);
+        _layer.Show();
+        var viewModel = new RecordingToolbarViewModel(_recorder, TogglePause, () => _ = StopAsync(), _pushToTalk, drawing);
+        _toolbar = new RecordingToolbarWindow(viewModel, current.Appearance.Theme, monitor.WorkArea);
         _toolbar.Show();
+        _hotkeys?.SetRecording(true);
     }
 
     private void CloseToolbar()
     {
+        _hotkeys?.SetRecording(false);
+        if (_drawing is { } drawing)
+        {
+            drawing.PropertyChanged -= OnDrawingChanged;
+            _drawing = null;
+        }
+
+        _layer?.Close();
+        _layer = null;
         _toolbar?.Close();
         _toolbar = null;
+    }
+
+    /// <summary>The pen went on or off: the recording knows (clicks and keys meanwhile aren't overlays), and the toolbar stays above the layer.</summary>
+    private void OnDrawingChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(DrawingViewModel.IsActive) || sender is not DrawingViewModel drawing)
+        {
+            return;
+        }
+
+        _recorder.SetDrawing(drawing.IsActive);
+        if (drawing.IsActive)
+        {
+            _toolbar?.BringToTop();
+        }
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Recording could not start")]

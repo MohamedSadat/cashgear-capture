@@ -90,6 +90,19 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _webcamMirror;
 
+    [ObservableProperty]
+    private ColorChoice? _penColor;
+
+    [ObservableProperty]
+    private double _penWidth;
+
+    /// <summary>Drawings fade away this long after they are drawn; 0 keeps them until cleared.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PenFadeText))]
+    private double _penFade;
+
+    public string PenFadeText => PenFade <= 0 ? "Never" : $"{PenFade:0} s";
+
     /// <summary>What the camera list or preview found (no camera, privacy settings), shown under the list.</summary>
     [ObservableProperty]
     private string _webcamStatus = string.Empty;
@@ -292,6 +305,10 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
         WebcamBorderColor = Choice(webcam.BorderColor);
         WebcamBorderWidth = webcam.BorderWidth;
         WebcamMirror = webcam.Mirror;
+        var pen = s.DrawingSettings;
+        PenColor = Choice(pen.Color);
+        PenWidth = pen.Width;
+        PenFade = pen.FadeSeconds;
     }
 
     /// <summary>The edited values applied on top of <paramref name="current"/> (webcam and drawing settings are kept).</summary>
@@ -345,6 +362,7 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
                 BorderWidth = (int)Math.Round(WebcamBorderWidth),
                 Mirror = WebcamMirror,
             },
+            Drawing = new DrawingSettings(PenColor?.Value ?? DrawingSettings.DefaultColor, (int)Math.Round(PenWidth), Math.Round(PenFade)),
         };
     }
 

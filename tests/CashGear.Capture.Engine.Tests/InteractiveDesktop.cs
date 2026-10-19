@@ -48,10 +48,29 @@ internal static class InteractiveDesktop
 
 /// <summary>
 /// Tests that capture the screen or put windows on it run one at a time: a Windows.Graphics.Capture session draws a
-/// yellow border on Windows 10, and a test window would show up in another test's pixels.
+/// yellow border on Windows 10, and a test window would show up in another test's pixels. The test assemblies run
+/// side by side, so each assembly's desktop tests also take turns with the others' (<see cref="DesktopLock"/>).
 /// </summary>
 [CollectionDefinition(Name, DisableParallelization = true)]
-public sealed class DesktopCollection
+public sealed class DesktopCollection : ICollectionFixture<DesktopLock>
 {
     public const string Name = "Desktop";
+}
+
+/// <summary>
+/// Held while one test assembly's desktop tests run, across processes: another assembly's top-most test window
+/// would cover this one's, and its synthetic clicks land in it.
+/// </summary>
+public sealed class DesktopLock : IDisposable
+{
+    private static readonly Semaphore Gate = new(1, 1, @"Local\CashGear.Tests.Desktop");
+    private readonly bool _held = Gate.WaitOne(TimeSpan.FromMinutes(15));
+
+    public void Dispose()
+    {
+        if (_held)
+        {
+            Gate.Release();
+        }
+    }
 }

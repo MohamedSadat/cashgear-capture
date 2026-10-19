@@ -64,8 +64,38 @@
               Visibility="{Binding HasSound, Converter={StaticResource Visible}}">
         <TextBlock Text="&#xE9E9;" FontFamily="Segoe MDL2 Assets" />
       </Button>
+      <ToggleButton IsChecked="{Binding Drawing.IsActive}" Margin="6,0,0,0" MinWidth="34" Focusable="False" AutomationProperties.Name="Draw on the screen"
+                    ToolTip="Draw on the screen (the drawing is recorded); Esc or Done ends it" Visibility="{Binding HasDrawing, Converter={StaticResource Visible}}">
+        <TextBlock Text="&#xEE56;" FontFamily="Segoe MDL2 Assets" />
+      </ToggleButton>
       <Button Content="{Binding PauseText}" Command="{Binding PauseCommand}" Margin="12,0,6,0" MinWidth="80" Focusable="False" />
       <Button Content="Stop" Command="{Binding StopCommand}" MinWidth="70" Focusable="False" ToolTip="Stop and save (or press the recording hotkey)" />
+    </StackPanel>
+    <!-- The pen's tools, while drawing: also in the toolbar's own window, so they are left out of the recording. -->
+    <StackPanel Orientation="Horizontal" Margin="0,8,0,2" Visibility="{Binding Drawing.IsActive, Converter={StaticResource Visible}, FallbackValue=Collapsed}">
+      <RadioButton Content="Pen" IsChecked="{Binding Drawing.IsPen}" Margin="0,0,8,0" VerticalAlignment="Center" Focusable="False" ToolTip="Pen (1)" />
+      <RadioButton Content="Highlighter" IsChecked="{Binding Drawing.IsHighlighter}" Margin="0,0,8,0" VerticalAlignment="Center" Focusable="False" ToolTip="Highlighter (2)" />
+      <RadioButton Content="Arrow" IsChecked="{Binding Drawing.IsArrow}" Margin="0,0,8,0" VerticalAlignment="Center" Focusable="False" ToolTip="Arrow (3)" />
+      <RadioButton Content="Rectangle" IsChecked="{Binding Drawing.IsRectangle}" Margin="0,0,12,0" VerticalAlignment="Center" Focusable="False" ToolTip="Rectangle (4)" />
+      <ItemsControl ItemsSource="{Binding Drawing.Colors}" VerticalAlignment="Center">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Button Width="18" Height="18" Margin="0,0,4,0" Focusable="False" ToolTip="{Binding Label}" AutomationProperties.Name="{Binding Label}"
+                    Command="{Binding DataContext.Drawing.UseColorCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding Value}"
+                    Background="{Binding Value}" BorderBrush="#80808080" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Slider Minimum="1" Maximum="20" Width="80" Margin="8,0,0,0" Value="{Binding Drawing.Width}" Focusable="False" VerticalAlignment="Center"
+              ToolTip="Pen width" AutomationProperties.Name="Pen width" />
+      <Button Content="Undo" Command="{Binding Drawing.UndoCommand}" Margin="12,0,6,0" Focusable="False" ToolTip="Undo the last stroke (Ctrl+Z)" />
+      <Button Content="Clear" Command="{Binding Drawing.ClearCommand}" Margin="0,0,6,0" Focusable="False" ToolTip="Remove every drawing (Delete)" />
+      <Button Content="Done" Command="{Binding Drawing.DoneCommand}" Focusable="False" ToolTip="Stop drawing; the drawings stay (Esc)" />
     </StackPanel>
     <!-- Inside the toolbar's own window, not a popup: a popup is a window of its own and would be in the recording. -->
     <Grid Margin="0,8,0,2" Visibility="{Binding IsSoundPanelOpen, Converter={StaticResource Visible}}">

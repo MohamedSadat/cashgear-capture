@@ -294,7 +294,8 @@ public sealed record HotkeySettings(
     string? CaptureFullScreen = HotkeySettings.DefaultCaptureFullScreen,
     string? CaptureScrolling = HotkeySettings.DefaultCaptureScrolling,
     string? Record = HotkeySettings.DefaultRecord,
-    string? CaptureText = HotkeySettings.DefaultCaptureText)
+    string? CaptureText = HotkeySettings.DefaultCaptureText,
+    string? ToggleDrawing = HotkeySettings.DefaultToggleDrawing)
 {
     public const string DefaultCaptureRegion = "PrintScreen";
     public const string DefaultCaptureActiveWindow = "Alt+PrintScreen";
@@ -302,6 +303,9 @@ public sealed record HotkeySettings(
     public const string DefaultCaptureScrolling = "Ctrl+Shift+PrintScreen";
     public const string DefaultRecord = "Shift+PrintScreen";
     public const string DefaultCaptureText = "Ctrl+Alt+PrintScreen";
+
+    /// <summary>Registered only while a recording runs, so the key isn't taken from other apps otherwise.</summary>
+    public const string DefaultToggleDrawing = "Ctrl+Shift+D";
 
     /// <summary>The configured text for an action, or null when it has no hotkey.</summary>
     public string? For(HotkeyAction action) => action switch
@@ -312,6 +316,7 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureScrolling => CaptureScrolling,
         HotkeyAction.Record => Record,
         HotkeyAction.CaptureText => CaptureText,
+        HotkeyAction.ToggleDrawing => ToggleDrawing,
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
@@ -324,11 +329,12 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureScrolling => this with { CaptureScrolling = text },
         HotkeyAction.Record => this with { Record = text },
         HotkeyAction.CaptureText => this with { CaptureText = text },
+        HotkeyAction.ToggleDrawing => this with { ToggleDrawing = text },
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
     public HotkeySettings Normalize() => new(
-        Clean(CaptureRegion), Clean(CaptureActiveWindow), Clean(CaptureFullScreen), Clean(CaptureScrolling), Clean(Record), Clean(CaptureText));
+        Clean(CaptureRegion), Clean(CaptureActiveWindow), Clean(CaptureFullScreen), Clean(CaptureScrolling), Clean(Record), Clean(CaptureText), Clean(ToggleDrawing));
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

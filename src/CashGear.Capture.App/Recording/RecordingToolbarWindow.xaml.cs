@@ -27,8 +27,9 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     private readonly Action _stop;
     private readonly PushToTalk? _pushToTalk;
 
-    public RecordingToolbarViewModel(IScreenRecorder recorder, Action togglePause, Action stop, PushToTalk? pushToTalk = null)
+    public RecordingToolbarViewModel(IScreenRecorder recorder, Action togglePause, Action stop, PushToTalk? pushToTalk = null, DrawingViewModel? drawing = null)
     {
+        Drawing = drawing;
         _recorder = recorder;
         _togglePause = togglePause;
         _stop = stop;
@@ -104,6 +105,11 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
 
     /// <summary>The microphone is only heard while a key is held.</summary>
     public bool HasPushToTalk => _pushToTalk is not null;
+
+    /// <summary>Drawing on the screen (its pen, tools and colours), when the recording has a drawing layer.</summary>
+    public DrawingViewModel? Drawing { get; }
+
+    public bool HasDrawing => Drawing is not null;
 
     /// <summary>Keystrokes are shown (or kept) in this recording, so they can be paused here.</summary>
     public bool HasKeystrokes => _recorder.ShowsKeystrokes;
@@ -260,6 +266,10 @@ public partial class RecordingToolbarWindow : Window, IThemedWindow
     }
 
     public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
+
+    /// <summary>Back above every other top-most window (the drawing layer, when the pen goes on), without taking the focus.</summary>
+    public void BringToTop() => User32.SetWindowPos(
+        new WindowInteropHelper(this).Handle, User32.HwndTopmost, 0, 0, 0, 0, User32.SwpNoActivate | 0x0001 /* NOSIZE */ | 0x0002 /* NOMOVE */);
 
     private void OnDrag(object sender, MouseButtonEventArgs e)
     {

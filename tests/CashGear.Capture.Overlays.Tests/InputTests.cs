@@ -20,6 +20,7 @@ public sealed class InputHooksTests
     public async Task Moves_clicks_and_keys_arrive_in_order_with_their_time()
     {
         InteractiveDesktop.Require();
+        using var exclusive = TestInput.Exclusive();
         var events = new List<RawInput>();
         long before = 0;
         (int X, int Y) target = default;
@@ -52,11 +53,11 @@ public sealed class InputHooksTests
             }
         });
 
-        var down = events.Single(e => e.Kind == RawInputKind.ButtonDown);
+        var down = events.Single(e => e.Kind == RawInputKind.ButtonDown && e.Injected);
         (down.X, down.Y, down.Code, down.Injected).Should().Be((target.X, target.Y, 0u, true));
-        events.Should().ContainSingle(e => e.Kind == RawInputKind.ButtonUp);
+        events.Should().ContainSingle(e => e.Kind == RawInputKind.ButtonUp && e.Injected);
         events.Should().Contain(e => e.Kind == RawInputKind.Move && e.X == target.X && e.Y == target.Y);
-        events.Where(e => e.Kind is RawInputKind.KeyDown or RawInputKind.KeyUp).Select(e => (e.Kind, e.Code))
+        events.Where(e => e.Kind is RawInputKind.KeyDown or RawInputKind.KeyUp && e.Code == F24).Select(e => (e.Kind, e.Code))
             .Should().Equal((RawInputKind.KeyDown, F24), (RawInputKind.KeyUp, F24));
         events.Should().OnlyContain(e => e.Timestamp >= before);
         events.Select(e => e.Timestamp).Should().BeInAscendingOrder("they are queued as they happen");
@@ -66,6 +67,7 @@ public sealed class InputHooksTests
     public async Task Without_keystrokes_there_is_no_keyboard_hook_and_one_set_runs_at_a_time()
     {
         InteractiveDesktop.Require();
+        using var exclusive = TestInput.Exclusive();
         await App.Tests.StaDispatcher.RunAsync(async () =>
         {
             var (window, _, text) = TestInput.Form();
@@ -202,6 +204,7 @@ public sealed class KeystrokePrivacyTests : IDisposable
     public async Task Ui_automation_reads_the_focused_element_and_sees_a_password_box()
     {
         InteractiveDesktop.Require();
+        using var exclusive = TestInput.Exclusive();
         await App.Tests.StaDispatcher.RunAsync(async () =>
         {
             var (window, password, text) = TestInput.Form();
@@ -237,6 +240,7 @@ public sealed class KeystrokePrivacyTests : IDisposable
     public async Task Keys_typed_into_a_password_box_go_nowhere()
     {
         InteractiveDesktop.Require();
+        using var exclusive = TestInput.Exclusive();
         var clock = new RecordingClock(TimeProvider.System);
         var timeline = new InputTimeline();
         var journalPath = Path.Combine(_folder, MetadataJournal.FileName);

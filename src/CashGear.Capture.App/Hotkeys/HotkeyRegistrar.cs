@@ -23,6 +23,7 @@ public sealed partial class HotkeyRegistrar(
     private readonly Dictionary<HotkeyAction, string> _problems = [];
     private HotkeySettings? _applied;
     private int _suspended;
+    private bool _recording;
 
     /// <summary>Raised on the UI thread after the registrations were (re)applied.</summary>
     public event EventHandler? RegistrationsChanged;
@@ -46,6 +47,24 @@ public sealed partial class HotkeyRegistrar(
         }
 
         return new Resumer(this);
+    }
+
+    /// <summary>Keys that are registered only while a recording runs (they would block the key in other apps otherwise).</summary>
+    public static bool IsRecordingOnly(HotkeyAction action) => action == HotkeyAction.ToggleDrawing;
+
+    /// <summary>A recording started or stopped: its keys are registered or released. UI thread.</summary>
+    public void SetRecording(bool recording)
+    {
+        if (_recording == recording)
+        {
+            return;
+        }
+
+        _recording = recording;
+        if (_suspended == 0)
+        {
+            Apply(settings.Current.Hotkeys, notify: false);
+        }
     }
 
     /// <summary>Registers the configured hotkeys. Call on the UI thread.</summary>
@@ -86,6 +105,7 @@ public sealed partial class HotkeyRegistrar(
         _applied = config;
 
         var problems = new List<string>();
+        var reserved = new Dictionary<HotkeyAction, HotkeyGesture>();
         foreach (var action in Enum.GetValues<HotkeyAction>())
         {
             var text = config.For(action);
@@ -106,10 +126,16 @@ public sealed partial class HotkeyRegistrar(
                 continue;
             }
 
-            var owner = _active.Where(p => p.Value == gesture).Select(p => (HotkeyAction?)p.Key).FirstOrDefault();
+            var owner = _active.Concat(reserved).Where(p => p.Value == gesture).Select(p => (HotkeyAction?)p.Key).FirstOrDefault();
             if (owner is { } other)
             {
                 Problem(action, $"{gesture} is already set for {Label(other)}.");
+                continue;
+            }
+
+            if (IsRecordingOnly(action) && !_recording)
+            {
+                reserved[action] = gesture; // checked and kept for the next recording, not taken from other apps now
                 continue;
             }
 
@@ -149,6 +175,7 @@ public sealed partial class HotkeyRegistrar(
         HotkeyAction.CaptureScrolling => "Scrolling Capture",
         HotkeyAction.Record => "Record Screen (again to stop)",
         HotkeyAction.CaptureText => "Capture Text (OCR)",
+        HotkeyAction.ToggleDrawing => "Draw on Screen (while recording)",
         _ => action.ToString(),
     };
 

@@ -183,6 +183,10 @@ public sealed partial class TrayViewModel : ObservableObject
     [RelayCommand]
     private Task RecoverRecordingsAsync() => _interrupted.RecoverAllAsync();
 
+    /// <summary>Turns the pen for drawing on the screen on or off (while recording).</summary>
+    [RelayCommand]
+    private void ToggleDrawing() => _recording.ToggleDrawing();
+
     /// <summary>Draws a saved recording's overlays in from its metadata file, into a new file.</summary>
     [RelayCommand]
     private Task AddOverlaysAsync() => _addOverlays.RunAsync();
