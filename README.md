@@ -19,6 +19,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | — | Sound in screen recordings: system audio and a microphone, AAC, kept in sync through pauses | done |
 | 10 | Recording engine v2: FFmpeg in-process (LGPL), timestamped frames, crash-safe temp file + recovery, encoder detection and fallback, sound tracks per source | done |
 | 11 | Pro audio: devices followed during a recording, one app's sound (or all but one), microphone noise gate / compressor / limiter and RNNoise, level meters, microphone test, loudness to −16 LUFS, push-to-talk | done (RNNoise build and manual sound checks pending) |
+| 12 | Recording overlays: clicks, pointer effects, keystrokes (never from password fields), webcam, drawing on the screen; drawn on the GPU or added later from a metadata track | done (real webcam and browser checks pending) |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -82,6 +83,7 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `Ctrl+Shift+PrintScreen` | Scrolling capture |
 | `Shift+PrintScreen` | Start a screen recording / stop it |
 | `Ctrl+Alt+PrintScreen` | Capture Text (OCR) |
+| `Ctrl+Shift+D` | Draw on the screen (only while recording; the key is free otherwise) |
 
 Change them in **Settings › Hotkeys** (click a box and press the keys) or in `settings.json` under `hotkeys`. A key another app or Windows already owns is reported, and a single typing key (e.g. `A`) is refused because it would stop working everywhere else.
 
@@ -93,7 +95,8 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 |---|---|
 | Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
 | Capture | Capture delay (also in the tray), hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
-| Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer, click highlights. Sound: system audio on/off, all sound / only one app / all except one app, the output device (the default, followed, or one by name), the microphone (none, the Windows default or a connected one); with both, one mixed track, a track per source, or both. Microphone processing (noise suppression with its strength, noise gate with its threshold, compressor, limiter), live level meters, the microphone test, evening out loudness when saving. FFmpeg's version |
+| Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer. Sound: system audio on/off, all sound / only one app / all except one app, the output device (the default, followed, or one by name), the microphone (none, the Windows default or a connected one); with both, one mixed track, a track per source, or both. Microphone processing (noise suppression with its strength, noise gate with its threshold, compressor, limiter), live level meters, the microphone test, evening out loudness when saving. FFmpeg's version |
+| Overlays | Draw the overlays into the video or add them later; the metadata file; clicks (colours, size, sound); pointer (halo or spotlight, size, hide when idle); keystrokes (shortcuts or all keys, position, font, size, time, apps never shown); webcam (camera, picture, shape, size, border, mirror, placement preview); drawing (pen colour, width, fade) |
 | Hotkeys | Record hotkeys; each shows whether it is active. Push to talk |
 | General | Start with Windows, text recognition language (Automatic or one installed language), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file |
 
@@ -140,6 +143,23 @@ Tray › **Record Screen…** (or `Shift+PrintScreen`): drag the area to record,
   - **Loudness.** With Settings › Recording › Even out the loudness, every recording is saved at −16 LUFS (the sound is measured and encoded again; the video isn't).
   - Sound is kept on the recording's clock: silences stay silent, Pause pauses the sound too, and the sound and picture end together.
   - If no sound device is available, the video is recorded without sound and the notification says why. With system audio off and no microphone, the MP4 has no sound track.
+
+## Recording overlays
+
+Settings › **Overlays** chooses what recordings show of what you do. Everything is drawn on the graphics card before the video is encoded, never with windows on the screen, so it is exactly on the frame where it happened.
+
+- **Clicks**: an expanding ring at each press (yellow for left, red for right, green for middle by default), and a dot following a held button. Optionally a short click sound in the recording's sound.
+- **Pointer**: a halo or a spotlight (the rest dimmed), a bigger pointer (up to 3×), and hiding it when it stands still. For the last two the app draws the pointer itself.
+- **Keystrokes** (off by default): shortcuts such as `Ctrl + Shift + S` (repeats as `×3`), or all keys including typing, in a box at the bottom (or another corner), fading after the last key.
+  - **Privacy.** Keys typed into a password field are never shown or kept (Windows' UI Automation says which fields are passwords; browsers tell it). Neither are keys typed into the apps listed in Settings (password managers by default). When the check can't tell, keys are hidden.
+  - **No key log.** Keys go nowhere but the recording and its metadata file. The keyboard is only followed while recording with keystrokes on.
+  - **The toolbar** has a keyboard button to hide keystrokes for a while.
+- **Webcam**: a circle or rounded rectangle with a border, dragged into place in Settings' preview. It is also saved as a second video track in the MP4 ("Webcam"), so an editor can move or resize it later. Every webcam picture keeps the time it was captured, so it stays in time with the sound however long the recording.
+- **Drawing on the screen**: while recording, `Ctrl+Shift+D` or the pen on the toolbar lets you draw over the recorded area with a pen, highlighter, arrow or rectangle. The drawing is in the video, the toolbar isn't.
+  - **Keys:** Esc stops drawing (the drawings stay), Delete clears them, Ctrl+Z undoes, 1–4 pick a tool.
+  - **Fading:** drawings can fade away by themselves after a set time.
+- **Metadata file**: next to each recording, `name.cgmeta.json` keeps the pointer on every frame, the clicks, the keys (only as the keystroke overlay showed them), which app was in front, and when you drew. All times are on the video's clock.
+- **Adding overlays later**: with "Keep the video clean" in Settings, nothing is drawn while recording. Tray › **Add Overlays to a Recording…** then writes `name (overlays).mp4` with the overlays as Settings has them now, from the metadata file. The recording itself isn't changed.
 
 ## Capture Text
 
@@ -189,7 +209,8 @@ src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enume
 src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom (net10.0, no WPF)
 src/CashGear.Capture.Media      FFmpeg in-process (FFmpeg.AutoGen): encoders, crash-safe writer, remux, loudness, decoding (net10.0)
 src/CashGear.Capture.Audio      Sound devices: WASAPI capture with Windows' timestamps, devices followed, process loopback, microphone chain, RNNoise, meters
-src/CashGear.Capture.Recording  Screen recording: timestamped WGC pictures + sound -> encoders -> temp file -> MP4; recovery
+src/CashGear.Capture.Overlays   Recording overlays: input hooks + keystroke privacy (UI Automation), pointer shapes, Direct2D compositor, webcam (Windows.Media.Capture)
+src/CashGear.Capture.Recording  Screen recording: timestamped WGC pictures + sound -> overlays on the GPU -> encoders -> temp file -> MP4; webcam track; recovery; adding overlays later
 tools/get-ffmpeg.ps1            Downloads the pinned LGPL FFmpeg build into tools/ffmpeg (not committed)
 tools/get-rnnoise.ps1           Builds rnnoise.dll from the pinned RNNoise source into tools/rnnoise (not committed; needs MSVC)
 tools/SyncTest                  Recording acceptance test: flashes + beeps, then sync, drift, CPU (docs/TESTING.md)
@@ -197,7 +218,7 @@ tools/licenses                  License texts shipped with FFmpeg
 tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
 tools/make-icon.ps1             Draws the app icon
 src/CashGear.Capture.App        WPF app: tray, windows, view models, output
-tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, App)
+tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, Overlays, App)
 ```
 
 ## Files on disk
@@ -210,4 +231,5 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | Capture history | `%LocalAppData%\CashGear\Capture\history\` |
 | Recordings in progress (and ones a crash left) | `%LocalAppData%\CashGear\Capture\Recordings\Temp\` |
 | Which encoders work here | `%LocalAppData%\CashGear\Capture\encoders.json` |
+| A recording's metadata (pointer, clicks, keys) | `name.cgmeta.json` next to the recording |
 | Installed app (Setup.exe) | `%LocalAppData%\CashGear.Capture\` (removed by uninstall; the rows above are kept) |

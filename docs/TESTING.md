@@ -8,7 +8,7 @@ dotnet test --solution CashGear.Capture.sln
 
 Tests tagged `Category=Interactive` need a logged-in, unlocked desktop. They skip themselves when none is available or when `CASHGEAR_SKIP_INTERACTIVE=1`. On Windows 10 the WGC tests flash a yellow border around each monitor — expected.
 
-The recording and Media tests use the real FFmpeg libraries from `tools\ffmpeg` (run `tools\get-ffmpeg.ps1`), plus that build's `ffmpeg.exe` and `ffprobe.exe` to check files independently, and skip without them. Encoder detection for the recorder tests is cached in `%TEMP%\cashgear-tests\encoders`. Tests that capture the screen run one at a time (a Windows 10 capture border would otherwise show up in another test's pixels); the region-overlay pixel test can also fail while another app draws over the screen (for example a "using your computer" indicator).
+The recording and Media tests use the real FFmpeg libraries from `tools\ffmpeg` (run `tools\get-ffmpeg.ps1`), plus that build's `ffmpeg.exe` and `ffprobe.exe` to check files independently, and skip without them. Encoder detection for the recorder tests is cached in `%TEMP%\cashgear-tests\encoders`. Tests that capture the screen or show windows run one at a time, also across the test assemblies, which run side by side (a named semaphore; a Windows 10 capture border or another test's window would otherwise show up in a test's pixels), and tests that send input with `SendInput` hold another, so their clicks and keys only reach their own windows; the region-overlay pixel test can also fail while another app draws over the screen (for example a "using your computer" indicator).
 
 The WGC leak soak test is explicit:
 
@@ -27,6 +27,14 @@ And the per-app acceptance test, which plays a 440 Hz and a 1 kHz tone (amplitud
 ```powershell
 dotnet test --project tests/CashGear.Capture.Audio.Tests --filter-method "*Only_the_chosen_app_is_recorded*" --explicit only --output Detailed
 ```
+
+And the browser password test, which opens Microsoft Edge on a page whose password field has the focus and types into it (it types into the window in front, so don't use the PC meanwhile):
+
+```powershell
+dotnet test --project tests/CashGear.Capture.Overlays.Tests --filter-method "*browser_password*" --explicit only
+```
+
+The webcam tests use a fake camera that stamps its pictures like a real one; one test lists and opens the real cameras (none here).
 
 The noise-suppression tests use the real RNNoise from `tools\rnnoise` and skip without it. Build it once with `tools\get-rnnoise.ps1`, which needs Visual Studio's C++ compiler ("Desktop development with C++").
 
@@ -57,7 +65,7 @@ Other options: `--fps 15|30|60`, `--encoder auto|software|<id>`, `--quality Smal
 | Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); fresh install **pending** |
+| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19; a real webcam and the browser check **pending**, below); fresh install **pending** |
 | Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
@@ -398,3 +406,51 @@ With a test recording of system audio and the H5 microphone running (track layou
 ### Pending: push-to-talk and a real recording's loudness
 - Set Settings › Hotkeys › Push to talk to F13 (or Scroll Lock), record 30 s talking with and without the key held: the microphone track is silent except while it is held and a quarter of a second after; the toolbar says "Talking".
 - Record a minute of speech with "Even out loudness" on, and measure it with `ffmpeg -i file.mp4 -map 0:a:0 -af ebur128 -f null -` (expect −16 ± 1 LUFS).
+
+## Phase 12 results (2026-10-19)
+
+Same PC as Phase 11 (Windows 10 Pro 22H2 19045, GTX 1650 on driver 457.51). There is no camera, so the webcam is tested with a fake camera that stamps its pictures like a real one. The keyboard layout here is sometimes Arabic. The desktop tests drive the mouse and keyboard with `SendInput`, always into their own test windows. Tests that send input hold a named semaphore (`Local\CashGear.Tests.SyntheticInput`), because the test assemblies run side by side: one test's click would land in another's window.
+
+| Check | Result |
+|---|---|
+| Live overlays, acceptance (`OverlayRecordingTests`): a 320×240 area at 30 fps over a test window that turns blue on a click and green on a key; SendInput clicks it at about 0.8 s and presses Ctrl+S at about 1.6 s | pass, 4 of 4 runs: the ring and the caption first show on exactly the frame of the click's and the key's hook time (frames 25 and 49), and the window's own reaction shows 0–1 frames later |
+| Overlays added later, acceptance: the same recording made clean with the metadata, then **Add overlays** | pass: ring on frame 25 and caption on frame 49, as live; every picture kept (79 of 79); the sound copied |
+| A password field, acceptance (`Keys_typed_into_a_password_box_go_nowhere`): click a WPF PasswordBox, type two keys, click a TextBox, type one | pass: 2 keys hidden, 1 shown; neither the timeline nor the journal has the hidden ones; the PasswordBox did get them |
+| UI Automation through the source-generated COM interfaces | pass: the focused PasswordBox reads ClassName "PasswordBox", this process's ID and IsPassword true; a TextBox reads false; an excluded program is private |
+| Privacy timing with a scripted check: a key waits for the check after a focus change, is hidden past 750 ms, a change 0–40 ms after a key counts for it, no UI Automation hides keys | pass |
+| Hooks: SendInput move, click and F24 into a test window | pass: in order, with QPC times, marked injected; no keyboard hook without keystrokes; one set of hooks at a time |
+| Direct2D compositor on the GTX 1650: ring, translucent dot, spotlight (half as bright 200 → 100 far away), halo, pointer at 2× from its hotspot, caption box with white text, webcam circle with border and mirror, rounded rectangle kept inside the frame | pass (pixel checks) |
+| Click sound | pass: the tick at 0.8246 s for a click at 0.8245 s; its own track when it is the only sound |
+| The pointer drawn by the app at 2× | pass: 225 white and 28 black pixels where the arrow is (its thin edge is softened by H.264) |
+| Webcam, acceptance: a fake camera flashes when a generated microphone tone beeps (both stamped from one origin) | pass: beeps at 1.362/2.362 s; the webcam's own track and the webcam drawn over the screen flash at 1.367/2.367 s (the first frame after the beep). The saved MP4 has a second video track "Webcam" (not the default) |
+| The webcam over 30 minutes: 30 simulated minutes of a 29.97 fps camera with ±8 ms jitter, read at 30 fps (`TimedQueueTests`) | pass: no frame ever shows a picture more than one camera frame and the jitter old (49.4 ms), in the last minute as in the first |
+| Webcam merge (`RemuxExtraTests`): both flashes at 1.500 s, a part's window, a missing file; a recovered recording keeps its webcam track | pass |
+| A camera that sends nothing; no camera | pass: the recording has no webcam, a warning, and the note says why |
+| Real camera list and opening on this PC (no camera) | pass: an empty list, and "No webcam is connected…" |
+| Drawing (`DrawingLayerTests`): the pen on, a 200 px drag across the area with SendInput | pass: one stroke, in the recording (180 red pixels along it), the click that drew it not shown as a ring, drawing on/off in the metadata |
+| The drawing hotkey | pass (fake hotkey service): registered only while recording; a key another action has is reported before recording |
+| Metadata: a recording's file has a row per frame written, the click at its time (±0.1 s) and position; a recovered recording gets its file | pass |
+| Settings › Overlays (window and view model), the webcam preview with the fake camera (and the camera let go when the webcam is turned off), the toolbar's keystroke switch | pass |
+| The app's whole service container builds (new `AppHostTests`) | pass |
+| The whole suite | 813 tests: 802 pass, 11 skip (6 RNNoise until it is built, 4 explicit, the real-microphone test: no microphone right now). With the desktop lock, the two WGC tests that used to fail in full runs (`Wgc_captures_the_visible_frame…`, `Matches_gdi_for_every_monitor`) passed; before it, the first failed in most full runs, because another assembly's top-most test window covered its red cover |
+
+### Pending: a real webcam
+No camera is connected to this PC. With one:
+1. Settings › Overlays › Webcam: turn it on, pick the camera, and check the preview shows it (the camera light comes on) and that dragging places it.
+2. Record a minute with the microphone and the webcam, clapping in front of the camera now and then. In the saved MP4, the clap's sound and the hands meeting should be within a frame, in the webcam drawn over the screen and in the "Webcam" track (`ffprobe` lists it as the second video stream; VLC › Video › Video Track shows it).
+3. Acceptance: the same over 30 minutes, clapping at the start and the end. Both claps should be within a frame of their sound.
+4. Open the camera in another app first (e.g. Camera): the recording should still get it (shared), at that app's format.
+
+### Pending: a browser password field
+The explicit test opens Microsoft Edge on a page whose password field has the focus, and types into it. It types into the window in front, so run it while not using the PC:
+
+```powershell
+dotnet test --project tests/CashGear.Capture.Overlays.Tests -- --explicit only
+```
+
+By hand: record with keystrokes on "All keys", log in somewhere in Edge or Chrome, and check the video and its `.cgmeta.json` show the user name but nothing of the password.
+
+### Pending: by hand
+- **Drawing.** Press `Ctrl+Shift+D` while recording, draw with each tool, Ctrl+Z, Delete, Esc; set "Drawings fade away after" to 3 s and check they fade.
+- **Click sound.** Listen to a recording with click sounds on.
+- **Pointer.** Check the 2× pointer and hiding it when idle look right on a second monitor at another scale (the mixed-DPI matrix is still pending).

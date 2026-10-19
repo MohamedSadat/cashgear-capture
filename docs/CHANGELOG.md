@@ -882,3 +882,154 @@ Sound gets the controls a recording app needs. Recording follows the sound devic
 - **Push-to-talk** can't use a mouse button directly (map it to F13–F24), and the key also reaches the app in front.
 - **The microphone light.** Settings' meters keep the microphone open while the Recording page is open.
 - **Bigger download.** avfilter adds about 13 MB: Setup.exe is 143.7 MB (Phase 10: 130.8 MB).
+
+## Phase 12 — Recording overlays + metadata track (2026-10-19)
+
+Recordings can show what the user does: clicks, the pointer, keystrokes, a webcam and drawings on the screen. Every overlay is drawn on the GPU before encoding, or kept in a metadata file next to the video and added later. The metadata (the pointer on every frame, clicks, keys, focus changes, all on the recording's clock) is also what the editor (Phase 16) and auto-zoom (Phase 17) will work from.
+
+### Added
+- **New project `CashGear.Capture.Overlays`**: input hooks, keystroke privacy, pointer shapes, the Direct2D compositor and the webcam. The pure parts are in Core (`Core.Overlays`): the input timeline, the keystroke formatter, the overlay planner, the metadata journal and file, and the timed picture queue.
+- **Input hooks** (12.1). `WH_MOUSE_LL` and `WH_KEYBOARD_LL`, plus WinEvents for the foreground window and the keyboard focus, on a thread of their own with a message loop.
+  - **Minimal callbacks.** They only stamp the time (QPC) and queue the event; a "Recording input" thread does the rest.
+  - **Only while recording.** The hooks exist only during a recording, and the keyboard hook only when keystrokes are on.
+  - **Pauses.** Input made during a pause is left out (`RecordingClock.TryMap`); it isn't moved to the resume like a picture is.
+- **Keystroke privacy.** A key typed into a password field, or into an excluded app, is never shown and never written anywhere.
+  - **Password fields** are detected through UI Automation's `IsPassword` on the focused element (browsers report it for `<input type=password>`).
+  - **Excluded apps** default to KeePass, KeePassXC, 1Password, Bitwarden and Windows' credential prompt (Settings › Overlays).
+  - **How a key is decided.** Every focus change (a window coming to the front, the focus moving inside an app, a click) triggers a check on an MTA thread. A key waits for the checks made after the last change before it, and after any change within 40 ms after it. That covers a click into a password field followed at once by typing, whose focus event can arrive after the key.
+  - **Fail closed.** An undecided key is hidden after 750 ms, and so is a key UI Automation can't vouch for (an elevated app, an error).
+  - **The toolbar** can also hide keystrokes for a while.
+- **Keystroke captions.**
+  - **Shortcuts** read `Ctrl + Shift + S`; a repeat soon after counts (`Ctrl + Z ×3`).
+  - **All keys** gathers typed text into one caption, using the foreground window's keyboard layout (`ToUnicodeEx` without disturbing its dead keys).
+  - **AltGr.** Typing a character with AltGr isn't a shortcut.
+  - **Display.** At most three captions show, the newest nearest the edge, fading after the last key. Position (6 anchors), font, size and fade time are settings.
+- **Metadata track** (12.2): `name.cgmeta.json` next to each recording (Settings › Overlays, on by default).
+  - **Contents:**
+    - format version, parts with their start times, area, scale and fps;
+    - whether the pointer and the overlays are in the video;
+    - the keystroke mode;
+    - the pointer shapes (premultiplied BGRA);
+    - one row per frame (`[frame, x, y, shape, visible]`);
+    - clicks (button, position, down and up times);
+    - keystroke captions (only what the overlay shows);
+    - foreground app changes (program and title; no title for an excluded app);
+    - drawing on/off;
+    - where the webcam was drawn.
+  - **Clock.** All times are recording time (seconds), the clock pictures and sound use.
+  - **Crash safety.** During a recording it is a JSON-lines journal in the temporary folder, flushed every second. Saving and recovering a recording turn it into the file.
+- **Overlays drawn on the GPU** (12.3). `OverlayPlanner` decides what each frame shows. `OverlayCompositor` draws it with Direct2D on the recording's own D3D11 device: the captured picture is copied into a render target and the overlays drawn over it before read-back, so nothing goes through visible windows. The overlays:
+  - **clicks:** an expanding, fading ring per press (colours per button), and a dot following a held button;
+  - **pointer effects:** a halo or a spotlight (the rest dimmed);
+  - **the pointer itself**, drawn by the app when it is bigger (1–3×) or hidden after standing still. Windows.Graphics.Capture then leaves its own out; a text I-beam is drawn black with a white edge;
+  - **keystroke captions** in a dark rounded box (DirectWrite);
+  - **the webcam.**
+- **Click sounds** (optional): an 18 ms tick at each press, mixed into the recording's sound at the press's sample, as a source of its own. It is in the mix, or a track of its own when sources get tracks.
+- **Adding overlays later.** Tray › **Add Overlays to a Recording…** picks a saved recording and writes `name (overlays).mp4`.
+  - **How.** `VideoTranscoder` decodes the video, each picture gets the scene a live recording would have had at its time (same planner, same compositor), and it is encoded again with the recording settings' encoder; the sound and the webcam track are copied.
+  - **The pointer.** One left out of the video is drawn here from the metadata's shapes.
+  - **Window.** A progress window with Cancel.
+- **Webcam** (12.4). Windows.Media.Capture: `MediaCapture` (exclusive, to choose the format nearest the settings, else shared) and a `MediaFrameReader` giving BGRA in real-time mode.
+  - **Timing.** Each picture is stamped with its `SystemRelativeTime`, the QPC clock the screen and sound use, and placed by it, so it can't drift.
+  - **Drawn** over the screen as a circle or rounded rectangle, with a border, mirrored if asked.
+  - **Its own track.** It is also encoded as a constant-frame-rate track of its own, saved as a second video track ("Webcam", not the default) in the same MP4, from the part it was recorded during.
+  - **Problems.** A missing camera, the camera privacy setting, or a camera that sends nothing leaves a recording without webcam, with a warning and a note. A camera another app is using is shared, at that app's format.
+  - **Settings › Overlays › Webcam:** camera, picture size and rate, shape, size, border, mirror, and a preview of the recorded area to drag the webcam into place, showing the camera's picture while the page is open.
+- **Drawing on the screen** (12.5). The **Draw on Screen** hotkey (`Ctrl+Shift+D`, registered only while recording) or the pen on the recording toolbar turns the pen on.
+  - **The layer.** A transparent top-most layer over the recorded area takes the mouse: pen, highlighter, arrow, rectangle. It is in the recording: it isn't excluded from capture.
+  - **The tools** (tool, colour, width, Undo, Clear, Done) are a row of the recording toolbar, which is excluded.
+  - **Keys:** Esc ends drawing, Delete clears, Ctrl+Z undoes, 1–4 pick a tool.
+  - **Afterwards.** With the pen off, the layer lets the mouse through and keeps the drawings; they can fade away after a set time (Settings).
+  - **Clicks while drawing.** Clicks and keys made while drawing aren't drawn as overlays (the metadata notes the drawing).
+- **Settings › Overlays** (new tab):
+  - draw the overlays into the video, or keep it clean and add them later;
+  - the metadata file;
+  - clicks (colours, size, sound);
+  - pointer (effect, colour, radius, dim, size, hide when idle);
+  - keystrokes (mode, position, font, size, time, apps never shown);
+  - webcam;
+  - drawing (pen colour, width, fade).
+
+  The Recording tab's click option moved here. Settings schema 4 moves `recording.showClicks` to `overlays.clicks.enabled`.
+- **New dependency:** Vortice.Direct2D1 3.8.3 (MIT; Direct2D and DirectWrite bindings).
+
+### Deviations from the spec
+- **The webcam's own video is a second track of the MP4**, not of an MKV: recordings are written as fragmented MP4 and saved as MP4 since Phase 10. It is encoded into a file of its own while recording, so an encoder switch of the screen never touches it, and merged when saving. After an encoder switch, a later part's webcam track starts at its first keyframe in that part.
+- **No background blur.** Windows Studio Effects doesn't exist on Windows 10, and the spec allows skipping it in v1.
+- **Webcam pictures show from the first frame at or after their capture time.** The screen's pictures land on the nearest frame, so the webcam can be up to one frame later than the screen (measured: 5 ms after the beep it was stamped with).
+- **With keystrokes on, frames are made 100 ms after their time** (50 ms otherwise), so a key's privacy check is done before its frame is drawn.
+- **The drawing hotkey is registered only while recording**, so `Ctrl+Shift+D` isn't taken from other apps the rest of the time. Settings shows it as "Works while recording".
+- **The drawing tools are a row of the recording toolbar**, not a window of their own: the toolbar is already left out of the recording and stays above the drawing layer.
+- **Click sounds are mixed into the recording, not played aloud**, and only while recording: adding overlays later copies the sound as it was.
+- **With "add later" and a bigger or hiding pointer, the pointer is left out of the video** so it can be drawn later; such a recording has no pointer until its overlays are added.
+- **Keystrokes stay in the metadata file** next to the video (only what the overlay shows). That is the "overlay events" the spec allows; turning the keystroke overlay off keeps none.
+
+### Fixed during development
+- **A frozen recording.** Taking the read-back lock in the capture callback froze the video thread the first time Direct2D drew. Windows may hold the device's lock while it calls back. The callback's copy relies on the device's multithread protection again.
+- **A lost last picture.** The transcoder's re-encoded pictures had no duration, so the MP4's edit list left the last one out. Each now lasts one frame, and the webcam merge does the same.
+- **The mouse hook's injected flag** is `LLMHF_INJECTED` (0x1), not the keyboard's 0x10.
+- **Layout-dependent tests.** The keyboard layout here switches to Arabic: tests compare captions with what the typed key produced instead of assuming a US layout.
+- **Desktop tests of different assemblies collided.** The test assemblies run side by side. One assembly's top-most test window covered another's (the WGC window test failed that way in most full runs, beyond its known flakiness), and synthetic clicks landed in the wrong test.
+  - The desktop collection now holds a named semaphore, so the assemblies' desktop tests take turns.
+  - Tests that send input hold another.
+
+### Tested
+- **813 automated tests** (802 pass, 11 skipped):
+  - the 6 RNNoise tests until `rnnoise.dll` is built;
+  - 4 explicit (now also the browser password test);
+  - the real-microphone test, as Windows reports no microphone right now.
+
+  Phase 11 had 738; the four CPU click-highlighter tests went with it. New:
+  - **Core:**
+    - `TryMap` across pauses;
+    - the input timeline (pointer, clicks, captions, drawing, pruning);
+    - the keystroke formatter (combos, repeats, typing, AltGr, modifiers alone, Off);
+    - the metadata journal (round trip, a crash-cut last line, the timeline rebuilt) and file;
+    - the overlay planner (ring timing, held dot, halo and spotlight, the app's pointer and its idle fade, captions, the webcam's place);
+    - click sounds;
+    - the timed picture queue and 30 simulated minutes of a wandering camera;
+    - the overlay settings and the schema 4 migration.
+  - **Overlays:**
+    - hooks with SendInput into a test window;
+    - UI Automation reading a WPF PasswordBox and TextBox;
+    - the privacy timing;
+    - keys typed into a password box never kept;
+    - pointer shapes (arrow and I-beam);
+    - the compositor's pixels on a real D3D11 device (8 tests);
+    - the real camera list;
+    - the explicit browser test.
+  - **Media:**
+    - the transcoder (every picture kept and changed, the sound copied exactly);
+    - the webcam merge (3 tests).
+  - **App:**
+    - live sync of a click and Ctrl+S;
+    - added-later sync;
+    - click sound and the app's 2× pointer;
+    - the metadata of a recording and of a recovered one;
+    - the webcam with a fake camera against a tone, and a camera that sends nothing;
+    - recovery keeping the webcam track;
+    - drawing with the mouse into a recording;
+    - the drawing shapes and model;
+    - the recording-only hotkey;
+    - Settings › Overlays (view model, window, webcam preview);
+    - the toolbar's keystroke switch;
+    - Add Overlays with a fake renderer;
+    - the app's whole service container building.
+- **Measured on this PC** (see TESTING.md):
+  - the ring and the caption on exactly the frame of the click's and the key's hook time, live (4 of 4 runs) and added later; the window's own reaction 0–1 frame later;
+  - the click tick 0.1 ms from the click;
+  - the webcam's track and overlay 5 ms after the beep they were stamped with;
+  - a mouse-drawn stroke in the recording.
+- **Not run** (pending in TESTING.md):
+  - a real webcam, and the 30-minute webcam/sound sync with one (no camera here);
+  - the explicit Edge password-field test (it types into the window in front);
+  - the drawing hotkey and the click sound by hand.
+
+### Known limitations
+- **No camera on this PC.** The webcam is tested with a fake camera; a real camera and the 30-minute sync run are pending (TESTING.md).
+- **UI Automation decides privacy.** An app that doesn't report its password fields to UI Automation isn't recognized; exclude it in Settings. Keys are hidden whenever the check fails, so an app UI Automation can't read (elevated, hung) shows no keys.
+- **Dead keys.** In "All keys", a dead-key composition (é from ´ then e) shows the base letter.
+- **The app's own pointer** is drawn from the shape Windows gives (scaled from its size at the primary monitor's scale); an inverting I-beam becomes black with a white edge, and animated pointers show their first frame.
+- **The drawing layer** covers the recorded area only, and a full-screen app may cover it; while the pen is on, the apps beneath don't get the mouse.
+- **Adding overlays later encodes the video again** (a second generation) and takes about as long as the recording on the software encoder.
+- **Cursor shapes and positions are per frame**, not at the hooks' full rate.

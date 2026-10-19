@@ -28,6 +28,6 @@ H.NotifyIcon - MIT License - https://github.com/HavenDV/H.NotifyIcon
 Serilog, Serilog.Extensions.Hosting, Serilog.Sinks.File - Apache License 2.0 - https://github.com/serilog/serilog
 SkiaSharp - MIT License - https://github.com/mono/SkiaSharp
   Skia - BSD 3-Clause License - https://skia.org
-Vortice.Windows (Direct3D 11 / DXGI bindings) - MIT License - https://github.com/amerkoleci/Vortice.Windows
+Vortice.Windows (Direct3D 11 / DXGI / Direct2D / DirectWrite bindings) - MIT License - https://github.com/amerkoleci/Vortice.Windows
 Velopack (installer and updates) - MIT License - https://github.com/velopack/velopack
 NAudio (NAudio.Core, NAudio.Wasapi: Windows sound device access for recording sound) - MIT License - https://github.com/naudio/NAudio
