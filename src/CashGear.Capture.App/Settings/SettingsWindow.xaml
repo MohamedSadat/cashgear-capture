@@ -139,6 +139,10 @@
             <CheckBox Margin="0,2" Content="Include the mouse cursor" IsChecked="{Binding IncludeCursor}" />
             <CheckBox Margin="0,2" Content="Add a drop shadow to window captures" IsChecked="{Binding IncludeWindowShadow}" />
 
+            <TextBlock Style="{StaticResource Section}" Text="Capture toolbar" />
+            <CheckBox Margin="0,2" Content="Show the capture toolbar when the app starts" IsChecked="{Binding ShowToolbarAtStartup}" />
+            <TextBlock Style="{StaticResource Hint}" Text="A small bar with a button for every kind of capture, always on top and never in a capture. Tray › Capture Toolbar shows it now; drag it by its grip, and drop it at the edge of a screen to dock it there." />
+
             <TextBlock Style="{StaticResource Section}" Text="Shapes" />
             <Grid>
               <Grid.ColumnDefinitions>

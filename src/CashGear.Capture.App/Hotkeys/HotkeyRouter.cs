@@ -78,6 +78,10 @@ public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows,
             case HotkeyAction.CaptureMenu:
                 Run(tray.CaptureMenuCommand.ExecuteAsync(null));
                 break;
+
+            case HotkeyAction.ToggleToolbar:
+                tray.ToggleToolbarCommand.Execute(null);
+                break;
         }
     }
 

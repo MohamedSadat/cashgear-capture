@@ -43,6 +43,9 @@ public sealed record AppSettings
 
     public UpdateSettings Updates { get; init; } = new();
 
+    /// <summary>The capture toolbar and the screen tools (magnifier, colour picker, ruler).</summary>
+    public ToolsSettings Tools { get; init; } = new();
+
     /// <summary>Replaces missing sections with defaults and clamps out-of-range values.</summary>
     public AppSettings Normalize() => this with
     {
@@ -57,7 +60,15 @@ public sealed record AppSettings
         Ocr = (Ocr ?? new OcrSettings()).Normalize(),
         History = (History ?? new HistorySettings()).Normalize(),
         Updates = (Updates ?? new UpdateSettings()).Normalize(),
+        Tools = (Tools ?? new ToolsSettings()).Normalize(),
     };
+}
+
+/// <summary>The capture toolbar and the screen tools.</summary>
+/// <param name="ShowToolbarAtStartup">Show the floating capture toolbar when the app starts.</param>
+public sealed record ToolsSettings(bool ShowToolbarAtStartup = false)
+{
+    public ToolsSettings Normalize() => this;
 }
 
 /// <summary>What "Capture Full Screen" writes.</summary>
@@ -385,7 +396,8 @@ public sealed record HotkeySettings(
     string? CapturePolygon = null,
     string? CaptureRoundedRegion = null,
     string? CaptureObject = null,
-    string? CaptureMenu = null)
+    string? CaptureMenu = null,
+    string? ToggleToolbar = null)
 {
     public const string DefaultRepeatLastCapture = "Ctrl+Alt+Shift+PrintScreen";
 
@@ -417,6 +429,7 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureRoundedRegion => CaptureRoundedRegion,
         HotkeyAction.CaptureObject => CaptureObject,
         HotkeyAction.CaptureMenu => CaptureMenu,
+        HotkeyAction.ToggleToolbar => ToggleToolbar,
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
@@ -438,6 +451,7 @@ public sealed record HotkeySettings(
         HotkeyAction.CaptureRoundedRegion => this with { CaptureRoundedRegion = text },
         HotkeyAction.CaptureObject => this with { CaptureObject = text },
         HotkeyAction.CaptureMenu => this with { CaptureMenu = text },
+        HotkeyAction.ToggleToolbar => this with { ToggleToolbar = text },
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 

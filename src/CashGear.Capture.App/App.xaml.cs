@@ -69,6 +69,11 @@ public partial class CaptureApplication : Application
         // After the tray icon exists, so conflict notifications have somewhere to show.
         _services.GetRequiredService<HotkeyRegistrar>().Start();
         _services.GetRequiredService<HotkeyRouter>().Start();
+        if (_services.GetRequiredService<ISettingsService>().Current.Tools.ShowToolbarAtStartup)
+        {
+            _services.GetRequiredService<Toolbar.CaptureToolbarService>().Show();
+        }
+
         _services.GetRequiredService<UiReadySignal>().SetReady();
         _ = Task.Run(diagnostics.LogDisplaysAndBackends); // first WinRT probe takes ~1 s; keep it off the UI thread
 

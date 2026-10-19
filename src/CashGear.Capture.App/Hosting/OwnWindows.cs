@@ -5,7 +5,10 @@ using CashGear.Capture.App.Scrolling;
 
 namespace CashGear.Capture.App.Hosting;
 
-/// <summary>Gets the app's own windows (e.g. Settings) out of the way while a capture is taken.</summary>
+/// <summary>
+/// Gets the app's own windows (e.g. Settings) out of the way while a capture is taken. The overlays, the toolbars
+/// and the screen tools stay: they are left out of captures anyway.
+/// </summary>
 public interface IOwnWindows
 {
     /// <summary>Hides every visible app window; disposing the result (once is enough; again does nothing) shows them again.</summary>
@@ -18,7 +21,7 @@ internal sealed class WpfOwnWindows(IUiDispatcher ui) : IOwnWindows
     {
         var hidden = Application.Current.Windows
             .OfType<Window>()
-            .Where(w => w.IsVisible && w is not (RegionOverlayWindow or ScrollProgressWindow or RecordingToolbarWindow))
+            .Where(w => w.IsVisible && w is not (RegionOverlayWindow or ScrollProgressWindow or RecordingToolbarWindow or Toolbar.CaptureToolbarWindow))
             .ToList();
         foreach (var window in hidden)
         {

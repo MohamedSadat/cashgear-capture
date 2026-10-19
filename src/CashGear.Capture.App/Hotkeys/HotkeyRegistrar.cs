@@ -184,6 +184,7 @@ public sealed partial class HotkeyRegistrar(
         HotkeyAction.CaptureRoundedRegion => "Capture Rounded Region",
         HotkeyAction.CaptureObject => "Capture Object (part of a window)",
         HotkeyAction.CaptureMenu => "Capture Open Menu",
+        HotkeyAction.ToggleToolbar => "Show or Hide the Capture Toolbar",
         _ => action.ToString(),
     };
 

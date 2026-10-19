@@ -184,6 +184,9 @@ public enum HotkeyAction
 
     /// <summary>The menus open when the delay ends.</summary>
     CaptureMenu,
+
+    /// <summary>Show or hide the floating capture toolbar.</summary>
+    ToggleToolbar,
 }
 
 /// <summary>System-wide hotkeys. Registration and presses happen on the thread that owns the service (the UI thread).</summary>

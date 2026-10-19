@@ -58,8 +58,12 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Errors.Should().Contain("Fixed-size region");
         vm.FixedRegionSize = "1280x720";
         vm.CornerRadius = 8;
+        vm.ShowToolbarAtStartup.Should().BeFalse("the toolbar is opt-in");
+        vm.ShowToolbarAtStartup = true;
         vm.HasErrors.Should().BeFalse();
         await vm.ApplyCommand.ExecuteAsync(null);
+
+        _settings.Current.Tools.ShowToolbarAtStartup.Should().BeTrue();
 
         var capture = _settings.Current.Capture;
         capture.DelayFor(CaptureMode.Menu).Should().Be(2, "back to the general delay");
@@ -93,7 +97,7 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Backend.Should().Be(CaptureBackend.Gdi);
         vm.Theme.Should().Be(AppTheme.Dark);
         vm.StartWithWindows.Should().BeTrue();
-        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen", "Ctrl+Shift+D", "Ctrl+Alt+Shift+PrintScreen", "", "", "", "", "", "", "");
+        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen", "Ctrl+Shift+D", "Ctrl+Alt+Shift+PrintScreen", "", "", "", "", "", "", "", "");
         vm.Hotkeys.Single(h => h.Action == HotkeyAction.ToggleDrawing).Status.Should().Be("Works while recording");
         vm.HasErrors.Should().BeFalse();
     }

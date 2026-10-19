@@ -27,6 +27,8 @@
           <MenuItem Header="Open _Menu" Command="{Binding CaptureMenuCommand}" InputGestureText="{Binding MenuHotkey}" />
         </MenuItem>
         <MenuItem Header="Repeat _Last Capture" Command="{Binding RepeatLastCaptureCommand}" InputGestureText="{Binding RepeatHotkey}" />
+        <MenuItem Header="Capture _Toolbar" IsCheckable="True" IsChecked="{Binding IsToolbarVisible, Mode=OneWay}"
+                  Command="{Binding ToggleToolbarCommand}" InputGestureText="{Binding ToolbarHotkey}" />
         <MenuItem Header="{Binding DelayHeader}" ItemsSource="{Binding DelayChoices}">
           <MenuItem.ItemContainerStyle>
             <Style TargetType="MenuItem">

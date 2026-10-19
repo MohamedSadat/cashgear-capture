@@ -61,6 +61,9 @@ internal sealed class InstanceCommandDispatcher(
             case InstanceCommand.CaptureMenu:
                 return ui.InvokeAsync(() => tray.CaptureMenuCommand.ExecuteAsync(null));
 
+            case InstanceCommand.ToggleToolbar:
+                return ui.InvokeAsync(() => tray.ToggleToolbarCommand.Execute(null));
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(command), command, null);
         }

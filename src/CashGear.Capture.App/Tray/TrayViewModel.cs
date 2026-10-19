@@ -58,6 +58,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly UpdateService _updates;
     private readonly InterruptedRecordings _interrupted;
     private readonly AddOverlaysController _addOverlays;
+    private readonly Toolbar.CaptureToolbarService _toolbar;
     private readonly TimeProvider _time;
 
     public TrayViewModel(
@@ -75,8 +76,11 @@ public sealed partial class TrayViewModel : ObservableObject
         UpdateService updates,
         InterruptedRecordings interrupted,
         AddOverlaysController addOverlays,
+        Toolbar.CaptureToolbarService toolbar,
         TimeProvider time)
     {
+        _toolbar = toolbar;
+        _toolbar.VisibilityChanged += (_, _) => OnPropertyChanged(nameof(IsToolbarVisible));
         _addOverlays = addOverlays;
         _coordinator = coordinator;
         _lifetime = lifetime;
@@ -221,6 +225,16 @@ public sealed partial class TrayViewModel : ObservableObject
     [RelayCommand]
     private void OpenSettings() => _settingsWindow.Show();
 
+    /// <summary>The floating capture toolbar is showing.</summary>
+    public bool IsToolbarVisible => _toolbar.IsVisible;
+
+    [ObservableProperty]
+    private string _toolbarHotkey = string.Empty;
+
+    /// <summary>Shows or hides the floating capture toolbar.</summary>
+    [RelayCommand]
+    private void ToggleToolbar() => _toolbar.Toggle();
+
     [RelayCommand]
     private void OpenHistory() => _historyWindow.Show();
 
@@ -317,6 +331,7 @@ public sealed partial class TrayViewModel : ObservableObject
         RoundedRegionHotkey = Label(HotkeyAction.CaptureRoundedRegion);
         ObjectHotkey = Label(HotkeyAction.CaptureObject);
         MenuHotkey = Label(HotkeyAction.CaptureMenu);
+        ToolbarHotkey = Label(HotkeyAction.ToggleToolbar);
     }
 
     private string Label(HotkeyAction action) =>

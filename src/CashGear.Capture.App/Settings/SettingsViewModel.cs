@@ -381,6 +381,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private int _cornerRadius;
 
     [ObservableProperty]
+    private bool _showToolbarAtStartup;
+
+    [ObservableProperty]
     private OcrLanguageChoice? _ocrLanguage;
 
     [ObservableProperty]
@@ -918,6 +921,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Ocr = new OcrSettings(OcrLanguage?.Tag),
         History = new HistorySettings(HistorySize?.Value ?? current.History.MaxItems),
         Updates = current.Updates with { CheckAutomatically = CheckForUpdates },
+        Tools = current.Tools with { ShowToolbarAtStartup = ShowToolbarAtStartup },
     };
 
     private void Load(AppSettings s, bool startWithWindows)
@@ -938,6 +942,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         CornerRadius = s.Capture.CornerRadius;
+        ShowToolbarAtStartup = s.Tools.ShowToolbarAtStartup;
         foreach (var row in ModeDelays)
         {
             var seconds = s.Capture.Delays?.For(row.Mode);

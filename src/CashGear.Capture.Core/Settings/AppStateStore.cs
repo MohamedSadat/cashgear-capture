@@ -14,6 +14,9 @@ namespace CashGear.Capture.Core.Settings;
 public sealed record AppState
 {
     public RepeatableCapture? LastCapture { get; init; }
+
+    /// <summary>Where the capture toolbar was (null: never moved).</summary>
+    public Geometry.ToolbarPlacement? Toolbar { get; init; }
 }
 
 public interface IAppStateStore
