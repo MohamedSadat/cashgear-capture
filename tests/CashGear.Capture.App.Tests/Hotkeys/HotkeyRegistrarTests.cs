@@ -26,6 +26,7 @@ public sealed class HotkeyRegistrarTests
             [HotkeyAction.CaptureScrolling] = HotkeyGesture.Parse("Ctrl+Shift+PrintScreen"),
             [HotkeyAction.Record] = HotkeyGesture.Parse("Shift+PrintScreen"),
             [HotkeyAction.CaptureText] = HotkeyGesture.Parse("Ctrl+Alt+PrintScreen"),
+            [HotkeyAction.RepeatLastCapture] = HotkeyGesture.Parse("Ctrl+Alt+Shift+PrintScreen"),
         });
         _notifier.Messages.Should().BeEmpty();
     }
@@ -38,7 +39,7 @@ public sealed class HotkeyRegistrarTests
         using var registrar = Start();
 
         registrar.Active.Should().NotContainKey(HotkeyAction.CaptureFullScreen);
-        registrar.Active.Should().HaveCount(5);
+        registrar.Active.Should().HaveCount(6);
         var message = _notifier.Messages.Should().ContainSingle().Subject;
         message.Kind.Should().Be(NotificationKind.Warning);
         message.Text.Should().Contain("Capture Full Screen: Ctrl+PrintScreen is already used");
@@ -55,7 +56,8 @@ public sealed class HotkeyRegistrarTests
                 CaptureFullScreen: "ctrl+f9",
                 CaptureScrolling: null,
                 Record: null,
-                CaptureText: null),
+                CaptureText: null,
+                RepeatLastCapture: null),
         };
 
         using var registrar = Start();

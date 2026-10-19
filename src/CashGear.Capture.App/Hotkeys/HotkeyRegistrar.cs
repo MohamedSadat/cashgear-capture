@@ -176,6 +176,12 @@ public sealed partial class HotkeyRegistrar(
         HotkeyAction.Record => "Record Screen (again to stop)",
         HotkeyAction.CaptureText => "Capture Text (OCR)",
         HotkeyAction.ToggleDrawing => "Draw on Screen (while recording)",
+        HotkeyAction.RepeatLastCapture => "Repeat Last Capture",
+        HotkeyAction.CaptureWindow => "Capture Window (pick one)",
+        HotkeyAction.CaptureFixedRegion => "Capture Fixed-Size Region",
+        HotkeyAction.CaptureFreehand => "Capture Freehand Region",
+        HotkeyAction.CapturePolygon => "Capture Polygon Region",
+        HotkeyAction.CaptureRoundedRegion => "Capture Rounded Region",
         _ => action.ToString(),
     };
 

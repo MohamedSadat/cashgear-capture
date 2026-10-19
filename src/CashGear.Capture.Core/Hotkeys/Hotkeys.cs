@@ -164,6 +164,20 @@ public enum HotkeyAction
 
     /// <summary>Turn the pen for drawing on the screen on or off; only while recording.</summary>
     ToggleDrawing,
+
+    /// <summary>The last capture again: the same kind, the same area (or window).</summary>
+    RepeatLastCapture,
+
+    /// <summary>Pick a window on the frozen screen, then capture its own content.</summary>
+    CaptureWindow,
+
+    CaptureFixedRegion,
+
+    CaptureFreehand,
+
+    CapturePolygon,
+
+    CaptureRoundedRegion,
 }
 
 /// <summary>System-wide hotkeys. Registration and presses happen on the thread that owns the service (the UI thread).</summary>

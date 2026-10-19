@@ -40,6 +40,21 @@ internal sealed class InstanceCommandDispatcher(
             case InstanceCommand.CaptureText:
                 return ui.InvokeAsync(() => tray.CaptureTextCommand.ExecuteAsync(null));
 
+            case InstanceCommand.CaptureFixedRegion:
+                return ui.InvokeAsync(() => tray.CaptureFixedRegionCommand.ExecuteAsync(null));
+
+            case InstanceCommand.CaptureFreehand:
+                return ui.InvokeAsync(() => tray.CaptureFreehandCommand.ExecuteAsync(null));
+
+            case InstanceCommand.CapturePolygon:
+                return ui.InvokeAsync(() => tray.CapturePolygonCommand.ExecuteAsync(null));
+
+            case InstanceCommand.CaptureRoundedRegion:
+                return ui.InvokeAsync(() => tray.CaptureRoundedRegionCommand.ExecuteAsync(null));
+
+            case InstanceCommand.RepeatLastCapture:
+                return ui.InvokeAsync(() => tray.RepeatLastCaptureCommand.ExecuteAsync(null));
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(command), command, null);
         }

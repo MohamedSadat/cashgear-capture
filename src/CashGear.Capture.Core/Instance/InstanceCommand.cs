@@ -21,24 +21,50 @@ public enum InstanceCommand
 
     /// <summary>Select an area and copy the text in it.</summary>
     CaptureText,
+
+    CaptureFixedRegion,
+
+    CaptureFreehand,
+
+    CapturePolygon,
+
+    CaptureRoundedRegion,
+
+    /// <summary>The last capture again, with no selection.</summary>
+    RepeatLastCapture,
 }
 
 /// <summary>Maps command-line switches and pipe messages to <see cref="InstanceCommand"/>.</summary>
 public static class InstanceCommandParser
 {
-    private const string ExitWire = "exit";
-    private const string CaptureFullScreenWire = "capture-fullscreen";
-    private const string ActivateWire = "activate";
-    private const string CaptureRegionWire = "capture-region";
-    private const string CaptureWindowWire = "capture-window";
-    private const string CaptureScrollingWire = "capture-scrolling";
-    private const string RecordWire = "record";
-    private const string CaptureTextWire = "capture-text";
+    private static readonly IReadOnlyDictionary<InstanceCommand, string> Wires = new Dictionary<InstanceCommand, string>
+    {
+        [InstanceCommand.Activate] = "activate",
+        [InstanceCommand.Exit] = "exit",
+        [InstanceCommand.CaptureFullScreen] = "capture-fullscreen",
+        [InstanceCommand.CaptureRegion] = "capture-region",
+        [InstanceCommand.CaptureWindow] = "capture-window",
+        [InstanceCommand.CaptureScrolling] = "capture-scrolling",
+        [InstanceCommand.Record] = "record",
+        [InstanceCommand.CaptureText] = "capture-text",
+        [InstanceCommand.CaptureFixedRegion] = "capture-fixed",
+        [InstanceCommand.CaptureFreehand] = "capture-freehand",
+        [InstanceCommand.CapturePolygon] = "capture-polygon",
+        [InstanceCommand.CaptureRoundedRegion] = "capture-rounded",
+        [InstanceCommand.RepeatLastCapture] = "repeat-last",
+    };
+
+    private static readonly IReadOnlyDictionary<string, InstanceCommand> Commands = Wires.ToDictionary(p => p.Value, p => p.Key);
+
+    /// <summary>Every switch (without its <c>--</c>), e.g. for help text.</summary>
+    public static IReadOnlyCollection<string> Switches => [.. Wires.Values];
 
     /// <summary>
     /// The first recognised switch wins (<c>--exit</c>, <c>--capture-fullscreen</c>, <c>--capture-region</c>,
-    /// <c>--capture-window</c>, <c>--capture-scrolling</c>, <c>--record</c>, <c>--capture-text</c>; <c>-</c> or <c>/</c>
-    /// prefixes also accepted). No recognised switch means <see cref="InstanceCommand.Activate"/>.
+    /// <c>--capture-window</c>, <c>--capture-scrolling</c>, <c>--record</c>, <c>--capture-text</c>,
+    /// <c>--capture-fixed</c>, <c>--capture-freehand</c>, <c>--capture-polygon</c>, <c>--capture-rounded</c>,
+    /// <c>--repeat-last</c>; <c>-</c> or <c>/</c> prefixes also accepted). No recognised switch means
+    /// <see cref="InstanceCommand.Activate"/>.
     /// </summary>
     public static InstanceCommand FromArgs(IReadOnlyList<string> args)
     {
@@ -54,50 +80,9 @@ public static class InstanceCommandParser
         return InstanceCommand.Activate;
     }
 
-    public static string ToWire(InstanceCommand command) => command switch
-    {
-        InstanceCommand.Activate => ActivateWire,
-        InstanceCommand.Exit => ExitWire,
-        InstanceCommand.CaptureFullScreen => CaptureFullScreenWire,
-        InstanceCommand.CaptureRegion => CaptureRegionWire,
-        InstanceCommand.CaptureWindow => CaptureWindowWire,
-        InstanceCommand.CaptureScrolling => CaptureScrollingWire,
-        InstanceCommand.Record => RecordWire,
-        InstanceCommand.CaptureText => CaptureTextWire,
-        _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
-    };
+    public static string ToWire(InstanceCommand command) =>
+        Wires.TryGetValue(command, out var wire) ? wire : throw new ArgumentOutOfRangeException(nameof(command), command, null);
 
-    public static bool TryParseWire(string? text, out InstanceCommand command)
-    {
-        switch (text?.Trim().ToLowerInvariant())
-        {
-            case ActivateWire:
-                command = InstanceCommand.Activate;
-                return true;
-            case ExitWire:
-                command = InstanceCommand.Exit;
-                return true;
-            case CaptureFullScreenWire:
-                command = InstanceCommand.CaptureFullScreen;
-                return true;
-            case CaptureRegionWire:
-                command = InstanceCommand.CaptureRegion;
-                return true;
-            case CaptureWindowWire:
-                command = InstanceCommand.CaptureWindow;
-                return true;
-            case CaptureScrollingWire:
-                command = InstanceCommand.CaptureScrolling;
-                return true;
-            case RecordWire:
-                command = InstanceCommand.Record;
-                return true;
-            case CaptureTextWire:
-                command = InstanceCommand.CaptureText;
-                return true;
-            default:
-                command = default;
-                return false;
-        }
-    }
+    public static bool TryParseWire(string? text, out InstanceCommand command) =>
+        Commands.TryGetValue(text?.Trim().ToLowerInvariant() ?? string.Empty, out command);
 }

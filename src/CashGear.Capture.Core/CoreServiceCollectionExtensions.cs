@@ -17,6 +17,7 @@ public static class CoreServiceCollectionExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton(ArrayPool<byte>.Shared);
         services.AddSingleton<ISettingsService, JsonSettingsService>();
+        services.AddSingleton<IAppStateStore, JsonAppStateStore>();
         services.AddSingleton<ICaptureCounter, FileCaptureCounter>();
         return services;
     }

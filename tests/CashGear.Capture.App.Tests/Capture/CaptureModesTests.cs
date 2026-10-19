@@ -54,6 +54,7 @@ public sealed class CaptureModesTests : IDisposable
         image.Metadata.IsNonRectangular.Should().BeFalse();
         image.Metadata.MonitorName.Should().Be(monitor.ShortName);
         await AssertShowsTheScreenAsync(image, monitor);
+        await AssertRepeatsExactlyAsync(harness, CaptureMode.Region);
     });
 
     [Fact]
@@ -70,6 +71,7 @@ public sealed class CaptureModesTests : IDisposable
         var image = harness.Output.Last;
         image.Metadata.SourceBounds.Should().Be(new PixelRect(corner.X, corner.Y, 160, 120));
         await AssertShowsTheScreenAsync(image, monitor);
+        await AssertRepeatsExactlyAsync(harness, CaptureMode.FixedRegion);
     });
 
     [Fact]
@@ -93,6 +95,7 @@ public sealed class CaptureModesTests : IDisposable
         Pixel(image, 0, 0).Should().Be((255, 255, 255, 0), "the corner of the circle's box is outside it");
         Pixel(image, 100, 100).A.Should().Be(255);
         await AssertShowsTheScreenAsync(image, monitor);
+        await AssertRepeatsExactlyAsync(harness, CaptureMode.Freehand);
     });
 
     [Fact]
@@ -112,6 +115,7 @@ public sealed class CaptureModesTests : IDisposable
         Pixel(image, image.Width - 1, image.Height - 1).A.Should().Be(0);
         Pixel(image, (c.X - a.X), (c.Y - a.Y) - 20).A.Should().Be(255, "just above the bottom corner is inside");
         await AssertShowsTheScreenAsync(image, monitor);
+        await AssertRepeatsExactlyAsync(harness, CaptureMode.Polygon);
     });
 
     [Fact]
@@ -132,7 +136,66 @@ public sealed class CaptureModesTests : IDisposable
         Pixel(image, 100, 0).A.Should().Be(255, "the top edge between the corners is whole");
         harness.Settings.Current.Capture.CornerRadius.Should().Be(20, "16 and two notches of 2 px; the next rounded capture starts there");
         await AssertShowsTheScreenAsync(image, monitor);
+        await AssertRepeatsExactlyAsync(harness, CaptureMode.RoundedRegion);
     });
+
+    [Fact]
+    public Task Repeating_a_window_capture_takes_the_same_window_while_it_is_open()
+    {
+        InteractiveDesktop.Require();
+        var monitor = _monitors.GetMonitors()[0];
+        return StaDispatcher.RunAsync(async () =>
+        {
+            using var harness = new CaptureHarness(Path.Combine(_root, "window"));
+            await harness.Coordinator.RepeatLastCaptureAsync();
+            harness.Notifier.Messages.Should().ContainSingle().Which.Text.Should().Contain("Nothing has been captured yet");
+
+            var (window, pattern) = await PatternWindow.ShowAsync(monitor, PatternSize, PatternOffset);
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+            try
+            {
+                await harness.Coordinator.CaptureActiveWindowAsync(hwnd);
+                var first = harness.Output.Last;
+                first.Metadata.Kind.Should().Be(CaptureKind.Window);
+                harness.Coordinator.LastCapture!.Mode.Should().Be(CaptureMode.ActiveWindow);
+
+                await harness.Coordinator.RepeatLastCaptureAsync();
+                var again = harness.Output.Last;
+                again.Should().NotBeSameAs(first);
+                (again.Width, again.Height).Should().Be((first.Width, first.Height));
+                again.Pixels.SequenceEqual(first.Pixels).Should().BeTrue("the same window, unchanged");
+            }
+            finally
+            {
+                window.Close();
+            }
+
+            await Task.Delay(200);
+            var count = harness.Output.Images.Count;
+            await harness.Coordinator.RepeatLastCaptureAsync();
+            harness.Output.Images.Should().HaveCount(count, "the window is gone");
+            harness.Notifier.Messages[^1].Text.Should().Contain("isn't open any more");
+        });
+    }
+
+    /// <summary>
+    /// Acceptance: Repeat Last Capture takes exactly the same pixel rectangle (and shape) again, with no overlay, after
+    /// the same kind's delay; the screen hasn't changed, so the pixels are identical.
+    /// </summary>
+    private static async Task AssertRepeatsExactlyAsync(CaptureHarness harness, CaptureMode mode)
+    {
+        var first = harness.Output.Last;
+        harness.Coordinator.LastCapture!.Mode.Should().Be(mode);
+        await harness.Coordinator.RepeatLastCaptureAsync();
+        harness.Selector.IsOpen.Should().BeFalse();
+
+        var again = harness.Output.Last;
+        again.Should().NotBeSameAs(first, "a second capture was delivered");
+        again.Metadata.SourceBounds.Should().Be(first.Metadata.SourceBounds, "the same pixel rectangle");
+        again.Metadata.IsNonRectangular.Should().Be(first.Metadata.IsNonRectangular);
+        again.Pixels.SequenceEqual(first.Pixels).Should().BeTrue("the same pixels, and the same transparency outside the shape");
+        harness.Countdown.Requested.Select(r => r.What).Should().Equal(mode.Label(), mode.Label());
+    }
 
     /// <summary>Every pixel the shape fully covers is what the screen shows there now; partly covered ones keep the screen's colour.</summary>
     private async Task AssertShowsTheScreenAsync(CapturedImage image, MonitorInfo monitor)

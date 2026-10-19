@@ -30,6 +30,46 @@ public sealed class SettingsViewModelTests : IDisposable
     public void Dispose() => _registrar.Dispose();
 
     [Fact]
+    public async Task Delays_per_kind_of_capture_the_fixed_size_and_the_radius_are_edited_and_saved()
+    {
+        _settings.Current = new AppSettings
+        {
+            Capture = new CaptureSettings(
+                DelaySeconds: 2,
+                FixedRegionWidth: 700,
+                FixedRegionHeight: 500,
+                CornerRadius: 22,
+                Delays: new ModeDelays(Region: 7)),
+        };
+
+        using var vm = Create();
+        vm.ModeDelays.Select(r => r.Mode).Should().Equal(Enum.GetValues<CaptureMode>());
+        vm.ModeDelays.Single(r => r.Mode == CaptureMode.Region).Choice!.Label.Should().Be("7 s", "a value set by hand is offered");
+        vm.ModeDelays.Single(r => r.Mode == CaptureMode.Menu).Choice!.Seconds.Should().Be(3);
+        vm.ModeDelays.Single(r => r.Mode == CaptureMode.Polygon).Choice!.Seconds.Should().BeNull();
+        vm.FixedRegionSize.Should().Be("700 × 500");
+        vm.CornerRadiusChoices.Should().Contain(22).And.BeInAscendingOrder();
+        vm.CornerRadius.Should().Be(22);
+
+        vm.ModeDelays.Single(r => r.Mode == CaptureMode.Menu).Choice = vm.ModeDelayChoices.Single(c => c.Seconds is null);
+        vm.ModeDelays.Single(r => r.Mode == CaptureMode.Object).Choice = vm.ModeDelayChoices.Single(c => c.Seconds == 5);
+        vm.FixedRegionSize = "abc";
+        vm.HasErrors.Should().BeTrue();
+        vm.Errors.Should().Contain("Fixed-size region");
+        vm.FixedRegionSize = "1280x720";
+        vm.CornerRadius = 8;
+        vm.HasErrors.Should().BeFalse();
+        await vm.ApplyCommand.ExecuteAsync(null);
+
+        var capture = _settings.Current.Capture;
+        capture.DelayFor(CaptureMode.Menu).Should().Be(2, "back to the general delay");
+        capture.DelayFor(CaptureMode.Object).Should().Be(5);
+        capture.DelayFor(CaptureMode.Region).Should().Be(7);
+        capture.FixedRegionSize.Should().Be(new Core.Geometry.PixelSize(1280, 720));
+        capture.CornerRadius.Should().Be(8);
+    }
+
+    [Fact]
     public void Loads_the_current_settings()
     {
         _settings.Current = new AppSettings
@@ -53,7 +93,7 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Backend.Should().Be(CaptureBackend.Gdi);
         vm.Theme.Should().Be(AppTheme.Dark);
         vm.StartWithWindows.Should().BeTrue();
-        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen", "Ctrl+Shift+D");
+        vm.Hotkeys.Select(h => h.Text).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen", "Ctrl+Shift+D", "Ctrl+Alt+Shift+PrintScreen", "", "", "", "", "");
         vm.Hotkeys.Single(h => h.Action == HotkeyAction.ToggleDrawing).Status.Should().Be("Works while recording");
         vm.HasErrors.Should().BeFalse();
     }
@@ -788,7 +828,7 @@ public sealed class SettingsViewModelTests : IDisposable
         _hotkeyService.Registered.Should().BeEmpty();
 
         vm.EndHotkeyRecording();
-        _hotkeyService.Registered.Should().HaveCount(6);
+        _hotkeyService.Registered.Should().HaveCount(7);
     }
 
     [Fact]
@@ -799,7 +839,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         vm.Dispose();
 
-        _hotkeyService.Registered.Should().HaveCount(6);
+        _hotkeyService.Registered.Should().HaveCount(7);
     }
 
     [Fact]

@@ -34,7 +34,7 @@ public static partial class FileNameTemplate
         ("{mm}", "Minute, 00–59"),
         ("{ss}", "Second, 00–59"),
         ("{counter}", "Running number, 0001, 0002, … (kept across restarts)"),
-        ("{kind}", "fullscreen, monitor, region, window, scrolling or recording"),
+        ("{kind}", "fullscreen, monitor, region, window, scrolling, object, menu or recording"),
         ("{monitor}", "Monitor name, e.g. DISPLAY1 (all for the whole screen, multi when spanning)"),
         ("{window}", "Title of the captured window (empty otherwise)"),
     ];
@@ -177,6 +177,8 @@ public static partial class FileNameTemplate
             CaptureKind.Window => "window",
             CaptureKind.Scrolling => "scrolling",
             CaptureKind.Recording => "recording",
+            CaptureKind.Object => "object",
+            CaptureKind.Menu => "menu",
             _ => "region",
         },
         "monitor" => c.MonitorName ?? (c.Kind == CaptureKind.AllMonitors ? "all" : "multi"),

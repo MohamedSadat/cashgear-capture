@@ -53,6 +53,23 @@ public sealed record CountChoice(int Value, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>A delay for one kind of capture: seconds, or null for the general capture delay.</summary>
+public sealed record ModeDelayChoice(int? Seconds, string Label)
+{
+    public override string ToString() => Label;
+}
+
+/// <summary>One kind of capture's delay in Settings › Capture.</summary>
+public sealed partial class ModeDelayRow(CaptureMode mode) : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
+{
+    public CaptureMode Mode => mode;
+
+    public string Label => mode.Label();
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private ModeDelayChoice? _choice;
+}
+
 /// <summary>True for false and false for true (a radio button for the "off" side of a setting).</summary>
 public sealed class InverseBooleanConverter : IValueConverter
 {

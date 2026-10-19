@@ -124,6 +124,24 @@ public sealed partial class TrayViewModel : ObservableObject
     [ObservableProperty]
     private string _textHotkey = string.Empty;
 
+    [ObservableProperty]
+    private string _repeatHotkey = string.Empty;
+
+    [ObservableProperty]
+    private string _windowHotkey = string.Empty;
+
+    [ObservableProperty]
+    private string _fixedRegionHotkey = string.Empty;
+
+    [ObservableProperty]
+    private string _freehandHotkey = string.Empty;
+
+    [ObservableProperty]
+    private string _polygonHotkey = string.Empty;
+
+    [ObservableProperty]
+    private string _roundedRegionHotkey = string.Empty;
+
     /// <summary>The Capture Delay submenu; the delay applies to every capture until changed.</summary>
     public IReadOnlyList<DelayChoice> DelayChoices { get; }
 
@@ -162,6 +180,10 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [RelayCommand]
     private Task CaptureRoundedRegionAsync() => _coordinator.CaptureRoundedRegionAsync();
+
+    /// <summary>The last capture again: the same kind, the same pixels or window, no selection.</summary>
+    [RelayCommand]
+    private Task RepeatLastCaptureAsync() => _coordinator.RepeatLastCaptureAsync();
 
     /// <summary>Pick a window on the overlay, then capture its own content.</summary>
     [RelayCommand]
@@ -273,6 +295,12 @@ public sealed partial class TrayViewModel : ObservableObject
         ScrollingHotkey = Label(HotkeyAction.CaptureScrolling);
         RecordHotkey = Label(HotkeyAction.Record);
         TextHotkey = Label(HotkeyAction.CaptureText);
+        RepeatHotkey = Label(HotkeyAction.RepeatLastCapture);
+        WindowHotkey = Label(HotkeyAction.CaptureWindow);
+        FixedRegionHotkey = Label(HotkeyAction.CaptureFixedRegion);
+        FreehandHotkey = Label(HotkeyAction.CaptureFreehand);
+        PolygonHotkey = Label(HotkeyAction.CapturePolygon);
+        RoundedRegionHotkey = Label(HotkeyAction.CaptureRoundedRegion);
     }
 
     private string Label(HotkeyAction action) =>

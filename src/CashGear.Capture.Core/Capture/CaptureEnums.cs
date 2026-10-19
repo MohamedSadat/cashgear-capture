@@ -26,4 +26,10 @@ public enum CaptureKind
 
     /// <summary>A screen recording (an MP4 file).</summary>
     Recording,
+
+    /// <summary>A part of a window (a control, a panel) picked with UI Automation.</summary>
+    Object,
+
+    /// <summary>Open menus (and their submenus).</summary>
+    Menu,
 }

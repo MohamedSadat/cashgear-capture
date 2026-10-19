@@ -152,6 +152,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<int> HideDelayChoices { get; } = [0, 100, 200, 300, 500, 1000];
 
+    /// <summary>What each kind of capture's own delay can be (a value set by hand in settings.json is added).</summary>
+    public ObservableCollection<ModeDelayChoice> ModeDelayChoices { get; } =
+        [new(null, "Same as the capture delay"), .. new[] { 0, 1, 2, 3, 5, 10, 15, 30 }.Select(s => new ModeDelayChoice(s, $"{s} s"))];
+
+    /// <summary>A delay per kind of capture.</summary>
+    public IReadOnlyList<ModeDelayRow> ModeDelays { get; } = [.. Enum.GetValues<CaptureMode>().Select(m => new ModeDelayRow(m))];
+
     /// <summary>The fixed-size region's ready-made sizes (any other can be typed).</summary>
     public IReadOnlyList<string> FixedSizeChoices { get; } = [.. FixedSizes.Presets.Select(s => s.ToString())];
 
@@ -870,6 +877,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             FixedRegionWidth = PixelSize.TryParse(FixedRegionSize, out var size) ? size.Width : current.Capture.FixedRegionWidth,
             FixedRegionHeight = PixelSize.TryParse(FixedRegionSize, out size) ? size.Height : current.Capture.FixedRegionHeight,
             CornerRadius = CornerRadius,
+            Delays = ModeDelays.Aggregate(current.Capture.Delays ?? new ModeDelays(), (d, row) => d.With(row.Mode, row.Choice?.Seconds)),
         },
         Output = current.Output with
         {
@@ -930,6 +938,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         CornerRadius = s.Capture.CornerRadius;
+        foreach (var row in ModeDelays)
+        {
+            var seconds = s.Capture.Delays?.For(row.Mode);
+            row.Choice = ModeDelayChoices.FirstOrDefault(c => c.Seconds == seconds);
+            if (row.Choice is null)
+            {
+                row.Choice = new ModeDelayChoice(seconds, $"{seconds} s");
+                ModeDelayChoices.Add(row.Choice);
+            }
+        }
         ScrollSettleMs = s.Capture.ScrollSettleMs;
         // A language set by hand but not installed still shows (and is kept) rather than silently becoming Automatic.
         OcrLanguage = OcrLanguages.FirstOrDefault(l => string.Equals(l.Tag, s.Ocr.Language, StringComparison.OrdinalIgnoreCase))

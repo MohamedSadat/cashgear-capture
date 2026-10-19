@@ -113,6 +113,27 @@
                         HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="Hide delay" />
             </Grid>
             <TextBlock Style="{StaticResource Hint}" Text="The capture delay gives you time to open a menu or hover a tooltip before the screen is taken." />
+            <Expander Header="Delay per kind of capture" Margin="0,8,0,0">
+              <StackPanel Margin="0,6,0,0">
+                <ItemsControl ItemsSource="{Binding ModeDelays}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type local:ModeDelayRow}">
+                      <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="220" />
+                          <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="1" SelectedItem="{Binding Choice}" HorizontalAlignment="Left" MinWidth="200"
+                                  ItemsSource="{Binding DataContext.ModeDelayChoices, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                  AutomationProperties.Name="{Binding Label}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Style="{StaticResource Hint}" Text="Repeat Last Capture waits as long as the kind of capture it repeats. An open menu is captured 3 seconds after you ask, unless set otherwise: time to open it." />
+              </StackPanel>
+            </Expander>
 
             <TextBlock Style="{StaticResource Section}" Text="Content" />
             <CheckBox Margin="0,2" Content="Include the mouse cursor" IsChecked="{Binding IncludeCursor}" />
@@ -568,6 +589,7 @@
 
       <!-- ============================== Hotkeys ============================== -->
       <TabItem Header="Hotkeys">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="12,4,12,12">
           <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,8"
                      Text="Click a box and press the keys. Backspace clears it. Hotkeys are paused while a box is selected, so PrintScreen can be recorded." />
@@ -631,6 +653,7 @@
           </Grid>
           <TextBlock Style="{StaticResource Hint}" Text="With a key set, the microphone is silent in recordings except while the key is held (and a quarter of a second after, so words aren't cut). The key isn't taken from other apps, so a key that does nothing in them works best: F13 to F24, Scroll Lock, Pause, or a mouse button mapped to one of those. A key on its own is fine here." />
         </StackPanel>
+        </ScrollViewer>
       </TabItem>
 
       <!-- ============================== General ============================== -->

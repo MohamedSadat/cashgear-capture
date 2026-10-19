@@ -46,6 +46,30 @@ public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows,
             case HotkeyAction.ToggleDrawing:
                 tray.ToggleDrawingCommand.Execute(null);
                 break;
+
+            case HotkeyAction.RepeatLastCapture:
+                Run(tray.RepeatLastCaptureCommand.ExecuteAsync(null));
+                break;
+
+            case HotkeyAction.CaptureWindow:
+                Run(tray.CaptureWindowCommand.ExecuteAsync(null));
+                break;
+
+            case HotkeyAction.CaptureFixedRegion:
+                Run(tray.CaptureFixedRegionCommand.ExecuteAsync(null));
+                break;
+
+            case HotkeyAction.CaptureFreehand:
+                Run(tray.CaptureFreehandCommand.ExecuteAsync(null));
+                break;
+
+            case HotkeyAction.CapturePolygon:
+                Run(tray.CapturePolygonCommand.ExecuteAsync(null));
+                break;
+
+            case HotkeyAction.CaptureRoundedRegion:
+                Run(tray.CaptureRoundedRegionCommand.ExecuteAsync(null));
+                break;
         }
     }
 

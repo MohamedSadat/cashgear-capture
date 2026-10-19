@@ -13,16 +13,17 @@
     <tb:TaskbarIcon.ContextMenu>
       <ContextMenu>
         <MenuItem Header="Capture _Region" Command="{Binding CaptureRegionCommand}" InputGestureText="{Binding RegionHotkey}" />
-        <MenuItem Header="Capture _Window" Command="{Binding CaptureWindowCommand}" />
+        <MenuItem Header="Capture _Window" Command="{Binding CaptureWindowCommand}" InputGestureText="{Binding WindowHotkey}" />
         <MenuItem Header="Capture _Full Screen" Command="{Binding CaptureFullScreenCommand}" InputGestureText="{Binding FullScreenHotkey}" />
         <MenuItem Header="_Scrolling Capture" Command="{Binding CaptureScrollingCommand}" InputGestureText="{Binding ScrollingHotkey}" />
         <MenuItem Header="Capture _Text" Command="{Binding CaptureTextCommand}" InputGestureText="{Binding TextHotkey}" />
         <MenuItem Header="_More Captures">
-          <MenuItem Header="_Fixed-Size Region" Command="{Binding CaptureFixedRegionCommand}" />
-          <MenuItem Header="F_reehand Region" Command="{Binding CaptureFreehandCommand}" />
-          <MenuItem Header="_Polygon Region" Command="{Binding CapturePolygonCommand}" />
-          <MenuItem Header="R_ounded Region" Command="{Binding CaptureRoundedRegionCommand}" />
+          <MenuItem Header="_Fixed-Size Region" Command="{Binding CaptureFixedRegionCommand}" InputGestureText="{Binding FixedRegionHotkey}" />
+          <MenuItem Header="F_reehand Region" Command="{Binding CaptureFreehandCommand}" InputGestureText="{Binding FreehandHotkey}" />
+          <MenuItem Header="_Polygon Region" Command="{Binding CapturePolygonCommand}" InputGestureText="{Binding PolygonHotkey}" />
+          <MenuItem Header="R_ounded Region" Command="{Binding CaptureRoundedRegionCommand}" InputGestureText="{Binding RoundedRegionHotkey}" />
         </MenuItem>
+        <MenuItem Header="Repeat _Last Capture" Command="{Binding RepeatLastCaptureCommand}" InputGestureText="{Binding RepeatHotkey}" />
         <MenuItem Header="{Binding DelayHeader}" ItemsSource="{Binding DelayChoices}">
           <MenuItem.ItemContainerStyle>
             <Style TargetType="MenuItem">

@@ -15,8 +15,11 @@ namespace CashGear.Capture.App.Capture;
 /// <summary>Counts down before a delayed capture.</summary>
 public interface ICaptureCountdown
 {
-    /// <summary>Shows the count and completes after <paramref name="seconds"/>; throws <see cref="OperationCanceledException"/> if the user cancels.</summary>
-    Task RunAsync(int seconds, CancellationToken ct);
+    /// <summary>
+    /// Shows the count with what is about to be captured (e.g. "Open menu"), and completes after
+    /// <paramref name="seconds"/>; throws <see cref="OperationCanceledException"/> if the user cancels.
+    /// </summary>
+    Task RunAsync(int seconds, string what, CancellationToken ct);
 }
 
 /// <summary>
@@ -27,7 +30,7 @@ public interface ICaptureCountdown
 internal sealed class WpfCaptureCountdown(
     IUiDispatcher ui, ISettingsService settings, IMonitorService monitors, IScrollPlatform pointer, TimeProvider time) : ICaptureCountdown
 {
-    public async Task RunAsync(int seconds, CancellationToken ct)
+    public async Task RunAsync(int seconds, string what, CancellationToken ct)
     {
         if (seconds <= 0)
         {
@@ -41,7 +44,7 @@ internal sealed class WpfCaptureCountdown(
             : null;
         var window = await ui.InvokeAsync(() =>
         {
-            var created = new CountdownWindow(settings.Current.Appearance.Theme, monitor?.WorkArea, cancelled.Cancel);
+            var created = new CountdownWindow(settings.Current.Appearance.Theme, monitor?.WorkArea, cancelled.Cancel) { What = what };
             created.Show();
             return created;
         }).ConfigureAwait(false);
@@ -87,6 +90,12 @@ public partial class CountdownWindow : Window, IThemedWindow
     }
 
     public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
+
+    /// <summary>What is captured when the count ends: "Open menu in 3".</summary>
+    public string What
+    {
+        init => Heading.Text = $"{value} in";
+    }
 
     /// <summary>Shows the seconds left.</summary>
     public void Show(int secondsLeft) => Seconds.Text = secondsLeft.ToString(CultureInfo.CurrentCulture);

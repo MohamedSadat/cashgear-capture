@@ -34,6 +34,8 @@ public sealed record CaptureHistoryEntry(
                 CaptureKind.Window => "Window",
                 CaptureKind.Scrolling => "Scrolling",
                 CaptureKind.Recording => "Recording",
+                CaptureKind.Object => "Object",
+                CaptureKind.Menu => "Menu",
                 _ => "Region",
             };
             var size = $"{Width} × {Height}";

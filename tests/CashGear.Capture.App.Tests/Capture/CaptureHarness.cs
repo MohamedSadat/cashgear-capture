@@ -247,11 +247,11 @@ internal sealed class CapturedOutput : IOutputService, IEditorLauncher, IDisposa
 
 internal sealed class RecordingCountdown : ICaptureCountdown
 {
-    public List<int> Requested { get; } = [];
+    public List<(int Seconds, string What)> Requested { get; } = [];
 
-    public Task RunAsync(int seconds, CancellationToken ct)
+    public Task RunAsync(int seconds, string what, CancellationToken ct)
     {
-        Requested.Add(seconds);
+        Requested.Add((seconds, what));
         return Task.CompletedTask;
     }
 }

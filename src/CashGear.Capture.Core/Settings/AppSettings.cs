@@ -85,6 +85,7 @@ public enum FullScreenOutput
 /// <param name="FixedRegionWidth">Fixed-size region: the width last used (pixels).</param>
 /// <param name="FixedRegionHeight">Fixed-size region: the height last used (pixels).</param>
 /// <param name="CornerRadius">Rounded region: the corner radius last used (pixels).</param>
+/// <param name="Delays">A delay per capture mode that overrides <paramref name="DelaySeconds"/>.</param>
 public sealed record CaptureSettings(
     CaptureBackend Backend = CaptureBackend.Auto,
     bool IncludeCursor = false,
@@ -97,8 +98,12 @@ public sealed record CaptureSettings(
     int ScrollMaxHeight = CaptureSettings.DefaultScrollMaxHeight,
     int FixedRegionWidth = 800,
     int FixedRegionHeight = 600,
-    int CornerRadius = CaptureSettings.DefaultCornerRadius)
+    int CornerRadius = CaptureSettings.DefaultCornerRadius,
+    ModeDelays? Delays = null)
 {
+    /// <summary>Never null when made by the constructor (or read from a file), so settings compare by value.</summary>
+    public ModeDelays? Delays { get; init; } = Delays ?? new ModeDelays();
+
     public const int DefaultCornerRadius = 16;
     public const int MaxFixedRegionSide = 20_000;
     public const int MaxCornerRadius = Selection.RegionSelectionModel.MaxCornerRadius;
@@ -125,10 +130,72 @@ public sealed record CaptureSettings(
         FixedRegionWidth = Math.Clamp(FixedRegionWidth, 1, MaxFixedRegionSide),
         FixedRegionHeight = Math.Clamp(FixedRegionHeight, 1, MaxFixedRegionSide),
         CornerRadius = Math.Clamp(CornerRadius, 0, MaxCornerRadius),
+        Delays = (Delays ?? new ModeDelays()).Normalize(),
     };
 
     [JsonIgnore]
     public Geometry.PixelSize FixedRegionSize => new(FixedRegionWidth, FixedRegionHeight);
+
+    /// <summary>The delay before a capture of this kind: its own, or else the general <see cref="DelaySeconds"/>.</summary>
+    public int DelayFor(CaptureMode mode) => Delays?.For(mode) ?? DelaySeconds;
+}
+
+/// <summary>
+/// A delay (seconds) for each kind of capture; null uses the general delay (<see cref="CaptureSettings.DelaySeconds"/>).
+/// Capturing an open menu waits <see cref="DefaultMenuDelay"/> by default: time to open the menu.
+/// </summary>
+public sealed record ModeDelays(
+    int? Region = null,
+    int? Window = null,
+    int? ActiveWindow = null,
+    int? FullScreen = null,
+    int? Scrolling = null,
+    int? Text = null,
+    int? FixedRegion = null,
+    int? Freehand = null,
+    int? Polygon = null,
+    int? RoundedRegion = null,
+    int? Object = null,
+    int? Menu = ModeDelays.DefaultMenuDelay)
+{
+    public const int DefaultMenuDelay = 3;
+
+    public int? For(CaptureMode mode) => mode switch
+    {
+        CaptureMode.Region => Region,
+        CaptureMode.Window => Window,
+        CaptureMode.ActiveWindow => ActiveWindow,
+        CaptureMode.FullScreen => FullScreen,
+        CaptureMode.Scrolling => Scrolling,
+        CaptureMode.Text => Text,
+        CaptureMode.FixedRegion => FixedRegion,
+        CaptureMode.Freehand => Freehand,
+        CaptureMode.Polygon => Polygon,
+        CaptureMode.RoundedRegion => RoundedRegion,
+        CaptureMode.Object => Object,
+        CaptureMode.Menu => Menu,
+        _ => null,
+    };
+
+    /// <summary>A copy with one mode's delay replaced (null: the general delay).</summary>
+    public ModeDelays With(CaptureMode mode, int? seconds) => mode switch
+    {
+        CaptureMode.Region => this with { Region = seconds },
+        CaptureMode.Window => this with { Window = seconds },
+        CaptureMode.ActiveWindow => this with { ActiveWindow = seconds },
+        CaptureMode.FullScreen => this with { FullScreen = seconds },
+        CaptureMode.Scrolling => this with { Scrolling = seconds },
+        CaptureMode.Text => this with { Text = seconds },
+        CaptureMode.FixedRegion => this with { FixedRegion = seconds },
+        CaptureMode.Freehand => this with { Freehand = seconds },
+        CaptureMode.Polygon => this with { Polygon = seconds },
+        CaptureMode.RoundedRegion => this with { RoundedRegion = seconds },
+        CaptureMode.Object => this with { Object = seconds },
+        CaptureMode.Menu => this with { Menu = seconds },
+        _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
+    };
+
+    public ModeDelays Normalize() => Enum.GetValues<CaptureMode>().Aggregate(this, (d, mode) => d.For(mode) is { } s ? d.With(mode, Math.Clamp(s, 0, CaptureSettings.MaxDelaySeconds)) : d);
 }
 
 /// <param name="Folder">Folder for saved captures; null means <see cref="AppPaths.DefaultCaptureDirectory"/>. Environment variables are expanded.</param>
@@ -310,8 +377,16 @@ public sealed record HotkeySettings(
     string? CaptureScrolling = HotkeySettings.DefaultCaptureScrolling,
     string? Record = HotkeySettings.DefaultRecord,
     string? CaptureText = HotkeySettings.DefaultCaptureText,
-    string? ToggleDrawing = HotkeySettings.DefaultToggleDrawing)
+    string? ToggleDrawing = HotkeySettings.DefaultToggleDrawing,
+    string? RepeatLastCapture = HotkeySettings.DefaultRepeatLastCapture,
+    string? CaptureWindow = null,
+    string? CaptureFixedRegion = null,
+    string? CaptureFreehand = null,
+    string? CapturePolygon = null,
+    string? CaptureRoundedRegion = null)
 {
+    public const string DefaultRepeatLastCapture = "Ctrl+Alt+Shift+PrintScreen";
+
     public const string DefaultCaptureRegion = "PrintScreen";
     public const string DefaultCaptureActiveWindow = "Alt+PrintScreen";
     public const string DefaultCaptureFullScreen = "Ctrl+PrintScreen";
@@ -332,6 +407,12 @@ public sealed record HotkeySettings(
         HotkeyAction.Record => Record,
         HotkeyAction.CaptureText => CaptureText,
         HotkeyAction.ToggleDrawing => ToggleDrawing,
+        HotkeyAction.RepeatLastCapture => RepeatLastCapture,
+        HotkeyAction.CaptureWindow => CaptureWindow,
+        HotkeyAction.CaptureFixedRegion => CaptureFixedRegion,
+        HotkeyAction.CaptureFreehand => CaptureFreehand,
+        HotkeyAction.CapturePolygon => CapturePolygon,
+        HotkeyAction.CaptureRoundedRegion => CaptureRoundedRegion,
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
@@ -345,11 +426,16 @@ public sealed record HotkeySettings(
         HotkeyAction.Record => this with { Record = text },
         HotkeyAction.CaptureText => this with { CaptureText = text },
         HotkeyAction.ToggleDrawing => this with { ToggleDrawing = text },
+        HotkeyAction.RepeatLastCapture => this with { RepeatLastCapture = text },
+        HotkeyAction.CaptureWindow => this with { CaptureWindow = text },
+        HotkeyAction.CaptureFixedRegion => this with { CaptureFixedRegion = text },
+        HotkeyAction.CaptureFreehand => this with { CaptureFreehand = text },
+        HotkeyAction.CapturePolygon => this with { CapturePolygon = text },
+        HotkeyAction.CaptureRoundedRegion => this with { CaptureRoundedRegion = text },
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
-    public HotkeySettings Normalize() => new(
-        Clean(CaptureRegion), Clean(CaptureActiveWindow), Clean(CaptureFullScreen), Clean(CaptureScrolling), Clean(Record), Clean(CaptureText), Clean(ToggleDrawing));
+    public HotkeySettings Normalize() => Enum.GetValues<HotkeyAction>().Aggregate(this, (h, action) => h.With(action, Clean(h.For(action))));
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

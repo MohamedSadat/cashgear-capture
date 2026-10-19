@@ -18,22 +18,24 @@ public sealed class InstanceCommandTests
     [InlineData(new[] { "--capture-scrolling" }, InstanceCommand.CaptureScrolling)]
     [InlineData(new[] { "--record" }, InstanceCommand.Record)]
     [InlineData(new[] { "--capture-text" }, InstanceCommand.CaptureText)]
+    [InlineData(new[] { "--capture-fixed" }, InstanceCommand.CaptureFixedRegion)]
+    [InlineData(new[] { "--capture-freehand" }, InstanceCommand.CaptureFreehand)]
+    [InlineData(new[] { "--capture-polygon" }, InstanceCommand.CapturePolygon)]
+    [InlineData(new[] { "--capture-rounded" }, InstanceCommand.CaptureRoundedRegion)]
+    [InlineData(new[] { "--repeat-last" }, InstanceCommand.RepeatLastCapture)]
     public void FromArgs(string[] args, InstanceCommand expected) =>
         InstanceCommandParser.FromArgs(args).Should().Be(expected);
 
-    [Theory]
-    [InlineData(InstanceCommand.Activate)]
-    [InlineData(InstanceCommand.Exit)]
-    [InlineData(InstanceCommand.CaptureFullScreen)]
-    [InlineData(InstanceCommand.CaptureRegion)]
-    [InlineData(InstanceCommand.CaptureWindow)]
-    [InlineData(InstanceCommand.CaptureScrolling)]
-    [InlineData(InstanceCommand.Record)]
-    [InlineData(InstanceCommand.CaptureText)]
-    public void Wire_format_round_trips(InstanceCommand command)
+    [Fact]
+    public void Wire_format_round_trips_for_every_command()
     {
-        InstanceCommandParser.TryParseWire(InstanceCommandParser.ToWire(command) + "\r\n", out var parsed).Should().BeTrue();
-        parsed.Should().Be(command);
+        foreach (var command in Enum.GetValues<InstanceCommand>())
+        {
+            InstanceCommandParser.TryParseWire(InstanceCommandParser.ToWire(command) + "\r\n", out var parsed).Should().BeTrue();
+            parsed.Should().Be(command);
+        }
+
+        InstanceCommandParser.Switches.Should().OnlyHaveUniqueItems().And.HaveCount(Enum.GetValues<InstanceCommand>().Length);
     }
 
     [Theory]

@@ -42,6 +42,7 @@ public sealed partial class CaptureCoordinator
     private readonly IOcrService _ocr;
     private readonly ICaptureCountdown _countdown;
     private readonly ICaptureHistory _history;
+    private readonly IAppStateStore _state;
     private readonly IShell _shell;
     private readonly TimeProvider _time;
     private readonly ILogger<CaptureCoordinator> _logger;
@@ -65,6 +66,7 @@ public sealed partial class CaptureCoordinator
         IOcrService ocr,
         ICaptureCountdown countdown,
         ICaptureHistory history,
+        IAppStateStore state,
         IShell shell,
         TimeProvider time,
         ILogger<CaptureCoordinator> logger)
@@ -86,6 +88,7 @@ public sealed partial class CaptureCoordinator
         _ocr = ocr;
         _countdown = countdown;
         _history = history;
+        _state = state;
         _shell = shell;
         _time = time;
         _logger = logger;
@@ -98,11 +101,12 @@ public sealed partial class CaptureCoordinator
     /// </summary>
     public Task CaptureFullScreenAsync(CancellationToken ct = default) => RunAsync(async current =>
     {
-        using var hidden = await PrepareAsync(current, hideOwnUi: true, ct).ConfigureAwait(false);
+        using var hidden = await PrepareAsync(current, CaptureMode.FullScreen, hideOwnUi: true, ct).ConfigureAwait(false);
 
         var displays = _monitors.GetMonitors();
         using var all = await _capture.CaptureAllMonitorsAsync(ct).ConfigureAwait(false);
         LogCaptured(all.Width, all.Height, all.Metadata.Backend);
+        Remember(new RepeatableCapture(CaptureMode.FullScreen, all.Metadata.SourceBounds));
 
         var mode = current.Capture.FullScreenOutput;
         var files = new List<CapturedImage>();
@@ -165,7 +169,7 @@ public sealed partial class CaptureCoordinator
     /// </summary>
     private Task CaptureSelectionAsync(CaptureMode mode, CancellationToken ct) => RunAsync(async current =>
     {
-        using var hidden = await PrepareAsync(current, hideOwnUi: true, ct).ConfigureAwait(false);
+        using var hidden = await PrepareAsync(current, mode, hideOwnUi: true, ct).ConfigureAwait(false);
 
         // Snapshot the windows before the overlay exists, so it never offers itself as a target.
         var displays = _monitors.GetMonitors();
@@ -183,6 +187,11 @@ public sealed partial class CaptureCoordinator
         var kind = selection.Window is null ? CaptureKind.Region : CaptureKind.Window;
         using var image = Cut(frozen, selection.Bounds, selection.Shape, displays, kind, selection.Window?.Title);
         LogRegionCaptured(selection.Bounds, image.Metadata.Kind);
+        Remember(new RepeatableCapture(mode, selection.Bounds)
+        {
+            Shape = selection.Shape,
+            WindowTitle = selection.Window?.Title,
+        });
 
         await DeliverAsync(image, [image], current, hidden, ct).ConfigureAwait(false);
     });
@@ -255,7 +264,7 @@ public sealed partial class CaptureCoordinator
     /// </summary>
     public Task CaptureWindowAsync(CancellationToken ct = default) => RunAsync(async current =>
     {
-        using var hidden = await PrepareAsync(current, hideOwnUi: true, ct).ConfigureAwait(false);
+        using var hidden = await PrepareAsync(current, CaptureMode.Window, hideOwnUi: true, ct).ConfigureAwait(false);
 
         var displays = _monitors.GetMonitors();
         var windows = _windows.GetVisibleWindows();
@@ -273,6 +282,7 @@ public sealed partial class CaptureCoordinator
 
         // Let the overlay leave the screen before a screen-based capture of a fully visible window.
         await Task.Delay(TimeSpan.FromMilliseconds(current.Capture.HideDelayMs), _time, ct).ConfigureAwait(false);
+        Remember(RepeatableCapture.Of(CaptureMode.Window, window));
         await CaptureWindowCoreAsync(window.Handle, current, hidden, ct).ConfigureAwait(false);
     });
 
@@ -282,7 +292,7 @@ public sealed partial class CaptureCoordinator
     /// </summary>
     public Task CaptureScrollingAsync(CancellationToken ct = default) => RunAsync(async current =>
     {
-        using var hidden = await PrepareAsync(current, hideOwnUi: true, ct).ConfigureAwait(false);
+        using var hidden = await PrepareAsync(current, CaptureMode.Scrolling, hideOwnUi: true, ct).ConfigureAwait(false);
 
         var displays = _monitors.GetMonitors();
         var windows = _windows.GetVisibleWindows();
@@ -299,7 +309,15 @@ public sealed partial class CaptureCoordinator
         }
 
         // The overlay has just closed under the click, so the mouse is still on the part the user pointed at.
-        var result = await _scrolling.CaptureAsync(window, _scrollPlatform.CursorPosition, ct).ConfigureAwait(false);
+        var point = _scrollPlatform.CursorPosition;
+        Remember(RepeatableCapture.Of(CaptureMode.Scrolling, window) with { Point = point });
+        await ScrollAndDeliverAsync(window, point, current, hidden, ct).ConfigureAwait(false);
+    });
+
+    /// <summary>Scrolls <paramref name="window"/> from <paramref name="point"/> to the bottom and delivers the stitched image.</summary>
+    private async Task ScrollAndDeliverAsync(WindowInfo window, PixelPoint point, AppSettings current, IDisposable hidden, CancellationToken ct)
+    {
+        var result = await _scrolling.CaptureAsync(window, point, ct).ConfigureAwait(false);
         if (result is null)
         {
             return; // Esc or Cancel
@@ -313,7 +331,7 @@ public sealed partial class CaptureCoordinator
         }
 
         await DeliverAsync(image, [image], current, hidden, ct).ConfigureAwait(false);
-    });
+    }
 
     /// <summary>Why a scrolling capture ended, when it is worth telling (null when it simply reached the bottom).</summary>
     private static string? Explain(ScrollingResult result) => result.Reason switch
@@ -333,7 +351,7 @@ public sealed partial class CaptureCoordinator
     public Task CaptureTextAsync(CancellationToken ct = default) => RunAsync(
         async current =>
         {
-            using var hidden = await PrepareAsync(current, hideOwnUi: true, ct).ConfigureAwait(false);
+            using var hidden = await PrepareAsync(current, CaptureMode.Text, hideOwnUi: true, ct).ConfigureAwait(false);
 
             var displays = _monitors.GetMonitors();
             var windows = _windows.GetVisibleWindows();
@@ -345,20 +363,27 @@ public sealed partial class CaptureCoordinator
             }
 
             using var image = frozen.Crop(VirtualScreen.ToLocal(selection.Bounds, frozen.Metadata.SourceBounds));
-            var result = await _ocr.RecognizeAsync(image, current.Ocr.Language, ct).ConfigureAwait(false);
-            var language = string.Join(" + ", result.LanguageTag.Split('+').Select(
-                tag => _ocr.AvailableLanguages.FirstOrDefault(l => l.Tag == tag)?.DisplayName ?? tag));
-            if (result.IsEmpty)
-            {
-                _notifier.Notify("Capture Text", $"No text was found in the selected area ({language}).", NotificationKind.Warning);
-                return;
-            }
-
-            await _output.CopyTextToClipboardAsync(result.Text, ct).ConfigureAwait(false);
-            var lines = result.Text.Split("\r\n").Count(l => l.Length > 0);
-            _notifier.Notify("Text copied", $"{OcrText.Preview(result.Text)}\n{lines} line{(lines == 1 ? string.Empty : "s")} · {language}");
+            Remember(new RepeatableCapture(CaptureMode.Text, selection.Bounds));
+            await RecognizeAndCopyAsync(image, current, ct).ConfigureAwait(false);
         },
         producesImage: false);
+
+    /// <summary>Reads the text in <paramref name="image"/> and copies it, or says that there was none.</summary>
+    private async Task RecognizeAndCopyAsync(CapturedImage image, AppSettings current, CancellationToken ct)
+    {
+        var result = await _ocr.RecognizeAsync(image, current.Ocr.Language, ct).ConfigureAwait(false);
+        var language = string.Join(" + ", result.LanguageTag.Split('+').Select(
+            tag => _ocr.AvailableLanguages.FirstOrDefault(l => l.Tag == tag)?.DisplayName ?? tag));
+        if (result.IsEmpty)
+        {
+            _notifier.Notify("Capture Text", $"No text was found in the selected area ({language}).", NotificationKind.Warning);
+            return;
+        }
+
+        await _output.CopyTextToClipboardAsync(result.Text, ct).ConfigureAwait(false);
+        var lines = result.Text.Split("\r\n").Count(l => l.Length > 0);
+        _notifier.Notify("Text copied", $"{OcrText.Preview(result.Text)}\n{lines} line{(lines == 1 ? string.Empty : "s")} · {language}");
+    }
 
     /// <summary>Captures the window that was in the foreground when the hotkey was pressed.</summary>
     public Task CaptureActiveWindowAsync(nint hwnd, CancellationToken ct = default) => RunAsync(async current =>
@@ -370,7 +395,8 @@ public sealed partial class CaptureCoordinator
         }
 
         // Our own UI is not involved (and the active window may even be ours), so nothing is hidden.
-        using var hidden = await PrepareAsync(current, hideOwnUi: false, ct).ConfigureAwait(false);
+        using var hidden = await PrepareAsync(current, CaptureMode.ActiveWindow, hideOwnUi: false, ct).ConfigureAwait(false);
+        Remember(RepeatableCapture.Of(CaptureMode.ActiveWindow, window));
         await CaptureWindowCoreAsync(window.Handle, current, hidden, ct).ConfigureAwait(false);
     });
 
@@ -447,12 +473,12 @@ public sealed partial class CaptureCoordinator
     /// Hides our windows, counts down the user's capture delay (on screen, with a Cancel button), then waits for the
     /// tray menu and hidden windows to fade out. Dispose the result to bring our windows back.
     /// </summary>
-    private async Task<IDisposable> PrepareAsync(AppSettings current, bool hideOwnUi, CancellationToken ct)
+    private async Task<IDisposable> PrepareAsync(AppSettings current, CaptureMode mode, bool hideOwnUi, CancellationToken ct)
     {
         var hidden = hideOwnUi ? await _ownWindows.HideAsync().ConfigureAwait(false) : NothingHidden.Instance;
         try
         {
-            await _countdown.RunAsync(current.Capture.DelaySeconds, ct).ConfigureAwait(false);
+            await _countdown.RunAsync(current.Capture.DelayFor(mode), mode.Label(), ct).ConfigureAwait(false);
 
             if (hideOwnUi)
             {
