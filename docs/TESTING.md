@@ -65,7 +65,7 @@ Other options: `--fps 15|30|60`, `--encoder auto|software|<id>`, `--quality Smal
 | Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15) |
 | Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
 | Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19; a real webcam and the browser check **pending**, below); fresh install **pending** |
+| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19, the Edge password field included; a real webcam **pending**, below); fresh install **pending** |
 | Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
@@ -416,6 +416,7 @@ Same PC as Phase 11 (Windows 10 Pro 22H2 19045, GTX 1650 on driver 457.51). Ther
 | Live overlays, acceptance (`OverlayRecordingTests`): a 320×240 area at 30 fps over a test window that turns blue on a click and green on a key; SendInput clicks it at about 0.8 s and presses Ctrl+S at about 1.6 s | pass, 4 of 4 runs: the ring and the caption first show on exactly the frame of the click's and the key's hook time (frames 25 and 49), and the window's own reaction shows 0–1 frames later |
 | Overlays added later, acceptance: the same recording made clean with the metadata, then **Add overlays** | pass: ring on frame 25 and caption on frame 49, as live; every picture kept (79 of 79); the sound copied |
 | A password field, acceptance (`Keys_typed_into_a_password_box_go_nowhere`): click a WPF PasswordBox, type two keys, click a TextBox, type one | pass: 2 keys hidden, 1 shown; neither the timeline nor the journal has the hidden ones; the PasswordBox did get them |
+| A browser password field, acceptance (explicit `Typing_in_a_browser_password_field_shows_no_keys`, run with the user's go-ahead while the PC was free): Microsoft Edge on a page whose `<input type=password>` has the focus; "secret" and Ctrl+A typed into it with "All keys" on | pass, 3 of 3 runs: 0 keys shown, 7 hidden, no caption; the privacy check found a "password field" in `msedge.exe` (Chromium answers UI Automation). The first run's cleanup failed: the process the test started hands over to another Edge process and exits, so the test now closes the browser found by its window, with all its helpers |
 | UI Automation through the source-generated COM interfaces | pass: the focused PasswordBox reads ClassName "PasswordBox", this process's ID and IsPassword true; a TextBox reads false; an excluded program is private |
 | Privacy timing with a scripted check: a key waits for the check after a focus change, is hidden past 750 ms, a change 0–40 ms after a key counts for it, no UI Automation hides keys | pass |
 | Hooks: SendInput move, click and F24 into a test window | pass: in order, with QPC times, marked injected; no keyboard hook without keystrokes; one set of hooks at a time |
@@ -441,14 +442,8 @@ No camera is connected to this PC. With one:
 3. Acceptance: the same over 30 minutes, clapping at the start and the end. Both claps should be within a frame of their sound.
 4. Open the camera in another app first (e.g. Camera): the recording should still get it (shared), at that app's format.
 
-### Pending: a browser password field
-The explicit test opens Microsoft Edge on a page whose password field has the focus, and types into it. It types into the window in front, so run it while not using the PC:
-
-```powershell
-dotnet test --project tests/CashGear.Capture.Overlays.Tests -- --explicit only
-```
-
-By hand: record with keystrokes on "All keys", log in somewhere in Edge or Chrome, and check the video and its `.cgmeta.json` show the user name but nothing of the password.
+### Pending: a real login
+The explicit Edge test passes (above). By hand, on a real site: record with keystrokes on "All keys", log in somewhere in Edge or Chrome, and check the video and its `.cgmeta.json` show the user name but nothing of the password.
 
 ### Pending: by hand
 - **Drawing.** Press `Ctrl+Shift+D` while recording, draw with each tool, Ctrl+Z, Delete, Esc; set "Drawings fade away after" to 3 s and check they fade.

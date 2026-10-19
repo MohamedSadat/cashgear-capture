@@ -19,7 +19,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | — | Sound in screen recordings: system audio and a microphone, AAC, kept in sync through pauses | done |
 | 10 | Recording engine v2: FFmpeg in-process (LGPL), timestamped frames, crash-safe temp file + recovery, encoder detection and fallback, sound tracks per source | done |
 | 11 | Pro audio: devices followed during a recording, one app's sound (or all but one), microphone noise gate / compressor / limiter and RNNoise, level meters, microphone test, loudness to −16 LUFS, push-to-talk | done (RNNoise build and manual sound checks pending) |
-| 12 | Recording overlays: clicks, pointer effects, keystrokes (never from password fields), webcam, drawing on the screen; drawn on the GPU or added later from a metadata track | done (real webcam and browser checks pending) |
+| 12 | Recording overlays: clicks, pointer effects, keystrokes (never from password fields), webcam, drawing on the screen; drawn on the GPU or added later from a metadata track | done (real webcam check pending) |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 

@@ -1019,10 +1019,11 @@ Recordings can show what the user does: clicks, the pointer, keystrokes, a webca
   - the ring and the caption on exactly the frame of the click's and the key's hook time, live (4 of 4 runs) and added later; the window's own reaction 0–1 frame later;
   - the click tick 0.1 ms from the click;
   - the webcam's track and overlay 5 ms after the beep they were stamped with;
-  - a mouse-drawn stroke in the recording.
+  - a mouse-drawn stroke in the recording;
+  - acceptance in a real browser (the explicit test, run with the user's go-ahead): "secret" and Ctrl+A typed into a password field in Microsoft Edge showed no keys, 3 of 3 runs (7 hidden, 0 shown; the check found a "password field" in `msedge.exe`).
 - **Not run** (pending in TESTING.md):
   - a real webcam, and the 30-minute webcam/sound sync with one (no camera here);
-  - the explicit Edge password-field test (it types into the window in front);
+  - a login on a real site by hand;
   - the drawing hotkey and the click sound by hand.
 
 ### Known limitations

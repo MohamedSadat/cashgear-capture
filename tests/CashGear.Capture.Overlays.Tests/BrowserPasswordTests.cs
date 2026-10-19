@@ -40,12 +40,15 @@ public sealed class BrowserPasswordTests
         })!;
         var clock = new RecordingClock(TimeProvider.System);
         var timeline = new InputTimeline();
+        var browserProcess = 0;
         try
         {
-            var window = await FindWindowAsync(ct);
+            // The process started here may hand over to another and exit: the window says which one is the browser.
+            var (window, processId) = await FindWindowAsync(ct);
+            browserProcess = processId;
             Assert.SkipWhen(window == 0, "The Edge window didn't appear.");
-            User32.SetForegroundWindow(window);
             await Task.Delay(1500, ct); // the page loads and its password field takes the focus
+            await BringToFrontAsync(window, ct);
             Assert.SkipUnless(User32.GetForegroundWindow() == window, "Edge didn't come to the front, so the keys would go elsewhere.");
 
             clock.Start();
@@ -62,24 +65,76 @@ public sealed class BrowserPasswordTests
         }
         finally
         {
-            browser.CloseMainWindow();
-            if (!browser.WaitForExit(5000))
+            Close(browserProcess);
+            Close(browser.HasExited ? 0 : browser.Id);
+            for (var attempt = 0; attempt < 10 && Directory.Exists(profile); attempt++)
             {
-                browser.Kill(entireProcessTree: true);
-            }
-
-            try
-            {
-                Directory.Delete(profile, recursive: true);
-            }
-            catch (IOException)
-            {
-                // Edge may still hold its profile for a moment
+                try
+                {
+                    Directory.Delete(profile, recursive: true);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    Thread.Sleep(300); // Edge's helpers let go of the profile a moment after they end
+                }
             }
         }
     }
 
-    private static async Task<nint> FindWindowAsync(CancellationToken ct)
+    /// <summary>
+    /// Brings the window to the front as a user would: Windows refuses a background process that just asks, but lets
+    /// one that has just sent a key (Alt) do it; failing that, a click on the window's tab strip.
+    /// </summary>
+    private static async Task BringToFrontAsync(nint window, CancellationToken ct)
+    {
+        User32.SetForegroundWindow(window);
+        await Task.Delay(200, ct);
+        if (User32.GetForegroundWindow() == window)
+        {
+            return;
+        }
+
+        TestInput.Keys([0x12]); // Alt
+        User32.SetForegroundWindow(window);
+        await Task.Delay(300, ct);
+        if (User32.GetForegroundWindow() == window)
+        {
+            return;
+        }
+
+        var bounds = Bounds(window);
+        TestInput.Click(bounds.Left + (bounds.Width * 3 / 5), bounds.Top + 12);
+        await Task.Delay(500, ct);
+    }
+
+    private static unsafe RECT Bounds(nint window)
+    {
+        RECT bounds;
+        User32.GetWindowRect(window, &bounds);
+        return bounds;
+    }
+
+    /// <summary>Ends a browser process and everything it started (renderers, the GPU process, the crash handler).</summary>
+    private static void Close(int processId)
+    {
+        if (processId == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            using var process = Process.GetProcessById(processId);
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit(5000);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            // already gone
+        }
+    }
+
+    private static async Task<(nint Window, int ProcessId)> FindWindowAsync(CancellationToken ct)
     {
         var deadline = Stopwatch.StartNew();
         while (deadline.Elapsed < TimeSpan.FromSeconds(15))
@@ -90,7 +145,7 @@ public sealed class BrowserPasswordTests
                 {
                     if (process.MainWindowTitle.StartsWith(Title, StringComparison.Ordinal))
                     {
-                        return process.MainWindowHandle;
+                        return (process.MainWindowHandle, process.Id);
                     }
                 }
             }
@@ -98,6 +153,6 @@ public sealed class BrowserPasswordTests
             await Task.Delay(250, ct);
         }
 
-        return 0;
+        return (0, 0);
     }
 }
