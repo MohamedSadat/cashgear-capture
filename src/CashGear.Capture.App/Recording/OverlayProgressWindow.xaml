@@ -1,0 +1,19 @@
+<Window x:Class="CashGear.Capture.App.Recording.OverlayProgressWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.Recording"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:OverlayProgressViewModel}"
+        Title="Add overlays" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="ToolWindow"
+        WindowStartupLocation="CenterScreen" ShowInTaskbar="True">
+  <StackPanel Margin="16,12,16,14" Width="340">
+    <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+    <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress, Mode=OneWay}" Height="6" Margin="0,10,0,0" />
+    <TextBlock Margin="0,6,0,0" Opacity="0.7" Text="{Binding PercentText}" />
+    <TextBlock Margin="0,8,0,0" Opacity="0.7" TextWrapping="Wrap"
+               Text="The overlays are drawn as Settings › Overlays has them now, into a new file next to the recording; the recording itself isn't changed." />
+    <Button Content="Cancel" Command="{Binding CancelCommand}" MinWidth="80" HorizontalAlignment="Right" Margin="0,12,0,0" />
+  </StackPanel>
+</Window>

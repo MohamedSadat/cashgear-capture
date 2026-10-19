@@ -1222,6 +1222,7 @@ public static class RecordingServiceCollectionExtensions
         services.AddSingleton<IRecordingRecovery, RecordingRecovery>();
         services.AddAudio();
         services.AddSingleton<IScreenRecorder, ScreenRecorder>();
+        services.AddSingleton<IOverlayRenderer, OverlayRenderer>();
         return services;
     }
 }

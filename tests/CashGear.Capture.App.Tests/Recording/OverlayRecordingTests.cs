@@ -61,6 +61,43 @@ public sealed class OverlayRecordingTests : IDisposable
     }
 
     /// <summary>
+    /// Acceptance, added later: recorded clean with the metadata, then given its overlays from it. The ring and the
+    /// caption land on the same frames as when drawn live, and the sound is copied as it was.
+    /// </summary>
+    [Fact(Timeout = 120_000)]
+    public async Task Clicks_and_keys_added_later_land_on_the_frame_they_happened()
+    {
+        var overlays = new OverlaySettings(BurnIn: false, Keystrokes: new KeystrokeOverlaySettings(KeystrokeMode.Shortcuts));
+        var (result, options) = await RecordClickAndShortcut(overlays, TestContext.Current.CancellationToken);
+        var metadata = RecordingMetadata.Load(result.MetadataPath!);
+        metadata.OverlaysInVideo.Should().BeFalse();
+        var clean = Measure(result.Path, metadata, options);
+        clean.Ring.Should().Be(-1, "the video itself is clean");
+        clean.Caption.Should().Be(-1);
+
+        var settings = new MutableSettings { Current = new AppSettings { Overlays = overlays with { BurnIn = true } } };
+        var renderer = new OverlayRenderer(TestFfmpeg.Encoders, settings, _loggers);
+        renderer.FindMetadata(result.Path).Should().Be(result.MetadataPath);
+        var progress = new List<double>();
+        var output = await renderer.RenderAsync(result.Path, new SyncProgress(progress.Add), TestContext.Current.CancellationToken);
+
+        output.Should().Be(Path.Combine(Path.GetDirectoryName(result.Path)!, "overlays (overlays).mp4"));
+        progress.Should().NotBeEmpty().And.EndWith(1);
+        TestFfmpeg.Probe(output).Frames.Should().Be((int)result.FramesWritten, "every picture is kept");
+        var sync = Measure(output, metadata, options);
+        Report($"Added later: {sync}");
+        Check(sync);
+        var again = () => renderer.RenderAsync(output, null, TestContext.Current.CancellationToken);
+        await again.Should().ThrowAsync<Core.Capture.CaptureException>("the new file has no metadata of its own");
+    }
+
+    /// <summary>Reports progress on the calling thread (Progress&lt;T&gt; would post it later).</summary>
+    private sealed class SyncProgress(Action<double> report) : IProgress<double>
+    {
+        public void Report(double value) => report(value);
+    }
+
+    /// <summary>
     /// Click sounds land in the sound where the click was (their own track when it is the only sound), and the
     /// pointer drawn by the app (twice its size) is in the video where the pointer was.
     /// </summary>

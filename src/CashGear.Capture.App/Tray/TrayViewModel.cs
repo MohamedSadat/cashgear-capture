@@ -57,6 +57,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly HistoryWindowService _historyWindow;
     private readonly UpdateService _updates;
     private readonly InterruptedRecordings _interrupted;
+    private readonly AddOverlaysController _addOverlays;
     private readonly TimeProvider _time;
 
     public TrayViewModel(
@@ -73,8 +74,10 @@ public sealed partial class TrayViewModel : ObservableObject
         HistoryWindowService historyWindow,
         UpdateService updates,
         InterruptedRecordings interrupted,
+        AddOverlaysController addOverlays,
         TimeProvider time)
     {
+        _addOverlays = addOverlays;
         _coordinator = coordinator;
         _lifetime = lifetime;
         _hotkeys = hotkeys;
@@ -179,6 +182,10 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [RelayCommand]
     private Task RecoverRecordingsAsync() => _interrupted.RecoverAllAsync();
+
+    /// <summary>Draws a saved recording's overlays in from its metadata file, into a new file.</summary>
+    [RelayCommand]
+    private Task AddOverlaysAsync() => _addOverlays.RunAsync();
 
     /// <summary>
     /// Saves a running recording, then closes the editors (each asks about unsaved changes); keeping one open

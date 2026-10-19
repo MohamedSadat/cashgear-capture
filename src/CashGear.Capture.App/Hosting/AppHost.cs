@@ -68,6 +68,8 @@ internal static class AppHost
         builder.Services.AddSingleton<ScrollingCaptureService>();
         builder.Services.AddSingleton<IKeyboardState, Win32KeyboardState>();
         builder.Services.AddSingleton<RecordingController>();
+        builder.Services.AddSingleton<IRecordingPicker, WpfRecordingPicker>();
+        builder.Services.AddSingleton<AddOverlaysController>();
         builder.Services.AddSingleton<InterruptedRecordings>();
         builder.Services.AddSingleton<ToolStyleMemory>();
         builder.Services.AddSingleton<EditorWindowService>();

@@ -28,6 +28,7 @@
         </MenuItem>
         <Separator />
         <MenuItem Header="{Binding RecordText}" Command="{Binding ToggleRecordingCommand}" InputGestureText="{Binding RecordHotkey}" />
+        <MenuItem Header="Add _Overlays to a Recording…" Command="{Binding AddOverlaysCommand}" />
         <MenuItem Header="Save _Interrupted Recordings" Command="{Binding RecoverRecordingsCommand}"
                   Visibility="{Binding HasInterruptedRecordings, Converter={StaticResource TrayVisible}}" />
         <Separator />
