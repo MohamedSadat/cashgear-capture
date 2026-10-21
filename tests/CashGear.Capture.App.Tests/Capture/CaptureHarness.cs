@@ -42,7 +42,7 @@ internal sealed class CaptureHarness : IDisposable
         var paths = new AppPaths(Path.Combine(root, "settings"), Path.Combine(root, "logs"), Path.Combine(root, "captures"));
         Settings.Current = (configure ?? (s => s))(new AppSettings
         {
-            AfterCapture = new AfterCaptureSettings(Save: false, CopyToClipboard: true, OpenEditor: false),
+            Destinations = new DestinationSettings(Workflow: [new WorkflowStep(DestinationIds.Clipboard)]),
             Capture = new CaptureSettings(HideDelayMs: 0),
         });
 

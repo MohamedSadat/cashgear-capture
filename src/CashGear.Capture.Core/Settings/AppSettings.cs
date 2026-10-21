@@ -16,9 +16,10 @@ public sealed record AppSettings
     /// <summary>
     /// 2: <c>output.copyToClipboard</c> moved to <c>afterCapture</c>. 3: <c>recording.quality</c> is a preset instead of a
     /// number, and <c>recording.encoder</c> an encoder id. 4: <c>recording.showClicks</c> moved to
-    /// <c>overlays.clicks.enabled</c> (see <see cref="SettingsMigration"/>).
+    /// <c>overlays.clicks.enabled</c>. 5: <c>afterCapture</c> became the workflow in <c>destinations.workflow</c>
+    /// (see <see cref="SettingsMigration"/>).
     /// </summary>
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
@@ -26,7 +27,8 @@ public sealed record AppSettings
 
     public OutputSettings Output { get; init; } = new();
 
-    public AfterCaptureSettings AfterCapture { get; init; } = new();
+    /// <summary>The after-capture workflow and where captures can go (printer, Office, servers, uploads, apps).</summary>
+    public DestinationSettings Destinations { get; init; } = new();
 
     public HotkeySettings Hotkeys { get; init; } = new();
 
@@ -52,7 +54,7 @@ public sealed record AppSettings
         SchemaVersion = CurrentSchemaVersion,
         Capture = (Capture ?? new CaptureSettings()).Normalize(),
         Output = (Output ?? new OutputSettings()).Normalize(),
-        AfterCapture = AfterCapture ?? new AfterCaptureSettings(),
+        Destinations = (Destinations ?? new DestinationSettings()).Normalize(),
         Hotkeys = (Hotkeys ?? new HotkeySettings()).Normalize(),
         Appearance = (Appearance ?? new AppearanceSettings()).Normalize(),
         Recording = (Recording ?? new RecordingSettings()).Normalize(),
@@ -237,16 +239,6 @@ public sealed record OutputSettings(
         JpegQuality = Math.Clamp(JpegQuality, 1, 100),
         FileNameTemplate = string.IsNullOrWhiteSpace(FileNameTemplate) ? Output.FileNameTemplate.Default : FileNameTemplate.Trim(),
     };
-}
-
-/// <summary>What happens to a capture. Any combination; with none selected the capture is discarded (and the user told).</summary>
-/// <param name="Save">Write it to the capture folder ("auto-save").</param>
-/// <param name="CopyToClipboard">Put it on the clipboard.</param>
-/// <param name="OpenEditor">Open it in the editor (the spec's default action).</param>
-public sealed record AfterCaptureSettings(bool Save = false, bool CopyToClipboard = false, bool OpenEditor = true)
-{
-    [JsonIgnore]
-    public bool DoesAnything => Save || CopyToClipboard || OpenEditor;
 }
 
 public enum AppTheme

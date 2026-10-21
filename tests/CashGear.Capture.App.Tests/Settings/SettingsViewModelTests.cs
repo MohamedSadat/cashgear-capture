@@ -86,7 +86,7 @@ public sealed class SettingsViewModelTests : IDisposable
         _settings.Current = new AppSettings
         {
             Output = new OutputSettings(Folder: @"D:\Shots", Format: ImageFileFormat.Jpeg, JpegQuality: 70, FileNameTemplate: "{counter}"),
-            AfterCapture = new AfterCaptureSettings(Save: true, CopyToClipboard: false),
+            Destinations = new DestinationSettings(Workflow: [new WorkflowStep(DestinationIds.File), new WorkflowStep(DestinationIds.Editor)]),
             Capture = new CaptureSettings(DelaySeconds: 3, IncludeCursor: true, Backend: CaptureBackend.Gdi),
             Appearance = new AppearanceSettings(AppTheme.Dark),
         };
@@ -215,7 +215,8 @@ public sealed class SettingsViewModelTests : IDisposable
 
         var s = _settings.Current;
         s.Output.Should().Be(new OutputSettings(@"D:\Shots", ImageFileFormat.Bmp, 90, "shot_{counter}"));
-        s.AfterCapture.Should().Be(new AfterCaptureSettings(Save: true, CopyToClipboard: false, OpenEditor: true));
+        s.Destinations.Workflow.Should().Equal(
+            [new WorkflowStep(DestinationIds.File), new WorkflowStep(DestinationIds.Clipboard, false), new WorkflowStep(DestinationIds.Editor)]);
         s.Capture.DelaySeconds.Should().Be(5);
         s.Capture.HideDelayMs.Should().Be(500);
         s.Capture.IncludeWindowShadow.Should().BeTrue();

@@ -49,7 +49,9 @@ public sealed class JsonSettingsServiceTests : IDisposable
         defaults.Capture.FullScreenOutput.Should().Be(FullScreenOutput.AllAndEachMonitor);
         defaults.Output.Format.Should().Be(ImageFileFormat.Png);
         defaults.Output.JpegQuality.Should().Be(90);
-        defaults.AfterCapture.Should().Be(new AfterCaptureSettings(Save: false, CopyToClipboard: false, OpenEditor: true), "the spec: open the editor by default");
+        defaults.Destinations.Workflow.Should().Equal(
+            [new WorkflowStep("file", false), new WorkflowStep("clipboard", false), new WorkflowStep("editor")], "the spec: open the editor by default");
+        defaults.Destinations.RecordingWorkflow.Should().BeEmpty();
         defaults.Output.FileNameTemplate.Should().Be(CashGear.Capture.Core.Output.FileNameTemplate.Default);
         defaults.Appearance.Theme.Should().Be(AppTheme.System);
         defaults.Capture.DelaySeconds.Should().Be(0);

@@ -24,14 +24,14 @@ public sealed class SettingsMigrationTests : IDisposable
     }
 
     [Fact]
-    public void Version_1_copy_to_clipboard_moves_to_after_capture()
+    public void Version_1_copy_to_clipboard_moves_to_the_workflow()
     {
         var root = (JsonObject)JsonNode.Parse("""{ "schemaVersion": 1, "output": { "format": "Jpeg", "copyToClipboard": false } }""")!;
 
         SettingsMigration.Upgrade(root).Should().Be(1);
 
         root["output"]!.AsObject().ContainsKey("copyToClipboard").Should().BeFalse();
-        root["afterCapture"]!["copyToClipboard"]!.GetValue<bool>().Should().BeFalse();
+        Steps(root).Should().Contain(("clipboard", false));
         root["output"]!["format"]!.GetValue<string>().Should().Be("Jpeg", "unrelated values are untouched");
     }
 
@@ -42,9 +42,7 @@ public sealed class SettingsMigrationTests : IDisposable
 
         SettingsMigration.Upgrade(root);
 
-        root["afterCapture"]!["save"]!.GetValue<bool>().Should().BeTrue();
-        root["afterCapture"]!["copyToClipboard"]!.GetValue<bool>().Should().BeTrue();
-        root["afterCapture"]!["openEditor"]!.GetValue<bool>().Should().BeFalse("version 1 had no editor; the new default must not switch it on");
+        Steps(root).Should().Equal([("file", true), ("clipboard", true), ("editor", false)], "version 1 had no editor; the new default must not switch it on");
     }
 
     [Fact]
@@ -54,7 +52,7 @@ public sealed class SettingsMigrationTests : IDisposable
 
         SettingsMigration.Upgrade(root).Should().Be(1);
 
-        root["afterCapture"]!["copyToClipboard"]!.GetValue<bool>().Should().BeFalse();
+        Steps(root).Should().Contain(("clipboard", false));
     }
 
     [Fact]
@@ -64,7 +62,7 @@ public sealed class SettingsMigrationTests : IDisposable
 
         SettingsMigration.Upgrade(root);
 
-        root["afterCapture"]!["copyToClipboard"]!.GetValue<bool>().Should().BeTrue();
+        Steps(root).Should().Contain(("clipboard", true));
     }
 
     [Fact]
@@ -86,13 +84,77 @@ public sealed class SettingsMigrationTests : IDisposable
 
         using var service = new JsonSettingsService(_paths, NullLogger<JsonSettingsService>.Instance, TimeProvider.System, watchForExternalChanges: false);
 
-        service.Current.AfterCapture.CopyToClipboard.Should().BeFalse();
-        service.Current.AfterCapture.Save.Should().BeTrue();
+        service.Current.Destinations.IsEnabled(DestinationIds.Clipboard).Should().BeFalse();
+        service.Current.Destinations.IsEnabled(DestinationIds.File).Should().BeTrue();
         service.Current.Capture.HideDelayMs.Should().Be(300);
         var rewritten = File.ReadAllText(_paths.SettingsFile);
-        rewritten.Should().Contain("\"schemaVersion\": 4").And.Contain("\"afterCapture\"").And.NotContain("\"output\": {\n    \"copyToClipboard\"");
+        rewritten.Should().Contain("\"schemaVersion\": 5").And.Contain("\"workflow\"").And.NotContain("\"afterCapture\"").And.NotContain("\"output\": {\n    \"copyToClipboard\"");
         JsonNode.Parse(rewritten)!["output"]!.AsObject().ContainsKey("copyToClipboard").Should().BeFalse();
     }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, false)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(true, true, true)]
+    public void Version_4_switches_become_the_workflow_in_the_order_they_ran(bool save, bool copy, bool editor)
+    {
+        var root = (JsonObject)JsonNode.Parse(
+            $$"""{ "schemaVersion": 4, "afterCapture": { "save": {{Json(save)}}, "copyToClipboard": {{Json(copy)}}, "openEditor": {{Json(editor)}} } }""")!;
+
+        SettingsMigration.Upgrade(root).Should().Be(4);
+
+        root.ContainsKey("afterCapture").Should().BeFalse();
+        Steps(root).Should().Equal([("file", save), ("clipboard", copy), ("editor", editor)]);
+    }
+
+    [Fact]
+    public void A_version_4_file_reads_back_doing_exactly_what_it_did()
+    {
+        Directory.CreateDirectory(_paths.SettingsDirectory);
+        File.WriteAllText(_paths.SettingsFile, """{ "schemaVersion": 4, "afterCapture": { "save": true, "openEditor": false } }""");
+
+        using var service = new JsonSettingsService(_paths, NullLogger<JsonSettingsService>.Instance, TimeProvider.System, watchForExternalChanges: false);
+
+        var destinations = service.Current.Destinations;
+        destinations.IsEnabled(DestinationIds.File).Should().BeTrue();
+        destinations.IsEnabled(DestinationIds.Clipboard).Should().BeFalse("a missing switch had its default (off)");
+        destinations.IsEnabled(DestinationIds.Editor).Should().BeFalse();
+        destinations.DoesAnything.Should().BeTrue();
+        destinations.RecordingWorkflow.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void A_workflow_already_in_the_file_wins_over_the_old_switches()
+    {
+        var root = (JsonObject)JsonNode.Parse(
+            """{ "schemaVersion": 4, "afterCapture": { "save": true }, "destinations": { "workflow": [ { "destination": "printer" } ] } }""")!;
+
+        SettingsMigration.Upgrade(root);
+
+        root.ContainsKey("afterCapture").Should().BeFalse();
+        root["destinations"]!["workflow"]!.AsArray().Should().ContainSingle();
+    }
+
+    [Fact]
+    public void Without_old_switches_the_default_workflow_stays()
+    {
+        var root = (JsonObject)JsonNode.Parse("""{ "schemaVersion": 4 }""")!;
+
+        SettingsMigration.Upgrade(root);
+
+        root.ContainsKey("destinations").Should().BeFalse("nothing to carry over, so the new default applies");
+    }
+
+    private static string Json(bool value) => value ? "true" : "false";
+
+    /// <summary>The migrated workflow as (destination, enabled) pairs.</summary>
+    private static List<(string, bool)> Steps(JsonObject root) =>
+        [.. root["destinations"]!["workflow"]!.AsArray().Select(s => (s!["destination"]!.GetValue<string>(), s["enabled"]!.GetValue<bool>()))];
 }
 
 public sealed class CaptureCounterTests : IDisposable

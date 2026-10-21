@@ -66,8 +66,34 @@ public static class SettingsMigration
             SetIfMissing(clicks, "enabled", showClicks);
         }
 
+        if (version < 5 && Remove(root, "afterCapture") is { } afterCapture)
+        {
+            // v5: the three after-capture switches become the workflow's first steps, in the order they always ran
+            // (save, copy, then the editor), each on or off as it was.
+            var old = afterCapture as JsonObject;
+            bool Flag(string name, bool fallback) =>
+                old is not null && Property(old, name) is JsonValue value && value.TryGetValue(out bool on) ? on : fallback;
+
+            if (Property(root, "destinations") is not JsonObject destinations)
+            {
+                destinations = [];
+                root["destinations"] = destinations;
+            }
+
+            SetIfMissing(destinations, "workflow", new JsonArray(
+                Step(DestinationIds.File, Flag("save", false)),
+                Step(DestinationIds.Clipboard, Flag("copyToClipboard", false)),
+                Step(DestinationIds.Editor, Flag("openEditor", true))));
+        }
+
         return version;
     }
+
+    private static JsonObject Step(string destination, bool enabled) => new()
+    {
+        ["destination"] = destination,
+        ["enabled"] = enabled,
+    };
 
     private static JsonNode? Property(JsonObject obj, string name) =>
         obj.FirstOrDefault(p => string.Equals(p.Key, name, StringComparison.OrdinalIgnoreCase)).Value;

@@ -117,7 +117,7 @@ public sealed partial class CaptureCoordinator
                 files.Add(all);
             }
 
-            if (current.AfterCapture.Save && mode != FullScreenOutput.AllMonitors && displays.Count > 1)
+            if (current.Destinations.IsEnabled(DestinationIds.File) && mode != FullScreenOutput.AllMonitors && displays.Count > 1)
             {
                 foreach (var monitor in displays)
                 {
@@ -481,7 +481,7 @@ public sealed partial class CaptureCoordinator
     private async Task RunOneAsync(Func<AppSettings, Task> capture, bool producesImage)
     {
         var current = _settings.Current;
-        if (producesImage && !current.AfterCapture.DoesAnything)
+        if (producesImage && !current.Destinations.DoesAnything)
         {
             // The capture would just be thrown away.
             _notifier.Notify(
@@ -541,9 +541,10 @@ public sealed partial class CaptureCoordinator
     private async Task DeliverAsync(
         CapturedImage primary, IReadOnlyList<CapturedImage> files, AppSettings current, IDisposable hidden, CancellationToken ct)
     {
-        var after = current.AfterCapture;
+        var destinations = current.Destinations;
+        var copy = destinations.IsEnabled(DestinationIds.Clipboard);
         var saved = new List<string>();
-        if (after.Save)
+        if (destinations.IsEnabled(DestinationIds.File))
         {
             var template = Template(current.Output, distinguishMonitors: files.Count > 1);
             var folder = _paths.ResolveCaptureDirectory(current.Output);
@@ -567,12 +568,12 @@ public sealed partial class CaptureCoordinator
         var history = _history.AddAsync(primary, savedAs, pngCopy, CancellationToken.None);
         try
         {
-            if (after.CopyToClipboard)
+            if (copy)
             {
                 await _output.CopyToClipboardAsync(primary, ct).ConfigureAwait(false);
             }
 
-            if (after.OpenEditor)
+            if (destinations.IsEnabled(DestinationIds.Editor))
             {
                 // The editor shows the result, so no notification. If the image was saved, Ctrl+S in the editor updates that file.
                 hidden.Dispose();
@@ -583,7 +584,7 @@ public sealed partial class CaptureCoordinator
             var shown = saved.FirstOrDefault();
             _notifier.Notify(
                 saved.Count > 0 ? "Capture saved" : "Capture copied",
-                Summary(saved, after.CopyToClipboard),
+                Summary(saved, copy),
                 onClick: shown is null ? null : () => _shell.ShowInFolder(shown));
         }
         finally

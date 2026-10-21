@@ -901,7 +901,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             JpegQuality = JpegQuality,
             FileNameTemplate = FileNameTemplate.Trim(),
         },
-        AfterCapture = new AfterCaptureSettings(SaveToFile, CopyToClipboard, OpenEditor),
+        Destinations = current.Destinations
+            .WithStep(DestinationIds.File, SaveToFile)
+            .WithStep(DestinationIds.Clipboard, CopyToClipboard)
+            .WithStep(DestinationIds.Editor, OpenEditor),
         Hotkeys = Hotkeys.Aggregate(current.Hotkeys, (h, row) => h.With(row.Action, row.SettingText)),
         Appearance = new AppearanceSettings(Theme),
         Recording = current.Recording with
@@ -947,9 +950,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Format = s.Output.Format;
         JpegQuality = s.Output.JpegQuality;
         FileNameTemplate = s.Output.FileNameTemplate;
-        SaveToFile = s.AfterCapture.Save;
-        CopyToClipboard = s.AfterCapture.CopyToClipboard;
-        OpenEditor = s.AfterCapture.OpenEditor;
+        SaveToFile = s.Destinations.IsEnabled(DestinationIds.File);
+        CopyToClipboard = s.Destinations.IsEnabled(DestinationIds.Clipboard);
+        OpenEditor = s.Destinations.IsEnabled(DestinationIds.Editor);
         DelaySeconds = s.Capture.DelaySeconds;
         HideDelayMs = s.Capture.HideDelayMs;
         FixedRegionSize = s.Capture.FixedRegionSize.ToString();

@@ -56,20 +56,20 @@ public sealed partial class CaptureToolbarViewModel : ObservableObject
 
     public bool OpenEditor
     {
-        get => _settings.Current.AfterCapture.OpenEditor;
-        set => _ = _settings.UpdateAsync(s => s with { AfterCapture = s.AfterCapture with { OpenEditor = value } });
+        get => _settings.Current.Destinations.IsEnabled(DestinationIds.Editor);
+        set => _ = _settings.UpdateAsync(s => s with { Destinations = s.Destinations.WithStep(DestinationIds.Editor, value) });
     }
 
     public bool SaveToFile
     {
-        get => _settings.Current.AfterCapture.Save;
-        set => _ = _settings.UpdateAsync(s => s with { AfterCapture = s.AfterCapture with { Save = value } });
+        get => _settings.Current.Destinations.IsEnabled(DestinationIds.File);
+        set => _ = _settings.UpdateAsync(s => s with { Destinations = s.Destinations.WithStep(DestinationIds.File, value) });
     }
 
     public bool CopyToClipboard
     {
-        get => _settings.Current.AfterCapture.CopyToClipboard;
-        set => _ = _settings.UpdateAsync(s => s with { AfterCapture = s.AfterCapture with { CopyToClipboard = value } });
+        get => _settings.Current.Destinations.IsEnabled(DestinationIds.Clipboard);
+        set => _ = _settings.UpdateAsync(s => s with { Destinations = s.Destinations.WithStep(DestinationIds.Clipboard, value) });
     }
 
     public string RegionTip => Tip("Capture region: drag a rectangle or click a window", Tray.RegionHotkey);
