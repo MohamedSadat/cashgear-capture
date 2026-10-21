@@ -22,6 +22,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 12 | Recording overlays: clicks, pointer effects, keystrokes (never from password fields), webcam, drawing on the screen; drawn on the GPU or added later from a metadata track | done (real webcam check pending) |
 | 13 | Capture parity with FastStone: floating capture toolbar; fixed-size, freehand, polygon, rounded, object (UI Automation) and open-menu captures, transparent outside their shape; repeat last capture; a delay per kind of capture; magnifier, colour picker, screen ruler, crosshair | done |
 | 14 | Output destinations: the after-capture workflow (and one for recordings) through the editor, a file, the clipboard, a printer, Word, PowerPoint, FTP/FTPS/SFTP, HTTP uploads (the link copied) and other apps; a Test button for each; passwords kept with DPAPI | done (a real printer, Office and real servers by hand pending) |
+| 15 | Image editor extras: effects (shadow, torn and faded edges, border, rounded corners, perspective, brightness/contrast, grayscale, sharpen, watermark) on the image or a selected area with a live preview, effect and watermark presets, spotlight and magnifier, canvas size, trim, rotate by any angle, flip, Arabic text; Combine Images, Batch Process, Images to PDF, a PDF destination | done (by-hand checks in the installed app pending) |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -103,8 +104,8 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 
 | Tab | What |
 |---|---|
-| Output | After capture: the workflow, in order (open in the editor, save to file, copy, print, Word, PowerPoint, a server, an upload, an app, copy the link; each on or off). After a recording is saved: its own steps. Folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
-| Destinations | The printer, Word and PowerPoint, FTP/FTPS/SFTP servers, HTTP uploads and apps to open captures with, each with a Test button (see [Output destinations](#output-destinations)) |
+| Output | After capture: the workflow, in order (open in the editor, save to file, copy, print, Word, PowerPoint, PDF, a server, an upload, an app, copy the link; each on or off). After a recording is saved: its own steps. Folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
+| Destinations | The printer, Word and PowerPoint, PDF, FTP/FTPS/SFTP servers, HTTP uploads and apps to open captures with, each with a Test button (see [Output destinations](#output-destinations)) |
 | Capture | Capture delay (also in the tray) and a delay per kind of capture, hide delay, the capture toolbar at startup, cursor, window shadow, fixed-size region and rounded corners, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
 | Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer. Sound: system audio on/off, all sound / only one app / all except one app, the output device (the default, followed, or one by name), the microphone (none, the Windows default or a connected one); with both, one mixed track, a track per source, or both. Microphone processing (noise suppression with its strength, noise gate with its threshold, compressor, limiter), live level meters, the microphone test, evening out loudness when saving. FFmpeg's version |
 | Overlays | Draw the overlays into the video or add them later; the metadata file; clicks (colours, size, sound); pointer (halo or spotlight, size, hide when idle); keystrokes (shortcuts or all keys, position, font, size, time, apps never shown); webcam (camera, picture, shape, size, border, mirror, placement preview); drawing (pen colour, width, fade) |
@@ -130,6 +131,7 @@ Destinations, each with a **Test** button (it checks the set-up as it is in the 
 |---|---|
 | Printer | The print dialog, or straight to the chosen (or default) printer. One capture per page: as large as fits, filling the page, or as big as on the screen; portrait, landscape, or landscape for wide captures; margins |
 | Word, PowerPoint | A new `.docx` / `.pptx` in the capture folder, or added at the end of a chosen file (a paragraph, a slide). The picture is as big as on the screen, shrunk to fit. Office isn't needed to make them |
+| PDF | A one-page PDF in the capture folder, named like the capture: A4 or Letter (or Legal, A3, A5, or the capture's own size), the orientation, margins, and as large as fits, filling the page, or as big as on the screen. Several pictures in one PDF: tray › Tools › [Images to PDF](#batch-process-combine-images-images-to-pdf) |
 | FTP, FTPS, SFTP | Host, port, user and password (or an SFTP key file), a folder (made if missing), passive or active FTP. A public address with `{file}` (`https://example.com/shots/{file}`) gives each upload a link. Files are never overwritten |
 | HTTP upload | Posts the file as a form (multipart/form-data) with any fields and headers, and one secret header such as `Authorization: Bearer …`. The link is read from the JSON reply by a path such as `data.link` or `files[0].url` (empty: the whole reply is the link) |
 | Open with | Any program with a command line such as `"{file}"` (Paint.NET, Photoshop, …) |
@@ -172,6 +174,16 @@ Tray › **Tools**, the toolbar's tools button or a hotkey:
 - **Crosshair**: a line across and down every monitor through the pointer, with its position on the screen and on its monitor. Clicks go through to the apps underneath; turn it off from the tray, the toolbar or its hotkey.
 
 None of them is ever in a capture or a recording.
+
+## Batch Process, Combine Images, Images to PDF
+
+Tray › **Tools** (or the toolbar's tools button). Each starts with a list of pictures: **Add files…**, **Add a folder…** (with its subfolders if ticked), or drag them from Explorer; order them with ↑ ↓. They read PNG, JPEG, BMP, GIF and WebP.
+
+- **Batch Process** runs every picture through, in order: a new size (a percentage, to fit in a box, a width or a height; never larger if ticked), an effects preset and a watermark preset (both saved in the editor's Effects window), a format (each file's own, PNG, JPEG with its quality, or BMP) and a name. Names come from a template: `{name}` (the original name), `{counter}` (1, 2, 3… in the list's order), `{yyyy} {MM} {dd} {HH} {mm} {ss}` (the file's date), `{width} {height}` (the new size); an example shows the first one. A name already taken in the output folder gets a number, is replaced, or that picture is skipped. A few pictures are worked on at a time on other threads, so the window stays usable; progress and failures are shown, and **Cancel** stops it, leaving only whole files.
+- **Combine Images** puts the pictures side by side, one under another or in a grid (columns), aligned, with space between, a border and a background (or none), with a preview and the result's size. **Open in the editor** to edit, save or send it, or **Save as…**.
+- **Images to PDF** makes one PDF: the paper (A4 or Letter, Legal, A3, A5, or each picture's own size), the orientation (or landscape for wide pictures), margins, the size on the page, one picture per page or several (across × down) with space between, and a smaller file (pictures stored as JPEG). JPEG files go in as they are. Then **Open the PDF** or **Show in folder**.
+
+Each tool remembers its choices (in `presets.json`).
 
 ## Capture history
 
@@ -249,8 +261,21 @@ With **Open in the editor** on (the default for new installs), every capture ope
 | Step number | `N` | Each click places the next number |
 | Blur, Pixelate | `B`, `X` | Hides parts of the screenshot; always drawn under the other annotations |
 | Crop | `C` | Drag the area to keep, adjust it, then Enter (Esc cancels) |
+| Area | `M` | Select the part of the image the Effects menu changes (Esc clears it) |
+| Spotlight | `O` | Dims everything outside it (colour and how dark); several can be lit at once |
+| Magnify | `G` | A round callout showing the part dragged over, 2× to 8×; drag the callout (or the source) to move it, its grip sets the zoom |
 
-The **Image** menu rotates the image left/right, resizes it, and adds a border or a drop shadow.
+The **Image** menu rotates the image left or right or by any angle, flips it, resizes it, changes the canvas size (where the image goes and the colour around it) and trims plain borders.
+
+The **Effects** menu applies effects to the whole image, or to the part selected with the Area tool (that part is lifted, with a colour of your choice behind it):
+
+- **Drop shadow** (following the picture's shape), **Torn edge** (each side, how deep, how far apart the teeth; **New pattern** tears it another way), **Faded edges**, **Border** (it follows rounded corners and torn edges), **Rounded corners**, **Perspective** (turned left/right or up/down).
+- **Brightness and contrast**, **Grayscale** (at once), **Sharpen**.
+- **Watermark**: text (any language) or a picture file, in a corner, along an edge or in the middle, at a distance from the edges, with its opacity and angle, or repeated over the whole image; a light shadow keeps it readable. Watermarks can be saved by name.
+
+They open the **Effects** window: a list of effects applied from top to bottom (add, remove, reorder), the settings of the selected one, and saved presets (Save as…, Delete). The image shows the result while the window is open, and **Apply** keeps exactly that, as one step to undo. A shadow or a border keeps the annotations editable; other effects merge them into the image first (Undo brings them back). Saved presets are also in Effects › **Presets**, applied in one click, and in Batch Process. A few come with the app.
+
+**Arabic and other right-to-left text** can be typed in text annotations and watermarks: the letters are joined as they should be, mixed Arabic, English and numbers come out in the right order, and text starting with Arabic is right-aligned. The text box types right to left too.
 
 | Keys | Action |
 |---|---|
@@ -271,7 +296,7 @@ Closing an editor (or exiting the app) with unsaved changes asks whether to save
 src/CashGear.Capture.Core       Models, interfaces, settings, pixel math (net10.0, no WPF/WinRT)
 src/CashGear.Capture.Interop    All P/Invoke + COM declarations
 src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enumeration, open menus, UI Automation objects
-src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom (net10.0, no WPF)
+src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom, effects, Arabic text (HarfBuzz), presets, combine, batch, PDF (net10.0, no WPF)
 src/CashGear.Capture.Media      FFmpeg in-process (FFmpeg.AutoGen): encoders, crash-safe writer, remux, loudness, decoding (net10.0)
 src/CashGear.Capture.Audio      Sound devices: WASAPI capture with Windows' timestamps, devices followed, process loopback, microphone chain, RNNoise, meters
 src/CashGear.Capture.Overlays   Recording overlays: input hooks + keystroke privacy (UI Automation), pointer shapes, Direct2D compositor, webcam (Windows.Media.Capture)
@@ -282,8 +307,8 @@ tools/SyncTest                  Recording acceptance test: flashes + beeps, then
 tools/licenses                  License texts shipped with FFmpeg
 tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
 tools/make-icon.ps1             Draws the app icon
-src/CashGear.Capture.Outputs    Output destinations: registry, workflow runner, Word/PowerPoint (Open XML), FTP/FTPS (FluentFTP), SFTP (SSH.NET), HTTP upload, open with, DPAPI secrets
-src/CashGear.Capture.App        WPF app: tray, capture toolbar, screen tools, windows, view models, output (editor, file, clipboard, printer)
+src/CashGear.Capture.Outputs    Output destinations: registry, workflow runner, Word/PowerPoint (Open XML), PDF (Skia), FTP/FTPS (FluentFTP), SFTP (SSH.NET), HTTP upload, open with, DPAPI secrets
+src/CashGear.Capture.App        WPF app: tray, capture toolbar, screen tools, image tools (batch, combine, PDF), windows, view models, output (editor, file, clipboard, printer)
 tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, Overlays, Outputs, App); the Outputs tests run their own FTP, SFTP and HTTP servers on 127.0.0.1
 ```
 
@@ -298,6 +323,7 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | Recordings in progress (and ones a crash left) | `%LocalAppData%\CashGear\Capture\Recordings\Temp\` |
 | Which encoders work here | `%LocalAppData%\CashGear\Capture\encoders.json` |
 | A recording's metadata (pointer, clicks, keys) | `name.cgmeta.json` next to the recording |
+| Effect and watermark presets, and the image tools' last choices | `%AppData%\CashGear\Capture\presets.json` |
 | What the app remembers (the last capture, the toolbar's and ruler's places, picked colours, the magnifier's zoom) | `%LocalAppData%\CashGear\Capture\state.json` |
 | Passwords and tokens of the destinations (DPAPI, this Windows user only) | `%LocalAppData%\CashGear\Capture\secrets.json` |
 | Captures on their way to an upload or app (deleted after each workflow; copies opened in apps after a day) | `%LocalAppData%\CashGear\Capture\outgoing\` |

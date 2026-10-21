@@ -1283,3 +1283,142 @@ What happens after a capture is now a workflow: an ordered list of destinations 
 - **SFTP.** Keys in the formats SSH.NET reads (OpenSSH, PEM, PKCS#8). No SSH agent or Pageant, and no keyboard-interactive login.
 - **HTTP.** POST with multipart/form-data only, and one secret header. The link is found by path, not built from pieces of the reply.
 - **A notification's click** shows the first file, or opens the first link.
+
+## Phase 15 — Image Editor Extras, Batch, PDF (2026-10-21)
+
+The editor gets effects, a watermark, a spotlight and a magnifier, and more ways to change the whole image. Effects are shown on the image while their window is open, and Apply keeps exactly what was shown. Text annotations and watermarks can be written in Arabic. Three new tools work on many pictures at once: Batch Process, Combine Images and Images to PDF. A capture can also become a PDF as a step of the workflow.
+
+### Added
+- **Effects** (the editor's new **Effects** menu), on the whole image or on the part selected with the new **Area** tool:
+  - **Edges and frames:**
+    - **Drop shadow:** softness, offset, darkness and colour. It follows the picture's shape.
+    - **Torn edge:** each side on or off, how deep, how far apart the teeth. **New pattern** tears it another way, and the same pattern comes back every time until then.
+    - **Faded edges, rounded corners.**
+    - **Border:** it follows rounded corners and torn edges.
+    - **Perspective:** turned left/right or up/down, up to 60°.
+  - **Adjustments:** brightness and contrast, grayscale (at once, no window), sharpen.
+  - **Watermark:** text in any language, or a picture file (scaled).
+    - **Where:** a 3 × 3 grid of places at a distance from the edges, or repeated over the whole image with a gap between.
+    - **How:** opacity, angle, and a light shadow so it reads on any background.
+- **The Effects window.**
+  - **The list:** effects applied from top to bottom; add, remove, reorder. Below it, the selected effect's settings.
+  - **Preview:** the image shows the result while the window is open. It is worked out on another thread a moment after each change, so sliders stay smooth.
+  - **Apply** keeps exactly the previewed pixels, as one undo step named after the effect or the preset.
+  - **Annotations:** a shadow or a border keeps them editable (moved with the image). Other effects merge them into the image first, and Undo brings them back.
+  - **A selected area** is lifted: what the effects cut away shows a colour of your choice (white, any colour or transparent), and a shadow or border reaches past the area.
+  - **Errors** (a watermark picture that's gone) are shown in the window, and Apply waits until they're fixed.
+- **Presets** in `presets.json` next to settings.json:
+  - **Effect presets:** a list of effects saved by name (Save as…, Delete), applied in one click from Effects › **Presets**, or chosen in Batch Process. Four come with the app (shadow; torn bottom, rounded or thin border with a shadow).
+  - **Watermark presets**, saved from the watermark's settings. One comes with the app ("Confidential, across the image").
+  - **The image tools' last choices** are kept there too.
+- **New tools:**
+  - **Area (`M`):** the part of the image that effects change.
+  - **Spotlight (`O`):** dims everything outside its rectangle (colour, and how dark as Dim). All spotlights share one dimmed layer, so several can be lit, over blur and pixelate and under the other annotations.
+  - **Magnify (`G`):** drag over a part, and a round callout shows it 2× to 8× larger, placed beside it where it fits, joined by a line.
+    - **Moving:** drag the callout or the source circle to move that one alone.
+    - **Grips:** they set the source's size and the zoom; the panel calls Strength "Zoom".
+- **The Image menu:**
+  - **Rotate by an angle** (previewed). Quarter turns stay exact and keep annotations; other angles grow the canvas, with transparent or coloured corners.
+  - **Flip** horizontally or vertically. Text stays readable.
+  - **Canvas size** (previewed): where the image goes on a 3 × 3 grid, and the colour around it.
+  - **Trim plain borders:** cuts away rows and columns of the corner's colour, and says when there are none.
+- **Arabic and other right-to-left text** in text annotations and watermarks.
+  - **Shaping:** letters are joined into their contextual forms (HarfBuzz), with kerning.
+  - **Order:** mixed Arabic, English and numbers come out in display order (the Unicode bidirectional algorithm from Windows' own ICU).
+  - **Alignment:** text starting with a right-to-left letter is right-aligned, and the in-place text box types right to left.
+  - **Fonts:** characters a font lacks come from one that has them.
+- **Batch Process** (tray › Tools, and the toolbar's tools button):
+  - **Steps:** a size (percentage, fit in a box, width, height; never larger if ticked), an effects preset, a watermark preset, a format (each file's own, PNG, JPEG with its quality, BMP).
+  - **Names:** a template with `{name}`, `{counter}`, the file's date and time, `{width}` and `{height}`, with an example of the first name.
+  - **The output folder:** a name already taken gets a number, is replaced, or that picture is skipped.
+  - **Running:** a few pictures at a time on other threads (half the processors, at most 4), each read, changed, written and freed in turn. Progress and failures are shown; **Cancel** leaves only whole files (results are written under a temporary name, then renamed).
+  - **Reading:** photos are turned upright by their EXIF orientation.
+- **Combine Images:**
+  - **Layout:** side by side, one under another, or a grid of columns.
+  - **Look:** aligned, with space between, a border and a background (or none).
+  - **Result:** a preview and the result's size, then Open in the editor or Save as.
+- **Images to PDF:**
+  - **The page:** A4 or Letter as used here, Legal, A3, A5, or each picture's own size; orientation (or landscape for wide pictures); margins; as large as fits, filling, or as big as on the screen.
+  - **Several per page:** across × down, with space between.
+  - **Smaller file:** pictures stored as JPEG. JPEG files go in as they are either way.
+  - **Running:** progress and Cancel, then Open the PDF or Show in folder.
+- **The image tools share** a picture list (files, a folder with or without subfolders, or dragged from Explorer; reorder, remove) and remember their choices. They read PNG, JPEG, BMP, GIF and WebP.
+- **A PDF destination** for the workflow and Send to:
+  - **The file:** a one-page PDF in the capture folder, named like the capture (" (2)" when taken).
+  - **Settings › Destinations › PDF:** paper, size on the page, orientation, margins and a Test button.
+  - **Recordings** are skipped.
+- **Inside.**
+  - **Editor:**
+    - `ImageEffect` and its effects, `EffectRunner`, `Watermark`;
+    - more `ImageOperations` (canvas size, trim, rotate by any angle, flip);
+    - the session's preview (`ShowPreview`, `CommitPreview`, `CancelPreview`) and the Area tool;
+    - `SpotlightAnnotation` and `MagnifyAnnotation`, `Annotation.MoveFrom`;
+    - `TextShaper` and `Bidi`;
+    - `PresetLibrary` and `JsonPresetStore`;
+    - `ImageCombiner`, `BatchProcessor` and `ImageFiles` (Skia reading and writing, with a 24-bit BMP writer), `PdfWriter` (Skia's PDF backend).
+  - **Core:** `PaperSize` and `PageSizes`, `PdfSettings` and `DestinationIds.Pdf`, `AppPaths.PresetsFile`.
+  - **Outputs:** `PdfDestination`. Outputs now references Editor for Skia.
+  - **App:**
+    - `PreviewDialogViewModel` (the Effects window and the small image dialogs);
+    - settings as parameters with one template each (`EditParameterTemplates`);
+    - `ImageToolWindows`, `IImageFilePicker`, and `IShell.OpenFile`.
+  - **Packages:** `SkiaSharp.HarfBuzz` 4.153.1 (MIT; HarfBuzz is "Old MIT"), in THIRD-PARTY-NOTICES.txt.
+
+### Deviations from the spec
+- **PDFs are made with SkiaSharp's own PDF writer, not QuestPDF** (the user's choice). QuestPDF 2026.8's Community licence covers only organisations under USD 1M yearly revenue that aren't publicly traded, and it brings 12 MB of its own native Skia. Skia was already in the app.
+- **Effects are applied, with undo**, not kept as a live, editable stack on the document (the user's choice). Spotlight and the magnifier are annotations, so they stay movable.
+- **Presets have their own file**, `presets.json`, not settings.json (the user's choice): saving one from the editor never races the Settings window's OK. The tools' last choices are kept there too.
+- **Add border and Add shadow** became Effects › Border and Drop shadow, with settings. The shadow now comes from the picture's shape (Skia's drop shadow), so it differs a little from Phase 5's fixed shadow. Window captures' own shadow (Settings › Capture) is unchanged.
+- **Effects other than a shadow or a border merge annotations into the image**, so they look in the result as they did on screen.
+- **Arabic text** wasn't in the spec; the user asked for it during planning.
+- **A PDF destination** was added (the user's choice). The batch writes to its folder only, not through destinations.
+- **The batch writes PNG, JPEG and BMP** (what the app saves elsewhere), with Skia instead of WIC, so it runs on worker threads. It reads PNG, JPEG, BMP, GIF and WebP.
+- **Watermark sizes are in pixels** (or a percentage of the picture file), not relative to each image.
+
+### Fixed during development
+- **The magnifier's pixels on screen** differed slightly from the export: the zoom was composed with the view's own transform. The zoomed pixels are now made once on whole image pixels, cached like blur patches, and drawn like the image.
+- **A preview could read a freed image.** The Effects window works out previews on a worker thread; closing the editor before one finished freed the image it was reading, and the process crashed (an App test run ended with an access violation). Each preview now works from its own copy of the image.
+- **The batch's progress** overflowed a `TimeSpan` on its first report.
+
+### Tested
+- **1242 automated tests** at 100% + 100%: 1232 pass and 10 are skipped (the 6 RNNoise tests until `rnnoise.dll` is built, and 4 explicit). Phase 14 had 1117. New:
+  - **Editor:**
+    - every effect: sizes, transparency, seeds, chosen sides only, colour maths on known pixels, sharpening;
+    - effects on an area, and annotations kept or merged;
+    - **the preview on screen against the committed image and the export, byte for byte, for every effect;**
+    - canvas size, trim, rotate by any angle, flip;
+    - spotlight and magnifier (rendering, dragging parts, grips, placement, screen against export);
+    - watermarks (place, opacity, tiling, pictures, Arabic);
+    - presets (round trip, hand edits, damaged files, cleaning);
+    - Arabic shaping, runs of a mixed line, font fallback, right alignment, the box around the ink;
+    - combine layouts;
+    - the batch (steps, formats, names, failures, at most N at once, cancel, EXIF), and **500 screenshots with flat memory**: 61 MB private peak at 50–200 done, 62 MB at 350–500, in 10.9 s;
+    - PDFs (pages, grids, JPEG passed through, cancel).
+  - **Outputs:** the PDF destination, **rendered back with Windows.Data.Pdf**: fitted inside the margins of a landscape A4, and actual size on a page the capture's size.
+  - **App:**
+    - the Effects window's view model: the preview follows the settings, Apply keeps it; **the saved PNG (WIC) has the previewed pixels**; Cancel; errors; effect and watermark presets; the selected area;
+    - canvas size and rotate, and the menus;
+    - the image tools, and **500 screenshots through the batch view model on a dispatcher: the UI thread never waited more than 37 ms** (2.9 s in all);
+    - the Settings PDF section;
+    - the new windows on the desktop.
+  - **Core:** page sizes, and the PDF settings.
+- **The desktop run** (user approved) had one failure, in a new test: the Effects window test never started the first preview, which the editor does before it shows the window. Fixed in the test; both window tests then pass.
+- **Not run** (pending in TESTING.md): the new menus, windows and tools by hand in the installed app; Arabic typed with an Arabic keyboard; PDFs opened in other readers; a batch of real photos.
+
+### Known limitations
+- **Effects merge annotations** (all but shadow and border), so they can't be edited afterwards; Undo brings them back.
+- **The magnifier** shows the picture under its source circle, not the annotations drawn there.
+- **Spotlights** are rectangles.
+- **Watermarks** keep their pixel size on every picture of a batch, however large the picture.
+- **Right-to-left text:**
+  - **Ordering** needs Windows' ICU (Windows 10 version 1903 or later); without it each line goes in the direction of its first letter.
+  - **Alignment** follows the first letter of the whole text, not each line.
+- **The batch:**
+  - **Reading:** no TIFF, HEIC or RAW.
+  - **Writing:** no WebP.
+  - **Taken names:** two pictures that would get the same name are numbered in the order they finish.
+- **Combine Images** reads every picture at full size; hundreds of very large pictures need a lot of memory.
+- **PDFs:**
+  - **Pages:** Skia rounds page sizes to whole points (A4 is 595 × 842).
+  - **No extras:** no captions, headers or page numbers, and no adding to an existing PDF.
+- **Effects window:** each preview starts from a copy of the image, so very large images (8K and up) preview with a short delay.
