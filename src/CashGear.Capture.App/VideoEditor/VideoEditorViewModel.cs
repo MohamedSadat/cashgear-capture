@@ -678,6 +678,55 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Holds the picture at the playhead for 2 s; what follows moves on.</summary>
+    [RelayCommand]
+    private void FreezeFrame()
+    {
+        StopPlaying();
+        History.Apply("freeze frame", TransitionEdits.Freeze(Project, Times.FrameStart(Timeline.Playhead, Project.Canvas.Fps)));
+    }
+
+    /// <summary>The selected clip crossfades into the one after it (1 s).</summary>
+    [RelayCommand]
+    private void Crossfade()
+    {
+        if (Timeline.SelectedId is { } id)
+        {
+            CrossfadeFrom(id);
+        }
+    }
+
+    /// <summary>Changes a clip's speed (and its linked clips'); what follows moves with its new length.</summary>
+    public void SetSpeed(string clipId, double speed, double? endSpeed, string mergeKey)
+    {
+        StopPlaying();
+        var after = TransitionEdits.SetSpeed(Project, clipId, speed, endSpeed);
+        _applied = after.Find(clipId)?.Item; // the panel stays while its own slider moves
+        History.Apply("speed", after, mergeKey);
+    }
+
+    public void SetFreezeLength(string clipId, double length, string mergeKey)
+    {
+        StopPlaying();
+        var after = TransitionEdits.SetFreezeLength(Project, clipId, length);
+        _applied = after.Find(clipId)?.Item;
+        History.Apply("freeze length", after, mergeKey);
+    }
+
+    public void CrossfadeFrom(string clipId)
+    {
+        StopPlaying();
+        _shown = null; // the panel's button becomes "Remove the crossfade"
+        History.Apply("crossfade", TransitionEdits.Crossfade(Project, clipId));
+    }
+
+    public void RemoveCrossfadeFrom(string clipId)
+    {
+        StopPlaying();
+        _shown = null;
+        History.Apply("remove crossfade", TransitionEdits.RemoveCrossfade(Project, clipId));
+    }
+
     private void Step(int frames)
     {
         StopPlaying();
@@ -809,7 +858,8 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         Properties.Clear();
         if (item is not null)
         {
-            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe)))
+            var actions = new ItemProperties.ClipActions(SetSpeed, SetFreezeLength, CrossfadeFrom, RemoveCrossfadeFrom);
+            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions))
             {
                 Properties.Add(parameter);
             }

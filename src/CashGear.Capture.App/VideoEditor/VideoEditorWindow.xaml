@@ -96,6 +96,9 @@
         <MenuItem Header="_Delete" Command="{Binding DeleteCommand}" InputGestureText="Del" ToolTip="The marked range (closing the gap), or the selected clip" />
         <MenuItem Header="_Ripple Delete" Command="{Binding RippleDeleteCommand}" InputGestureText="Shift+Del" ToolTip="The selected clip and its time, from every track" />
         <Separator />
+        <MenuItem Header="_Freeze the Frame at the Playhead" Command="{Binding FreezeFrameCommand}" ToolTip="Hold the picture for 2 s; the sound waits" />
+        <MenuItem Header="Cross_fade into the Next Clip" Command="{Binding CrossfadeCommand}" ToolTip="The selected clip blends into the one after it over 1 s" />
+        <Separator />
         <MenuItem Header="Mark _In" Command="{Binding MarkInCommand}" InputGestureText="I" />
         <MenuItem Header="Mark _Out" Command="{Binding MarkOutCommand}" InputGestureText="O" />
         <MenuItem Header="_Clear the Selection" Command="{Binding ClearSelectionCommand}" InputGestureText="Esc" />

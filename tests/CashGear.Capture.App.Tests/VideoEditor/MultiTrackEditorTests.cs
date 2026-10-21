@@ -34,7 +34,7 @@ public sealed class MultiTrackEditorTests : VideoEditorTestBase
         var microphone = vm.Project.Tracks.Single(t => t.Name == "Microphone").Clips.Single();
         vm.Timeline.Select(microphone.Id);
         vm.PropertiesTitle.Should().Be("Sound clip");
-        vm.Properties.Select(p => p.Label).Should().Equal("Volume", "Fade in", "Fade out");
+        vm.Properties.Select(p => p.Label).Should().Equal("Volume", "Speed", "Change the speed along the clip", "Speed at the end", "Fade in", "Fade out");
 
         var volume = Number(vm, "Volume");
         volume.Value = 120;
@@ -57,12 +57,12 @@ public sealed class MultiTrackEditorTests : VideoEditorTestBase
         var webcam = vm.Project.Tracks.Single(t => t.Kind == TrackKind.Webcam).Clips.Single();
         vm.Timeline.Select(webcam.Id);
         vm.PropertiesTitle.Should().Be("Webcam clip");
-        vm.Properties.Select(p => p.Label).Should().Equal("Fade in", "Fade out", "Size", "Across", "Down", "Shape", "Border", "Border width", "Mirrored", "Opacity");
+        vm.Properties.Select(p => p.Label).Should().Equal("Speed", "Change the speed along the clip", "Speed at the end", "Fade in", "Fade out", "Size", "Across", "Down", "Shape", "Border", "Border width", "Mirrored", "Opacity");
 
         Number(vm, "Size").Value = 40;
         Number(vm, "Across").Value = 20;
         vm.Properties.OfType<ChoiceParameter>().Single().Selected = vm.Properties.OfType<ChoiceParameter>().Single().Choices[1];
-        vm.Properties.OfType<SwitchParameter>().Single().Value = true;
+        vm.Properties.OfType<SwitchParameter>().Single(p => p.Label == "Mirrored").Value = true;
         var placement = ((Clip)vm.Project.Find(webcam.Id)!.Value.Item).Placement!;
         placement.Should().Be(ProjectFactory.DefaultWebcam with { Size = 0.4, CenterX = 0.2, Shape = PlacementShape.Rounded, Mirror = true });
     }

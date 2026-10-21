@@ -19,6 +19,12 @@ public static class ItemProperties
     /// <summary>An annotation's keyframe buttons: add one at the playhead, remove the one there.</summary>
     public sealed record Keyframes(Action Add, Action Remove);
 
+    /// <summary>
+    /// Changes that move what follows the clip (speed, a freeze frame's length, crossfades): (clip id, speed, end
+    /// speed or null, merge key), (clip id, length, merge key), (clip id) and (clip id).
+    /// </summary>
+    public sealed record ClipActions(Action<string, double, double?, string> SetSpeed, Action<string, double, string> SetFreeze, Action<string> Crossfade, Action<string> RemoveCrossfade);
+
     private static readonly Lazy<IReadOnlyList<string>> FontFamilies =
         new(() => [.. System.Windows.Media.Fonts.SystemFontFamilies.Select(f => f.Source).Order(StringComparer.CurrentCultureIgnoreCase)]);
 
@@ -45,7 +51,7 @@ public static class ItemProperties
         };
     }
 
-    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null)
+    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null, ClipActions? actions = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(item);
@@ -82,6 +88,63 @@ public static class ItemProperties
         {
             var volume = new NumberParameter("Volume", 0, 200, clip.Volume * 100, 1, " %");
             Change(volume, "volume", c => c with { Volume = Fraction(volume) });
+        }
+
+        if (actions is not null)
+        {
+            if (clip.IsFreeze)
+            {
+                var hold = new NumberParameter("Hold the frame for", 0.1, 30, clip.FreezeLength, 0.1, " s");
+                hold.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == "Value")
+                    {
+                        actions.SetFreeze(clip.Id, Math.Round(hold.Value, 2), $"property {clip.Id} freeze");
+                    }
+                };
+                list.Add(hold);
+            }
+            else
+            {
+                var speed = new NumberParameter("Speed", Clip.SlowestSpeed, Clip.FastestSpeed, clip.Speed, 0.05, "×");
+                var ramp = new SwitchParameter("Change the speed along the clip", clip.IsRamp);
+                var end = new NumberParameter("Speed at the end", Clip.SlowestSpeed, Clip.FastestSpeed, clip.EndSpeed ?? clip.Speed, 0.05, "×") { IsVisible = clip.IsRamp };
+                void SetSpeed(string key) => actions.SetSpeed(clip.Id, Math.Round(speed.Value, 2), ramp.Value ? Math.Round(end.Value, 2) : null, $"property {clip.Id} {key}");
+                speed.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == "Value")
+                    {
+                        SetSpeed("speed");
+                    }
+                };
+                ramp.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == "Value")
+                    {
+                        end.IsVisible = ramp.Value;
+                        SetSpeed("ramp");
+                    }
+                };
+                end.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == "Value")
+                    {
+                        SetSpeed("end speed");
+                    }
+                };
+                list.Add(speed);
+                list.Add(ramp);
+                list.Add(end);
+            }
+
+            if (CashGear.Capture.VideoEditor.Editing.TransitionEdits.CrossfadeLength(project, clip.Id) > 0)
+            {
+                list.Add(new ActionParameter("Remove the crossfade into the next clip", new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.RemoveCrossfade(clip.Id))));
+            }
+            else if (CashGear.Capture.VideoEditor.Editing.TransitionEdits.Following(found.Track, clip) is not null)
+            {
+                list.Add(new ActionParameter("Crossfade into the next clip (1 s)", new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.Crossfade(clip.Id))));
+            }
         }
 
         var fadeIn = new NumberParameter("Fade in", 0, Math.Min(10, clip.Duration), clip.FadeIn, 0.1, " s");
