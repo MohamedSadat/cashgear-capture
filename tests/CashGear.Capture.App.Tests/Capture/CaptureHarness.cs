@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using CashGear.Capture.App.Capture;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
 using CashGear.Capture.App.Scrolling;
@@ -22,6 +23,7 @@ using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Engine;
 using CashGear.Capture.Engine.Display;
 using CashGear.Capture.Interop.Native;
+using CashGear.Capture.Outputs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -58,6 +60,10 @@ internal sealed class CaptureHarness : IDisposable
         services.AddSingleton<IOwnWindows, NoOwnWindows>();
         services.AddSingleton<IOutputService>(Output);
         services.AddSingleton<IEditorLauncher>(Output);
+        services.AddOutputDestinations();
+        services.AddSingleton<IPrinter, NoPrinter>();
+        services.AddSingleton<IDestinationSource, AppDestinations>();
+        services.AddSingleton<OutputWorkflow>();
         services.AddSingleton<ICaptureCountdown>(Countdown);
         services.AddSingleton<ICaptureHistory, NoHistory>();
         services.AddSingleton<IShell, NoShell>();
@@ -230,8 +236,19 @@ internal sealed class CapturedOutput : IOutputService, IEditorLauncher, IDisposa
         return Task.CompletedTask;
     }
 
-    public Task OpenAsync(CapturedImage image, string? savedPath, CancellationToken ct = default)
+    public List<IReadOnlyList<string>> Files { get; } = [];
+
+    public Task CopyFilesToClipboardAsync(IReadOnlyList<string> paths, CancellationToken ct = default)
     {
+        Files.Add(paths);
+        return Task.CompletedTask;
+    }
+
+    public List<IReadOnlyList<WorkflowStep>?> Pending { get; } = [];
+
+    public Task OpenAsync(CapturedImage image, string? savedPath, IReadOnlyList<WorkflowStep>? pending = null, CancellationToken ct = default)
+    {
+        Pending.Add(pending);
         Keep(image);
         return Task.CompletedTask;
     }
@@ -297,9 +314,22 @@ internal sealed class NoHistory : ICaptureHistory
     public Task ClearAsync() => Task.CompletedTask;
 }
 
+internal sealed class NoPrinter : IPrinter
+{
+    public IReadOnlyList<string> Printers() => [];
+
+    public Task<OutputResult> PrintAsync(CapturedImage image, string title, PrintSettings settings, CancellationToken ct) => throw new InvalidOperationException("The tests never print.");
+
+    public Task<OutputResult> CheckAsync(PrintSettings settings, CancellationToken ct) => Task.FromResult(OutputResult.Failed("No printer here."));
+}
+
 internal sealed class NoShell : IShell
 {
     public void ShowInFolder(string path)
+    {
+    }
+
+    public void OpenLink(string url)
     {
     }
 }

@@ -66,14 +66,17 @@ public sealed record OutputResult(bool Succeeded, string Message)
 /// </summary>
 public sealed class OutputItem : IDisposable
 {
-    private readonly Func<CancellationToken, Task<string>>? _makeFile;
+    private readonly Func<string, CancellationToken, Task<string>>? _makeFile;
+    private readonly Func<string>? _makeName;
     private readonly Lock _gate = new();
+    private string? _name;
     private Task<string>? _made;
 
-    private OutputItem(OutputKind kind, string name, DateTimeOffset capturedAt, string? title, Func<CancellationToken, Task<string>>? makeFile)
+    private OutputItem(OutputKind kind, Func<string>? makeName, string? name, DateTimeOffset capturedAt, string? title, Func<string, CancellationToken, Task<string>>? makeFile)
     {
         Kind = kind;
-        Name = name;
+        _makeName = makeName;
+        _name = name;
         CapturedAt = capturedAt;
         Title = title;
         _makeFile = makeFile;
@@ -81,15 +84,15 @@ public sealed class OutputItem : IDisposable
 
     /// <summary>A capture.</summary>
     /// <param name="image">The capture (it stays the caller's; it must live as long as the item).</param>
-    /// <param name="name">Its file name without extension (from the file-name template).</param>
-    /// <param name="makeFile">Writes the capture to a temporary file named <paramref name="name"/> and returns its path.</param>
+    /// <param name="makeName">Makes its file name without extension (from the file-name template), the first time a step needs it, so a <c>{counter}</c> is only used up by captures that get a file.</param>
+    /// <param name="makeFile">Writes the capture to a temporary file with the name given and returns its path.</param>
     /// <param name="images">Everything the File step saves (full screen: also each monitor); the capture alone by default.</param>
-    public static OutputItem ForImage(CapturedImage image, string name, Func<CancellationToken, Task<string>> makeFile, IReadOnlyList<CapturedImage>? images = null)
+    public static OutputItem ForImage(CapturedImage image, Func<string> makeName, Func<string, CancellationToken, Task<string>> makeFile, IReadOnlyList<CapturedImage>? images = null)
     {
         ArgumentNullException.ThrowIfNull(image);
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(makeName);
         ArgumentNullException.ThrowIfNull(makeFile);
-        return new OutputItem(OutputKind.Image, name, image.Metadata.CapturedAt, image.Metadata.WindowTitle, makeFile)
+        return new OutputItem(OutputKind.Image, makeName, null, image.Metadata.CapturedAt, image.Metadata.WindowTitle, makeFile)
         {
             Image = image,
             Images = images ?? [image],
@@ -100,7 +103,7 @@ public sealed class OutputItem : IDisposable
     public static OutputItem ForVideo(string path, DateTimeOffset recordedAt, string? title = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return new OutputItem(OutputKind.Video, System.IO.Path.GetFileNameWithoutExtension(path), recordedAt, title, null) { SavedPath = path };
+        return new OutputItem(OutputKind.Video, null, System.IO.Path.GetFileNameWithoutExtension(path), recordedAt, title, null) { SavedPath = path };
     }
 
     public OutputKind Kind { get; }
@@ -111,8 +114,25 @@ public sealed class OutputItem : IDisposable
     /// <summary>What the File step saves.</summary>
     public IReadOnlyList<CapturedImage> Images { get; private init; } = [];
 
-    /// <summary>The file name without extension.</summary>
-    public string Name { get; }
+    /// <summary>The file name without extension (made on first use; the File step sets it to the saved file's).</summary>
+    public string Name
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _name ??= _makeName?.Invoke() is { Length: > 0 } made ? made : "Capture";
+            }
+        }
+
+        set
+        {
+            lock (_gate)
+            {
+                _name = value;
+            }
+        }
+    }
 
     public DateTimeOffset CapturedAt { get; }
 
@@ -144,9 +164,10 @@ public sealed class OutputItem : IDisposable
             throw new FileNotFoundException("The recording isn't there any more.", SavedPath);
         }
 
+        var name = Name;
         lock (_gate)
         {
-            return _made ??= _makeFile(ct);
+            return _made ??= _makeFile(name, ct);
         }
     }
 

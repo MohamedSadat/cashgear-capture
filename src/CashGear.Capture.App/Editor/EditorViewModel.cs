@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows.Media;
+using CashGear.Capture.App.Output;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
@@ -39,6 +40,8 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     private readonly IEditorDialogs _dialogs;
     private readonly CaptureMetadata _metadata;
     private readonly ILogger<EditorViewModel> _logger;
+    private readonly IEditorOutputs? _outputs;
+    private IReadOnlyList<WorkflowStep> _pending;
     private bool _loadingPanel;
     private int _messageVersion;
 
@@ -52,9 +55,13 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         AppPaths paths,
         ICaptureCounter counter,
         IEditorDialogs dialogs,
-        ILogger<EditorViewModel> logger)
+        ILogger<EditorViewModel> logger,
+        IEditorOutputs? outputs = null,
+        IReadOnlyList<WorkflowStep>? pending = null)
     {
         ArgumentNullException.ThrowIfNull(document);
+        _outputs = outputs;
+        _pending = pending ?? [];
         _metadata = metadata;
         _filePath = filePath;
         _styles = styles;
@@ -436,6 +443,68 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         }
     }
 
+    // ---------------------------------------------------------------- send to and the rest of the workflow
+
+    /// <summary>One entry of the Send to menu.</summary>
+    public sealed record SendMenuItem(string Id, string Name, IAsyncRelayCommand Send);
+
+    public bool CanSend => _outputs is not null;
+
+    /// <summary>Every destination that takes pictures (Settings › Destinations), for the Send to menu.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<SendMenuItem> _sendTargets = [];
+
+    /// <summary>Lists the destinations as they are set up now (called as the menu opens).</summary>
+    public void RefreshSendTargets() => SendTargets = _outputs is null
+        ? []
+        : [.. _outputs.Targets().Select(t => new SendMenuItem(t.Id, t.Name, new AsyncRelayCommand(() => SendStepsAsync([new WorkflowStep(t.Id)]))))];
+
+    /// <summary>The steps of the workflow after the editor, waiting for Continue.</summary>
+    public bool HasPending => _pending.Count > 0 && _outputs is not null;
+
+    /// <summary>"Continue: Save to file → Office → Copy the link".</summary>
+    public string ContinueText => HasPending ? "Continue: " + _outputs!.Describe(_pending) : string.Empty;
+
+    /// <summary>Runs the rest of the workflow on the image as it is now; once.</summary>
+    [RelayCommand(CanExecute = nameof(HasPending))]
+    private async Task ContinueAsync()
+    {
+        var steps = _pending;
+        _pending = [];
+        OnPropertyChanged(nameof(HasPending));
+        OnPropertyChanged(nameof(ContinueText));
+        ContinueCommand.NotifyCanExecuteChanged();
+        await SendStepsAsync(steps);
+    }
+
+    /// <summary>Sends the flattened image through <paramref name="steps"/>. A File step makes its file this document's file.</summary>
+    private async Task SendStepsAsync(IReadOnlyList<WorkflowStep> steps)
+    {
+        if (_outputs is null)
+        {
+            return;
+        }
+
+        FinishTextEdit();
+        try
+        {
+            using var image = Flatten();
+            var result = await _outputs.SendAsync(image, steps, IsDirty ? null : FilePath);
+            if (result.SavedPath is { } saved)
+            {
+                FilePath = saved;
+                Document.History.MarkSaved();
+            }
+
+            ShowMessage(result.Message);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Runtime.InteropServices.ExternalException)
+        {
+            LogSendFailed(ex);
+            _dialogs.ShowError("Could not send the image: " + ex.Message);
+        }
+    }
+
     /// <summary>For closing with unsaved changes: true when the window may close (saved or discarded).</summary>
     public async Task<bool> ConfirmCloseAsync()
     {
@@ -592,6 +661,9 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not copy the edited capture")]
     private partial void LogCopyFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not send the edited capture")]
+    private partial void LogSendFailed(Exception ex);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Image edit failed")]
     private partial void LogEditFailed(Exception ex);

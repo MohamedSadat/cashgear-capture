@@ -51,6 +51,26 @@ internal sealed partial class WpfOutputService(IUiDispatcher ui, ILogger<WpfOutp
         LogCopiedText(text.Length);
     }
 
+    public async Task CopyFilesToClipboardAsync(IReadOnlyList<string> paths, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        await SetClipboardAsync(() => FileDropData(paths), ct).ConfigureAwait(false);
+        LogCopiedFiles(paths.Count);
+    }
+
+    /// <summary>Files as Explorer puts them on the clipboard: a file drop list, to be copied (not moved) when pasted.</summary>
+    internal static DataObject FileDropData(IReadOnlyList<string> paths)
+    {
+        var data = new DataObject();
+        var files = new System.Collections.Specialized.StringCollection();
+        files.AddRange([.. paths.Select(Path.GetFullPath)]);
+        data.SetFileDropList(files);
+        data.SetData("Preferred DropEffect", new MemoryStream(BitConverter.GetBytes(DropEffectCopy)), autoConvert: false);
+        return data;
+    }
+
+    private const int DropEffectCopy = 1;
+
     /// <summary>Sets the clipboard on the UI thread, retrying while another app holds it open.</summary>
     private Task SetClipboardAsync(Func<DataObject> data, CancellationToken ct) => ui.InvokeAsync(async () =>
     {
@@ -160,6 +180,9 @@ internal sealed partial class WpfOutputService(IUiDispatcher ui, ILogger<WpfOutp
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Copied {Characters} characters of text to the clipboard")]
     private partial void LogCopiedText(int characters);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Copied {Count} file(s) to the clipboard")]
+    private partial void LogCopiedFiles(int count);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Clipboard busy (attempt {Attempt}); retrying")]
     private partial void LogClipboardBusy(int attempt);

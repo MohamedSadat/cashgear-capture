@@ -125,5 +125,7 @@ public sealed class InterruptedRecordingsTests
         public List<string> Shown { get; } = [];
 
         public void ShowInFolder(string path) => Shown.Add(path);
+
+        public void OpenLink(string url) => throw new NotSupportedException();
     }
 }

@@ -1,6 +1,7 @@
 using System.IO;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
+using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
 using CashGear.Capture.App.Tray;
@@ -18,7 +19,7 @@ namespace CashGear.Capture.App.Recording;
 
 /// <summary>
 /// Screen recording from the user's side: pick an area (drag a rectangle, or click a window or monitor), record
-/// it with the toolbar up, and on Stop save the MP4 to the capture folder and say so.
+/// it with the toolbar up, and on Stop save the MP4 to the capture folder, say so, and run the recording workflow.
 /// </summary>
 public sealed partial class RecordingController
 {
@@ -46,6 +47,7 @@ public sealed partial class RecordingController
     private readonly ILogger<RecordingController> _logger;
     private readonly IKeyboardState _keyboard;
     private readonly HotkeyRegistrar? _hotkeys;
+    private readonly OutputWorkflow? _outputs;
     private RecordingToolbarWindow? _toolbar;
     private DrawingViewModel? _drawing;
     private DrawingLayerWindow? _layer;
@@ -70,9 +72,11 @@ public sealed partial class RecordingController
         TimeProvider time,
         ILogger<RecordingController> logger,
         IKeyboardState? keyboard = null,
-        HotkeyRegistrar? hotkeys = null)
+        HotkeyRegistrar? hotkeys = null,
+        OutputWorkflow? outputs = null)
     {
         _hotkeys = hotkeys;
+        _outputs = outputs;
         _keyboard = keyboard ?? new Win32KeyboardState();
         _recorder = recorder;
         _encoders = encoders;
@@ -229,6 +233,14 @@ public sealed partial class RecordingController
                 Summary(result),
                 result.DropRate > DropWarning || result.SoundNote is not null || result.Note is not null ? NotificationKind.Warning : NotificationKind.Info,
                 onClick: () => _shell.ShowInFolder(result.Path));
+            if (_outputs is not null)
+            {
+                // After the recording is saved: the steps of the recording workflow (an upload, the clipboard, …).
+                foreach (var part in result.AllParts)
+                {
+                    await _outputs.DeliverRecordingAsync(part, _time.GetLocalNow()).ConfigureAwait(false);
+                }
+            }
         }
         catch (Exception ex) when (ex is CaptureException or IOException or InvalidOperationException)
         {

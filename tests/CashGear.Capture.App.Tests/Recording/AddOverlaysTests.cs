@@ -56,6 +56,8 @@ public sealed class AddOverlaysTests
     private sealed class Shell(List<string> shown) : IShell
     {
         public void ShowInFolder(string path) => shown.Add(path);
+
+        public void OpenLink(string url) => throw new NotSupportedException();
     }
 
     private AddOverlaysController Create(IRecordingPicker picker, IOverlayRenderer renderer) => new(

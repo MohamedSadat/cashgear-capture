@@ -1,5 +1,6 @@
 using System.Windows;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Output;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
@@ -18,9 +19,10 @@ public interface IEditorLauncher
     /// <summary>
     /// Opens <paramref name="image"/> in a new editor window. The pixels are copied, so the caller may dispose the
     /// image once this completes. <paramref name="savedPath"/> is the file it was already saved to, if any (Ctrl+S
-    /// then updates that file).
+    /// then updates that file). <paramref name="pending"/> are the workflow's steps after the editor, which its
+    /// Continue button runs.
     /// </summary>
-    Task OpenAsync(CapturedImage image, string? savedPath, CancellationToken ct = default);
+    Task OpenAsync(CapturedImage image, string? savedPath, IReadOnlyList<WorkflowStep>? pending = null, CancellationToken ct = default);
 }
 
 /// <summary>Creates editor windows (one per capture) and closes them all on exit, asking about unsaved changes.</summary>
@@ -34,7 +36,7 @@ public sealed partial class EditorWindowService(
 
     public int OpenCount => _windows.Count;
 
-    public async Task OpenAsync(CapturedImage image, string? savedPath, CancellationToken ct = default)
+    public async Task OpenAsync(CapturedImage image, string? savedPath, IReadOnlyList<WorkflowStep>? pending = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(image);
         ct.ThrowIfCancellationRequested();
@@ -44,7 +46,7 @@ public sealed partial class EditorWindowService(
         var metadata = image.Metadata;
         try
         {
-            await ui.InvokeAsync(() => Show(picture, metadata, savedPath)).ConfigureAwait(false);
+            await ui.InvokeAsync(() => Show(picture, metadata, savedPath, pending)).ConfigureAwait(false);
         }
         catch
         {
@@ -67,7 +69,7 @@ public sealed partial class EditorWindowService(
         return true;
     }
 
-    private void Show(SKImage picture, CaptureMetadata metadata, string? savedPath)
+    private void Show(SKImage picture, CaptureMetadata metadata, string? savedPath, IReadOnlyList<WorkflowStep>? pending)
     {
         var theme = settings.Current.Appearance.Theme;
         var document = new EditorDocument(picture);
@@ -83,7 +85,9 @@ public sealed partial class EditorWindowService(
             services.GetRequiredService<AppPaths>(),
             services.GetRequiredService<ICaptureCounter>(),
             dialogs,
-            services.GetRequiredService<ILogger<EditorViewModel>>());
+            services.GetRequiredService<ILogger<EditorViewModel>>(),
+            services.GetService<IEditorOutputs>(),
+            pending);
 
         var created = new EditorWindow(viewModel, theme);
         window = created;

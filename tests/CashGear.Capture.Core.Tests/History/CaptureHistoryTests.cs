@@ -241,6 +241,8 @@ public sealed class CaptureHistoryTests : IDisposable
         public Task CopyToClipboardAsync(CapturedImage image, CancellationToken ct = default) => throw new NotSupportedException();
 
         public Task CopyTextToClipboardAsync(string text, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task CopyFilesToClipboardAsync(IReadOnlyList<string> paths, CancellationToken ct = default) => throw new NotSupportedException();
     }
 }
 

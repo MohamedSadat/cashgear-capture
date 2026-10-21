@@ -8,6 +8,7 @@ using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.History;
 using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Core.Settings;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CashGear.Capture.App.Tests.History;
@@ -210,7 +211,7 @@ public sealed class HistoryTests : IDisposable
     {
         public List<(int Width, string? SavedPath)> Opened { get; } = [];
 
-        public Task OpenAsync(CapturedImage image, string? savedPath, CancellationToken ct = default)
+        public Task OpenAsync(CapturedImage image, string? savedPath, IReadOnlyList<WorkflowStep>? pending = null, CancellationToken ct = default)
         {
             Opened.Add((image.Width, savedPath));
             return Task.CompletedTask;
@@ -222,6 +223,8 @@ public sealed class HistoryTests : IDisposable
         public List<string> Shown { get; } = [];
 
         public void ShowInFolder(string path) => Shown.Add(path);
+
+        public void OpenLink(string url) => throw new NotSupportedException();
     }
 
     private sealed class CultureScope : IDisposable

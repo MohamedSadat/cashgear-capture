@@ -199,11 +199,12 @@ public sealed class WorkflowRunnerTests : IDisposable
     public async Task An_item_makes_its_file_once_prefers_the_saved_one_and_deletes_only_its_own()
     {
         var made = 0;
+        var named = 0;
         using var image = TestCaptures.Image(4, 4);
-        var item = OutputItem.ForImage(image, "Shot", _ =>
+        var item = OutputItem.ForImage(image, () => $"Shot{++named}", (name, _) =>
         {
             made++;
-            var path = _temp.File(Path.Combine("outgoing", "x", "Shot.png"));
+            var path = _temp.File(Path.Combine("outgoing", "x", name + ".png"));
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllBytes(path, [1]);
             return Task.FromResult(path);
@@ -218,12 +219,13 @@ public sealed class WorkflowRunnerTests : IDisposable
         item.Dispose();
 
         made.Should().Be(1);
+        named.Should().Be(1, "the name is made once, when the file is");
         second.Should().Be(first);
         preferred.Should().Be(saved);
         File.Exists(first).Should().BeFalse();
         Directory.Exists(Path.GetDirectoryName(first)).Should().BeFalse("its empty folder goes too");
         File.Exists(saved).Should().BeTrue("a saved file is never deleted");
-        item.Name.Should().Be("Shot");
+        item.Name.Should().Be("Shot1");
         item.Images.Should().Equal(image);
     }
 

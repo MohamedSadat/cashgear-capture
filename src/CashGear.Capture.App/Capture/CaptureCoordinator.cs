@@ -1,6 +1,7 @@
 using System.IO;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
 using CashGear.Capture.App.Scrolling;
@@ -19,8 +20,8 @@ using Microsoft.Extensions.Logging;
 namespace CashGear.Capture.App.Capture;
 
 /// <summary>
-/// Runs a capture end to end: hide our own windows, wait the capture delay, capture, then do the configured
-/// after-capture actions (save under the file-name template, copy to the clipboard, open the editor) and notify.
+/// Runs a capture end to end: hide our own windows, wait the capture delay, capture, then send it through the
+/// after-capture workflow (save, copy, the editor, uploads, …; see <see cref="OutputWorkflow"/>).
 /// Failures are reported to the user here rather than thrown.
 /// </summary>
 public sealed partial class CaptureCoordinator
@@ -30,20 +31,17 @@ public sealed partial class CaptureCoordinator
     private readonly IWindowService _windows;
     private readonly IOutputService _output;
     private readonly ISettingsService _settings;
-    private readonly AppPaths _paths;
     private readonly ITrayNotifier _notifier;
     private readonly IUiDispatcher _ui;
     private readonly IOwnWindows _ownWindows;
     private readonly RegionSelector _regionSelector;
-    private readonly ICaptureCounter _counter;
-    private readonly IEditorLauncher _editor;
+    private readonly OutputWorkflow _outputs;
     private readonly ScrollingCaptureService _scrolling;
     private readonly IScrollPlatform _scrollPlatform;
     private readonly IOcrService _ocr;
     private readonly ICaptureCountdown _countdown;
     private readonly ICaptureHistory _history;
     private readonly IAppStateStore _state;
-    private readonly IShell _shell;
     private readonly TimeProvider _time;
     private readonly ILogger<CaptureCoordinator> _logger;
     private int _busy;
@@ -54,20 +52,17 @@ public sealed partial class CaptureCoordinator
         IWindowService windows,
         IOutputService output,
         ISettingsService settings,
-        AppPaths paths,
         ITrayNotifier notifier,
         IUiDispatcher ui,
         IOwnWindows ownWindows,
         RegionSelector regionSelector,
-        ICaptureCounter counter,
-        IEditorLauncher editor,
+        OutputWorkflow outputs,
         ScrollingCaptureService scrolling,
         IScrollPlatform scrollPlatform,
         IOcrService ocr,
         ICaptureCountdown countdown,
         ICaptureHistory history,
         IAppStateStore state,
-        IShell shell,
         TimeProvider time,
         ILogger<CaptureCoordinator> logger)
     {
@@ -76,20 +71,17 @@ public sealed partial class CaptureCoordinator
         _windows = windows;
         _output = output;
         _settings = settings;
-        _paths = paths;
         _notifier = notifier;
         _ui = ui;
         _ownWindows = ownWindows;
         _regionSelector = regionSelector;
-        _counter = counter;
-        _editor = editor;
+        _outputs = outputs;
         _scrolling = scrolling;
         _scrollPlatform = scrollPlatform;
         _ocr = ocr;
         _countdown = countdown;
         _history = history;
         _state = state;
-        _shell = shell;
         _time = time;
         _logger = logger;
     }
@@ -486,7 +478,7 @@ public sealed partial class CaptureCoordinator
             // The capture would just be thrown away.
             _notifier.Notify(
                 "Nothing to do with the capture",
-                "Turn on \"Open in the editor\", \"Save to file\" or \"Copy to clipboard\" in Settings › After capture.",
+                "Switch on a step of the after-capture workflow (Settings › Output), such as \"Open in the editor\" or \"Save to file\".",
                 NotificationKind.Warning);
             return;
         }
@@ -532,107 +524,21 @@ public sealed partial class CaptureCoordinator
     }
 
     /// <summary>
-    /// Saves <paramref name="files"/> (if saving is on) under the file-name template, copies <paramref name="primary"/>
-    /// (if copying is on) and opens it in the editor (if that is on), else tells the user what happened (clicking
-    /// the notification shows the file). <paramref name="primary"/> also goes into the history, alongside the rest.
-    /// <paramref name="hidden"/> brings our windows back; that happens before the editor opens, so the new editor
-    /// ends up in front of them.
+    /// Sends the capture through the after-capture workflow (Settings › Output): saving <paramref name="files"/>
+    /// under the file-name template, copying, the editor, uploads and the rest, and says what happened.
+    /// <paramref name="primary"/> also goes into the history. <paramref name="hidden"/> brings our windows back first,
+    /// so the editor (or the print dialog) ends up in front of them.
     /// </summary>
     private async Task DeliverAsync(
         CapturedImage primary, IReadOnlyList<CapturedImage> files, AppSettings current, IDisposable hidden, CancellationToken ct)
     {
-        var destinations = current.Destinations;
-        var copy = destinations.IsEnabled(DestinationIds.Clipboard);
-        var saved = new List<string>();
-        if (destinations.IsEnabled(DestinationIds.File))
-        {
-            var template = Template(current.Output, distinguishMonitors: files.Count > 1);
-            var folder = _paths.ResolveCaptureDirectory(current.Output);
-            foreach (var file in files)
-            {
-                var name = FileNameTemplate.Expand(template, Context(file), _counter.Next);
-                var options = new SaveOptions(folder, name, FormatFor(file, current.Output), current.Output.JpegQuality);
-                saved.Add(await _output.SaveAsync(file, options, ct).ConfigureAwait(false)
-                    ?? throw new OperationCanceledException("Save was cancelled."));
-            }
-        }
+        hidden.Dispose();
+        var delivery = await _outputs.DeliverCaptureAsync(primary, files, current, ct).ConfigureAwait(false);
 
-        string? savedAs = null;
-        for (var i = 0; i < saved.Count; i++)
-        {
-            savedAs = ReferenceEquals(files[i], primary) ? saved[i] : savedAs;
-        }
-
-        // Kept in the history while the rest happens; the image must stay alive until both are done.
-        var pngCopy = FormatFor(primary, current.Output) == ImageFileFormat.Png ? savedAs : null;
-        var history = _history.AddAsync(primary, savedAs, pngCopy, CancellationToken.None);
-        try
-        {
-            if (copy)
-            {
-                await _output.CopyToClipboardAsync(primary, ct).ConfigureAwait(false);
-            }
-
-            if (destinations.IsEnabled(DestinationIds.Editor))
-            {
-                // The editor shows the result, so no notification. If the image was saved, Ctrl+S in the editor updates that file.
-                hidden.Dispose();
-                await _editor.OpenAsync(primary, savedAs, ct).ConfigureAwait(false);
-                return;
-            }
-
-            var shown = saved.FirstOrDefault();
-            _notifier.Notify(
-                saved.Count > 0 ? "Capture saved" : "Capture copied",
-                Summary(saved, copy),
-                onClick: shown is null ? null : () => _shell.ShowInFolder(shown));
-        }
-        finally
-        {
-            await history.ConfigureAwait(false);
-        }
-    }
-
-    /// <summary>The configured format, except that a shaped capture is always PNG (the only format that keeps its transparency).</summary>
-    private static ImageFileFormat FormatFor(CapturedImage image, OutputSettings output) =>
-        image.Metadata.IsNonRectangular ? ImageFileFormat.Png : output.Format;
-
-    /// <summary>The configured template, or the default if a hand edit broke it; several files from one capture get {monitor} so their names differ.</summary>
-    private string Template(OutputSettings output, bool distinguishMonitors)
-    {
-        var template = output.FileNameTemplate;
-        if (!FileNameTemplate.TryValidate(template, out var error))
-        {
-            LogBadTemplate(template, error);
-            template = FileNameTemplate.Default;
-        }
-
-        return distinguishMonitors && !FileNameTemplate.Uses(template, "monitor") ? template + "_{monitor}" : template;
-    }
-
-    private static FileNameContext Context(CapturedImage image) => new(
-        image.Metadata.CapturedAt,
-        image.Metadata.Kind,
-        image.Metadata.Kind == CaptureKind.AllMonitors ? null : image.Metadata.MonitorName,
-        image.Metadata.WindowTitle);
-
-    private static string Summary(IReadOnlyList<string> saved, bool copied)
-    {
-        var lines = new List<string>(3);
-        if (saved.Count > 0)
-        {
-            lines.Add(saved.Count == 1
-                ? Path.GetFileName(saved[0])
-                : $"{Path.GetFileName(saved[0])} and {saved.Count - 1} more");
-            lines.Add("in " + Path.GetDirectoryName(saved[0]) + " (click to show)");
-        }
-
-        if (copied)
-        {
-            lines.Add("Copied to the clipboard.");
-        }
-
-        return string.Join('\n', lines);
+        // The history keeps the saved PNG itself instead of a second copy.
+        var savedAs = delivery.SavedPath;
+        var pngCopy = savedAs is not null && CaptureFiles.FormatFor(primary, current.Output) == ImageFileFormat.Png ? savedAs : null;
+        await _history.AddAsync(primary, savedAs, pngCopy, CancellationToken.None).ConfigureAwait(false);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Captured full screen {Width}x{Height} via {Backend}")]
@@ -643,9 +549,6 @@ public sealed partial class CaptureCoordinator
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Captured {Count} open menu window(s) in {Bounds}")]
     private partial void LogMenusCaptured(int count, PixelRect bounds);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "File-name template \"{Template}\" is invalid ({Error}); using the default")]
-    private partial void LogBadTemplate(string template, string? error);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Capture cancelled")]
     private partial void LogCancelled();

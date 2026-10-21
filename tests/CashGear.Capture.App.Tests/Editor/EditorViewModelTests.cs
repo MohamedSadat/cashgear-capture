@@ -292,6 +292,8 @@ internal sealed class FakeOutputService : IOutputService
         return Task.CompletedTask;
     }
 
+    public Task CopyFilesToClipboardAsync(IReadOnlyList<string> paths, CancellationToken ct = default) => throw new NotSupportedException();
+
     /// <summary>Whether any pixel is strongly red (the default annotation colour), i.e. annotations were burned in.</summary>
     private static bool HasRed(CapturedImage image)
     {

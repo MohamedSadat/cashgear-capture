@@ -11,6 +11,9 @@ public interface IShell
 {
     /// <summary>Opens the file's folder with the file selected; just the folder if the file is gone.</summary>
     void ShowInFolder(string path);
+
+    /// <summary>Opens a web address (http or https only) in the default browser.</summary>
+    void OpenLink(string url);
 }
 
 internal sealed partial class ExplorerShell(ILogger<ExplorerShell> logger) : IShell
@@ -40,6 +43,24 @@ internal sealed partial class ExplorerShell(ILogger<ExplorerShell> logger) : ISh
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             LogFailed(ex, path);
+        }
+    }
+
+    public void OpenLink(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+        {
+            LogNotALink(url);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            LogFailed(ex, url);
         }
     }
 
@@ -75,6 +96,9 @@ internal sealed partial class ExplorerShell(ILogger<ExplorerShell> logger) : ISh
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "The shell could not show {Path} (HRESULT 0x{Result:X8}); using explorer /select")]
     private partial void LogShellFailed(int result, string path);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Not opened: \"{Url}\" isn't a web address")]
+    private partial void LogNotALink(string url);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Cannot show {Path}: neither it nor its folder exists")]
     private partial void LogMissing(string path);

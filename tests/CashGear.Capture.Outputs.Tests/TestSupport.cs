@@ -123,11 +123,11 @@ internal static class TestCaptures
 
     /// <summary>A capture as an item whose file is a real PNG of its size, written to <paramref name="folder"/> when asked for.</summary>
     public static OutputItem Item(CapturedImage image, string folder, string name = "Capture_2026-10-21_09-30-00_region") =>
-        OutputItem.ForImage(image, name, _ =>
+        OutputItem.ForImage(image, () => name, (fileName, _) =>
         {
             var sub = Path.Combine(folder, Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(sub);
-            var path = Path.Combine(sub, name + ".png");
+            var path = Path.Combine(sub, fileName + ".png");
             File.WriteAllBytes(path, Png.Solid(image.Width, image.Height));
             return Task.FromResult(path);
         });

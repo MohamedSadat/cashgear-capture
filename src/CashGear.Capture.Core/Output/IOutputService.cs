@@ -27,4 +27,7 @@ public interface IOutputService
 
     /// <summary>Puts text on the clipboard (Unicode).</summary>
     Task CopyTextToClipboardAsync(string text, CancellationToken ct = default);
+
+    /// <summary>Puts files on the clipboard as Explorer copies them (a file drop list), so they can be pasted into a folder, a chat or an email.</summary>
+    Task CopyFilesToClipboardAsync(IReadOnlyList<string> paths, CancellationToken ct = default);
 }
