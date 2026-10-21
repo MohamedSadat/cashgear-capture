@@ -483,8 +483,13 @@ The user changed the displays by hand. Each layout ran the whole suite, then the
 | The same, with `DISPLAY1` left of the primary at (−1280, 200) | pass; the crosshair test failed once because it placed its own button window in DIPs, off the screen; placed in physical pixels, it passes | 929 pass, 10 skip, 2 fail: `CursorShapeTests` and that crosshair test (since fixed) |
 | Back to 100% + 100%, `DISPLAY1` at (1920, 145) | the 20 desktop tests pass | (the run above) |
 
-### Pending: the pointer's shapes at 150%
-With the primary monitor at 150%, `CursorShapeTests.The_arrow_and_the_text_beam_become_pixels` fails: Windows' arrow and I-beam convert to fully transparent pictures, so a recording that draws the pointer itself (at 2×, or hidden when idle) would draw none. A Phase 12 bug, left for its own fix.
+### Done: the pointer's shapes at 150% (2026-10-21)
+With the primary monitor at 150%, `CursorShapeTests.The_arrow_and_the_text_beam_become_pixels` failed. Only the I-beam was at fault: Windows scales it to a 48 × 48 colour pointer without alpha whose mask is all set and whose beam is white (it inverts the screen), and that read as fully transparent. Fixed in `CursorShapes` (CHANGELOG › Phase 13 › Fixed during development); `An_inverting_pointer_in_colour_is_drawn_like_one_in_black_and_white` covers it without changing the display.
+
+| Layout | `CursorShapeTests` (3) | Overlays tests (20) |
+|---|---|---|
+| `DISPLAY2` primary at 150% (144 dpi), set by hand | pass (the I-beam: 94 black pixels, edged in white) | 19 pass, 1 skip (the explicit browser test) |
+| Back to 100% + 100% | pass | 19 pass, 1 skip |
 
 ### Pending: by hand
 - **Each capture mode** from the tray, the hotkeys and the toolbar in the installed app: fixed size (Tab through the sizes, arrows, a drag), freehand, polygon (Backspace, a click on the first point), rounded (the wheel), object (the wheel out to the window) and menu (a real app's menu within the 3 s). Open each PNG in another app to see its transparency.

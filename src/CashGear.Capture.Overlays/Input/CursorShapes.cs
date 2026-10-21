@@ -58,8 +58,8 @@ public sealed class CursorLibrary
 
 /// <summary>
 /// Reads the pointer's current shape (<c>GetCursorInfo</c>) and turns each new one into pixels (<c>GetIconInfo</c>,
-/// <c>GetDIBits</c>), keeping each by its handle. Colour pointers keep their alpha; the parts of a black-and-white
-/// pointer that invert the screen (the text I-beam) are drawn black with a white edge, which shows on any background.
+/// <c>GetDIBits</c>), keeping each by its handle. Colour pointers keep their alpha; the parts of a pointer without
+/// alpha that invert the screen (the text I-beam) are drawn black with a white edge, which shows on any background.
 /// Used on one thread.
 /// </summary>
 public sealed unsafe class CursorShapes(CursorLibrary library)
@@ -144,16 +144,21 @@ public sealed unsafe class CursorShapes(CursorLibrary library)
             hasAlpha |= color[i] != 0;
         }
 
-        // Without alpha, the mask says what is transparent.
-        var mask = hasAlpha ? null : Bits(icon.hbmMask)?.Pixels;
+        if (!hasAlpha)
+        {
+            // Drawn like a black-and-white pointer, with the colour as the XOR mask (no AND mask: all opaque). Windows'
+            // I-beam is one of these when it is scaled up for a primary monitor above 100%: mask all set, beam white.
+            var mask = Bits(icon.hbmMask)?.Pixels;
+            return Masked(icon, id, width, height, mask?.Length == color.Length ? mask : new byte[color.Length], color);
+        }
+
         for (var i = 0; i < width * height; i++)
         {
             var p = i * 4;
-            var alpha = hasAlpha ? color[p + 3] : mask is not null && mask[p] != 0 ? (byte)0 : (byte)255;
+            var alpha = color[p + 3];
             color[p] = (byte)(color[p] * alpha / 255);
             color[p + 1] = (byte)(color[p + 1] * alpha / 255);
             color[p + 2] = (byte)(color[p + 2] * alpha / 255);
-            color[p + 3] = alpha;
         }
 
         return new CursorImage(id, width, height, (int)icon.xHotspot, (int)icon.yHotspot, color);
@@ -168,22 +173,30 @@ public sealed unsafe class CursorShapes(CursorLibrary library)
         }
 
         var (mask, width, doubleHeight) = read;
-
         var height = doubleHeight / 2;
+        var half = width * height * 4;
+        return Masked(icon, id, width, height, mask.AsSpan(0, half), mask.AsSpan(half, half));
+    }
+
+    /// <summary>
+    /// A pointer drawn with masks (both BGRA): where <paramref name="and"/> is clear the pixel is <paramref name="xor"/>'s
+    /// colour; where it is set the screen shows through, inverted where <paramref name="xor"/> isn't black.
+    /// </summary>
+    private static CursorImage Masked(ICONINFO icon, int id, int width, int height, ReadOnlySpan<byte> and, ReadOnlySpan<byte> xor)
+    {
         var pixels = new byte[width * height * 4];
         var inverted = new bool[width * height];
         for (var i = 0; i < width * height; i++)
         {
-            var and = mask[i * 4] != 0;
-            var xor = mask[(i + (width * height)) * 4] != 0;
             var p = i * 4;
-            if (!and)
+            if (and[p] == 0)
             {
-                var c = xor ? (byte)255 : (byte)0; // opaque white or black
-                pixels[p] = pixels[p + 1] = pixels[p + 2] = c;
+                pixels[p] = xor[p]; // opaque
+                pixels[p + 1] = xor[p + 1];
+                pixels[p + 2] = xor[p + 2];
                 pixels[p + 3] = 255;
             }
-            else if (xor)
+            else if ((xor[p] | xor[p + 1] | xor[p + 2]) != 0)
             {
                 inverted[i] = true; // inverts the screen: black, edged in white below
                 pixels[p + 3] = 255;

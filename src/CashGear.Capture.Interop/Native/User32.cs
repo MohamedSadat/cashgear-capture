@@ -279,6 +279,14 @@ public static unsafe partial class User32
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetIconInfo(nint icon, ICONINFO* info);
 
+    /// <summary>An icon or cursor (<see cref="ICONINFO.fIcon"/> 0) from bitmaps, which stay the caller's; free it with <see cref="DestroyIcon"/>.</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial nint CreateIconIndirect(ICONINFO* info);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool DestroyIcon(nint icon);
+
     public const int IdcArrow = 32512;
     public const int IdcIBeam = 32513;
 

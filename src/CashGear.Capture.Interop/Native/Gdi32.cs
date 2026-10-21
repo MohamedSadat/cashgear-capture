@@ -16,6 +16,10 @@ public static unsafe partial class Gdi32
     [LibraryImport(Dll, SetLastError = true)]
     public static partial nint CreateCompatibleDC(nint hdc);
 
+    /// <summary>A device-dependent bitmap from top-down rows (each padded to 16 bits).</summary>
+    [LibraryImport(Dll, SetLastError = true)]
+    public static partial nint CreateBitmap(int width, int height, uint planes, uint bitsPerPixel, void* bits);
+
     [LibraryImport(Dll, SetLastError = true)]
     public static partial nint CreateDIBSection(nint hdc, BITMAPINFO* info, uint usage, void** bits, nint section, uint offset);
 

@@ -1130,6 +1130,7 @@ FastStone Capture's ways of capturing, in CashGear Capture: a floating capture t
   - **The toolbar didn't fit.** A column of its 20 buttons is taller than a 1080p work area at 150%. It now wraps into a second column (or row) when one would be longer than the monitor's work area.
   - **The toolbar came back in the wrong place.** Restored onto a monitor of another scale, it was measured at the old scale and ended at the top of the work area. It is now moved onto its monitor first, then measured and placed.
   - **The crosshair's lines were rescaled.** When most of a line moved onto the other monitor, WPF scaled the window for that monitor's DPI (a 1-px line became 2 px wide and 1.5 times as long). The lines are put back after every DPI change.
+  - **Fixed: the pointer's I-beam was invisible (Phase 12, fixed after the phase).** Scaled up for a 150% primary, Windows' black-and-white I-beam becomes a 48 × 48 colour pointer without alpha: its mask lets the whole screen through and its white beam inverts it. `CursorShapes` read such a pointer as fully transparent, so a recording that draws the pointer itself (bigger, or hidden when idle) showed no I-beam. Colour pointers without alpha are now drawn like black-and-white ones, the inverting parts black with a white edge. The arrow (48 × 48 with alpha) was never affected. A new test builds the same inverting I-beam both ways and needs no display change.
 
 ### Tested
 - **941 automated tests** at 100% + 100% (930 pass, 11 skipped: the 6 RNNoise tests until `rnnoise.dll` is built, 4 explicit, and the real-microphone test, as Windows reported no microphone then). Phase 12 had 813. New:
@@ -1151,7 +1152,7 @@ FastStone Capture's ways of capturing, in CashGear Capture: a floating capture t
 - **Mixed DPI and negative coordinates** (the TESTING.md matrix), with the displays changed by hand:
   - **The primary (1920 × 1080) at 150% and the other monitor at 100% to its right:** every Phase 13 test passes (after the fixes above).
   - **The same with the other monitor left of the primary at (−1280, 200):** every Phase 13 test passes.
-  - **The whole suite in those layouts** (941 tests): at 150%, one failure, a Phase 12 test (below). Left of the primary, also the crosshair test, whose button window the test placed in DIPs, off the screen at negative X; placed in physical pixels, it passes.
+  - **The whole suite in those layouts** (941 tests): at 150%, one failure, a Phase 12 test (fixed afterwards: the I-beam above). Left of the primary, also the crosshair test, whose button window the test placed in DIPs, off the screen at negative X; placed in physical pixels, it passes.
   - **Back at 100% + 100%:** the Phase 13 desktop tests pass again.
 - **Not run** (pending in TESTING.md):
   - each mode, the toolbar and the tools by hand in the installed app;
@@ -1165,4 +1166,3 @@ FastStone Capture's ways of capturing, in CashGear Capture: a floating capture t
 - **The ruler and the crosshair's readout are opaque.**
 - **A repeated scrolling capture** scrolls from where the window is now, like the first.
 - **HDR monitors** are not handled yet (Phase 18): the colour picker and the magnifier read SDR values.
-- **Found by the mixed-DPI run, not fixed here (Phase 12):** with the primary monitor at 150%, Windows' arrow and I-beam pointers convert to fully transparent pictures (`CursorShapeTests` fails). A recording that draws the pointer itself (bigger, or hidden when idle) would then show none.

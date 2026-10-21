@@ -310,10 +310,12 @@ public sealed class KeystrokePrivacyTests : IDisposable
     }
 }
 
-[Trait("Category", InteractiveDesktop.Category)]
 public sealed unsafe class CursorShapeTests
 {
+    private const int Size = 32;
+
     [Fact]
+    [Trait("Category", InteractiveDesktop.Category)]
     public void The_arrow_and_the_text_beam_become_pixels()
     {
         InteractiveDesktop.Require();
@@ -337,6 +339,43 @@ public sealed unsafe class CursorShapeTests
     }
 
     [Fact]
+    public void An_inverting_pointer_in_colour_is_drawn_like_one_in_black_and_white()
+    {
+        // Windows' I-beam with the primary monitor at 150%: a colour cursor without alpha, its mask all set and its
+        // beam white, so the beam inverts the screen. Here with a solid square too, white on its left half.
+        var and = new bool[Size * Size];
+        var xor = new bool[Size * Size];
+        for (var i = 0; i < and.Length; i++)
+        {
+            var (x, y) = (i % Size, i / Size);
+            var solid = x is >= 2 and < 6 && y is >= 2 and < 6;
+            and[i] = !solid;
+            xor[i] = solid ? x < 4 : x is 15 or 16 && y is >= 8 and < 24;
+        }
+
+        var colour = Cursor(and, xor, inColour: true);
+        var blackAndWhite = Cursor(and, xor, inColour: false);
+        try
+        {
+            var image = CursorShapes.Convert(colour, 1)!;
+
+            (image.Width, image.Height, image.HotspotX, image.HotspotY).Should().Be((Size, Size, 16, 16));
+            Pixel(image, 15, 12).Should().Be((0, 0, 0, 255), "the beam inverts the screen: drawn black");
+            Pixel(image, 14, 12).Should().Be((255, 255, 255, 255), "with a white edge");
+            Pixel(image, 2, 2).Should().Be((255, 255, 255, 255));
+            Pixel(image, 5, 5).Should().Be((0, 0, 0, 255));
+            Pixel(image, 30, 30).Should().Be((0, 0, 0, 0), "the rest shows the screen");
+            image.Pixels.Should().Equal(CursorShapes.Convert(blackAndWhite, 2)!.Pixels);
+        }
+        finally
+        {
+            User32.DestroyIcon(colour);
+            User32.DestroyIcon(blackAndWhite);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", InteractiveDesktop.Category)]
     public void The_shape_now_is_numbered_once()
     {
         InteractiveDesktop.Require();
@@ -350,5 +389,67 @@ public sealed unsafe class CursorShapeTests
         again.Should().Be(first);
         addedAgain.Should().BeNull("a shape is added once");
         library[first].Should().BeSameAs(added);
+    }
+
+    private static (int B, int G, int R, int A) Pixel(CursorImage image, int x, int y)
+    {
+        var p = ((y * image.Width) + x) * 4;
+        return (image.Pixels[p], image.Pixels[p + 1], image.Pixels[p + 2], image.Pixels[p + 3]);
+    }
+
+    /// <summary>
+    /// A <see cref="Size"/>-square cursor with its hotspot in the middle: in colour (32-bit, no alpha, white where
+    /// <paramref name="xor"/> is set) over an AND mask, or black and white (the AND mask on top of the XOR mask).
+    /// </summary>
+    private static nint Cursor(bool[] and, bool[] xor, bool inColour)
+    {
+        nint mask;
+        nint color = 0;
+        if (inColour)
+        {
+            var bgra = xor.Select(set => set ? 0x00FFFFFFu : 0u).ToArray();
+            fixed (uint* bits = bgra)
+            {
+                color = Gdi32.CreateBitmap(Size, Size, 1, 32, bits);
+            }
+
+            fixed (byte* bits = Plane(and))
+            {
+                mask = Gdi32.CreateBitmap(Size, Size, 1, 1, bits);
+            }
+        }
+        else
+        {
+            fixed (byte* bits = Plane([.. and, .. xor]))
+            {
+                mask = Gdi32.CreateBitmap(Size, Size * 2, 1, 1, bits);
+            }
+        }
+
+        var info = new ICONINFO { xHotspot = Size / 2, yHotspot = Size / 2, hbmMask = mask, hbmColor = color };
+        var cursor = User32.CreateIconIndirect(&info);
+        Gdi32.DeleteObject(mask);
+        if (color != 0)
+        {
+            Gdi32.DeleteObject(color);
+        }
+
+        cursor.Should().NotBe(0);
+        return cursor;
+    }
+
+    /// <summary>One bit per pixel, the first pixel in the top bit; rows of 32 pixels need no padding.</summary>
+    private static byte[] Plane(bool[] set)
+    {
+        var bytes = new byte[set.Length / 8];
+        for (var i = 0; i < set.Length; i++)
+        {
+            if (set[i])
+            {
+                bytes[i / 8] |= (byte)(0x80 >> (i % 8));
+            }
+        }
+
+        return bytes;
     }
 }
