@@ -20,6 +20,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 10 | Recording engine v2: FFmpeg in-process (LGPL), timestamped frames, crash-safe temp file + recovery, encoder detection and fallback, sound tracks per source | done |
 | 11 | Pro audio: devices followed during a recording, one app's sound (or all but one), microphone noise gate / compressor / limiter and RNNoise, level meters, microphone test, loudness to −16 LUFS, push-to-talk | done (RNNoise build and manual sound checks pending) |
 | 12 | Recording overlays: clicks, pointer effects, keystrokes (never from password fields), webcam, drawing on the screen; drawn on the GPU or added later from a metadata track | done (real webcam check pending) |
+| 13 | Capture parity with FastStone: floating capture toolbar; fixed-size, freehand, polygon, rounded, object (UI Automation) and open-menu captures, transparent outside their shape; repeat last capture; a delay per kind of capture; magnifier, colour picker, screen ruler, crosshair | done |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -71,6 +72,11 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `--capture-scrolling` | Open the window picker, then scroll the clicked window to the bottom and stitch one tall image |
 | `--record` | Start a screen recording (pick the area), or stop the one running |
 | `--capture-text` | Pick an area and copy the text in it (OCR) to the clipboard |
+| `--capture-fixed`, `--capture-freehand`, `--capture-polygon`, `--capture-rounded` | The other region shapes (see [Capture modes](#capture-modes)) |
+| `--capture-object`, `--capture-menu` | A part of a window under the pointer; the menus open when the delay ends |
+| `--repeat-last` | The last capture again: the same kind, the same pixels or window |
+| `--toolbar` | Show or hide the capture toolbar |
+| `--magnifier`, `--color-picker`, `--ruler`, `--crosshair` | The screen tools |
 | `--exit` | Shut the running instance down |
 
 ## Hotkeys
@@ -84,6 +90,9 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `Shift+PrintScreen` | Start a screen recording / stop it |
 | `Ctrl+Alt+PrintScreen` | Capture Text (OCR) |
 | `Ctrl+Shift+D` | Draw on the screen (only while recording; the key is free otherwise) |
+| `Ctrl+Alt+Shift+PrintScreen` | Repeat the last capture |
+
+Capture Window, the other capture modes, the capture toolbar and the screen tools have no hotkey at first; set them in Settings › Hotkeys.
 
 Change them in **Settings › Hotkeys** (click a box and press the keys) or in `settings.json` under `hotkeys`. A key another app or Windows already owns is reported, and a single typing key (e.g. `A`) is refused because it would stop working everywhere else.
 
@@ -94,19 +103,51 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 | Tab | What |
 |---|---|
 | Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
-| Capture | Capture delay (also in the tray), hide delay, cursor, window shadow, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
+| Capture | Capture delay (also in the tray) and a delay per kind of capture, hide delay, the capture toolbar at startup, cursor, window shadow, fixed-size region and rounded corners, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
 | Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer. Sound: system audio on/off, all sound / only one app / all except one app, the output device (the default, followed, or one by name), the microphone (none, the Windows default or a connected one); with both, one mixed track, a track per source, or both. Microphone processing (noise suppression with its strength, noise gate with its threshold, compressor, limiter), live level meters, the microphone test, evening out loudness when saving. FFmpeg's version |
 | Overlays | Draw the overlays into the video or add them later; the metadata file; clicks (colours, size, sound); pointer (halo or spotlight, size, hide when idle); keystrokes (shortcuts or all keys, position, font, size, time, apps never shown); webcam (camera, picture, shape, size, border, mirror, placement preview); drawing (pen colour, width, fade) |
 | Hotkeys | Record hotkeys; each shows whether it is active. Push to talk |
-| General | Start with Windows, text recognition language (Automatic or one installed language), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file |
+| General | Start with Windows, text recognition language (Automatic or one installed language), screen tools (the ruler's pixels per inch, how the colour picker copies), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file |
 
 Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved.
 
-File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window, scrolling, recording), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
+File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window, scrolling, object, menu, recording), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
 
 ## Delayed capture
 
-Tray › **Capture Delay** › 3, 5 or 10 seconds (Settings › Capture has more). Every capture then counts down in a small box in the bottom-right corner first. Open the menu or hover the tooltip you want in the shot meanwhile. The box doesn't take the focus, so they stay open, and it is never in the capture. **Cancel** stops the capture. The menu shows the current delay; choose "No delay" to turn it off.
+Tray › **Capture Delay** › 3, 5 or 10 seconds (Settings › Capture has more). Every capture then counts down in a small box in the bottom-right corner first, naming what it is about to capture. Open the menu or hover the tooltip you want in the shot meanwhile. The box doesn't take the focus, so they stay open, and it is never in the capture. **Cancel** stops the capture. The menu shows the current delay; choose "No delay" to turn it off.
+
+Settings › Capture › **Delay per kind of capture** gives any kind its own delay instead. An open menu waits 3 seconds by default (time to open it); Repeat Last Capture waits as long as the kind it repeats.
+
+## Capture modes
+
+Besides region, window, full screen, scrolling and text, from tray › **More Captures**, the capture toolbar or a hotkey:
+
+- **Fixed-size region**: a frame of a set size follows the pointer by its top-left corner. Click to place it, drag to move it, arrows nudge it (Ctrl: 10 px), **Tab** / **Shift+Tab** switch between sizes (640 × 480 up to 1920 × 1080, plus any typed in Settings), Enter or a double-click captures. The size used last is kept; the toolbar's button offers the sizes on a right-click.
+- **Freehand region**: draw around what you want with the button held; letting go captures.
+- **Polygon region**: click the corners; click the first corner again, double-click or press Enter to capture; Backspace takes the last corner back.
+- **Rounded region**: like a region (or a clicked window), with rounded corners; the mouse wheel sets the radius, which is kept.
+- **Object**: the part of a window under the pointer is lit — a button, a text box, a toolbar, a panel — as Windows' UI Automation reports it. The mouse wheel goes out to what contains it and back in; a click captures it. Apps that don't report their parts (some games, apps running as administrator) offer only the whole window.
+- **Open menu**: start it, open the menu (or context menu, with its submenus) during the countdown, and the open menus are captured on their own, without the rest of the screen. Classic menus are found in any app; for apps that draw their own (browsers, Office, WPF) it takes the title-less popups of the app in front.
+
+Freehand, polygon, rounded and menu captures are transparent outside their shape and are always saved as PNG (whatever the format in Settings). Apps that ignore transparency show white there.
+
+**Repeat Last Capture** (`Ctrl+Alt+Shift+PrintScreen`, tray, toolbar) takes the last capture again without selecting: exactly the same pixels (and shape) for a region of any kind or an object, the same window for a window, active-window or scrolling capture (as long as it is open), and full screen, text or the open menus again. It is remembered when the app restarts.
+
+## Capture toolbar
+
+Tray › **Capture Toolbar** (or Settings › Capture to show it at every start) shows a small bar with a button for every kind of capture, repeat, recording, the screen tools, the delay, what happens after a capture (editor, file, clipboard) and Settings. It stays on top, never takes the focus (so "active window" still means your window and an open menu stays open) and is never in a capture or a recording. Drag it by its grip; dropped at the edge of a screen it docks there, as a column on the left and right edges. Where it was is remembered.
+
+## Screen tools
+
+Tray › **Tools**, the toolbar's tools button or a hotkey:
+
+- **Magnifier**: a lens following the pointer shows the screen at 2× to 8× (mouse wheel or + and −), the pixel under the pointer framed, with its position and colour. Arrows move the pointer a pixel (Ctrl: 10). A click or Esc closes it; the click goes to no app.
+- **Colour picker**: click any pixel on any monitor (the screen is frozen meanwhile; arrows move a pixel, Esc cancels). The colour is copied at once (HEX by default) and shown as HEX, RGB, HSL and C# `Color`, each with a Copy button; the last 16 colours are kept.
+- **Screen ruler**: marks in pixels, inches or centimetres (right-click). Drag it to move it, drag its far end to change its length, double-click to turn it; arrows nudge it (Shift+arrows change the length), Esc closes it. A red line follows the pointer along it with the distance. Pixels are the screen's own at any scale; inches and centimetres use the monitor's scale (96 per inch at 100%) or the pixels per inch set in Settings › General to measure on the glass.
+- **Crosshair**: a line across and down every monitor through the pointer, with its position on the screen and on its monitor. Clicks go through to the apps underneath; turn it off from the tray, the toolbar or its hotkey.
+
+None of them is ever in a capture or a recording.
 
 ## Capture history
 
@@ -205,7 +246,7 @@ Closing an editor (or exiting the app) with unsaved changes asks whether to save
 ```
 src/CashGear.Capture.Core       Models, interfaces, settings, pixel math (net10.0, no WPF/WinRT)
 src/CashGear.Capture.Interop    All P/Invoke + COM declarations
-src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enumeration
+src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enumeration, open menus, UI Automation objects
 src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom (net10.0, no WPF)
 src/CashGear.Capture.Media      FFmpeg in-process (FFmpeg.AutoGen): encoders, crash-safe writer, remux, loudness, decoding (net10.0)
 src/CashGear.Capture.Audio      Sound devices: WASAPI capture with Windows' timestamps, devices followed, process loopback, microphone chain, RNNoise, meters
@@ -217,7 +258,7 @@ tools/SyncTest                  Recording acceptance test: flashes + beeps, then
 tools/licenses                  License texts shipped with FFmpeg
 tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
 tools/make-icon.ps1             Draws the app icon
-src/CashGear.Capture.App        WPF app: tray, windows, view models, output
+src/CashGear.Capture.App        WPF app: tray, capture toolbar, screen tools, windows, view models, output
 tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, Overlays, App)
 ```
 
@@ -232,4 +273,5 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | Recordings in progress (and ones a crash left) | `%LocalAppData%\CashGear\Capture\Recordings\Temp\` |
 | Which encoders work here | `%LocalAppData%\CashGear\Capture\encoders.json` |
 | A recording's metadata (pointer, clicks, keys) | `name.cgmeta.json` next to the recording |
+| What the app remembers (the last capture, the toolbar's and ruler's places, picked colours, the magnifier's zoom) | `%LocalAppData%\CashGear\Capture\state.json` |
 | Installed app (Setup.exe) | `%LocalAppData%\CashGear.Capture\` (removed by uninstall; the rows above are kept) |

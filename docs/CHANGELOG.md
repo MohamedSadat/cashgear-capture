@@ -1034,3 +1034,135 @@ Recordings can show what the user does: clicks, the pointer, keystrokes, a webca
 - **The drawing layer** covers the recorded area only, and a full-screen app may cover it; while the pen is on, the apps beneath don't get the mouse.
 - **Adding overlays later encodes the video again** (a second generation) and takes about as long as the recording on the software encoder.
 - **Cursor shapes and positions are per frame**, not at the hooks' full rate.
+
+## Phase 13 — Capture parity with FastStone (2026-10-21)
+
+FastStone Capture's ways of capturing, in CashGear Capture: a floating capture toolbar, six more capture modes (three of them transparent outside their shape), Repeat Last Capture, a delay per kind of capture, and four screen tools.
+
+### Added
+- **Floating capture toolbar.** Tray › **Capture Toolbar**, a hotkey or `--toolbar` (Settings › Capture can show it at every start; off by default).
+  - **Buttons:**
+    - every capture mode (region, window, active window, full screen, scrolling, fixed size, freehand, polygon, rounded, object, open menu, text);
+    - repeat, record, the screen tools;
+    - menus for the delay and for what happens after a capture (editor, file, clipboard);
+    - Settings, Hide.
+
+    Line icons are drawn in the theme's text colour; tooltips name the hotkeys. A right-click on the fixed-size button offers the sizes.
+  - **Never in the way.** It is always on top and never takes the focus, so Active Window still means the user's window and an open menu stays open. It is left out of every capture and recording, and stays put while a capture hides the app's other windows.
+  - **Docking.** Drag it by its grip. Dropped within 24 px of an edge of a monitor's work area it docks flush against it: a column on the left and right edges, a row at the top and bottom.
+  - **Placement.** Positions are physical pixels, so it lands exactly at any monitor scale. Where it was is remembered (on the primary monitor if its monitor is gone).
+- **New capture modes** (tray › **More Captures**, the toolbar, hotkeys with no default, and `--capture-fixed`, `--capture-freehand`, `--capture-polygon`, `--capture-rounded`, `--capture-object`, `--capture-menu`):
+  - **Fixed-size region.**
+    - A frame of a set size follows the pointer by its top-left corner (so the loupe shows that corner's pixel).
+    - Click to place it, drag to move it, arrows nudge it (Ctrl: 10 px).
+    - Tab and Shift+Tab switch between nine presets (320 × 240 to 1920 × 1080) and the size typed in Settings › Capture.
+    - Enter or a double-click captures. The size used last is kept.
+  - **Freehand region.** Draw with the button held; letting go captures. The trail is closed straight back to its start and simplified (within 0.75 px).
+  - **Polygon region.** Click the corners. A click on the first corner (a ring shows when the pointer is on it), a double-click or Enter captures; Backspace takes the last corner back.
+  - **Rounded region.** Like a region (or a clicked window), with rounded corners. The mouse wheel sets the radius (shown in the label), which is kept.
+  - **Object.** The part of a window under the pointer is lit — a button, a text box, a toolbar, a panel — with its kind and name ("button "OK"").
+    - **The wheel** goes out to what contains it and back in; a click captures exactly its rectangle.
+    - **How it is found.** The window under the pointer (from the snapshot taken before the overlay) is lit at once. UI Automation then finds the parts inside it on a thread of its own; only the newest request waits, so a fast pointer costs one lookup per answer.
+  - **Open menu.** Start it, then open the menu (or context menu, with submenus) during the countdown: 3 s by default, its own delay in Settings. The menus are captured on their own, without the rest of the screen, transparent between a menu and its submenu.
+    - **Classic menus** are found in any app.
+    - **Apps that draw their own** (browsers, Office, WPF): the title-less popups of the app in front, above its window.
+    - **Not menus:** shadows, click-through effects and full-screen glass.
+  - **Transparency.** Freehand, polygon, rounded and menu captures are transparent outside their shape, with soft (anti-aliased) edges. They are always saved as PNG, and are white where transparent for apps that ignore alpha.
+- **Repeat Last Capture** (`Ctrl+Alt+Shift+PrintScreen`, tray, toolbar, `--repeat-last`). Takes the last capture again with no selection, after the delay of its kind:
+  - **An area** (any region shape or an object): exactly the same pixels, live, with the same shape;
+  - **A window**, the active window or a scrolling window: the same window while it is still that window (the same handle, class and process; the title may change), else a message;
+  - **full screen, text or the open menus:** those again.
+
+  It is remembered across restarts in a new `state.json` in the data folder. That file is kept apart from settings.json and also holds the toolbar's and ruler's places, picked colours and the magnifier's zoom.
+- **A delay per kind of capture** (Settings › Capture › Delay per kind of capture). Each kind can have its own delay or use the general capture delay, which the tray's Capture Delay menu and the toolbar still set. The countdown names what it is about to capture.
+- **Screen tools** (tray › **Tools**, the toolbar, hotkeys with no default, `--magnifier`, `--color-picker`, `--ruler`, `--crosshair`):
+  - **Magnifier.** A live lens centred on the pointer, 2× to 8×.
+    - **Controls.** The mouse wheel or + and − zoom; arrows move the pointer a pixel (Ctrl: 10); a click or Esc closes it.
+    - **What it shows:** the centre pixel framed, with its position and colour. The zoom is kept.
+    - **How it reads the screen.** Every frame it reads the square under the pointer with GDI, shown pixel for pixel on the monitor's scale.
+    - **The mouse.** While it is open a low-level mouse hook takes the wheel and the buttons before any window gets them; the pointer moves freely.
+  - **Colour picker.** Click any pixel on any monitor. The screen is frozen meanwhile, without the pointer and undimmed, with the loupe.
+    - **Formats.** The colour is shown as HEX, RGB, HSL and C# `Color.FromArgb(255, r, g, b)`, each with a Copy button.
+    - **Copied at once** in the chosen format (HEX by default; also Settings › General).
+    - **History.** The last 16 colours are kept, newest first.
+  - **Screen ruler.** Marks in pixels, inches or centimetres (right-click), drawn in physical pixels. Inches and centimetres use the monitor's DPI (96 per inch at 100%), or the pixels per inch set in Settings › General to measure on the glass.
+    - **Mouse:** drag to move, drag the far end to change the length, double-click to turn it.
+    - **Keys:** arrows nudge (Shift: the length), Esc closes.
+    - **The pointer.** A red line follows the pointer along it with the distance from its zero end.
+    - **Remembered:** its place, length, direction and unit.
+  - **Crosshair.** A line across and down every monitor through the pointer, and a readout of its position on the screen and on its monitor, with the monitor's scale. It follows the pointer every frame and lets clicks through to the apps underneath.
+- **Settings.**
+  - **Capture:** the toolbar at startup; delays per kind; the fixed size (any size can be typed) and the corner radius.
+  - **General › Screen tools:** the ruler's pixels per inch and the colour copy format.
+  - **Hotkeys:** 13 new rows, and the tab scrolls.
+- **File names and history.** `{kind}` gives `object` and `menu`, and the history says Object and Menu.
+- **Inside.**
+  - **Core:**
+    - every overlay mode is a selection model behind one interface (`ISelectionModel`, `SelectionView`): region, fixed size, shape, object, point;
+    - `CaptureShape` and `ShapeMask` (an anti-aliased rasterizer: nonzero winding, four sub-rows, exact across);
+    - the toolbar's docking; the open-menu rules; colour formats; the ruler's marks; the magnifier's sampling.
+  - **Interop:** UI Automation is read further through the source-generated COM interfaces: `IUIAutomation` to `CreateTrueCondition`, `IUIAutomationElement` to `get_CachedBoundingRectangle`, the cache request and the element array.
+
+### Deviations from the spec
+- **The magnifier reads the screen with GDI** — neither Windows.Graphics.Capture nor the Magnification API. WGC shows its yellow border on Windows 10, and reading a small square with GDI each frame is cheap. Its lens is an opaque window left out of captures, so it never sees itself.
+- **The magnifier takes the mouse with a low-level hook**, not a window over the screen. While a see-through window covers the screen, Windows composes some pixels under it a level off, even in captures that leave the window out. That made the lens's colours off by one.
+- **Object capture walks UI Automation down from the window under the pointer** instead of using its hit test, which would find the overlay that covers the screen.
+  - **Whole controls.** It stops at controls whose insides aren't parts of their own (a button's label, the text inside an edit box).
+  - **The window** is its visible frame, not UI Automation's rectangle with the invisible resize borders.
+- **Menu capture is automatic** after its delay: a selection would close the menu at the first click. Menus that are part of a window (UWP/WinUI flyouts) can't be told apart from the window.
+- **Shapes are always saved as PNG**, whatever the format setting, since only PNG keeps their transparency.
+- **The fixed-size frame follows the pointer by its top-left corner**, not its centre, for pixel-exact placement with the loupe.
+- **No auto-hide** when the toolbar is docked. A column (or row) too long for the monitor wraps into a second one.
+- **The ruler and the crosshair's readout are opaque**, for the same reason as the magnifier: a see-through window would put pixels under it a level off in captures.
+
+### Fixed during development
+- **The toolbar.**
+  - **The drag lagged the pointer.** It took its origin from the live pointer when the press was handled. The pointer had moved on by then, and the last move before the release could be missed.
+  - **A docked column came back too wide.** Created narrow, it started at Windows' minimum window width (136 px) until fitted to its buttons again once shown.
+- **WPF and tool windows** (each found with a probe):
+  - **Capture exclusion.** Windows won't leave WPF's `AllowsTransparency` (per-pixel alpha) windows out of captures, so every tool window is an opaque WPF window.
+  - **Click-through.** WPF takes `WS_EX_LAYERED` out of every extended-style change of a window that isn't `AllowsTransparency`, so the bit could not even be set, and clicks didn't go through the crosshair. The window procedure is subclassed to put it back after WPF has handled `WM_STYLECHANGING`.
+  - **Thin lines.** WPF windows are overlapped windows, which Windows keeps at least 2 px tall; the borderless tool windows are made popups, so a crosshair line is 1 px.
+- **The wheel** only reaches a window that appeared under a still pointer once the pointer moves — the reason the magnifier uses a mouse hook.
+- **Object capture.** UI Automation's raw view puts a button's label inside the button, so the label was lit instead of the button. WPF panels have no element at all, so a WPF button goes straight out to the window.
+- **Three tests of the hotkey registrar** still counted the six old default hotkeys after Repeat got its default.
+- **Found by the mixed-DPI run** (the primary monitor at 150%):
+  - **The toolbar didn't fit.** A column of its 20 buttons is taller than a 1080p work area at 150%. It now wraps into a second column (or row) when one would be longer than the monitor's work area.
+  - **The toolbar came back in the wrong place.** Restored onto a monitor of another scale, it was measured at the old scale and ended at the top of the work area. It is now moved onto its monitor first, then measured and placed.
+  - **The crosshair's lines were rescaled.** When most of a line moved onto the other monitor, WPF scaled the window for that monitor's DPI (a 1-px line became 2 px wide and 1.5 times as long). The lines are put back after every DPI change.
+
+### Tested
+- **941 automated tests** at 100% + 100% (930 pass, 11 skipped: the 6 RNNoise tests until `rnnoise.dll` is built, 4 explicit, and the real-microphone test, as Windows reported no microphone then). Phase 12 had 813. New:
+  - **Core:**
+    - the shape masks (coverage, rounded corners, a figure-eight lasso, menu rectangles, existing transparency, negative origins);
+    - every selection model (fixed size, freehand, polygon, rounded, object, point) and the factory;
+    - per-mode delays, the new hotkeys, an old settings file, `state.json` (round trip, bad files);
+    - the toolbar's docking, the open-menu rules, colour formats (CSS HSL), the ruler's marks at 30 to 300 dpi, the lens maths;
+    - every command-line switch.
+  - **App, on the desktop, on every monitor in turn** (SendInput over the tests' own windows):
+    - region, fixed size, freehand, polygon and rounded captures end to end, each checked pixel by pixel against the screen;
+    - **Repeat Last Capture, acceptance:** the identical pixel rectangle and pixels for each, after the same delay;
+    - a window capture repeated while open and refused once closed;
+    - object capture (the button's rectangle exactly, the wheel out to the window's frame) and UI Automation through the generated COM interfaces, in this process and across processes (the taskbar's Start button);
+    - a Win32 menu and a WPF context menu captured exactly, and the message with none open;
+    - the toolbar (placement, capture exclusion, no focus taken, a SendInput drag docking it flush on every monitor, remembered);
+    - the magnifier (exactly the screen under the pointer, the wheel through its hook, a click closing it), the colour picker (a SendInput pick), the ruler, the crosshair (a click through it, a capture across its lines unchanged);
+    - the Settings view model.
+- **Mixed DPI and negative coordinates** (the TESTING.md matrix), with the displays changed by hand:
+  - **The primary (1920 × 1080) at 150% and the other monitor at 100% to its right:** every Phase 13 test passes (after the fixes above).
+  - **The same with the other monitor left of the primary at (−1280, 200):** every Phase 13 test passes.
+  - **The whole suite in those layouts** (941 tests): at 150%, one failure, a Phase 12 test (below). Left of the primary, also the crosshair test, whose button window the test placed in DIPs, off the screen at negative X; placed in physical pixels, it passes.
+  - **Back at 100% + 100%:** the Phase 13 desktop tests pass again.
+- **Not run** (pending in TESTING.md):
+  - each mode, the toolbar and the tools by hand in the installed app;
+  - object and menu capture in other apps (a browser, Office, Explorer);
+  - the magnifier and the crosshair looked at by eye (they are left out of every capture, so no test can see them).
+
+### Known limitations
+- **Object capture sees what UI Automation sees.** Apps that don't report their parts (some games, custom-drawn apps) and apps running as administrator offer only the whole window. A deep page in a browser can take a moment; the window is lit meanwhile.
+- **Menus inside a window** (UWP/WinUI flyouts) can't be told apart from the window, and a popup that isn't a menu (a tooltip) of the app in front is taken with the menus.
+- **While the magnifier is open** clicks go to no app, and Windows skips its mouse hook if the app is busy for more than about a third of a second.
+- **The ruler and the crosshair's readout are opaque.**
+- **A repeated scrolling capture** scrolls from where the window is now, like the first.
+- **HDR monitors** are not handled yet (Phase 18): the colour picker and the magnifier read SDR values.
+- **Found by the mixed-DPI run, not fixed here (Phase 12):** with the primary monitor at 150%, Windows' arrow and I-beam pointers convert to fully transparent pictures (`CursorShapeTests` fails). A recording that draws the pointer itself (bigger, or hidden when idle) would then show none.

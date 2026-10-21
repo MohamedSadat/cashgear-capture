@@ -62,10 +62,10 @@ Other options: `--fps 15|30|60`, `--encoder auto|software|<id>`, `--quality Smal
 |---|---|
 | Single monitor 100% | not run |
 | Single monitor 150% | not run |
-| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15) |
-| Dual monitor, mixed DPI (100% + 150%) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Monitor left of primary (negative X) | **pending** — see "Pending" below (covers Phases 1–2) |
-| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19, the Edge password field included; a real webcam **pending**, below); fresh install **pending** |
+| Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15); Phase 13 passes (2026-10-21) |
+| Dual monitor, mixed DPI (100% + 150%) | Phase 13 passes with the primary at 150% (2026-10-21; the whole suite, one Phase 12 failure); the by-hand steps for Phases 1–2 **pending** — see "Pending" below |
+| Monitor left of primary (negative X) | Phase 13 passes with the 100% monitor at (−1280, 200) and the primary at 150% (2026-10-21); the by-hand steps for Phases 1–2 **pending** — see "Pending" below |
+| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19, the Edge password field included; a real webcam **pending**, below); Phase 13 passes what was run (2026-10-21; by-hand checks **pending**, below); fresh install **pending** |
 | Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
@@ -281,6 +281,8 @@ These need display-setting changes, so they are left for a manual run:
 6. Capture Region from the tray: drag a rectangle that crosses from one monitor onto the other, then click a window on the 150% monitor. Check the logged rectangle and the file size, then check that the loupe and label look the same size on both monitors.
 7. Restore the original layout.
 
+Step 5 ran in Phase 13 (2026-10-21) with the primary at 150%, the other monitor at 100% right of it and then left of it at negative X: see "Phase 13 results". It found a Phase 12 failure at 150% (Phase 13 › Pending). Steps 1–4 and 6, by hand in the app, are still pending.
+
 ## Phase 10 results (2026-10-17)
 
 Same PC as above: Windows 10 Pro 22H2 (19045), Xeon E5-2680 v3 (12 cores, 24 logical CPUs), GeForce GTX 1650 with driver 457.51, two monitors at 100% (`DISPLAY2` primary 1920×1080). FFmpeg is the LGPL shared build `n9.0.2-17-g2a571b6068-20260930`. Sound goes to "Headphones (H5)" and the microphone is "Microphone (H5)", a ZOOM H5 over USB.
@@ -449,3 +451,46 @@ The explicit Edge test passes (above). By hand, on a real site: record with keys
 - **Drawing.** Press `Ctrl+Shift+D` while recording, draw with each tool, Ctrl+Z, Delete, Esc; set "Drawings fade away after" to 3 s and check they fade.
 - **Click sound.** Listen to a recording with click sounds on.
 - **Pointer.** Check the 2× pointer and hiding it when idle look right on a second monitor at another scale (the mixed-DPI matrix is still pending).
+
+## Phase 13 results (2026-10-21)
+
+Same PC as Phase 12 (Windows 10 Pro 22H2 19045, GTX 1650 on driver 457.51), two monitors: `DISPLAY2` primary 1920×1080 at (0, 0) and `DISPLAY1` 1280×1024 to its right, offset in Y. The desktop tests drive the real overlay, toolbar and tools with `SendInput` over their own test windows (a top-most window showing a fixed, position-dependent pattern, or a window of buttons), on every monitor in turn, holding the input semaphore; results are checked against GDI grabs of the screen.
+
+| Check | Result at 100% + 100% |
+|---|---|
+| Region, fixed-size, freehand, polygon and rounded captures end to end (`CaptureModesTests`): the real coordinator, overlay and screen capture, driven by SendInput | pass on both monitors: each result has exactly the expected rectangle, every fully covered pixel equals the screen, everything outside the shape is transparent white, the kept size and radius are saved |
+| **Repeat Last Capture, acceptance**: each of the five modes repeated with no overlay | pass on both monitors: the identical pixel rectangle, identical pixels and transparency, after the same kind's delay |
+| Repeat of a window capture | pass: the same window while it is open; after it closes, "isn't open any more" and nothing captured; before any capture, "Nothing has been captured yet" |
+| Object capture (`ObjectAndMenuCaptureTests`): the pointer on a WPF button, a click | pass on both monitors: exactly the rectangle UI Automation reports for the button; the wheel goes out to the window's visible frame; the repeat gives the same pixels |
+| UI Automation through the generated COM interfaces | pass: the button's rectangle (within 1 px of where WPF put it), name "Second" and type; the chain out to the window grows; nothing but the window off it; another process's control (the taskbar's Start button) read across processes |
+| Open-menu capture: a real Win32 menu (`TrackPopupMenu`) and a WPF context menu | pass on both monitors: exactly the menu window's rectangle, equal to the screen; 3 s delay asked by default; with no menu open, the message and nothing captured |
+| Capture toolbar (`CaptureToolbarWindowTests`) | pass: top centre of the primary at first, left out of captures (affinity 0x11), no-activate and tool-window styles, a click on it leaves the window in front alone; dragged by its grip to 15 px from each monitor's left edge it docks flush as a column, is remembered and comes back exactly there (3 of 3 runs) |
+| GDI leaves out a window excluded from capture | pass (what the magnifier relies on) |
+| Magnifier | pass on both monitors: the lens shows exactly the screen around the pointer (compared with a grab after it closed), centred on it; the wheel zooms 3× → 4× through the mouse hook; a click closes it and reaches no window; the zoom is kept |
+| Colour picker: a SendInput pick of a pattern pixel | pass on both monitors: the exact pixel, copied as HEX, first in the history, C# format shown |
+| Screen ruler | pass on both monitors: 600 screen pixels long and 56 DIPs thick at the monitor's scale, the monitor's DPI for inches, the pointer readout 123 px at 123 px, turned and remembered, left out of captures |
+| Crosshair | pass on both monitors: the 1-px lines through the pointer across the virtual screen, the readout with the monitor and its own coordinates, left out of captures, a click at the crossing reaches the button under it, and a capture across the lines equals the screen without them |
+| Core: shape masks, every selection model, delays, hotkeys, state.json, docking, menu rules, colour formats, ruler marks, lens maths, switches | pass |
+| The whole suite | 941 tests: 930 pass, 11 skip (the same 11 as Phase 12: 6 RNNoise until it is built, 4 explicit, the real-microphone test with no microphone then) |
+
+### Mixed DPI and negative coordinates
+
+The user changed the displays by hand. Each layout ran the whole suite, then the Phase 13 desktop tests again after any fix:
+
+| Layout | Phase 13 tests | The whole suite (941 tests) |
+|---|---|---|
+| `DISPLAY2` primary at 150% (1920×1080, 144 dpi), `DISPLAY1` at 100% right of it at (1920, 58) | pass, after three fixes: the toolbar wraps when a column is taller than the work area, is moved onto its monitor before it is measured, and the crosshair's lines are put back after a DPI change (CHANGELOG › Fixed during development) | 930 pass, 10 skip (the microphone test ran), 1 fail: `CursorShapeTests` (Phase 12, below) |
+| The same, with `DISPLAY1` left of the primary at (−1280, 200) | pass; the crosshair test failed once because it placed its own button window in DIPs, off the screen; placed in physical pixels, it passes | 929 pass, 10 skip, 2 fail: `CursorShapeTests` and that crosshair test (since fixed) |
+| Back to 100% + 100%, `DISPLAY1` at (1920, 145) | the 20 desktop tests pass | (the run above) |
+
+### Pending: the pointer's shapes at 150%
+With the primary monitor at 150%, `CursorShapeTests.The_arrow_and_the_text_beam_become_pixels` fails: Windows' arrow and I-beam convert to fully transparent pictures, so a recording that draws the pointer itself (at 2×, or hidden when idle) would draw none. A Phase 12 bug, left for its own fix.
+
+### Pending: by hand
+- **Each capture mode** from the tray, the hotkeys and the toolbar in the installed app: fixed size (Tab through the sizes, arrows, a drag), freehand, polygon (Backspace, a click on the first point), rounded (the wheel), object (the wheel out to the window) and menu (a real app's menu within the 3 s). Open each PNG in another app to see its transparency.
+- **Object and menu capture in other apps:** Edge or Chrome, Office, Explorer, a UWP app (its in-window flyouts can't be told apart: Known limitations).
+- **Repeat Last Capture** with `Ctrl+Alt+Shift+PrintScreen` after each kind, and after restarting the app (it is remembered in `state.json`).
+- **The toolbar:** drag it to each edge of each monitor, hide it, restart with "Show the toolbar when the app starts".
+- **By eye:** the magnifier, the crosshair and the ruler are left out of every capture, so no test can see how they look: check them on both monitors at both scales.
+- **Windows 11:** the toolbar and tools' exclusion from capture, and object capture through UI Automation.
+
