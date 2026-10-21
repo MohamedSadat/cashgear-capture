@@ -20,6 +20,11 @@ RNNoise 0.2 (rnnoise\rnnoise.dll) - BSD 3-Clause License (rnnoise\COPYING) - htt
   trained model) by tools/get-rnnoise.ps1. Copyright Jean-Marc Valin, Amazon, Mozilla, Xiph.Org Foundation,
   Mark Borgerding and the other RNNoise authors.
 
+Whisper.net 1.9.1 (Whisper.net, Whisper.net.Runtime, Whisper.net.Runtime.Vulkan) - MIT License - https://github.com/sandrohanea/whisper.net
+  Speech to text for captions. Includes whisper.cpp and ggml (runtimes\win-x64\, runtimes\vulkan\win-x64\), MIT License,
+  https://github.com/ggml-org/whisper.cpp. The Whisper models (OpenAI, MIT License, https://github.com/openai/whisper)
+  are downloaded when first used, not shipped.
+
 .NET runtime and Windows Presentation Foundation (WPF), including System.Security.Cryptography.ProtectedData and System.IO.Packaging - MIT License - https://github.com/dotnet/runtime, https://github.com/dotnet/wpf
 C#/WinRT projection (WinRT.Runtime) - MIT License - https://github.com/microsoft/CsWinRT
 Microsoft.Extensions.Hosting, DependencyInjection, Logging - MIT License - https://github.com/dotnet/runtime

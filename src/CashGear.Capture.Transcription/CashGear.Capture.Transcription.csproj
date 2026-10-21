@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Speech to text with Whisper (whisper.cpp through Whisper.net): the models, downloaded on demand and checked, and transcription on the processor or on the graphics card (Vulkan). No WPF here. -->
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Whisper.net" />
+    <PackageReference Include="Whisper.net.Runtime" />
+    <PackageReference Include="Whisper.net.Runtime.Vulkan" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CashGear.Capture.Transcription.Tests" />
+    <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
+  </ItemGroup>
+
+</Project>

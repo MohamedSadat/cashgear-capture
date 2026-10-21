@@ -48,3 +48,13 @@ Get advice before selling the app in markets where this matters (Phase 19).
 | Build | x64, static C runtime (`/MT`, no Visual C++ redistributable needed), `/O2`; SSE2 everywhere, with SSE4.1 and AVX2 (+FMA) code chosen at run time by RNNoise's own CPU detection. |
 | What ships | `rnnoise\rnnoise.dll` and `rnnoise\COPYING`. Without them the app works and Settings doesn't offer noise suppression. |
 | Bindings | `CashGear.Capture.Interop.Native.Rnnoise` (`LibraryImport`), loaded only from `rnnoise\` next to the app. |
+
+## Whisper (speech to text for captions)
+
+Captions are made from speech with OpenAI's Whisper models run by [whisper.cpp](https://github.com/ggml-org/whisper.cpp) through [Whisper.net](https://github.com/sandrohanea/whisper.net).
+
+| | |
+|---|---|
+| Packages | Whisper.net, Whisper.net.Runtime and Whisper.net.Runtime.Vulkan **1.9.1** (NuGet, 2026-06-01), MIT. The runtimes are whisper.cpp and ggml compiled by Whisper.net's maintainers, MIT. |
+| What ships | `runtimes\win-x64\` (`whisper.dll`, `ggml-whisper.dll`, `ggml-base-whisper.dll`, `ggml-cpu-whisper.dll`: the processor) and `runtimes\vulkan\win-x64\` (the same with `ggml-vulkan-whisper.dll`, about 58 MB: the graphics card). The Vulkan runtime needs the graphics driver's own Vulkan loader (`vulkan-1.dll`), which isn't shipped; without it the processor's runtime is used. No CUDA runtime is shipped (the user's choice: Vulkan works with NVIDIA, AMD and Intel cards and needs no extra download). |
+| Models | Not shipped: the one the user picks is downloaded on first use from <https://huggingface.co/ggerganov/whisper.cpp> (whisper.cpp's quantized ggml conversions of OpenAI's Whisper weights, MIT, <https://github.com/openai/whisper>) and checked against its SHA-256: `ggml-base-q5_1.bin` (57 MB), `ggml-small-q5_1.bin` (181 MB), `ggml-medium-q5_0.bin` (514 MB). `tools\get-whisper-models.ps1` downloads the same files for the tests. |

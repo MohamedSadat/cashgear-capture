@@ -493,3 +493,6 @@ TestResults/
 
 # rnnoise.dll for local builds (built from the pinned source by tools/get-rnnoise.ps1, not committed)
 /tools/rnnoise/
+
+# Whisper models for the transcription tests (downloaded by tools/get-whisper-models.ps1, not committed)
+/tools/whisper/
