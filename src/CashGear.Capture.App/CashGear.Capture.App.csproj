@@ -36,6 +36,19 @@
     <AssemblyMetadata Include="UpdateFeedUrl" Value="$(UpdateFeedUrl)" />
   </ItemGroup>
 
+  <!-- Where crash reports go (users are asked first) and the key licence files are checked against: also from the packaging script. -->
+  <ItemGroup Condition="'$(SentryDsn)' != ''">
+    <AssemblyMetadata Include="SentryDsn" Value="$(SentryDsn)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(LicensePublicKey)' != ''">
+    <AssemblyMetadata Include="LicensePublicKey" Value="$(LicensePublicKey)" />
+  </ItemGroup>
+
+  <!-- This version's release notes, shown by Settings > What's new (the packaging script may pass others). -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\docs\release-notes\$(Version).md')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\docs\release-notes\$(Version).md" Link="RELEASE-NOTES.md" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
   </ItemGroup>
