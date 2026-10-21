@@ -200,7 +200,7 @@ public partial class EditorWindow : Window, IThemedWindow
     }
 
     /// <summary>Destinations set up in Settings since the menu was last opened show up at once.</summary>
-    private void OnSendToOpened(object sender, RoutedEventArgs e) => ((EditorViewModel)DataContext).RefreshSendTargets();
+    private void OnSendToOpened(object sender, RoutedEventArgs e) => (DataContext as EditorViewModel)?.RefreshSendTargets();
 
     private void OnTextEditorKeyDown(object sender, KeyEventArgs e)
     {

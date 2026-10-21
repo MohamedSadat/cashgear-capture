@@ -267,7 +267,7 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
 
     private void OnAfterCapture(object sender, RoutedEventArgs e)
     {
-        ((CaptureToolbarViewModel)DataContext).RefreshAfterSteps();
+        (DataContext as CaptureToolbarViewModel)?.RefreshAfterSteps();
         Open((ContextMenu)Resources["AfterMenu"], AfterButton);
     }
 
