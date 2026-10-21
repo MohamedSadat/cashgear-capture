@@ -113,7 +113,8 @@ public partial class CaptureApplication : Application
         }
         else if (install.UpdatedTo is { } version)
         {
-            _tray!.Notify(TrayText.UpdatedTitle, TrayText.UpdatedMessage(version));
+            var notes = _services.GetRequiredService<ReleaseNotes>();
+            _tray!.Notify(TrayText.UpdatedTitle, UpdatesText.UpdatedMessageWithNotes(version), onClick: () => notes.Show(version));
         }
     }
 

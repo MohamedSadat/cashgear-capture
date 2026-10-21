@@ -1,4 +1,6 @@
+using System.IO;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Settings;
 using Microsoft.Extensions.Hosting;
@@ -7,17 +9,47 @@ using Velopack;
 
 namespace CashGear.Capture.App.Platform;
 
+/// <summary>What a check of the feed found.</summary>
+public enum UpdateFound
+{
+    /// <summary>Nothing newer in the channel.</summary>
+    Nothing,
+
+    /// <summary>A newer version, now downloaded.</summary>
+    Downloaded,
+
+    /// <summary>
+    /// The channel's newest is older than this copy (back from beta to stable): not installed, so a newer version is
+    /// never replaced by an older one and settings saved by it are never read by an older one.
+    /// </summary>
+    OnlyOlder,
+}
+
+/// <summary>The result of <see cref="IUpdateBackend.DownloadNewerAsync"/>.</summary>
+/// <param name="Version">The version found (for <see cref="UpdateFound.Nothing"/>, null).</param>
+/// <param name="Notes">Its release notes (Markdown), when the feed has them.</param>
+public sealed record UpdateCheck(UpdateFound Found, string? Version = null, string? Notes = null)
+{
+    public static UpdateCheck Nothing { get; } = new(UpdateFound.Nothing);
+}
+
 /// <summary>The installer's update machinery, behind an interface so the update flow can be tested.</summary>
 public interface IUpdateBackend
 {
-    /// <summary>Whether this copy was installed by Setup; only an installed copy can update itself.</summary>
+    /// <summary>Whether this copy was installed by Setup (or is a portable copy); only those can update themselves.</summary>
     bool IsInstalled { get; }
+
+    /// <summary>The channel this copy was packed for (<c>stable</c>, <c>beta</c>, or <c>win</c> for 1.0.x), or null.</summary>
+    string? InstalledChannel { get; }
 
     /// <summary>The version of a downloaded update that hasn't been installed yet, or null.</summary>
     string? PendingVersion { get; }
 
-    /// <summary>Checks <paramref name="feed"/> and downloads a newer version if there is one. Returns its version, or null when up to date.</summary>
-    Task<string?> DownloadNewerAsync(string feed, CancellationToken ct);
+    /// <summary>
+    /// Checks <paramref name="feed"/> (in <paramref name="channel"/>, or the installed one when null) and downloads a
+    /// newer version if there is one. An older one is reported, never downloaded.
+    /// </summary>
+    Task<UpdateCheck> DownloadNewerAsync(string feed, string? channel, CancellationToken ct);
 
     /// <summary>Starts the updater, which waits for this process to exit, installs the downloaded update and starts the app again.</summary>
     void InstallAfterExit();
@@ -31,20 +63,28 @@ internal sealed class VelopackUpdateBackend : IUpdateBackend
 
     public bool IsInstalled => _local.Value.IsInstalled;
 
+    public string? InstalledChannel => _local.Value.IsInstalled && Velopack.Locators.VelopackLocator.IsCurrentSet ? Velopack.Locators.VelopackLocator.Current.Channel : null;
+
     public string? PendingVersion => (_remote ?? _local.Value).UpdatePendingRestart?.Version.ToString();
 
-    public async Task<string?> DownloadNewerAsync(string feed, CancellationToken ct)
+    public async Task<UpdateCheck> DownloadNewerAsync(string feed, string? channel, CancellationToken ct)
     {
-        var manager = new UpdateManager(feed);
+        var manager = new UpdateManager(feed, new UpdateOptions { ExplicitChannel = channel, AllowVersionDowngrade = false });
         var update = await manager.CheckForUpdatesAsync().ConfigureAwait(false);
         if (update is null)
         {
-            return null;
+            return UpdateCheck.Nothing;
+        }
+
+        var target = update.TargetFullRelease;
+        if (update.IsDowngrade)
+        {
+            return new UpdateCheck(UpdateFound.OnlyOlder, target.Version.ToString());
         }
 
         await manager.DownloadUpdatesAsync(update, cancelToken: ct).ConfigureAwait(false);
         _remote = manager;
-        return update.TargetFullRelease.Version.ToString();
+        return new UpdateCheck(UpdateFound.Downloaded, target.Version.ToString(), string.IsNullOrWhiteSpace(target.NotesMarkdown) ? null : target.NotesMarkdown);
     }
 
     public void InstallAfterExit()
@@ -65,6 +105,9 @@ public enum UpdateState
     Checking,
     UpToDate,
 
+    /// <summary>The channel only has an older version (back from beta to stable): up to date until a newer one comes.</summary>
+    OnlyOlder,
+
     /// <summary>A newer version is downloaded and is installed on restart.</summary>
     Ready,
     Failed,
@@ -72,8 +115,9 @@ public enum UpdateState
 
 /// <summary>
 /// Keeps the installed app up to date: checks the feed (at start-up after a short wait, then daily, unless turned off,
-/// and whenever the user asks), downloads a newer version in the background and offers to restart into it. An update
-/// that was downloaded is also installed by the next start of the app.
+/// and whenever the user asks) in the channel chosen in Settings (or the one installed), downloads a newer version in
+/// the background and offers to restart into it. An update that was downloaded is also installed by the next start of
+/// the app. Its release notes are kept, for Settings › What's new.
 /// </summary>
 public sealed partial class UpdateService : BackgroundService
 {
@@ -88,10 +132,12 @@ public sealed partial class UpdateService : BackgroundService
     private readonly ILogger<UpdateService> _logger;
     private readonly SemaphoreSlim _checking = new(1, 1);
     private readonly string? _builtInFeed;
+    private readonly string? _notesFolder;
+    private string? _olderVersion;
 
     public UpdateService(
-        IUpdateBackend backend, ISettingsService settings, ITrayNotifier notifier, UiReadySignal uiReady, TimeProvider time, ILogger<UpdateService> logger)
-        : this(backend, settings, notifier, uiReady, time, logger, BuildInfo.UpdateFeedUrl)
+        IUpdateBackend backend, ISettingsService settings, ITrayNotifier notifier, UiReadySignal uiReady, TimeProvider time, AppPaths paths, ILogger<UpdateService> logger)
+        : this(backend, settings, notifier, uiReady, time, logger, BuildInfo.UpdateFeedUrl, Path.Combine(paths.DataDirectory, "release-notes"))
     {
     }
 
@@ -102,7 +148,8 @@ public sealed partial class UpdateService : BackgroundService
         UiReadySignal uiReady,
         TimeProvider time,
         ILogger<UpdateService> logger,
-        string? builtInFeed)
+        string? builtInFeed,
+        string? notesFolder = null)
     {
         _backend = backend;
         _settings = settings;
@@ -111,6 +158,7 @@ public sealed partial class UpdateService : BackgroundService
         _time = time;
         _logger = logger;
         _builtInFeed = builtInFeed;
+        _notesFolder = notesFolder;
         ReadyVersion = SafePending();
         State = !IsAvailable ? UpdateState.Unavailable : ReadyVersion is null ? UpdateState.Idle : UpdateState.Ready;
     }
@@ -124,6 +172,12 @@ public sealed partial class UpdateService : BackgroundService
     /// <summary>Whether this copy can update itself (installed, with somewhere to look).</summary>
     public bool IsAvailable => Feed is not null && SafeIsInstalled();
 
+    /// <summary>The channel this copy was installed from (<c>stable</c>, <c>beta</c>; <c>win</c> for 1.0.x), or null.</summary>
+    public string? InstalledChannel => SafeIsInstalled() ? SafeChannel() : null;
+
+    /// <summary>The channel checked: the one chosen in Settings, else the one installed (null).</summary>
+    public string? Channel => ChannelName(_settings.Current.Updates.Channel);
+
     public UpdateState State { get; private set; }
 
     /// <summary>The downloaded version waiting for a restart.</summary>
@@ -132,14 +186,23 @@ public sealed partial class UpdateService : BackgroundService
     /// <summary>One line for the settings window.</summary>
     public string StatusText => Describe(State);
 
+    /// <summary>The channel's name in the feed: <c>stable</c> or <c>beta</c>; null for the installed one.</summary>
+    public static string? ChannelName(UpdateChannel? channel) => channel switch
+    {
+        UpdateChannel.Stable => "stable",
+        UpdateChannel.Beta => "beta",
+        _ => null,
+    };
+
     private string Describe(UpdateState state) => state switch
     {
-        UpdateState.Unavailable when !SafeIsInstalled() => "Updates work in the installed app (Setup.exe), not in a development build.",
-        UpdateState.Unavailable => "This copy has no update address. Packaging with -UpdateFeedUrl, or updates.feedUrl in settings.json, sets one.",
-        UpdateState.Checking => "Checking for updates…",
-        UpdateState.UpToDate => $"You have the latest version ({BuildInfo.Version}).",
-        UpdateState.Ready => $"Version {ReadyVersion} is ready. It's installed when the app restarts.",
-        UpdateState.Failed => "The last check for updates failed (see the log).",
+        UpdateState.Unavailable when !SafeIsInstalled() => UpdatesText.NotInstalled,
+        UpdateState.Unavailable => UpdatesText.NoAddress,
+        UpdateState.Checking => UpdatesText.Checking,
+        UpdateState.UpToDate => UpdatesText.UpToDate(BuildInfo.Version),
+        UpdateState.OnlyOlder => UpdatesText.OnlyOlder(BuildInfo.Version, Channel ?? InstalledChannel, _olderVersion),
+        UpdateState.Ready => UpdatesText.Ready(ReadyVersion),
+        UpdateState.Failed => UpdatesText.Failed,
         _ => string.Empty,
     };
 
@@ -153,7 +216,7 @@ public sealed partial class UpdateService : BackgroundService
         {
             if (userAsked)
             {
-                _notifier.Notify("Updates", Describe(UpdateState.Unavailable));
+                _notifier.Notify(UpdatesText.UpdatesTitle, Describe(UpdateState.Unavailable));
             }
 
             return;
@@ -167,26 +230,40 @@ public sealed partial class UpdateService : BackgroundService
         try
         {
             SetState(UpdateState.Checking);
-            LogChecking(feed);
-            var version = await _backend.DownloadNewerAsync(feed, ct).ConfigureAwait(false);
-            if (version is null)
+            var channel = Channel;
+            LogChecking(feed, channel ?? SafeChannel());
+            var found = await _backend.DownloadNewerAsync(feed, channel, ct).ConfigureAwait(false);
+            switch (found.Found)
             {
-                LogUpToDate();
-                SetState(UpdateState.UpToDate);
-                if (userAsked)
-                {
-                    _notifier.Notify("Updates", $"You have the latest version ({BuildInfo.Version}).");
-                }
+                case UpdateFound.Nothing:
+                    LogUpToDate();
+                    SetState(UpdateState.UpToDate);
+                    if (userAsked)
+                    {
+                        _notifier.Notify(UpdatesText.UpdatesTitle, UpdatesText.UpToDate(BuildInfo.Version));
+                    }
 
-                return;
+                    return;
+
+                case UpdateFound.OnlyOlder:
+                    LogOnlyOlder(found.Version, channel);
+                    _olderVersion = found.Version;
+                    SetState(UpdateState.OnlyOlder);
+                    if (userAsked)
+                    {
+                        _notifier.Notify(UpdatesText.UpdatesTitle, Describe(UpdateState.OnlyOlder));
+                    }
+
+                    return;
             }
 
-            LogDownloaded(version);
-            ReadyVersion = version;
+            LogDownloaded(found.Version);
+            KeepNotes(found.Version!, found.Notes);
+            ReadyVersion = found.Version;
             SetState(UpdateState.Ready);
             _notifier.Notify(
-                "Update ready",
-                $"CashGear Capture {version} has been downloaded. Click here to restart into it now; otherwise it is installed the next time the app starts.",
+                UpdatesText.UpdateReadyTitle,
+                UpdatesText.UpdateReadyMessage(found.Version),
                 onClick: () => RestartRequested?.Invoke(this, EventArgs.Empty));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -200,7 +277,7 @@ public sealed partial class UpdateService : BackgroundService
             SetState(UpdateState.Failed);
             if (userAsked)
             {
-                _notifier.Notify("Updates", $"Couldn't check for updates: {ex.Message}", NotificationKind.Warning);
+                _notifier.Notify(UpdatesText.UpdatesTitle, UpdatesText.CheckFailed(ex.Message), NotificationKind.Warning);
             }
         }
         finally
@@ -224,6 +301,29 @@ public sealed partial class UpdateService : BackgroundService
         _backend.InstallAfterExit();
     }
 
+    /// <summary>
+    /// The release notes of <paramref name="version"/>: those kept when it was downloaded, else the ones that came
+    /// with this copy (RELEASE-NOTES.md next to the app) when it is this version; null when there are none.
+    /// </summary>
+    public string? NotesFor(string version)
+    {
+        try
+        {
+            if (_notesFolder is not null && Path.Combine(_notesFolder, version + ".md") is var kept && File.Exists(kept))
+            {
+                return File.ReadAllText(kept);
+            }
+
+            var shipped = Path.Combine(AppContext.BaseDirectory, "RELEASE-NOTES.md");
+            return version == BuildInfo.Version && File.Exists(shipped) ? File.ReadAllText(shipped) : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogNotesUnreadable(ex, version);
+            return null;
+        }
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await _uiReady.WhenReady.WaitAsync(stoppingToken).ConfigureAwait(false);
@@ -236,6 +336,24 @@ public sealed partial class UpdateService : BackgroundService
             }
 
             await Task.Delay(CheckInterval, _time, stoppingToken).ConfigureAwait(false);
+        }
+    }
+
+    private void KeepNotes(string version, string? notes)
+    {
+        if (notes is null || _notesFolder is null)
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(_notesFolder);
+            File.WriteAllText(Path.Combine(_notesFolder, version + ".md"), notes);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LogNotesUnreadable(ex, version);
         }
     }
 
@@ -258,6 +376,19 @@ public sealed partial class UpdateService : BackgroundService
         }
     }
 
+    private string? SafeChannel()
+    {
+        try
+        {
+            return _backend.InstalledChannel;
+        }
+        catch (Exception ex)
+        {
+            LogBackendFailed(ex);
+            return null;
+        }
+    }
+
     private string? SafePending()
     {
         try
@@ -271,14 +402,17 @@ public sealed partial class UpdateService : BackgroundService
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Checking for updates at {Feed}")]
-    private partial void LogChecking(string feed);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Checking for updates at {Feed} (channel {Channel})")]
+    private partial void LogChecking(string feed, string? channel);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "No update available")]
     private partial void LogUpToDate();
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "The newest version in channel {Channel} is {Version}, older than this one: not installed")]
+    private partial void LogOnlyOlder(string? version, string? channel);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Update {Version} downloaded")]
-    private partial void LogDownloaded(string version);
+    private partial void LogDownloaded(string? version);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Installing update {Version} after exit")]
     private partial void LogInstalling(string version);
@@ -288,4 +422,7 @@ public sealed partial class UpdateService : BackgroundService
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not read the installation state")]
     private partial void LogBackendFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The release notes of {Version} could not be read or kept")]
+    private partial void LogNotesUnreadable(Exception ex, string version);
 }

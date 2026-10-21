@@ -1088,6 +1088,17 @@
             <Button Content="Check now" Command="{Binding CheckForUpdatesNowCommand}" MinWidth="100" />
             <TextBlock Text="{Binding UpdateStatus}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="10,0,0,0" MaxWidth="440" Opacity="0.8" />
           </StackPanel>
+          <Grid Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" MinWidth="120" />
+              <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label Content="{x:Static r:UpdatesText.ChannelLabel}" Target="{Binding ElementName=ChannelBox}" VerticalAlignment="Center" Padding="0" Margin="0,0,12,0" />
+            <ComboBox x:Name="ChannelBox" Grid.Column="1" ItemsSource="{Binding UpdateChannels}" SelectedItem="{Binding UpdateChannel}" DisplayMemberPath="Label"
+                      HorizontalAlignment="Left" MinWidth="280" IsEnabled="{Binding CanCheckForUpdates}" AutomationProperties.Name="{x:Static r:UpdatesText.ChannelName}" />
+          </Grid>
+          <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:UpdatesText.ChannelHint}" />
+          <Button Content="{x:Static r:UpdatesText.WhatsNew}" Command="{Binding ShowReleaseNotesCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" />
 
           <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.SettingsSection}" />
           <TextBlock Text="{Binding PortableText}" TextWrapping="Wrap" Margin="0,0,0,8"

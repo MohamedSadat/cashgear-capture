@@ -1,3 +1,4 @@
+using System.IO;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Tray;
@@ -14,8 +15,10 @@ public sealed class UpdateServiceTests
     private readonly MutableSettings _settings = new();
     private readonly FakeNotifier _notifier = new();
 
+    private readonly string _notes = Path.Combine(Path.GetTempPath(), "cashgear-tests", "notes-" + Guid.NewGuid().ToString("N")[..8]);
+
     private UpdateService Create(string? builtInFeed = Feed) =>
-        new(_backend, _settings, _notifier, new UiReadySignal(), TimeProvider.System, NullLogger<UpdateService>.Instance, builtInFeed);
+        new(_backend, _settings, _notifier, new UiReadySignal(), TimeProvider.System, NullLogger<UpdateService>.Instance, builtInFeed, _notes);
 
     [Fact]
     public async Task A_development_build_or_one_without_an_address_cannot_update()
@@ -106,6 +109,53 @@ public sealed class UpdateServiceTests
     }
 
     [Fact]
+    public async Task The_channel_chosen_in_settings_is_checked_and_the_installed_one_otherwise()
+    {
+        var updates = Create();
+        updates.InstalledChannel.Should().Be("stable");
+
+        await updates.CheckAsync(userAsked: false, TestContext.Current.CancellationToken);
+        _settings.Current = new AppSettings { Updates = new UpdateSettings(Channel: UpdateChannel.Beta) };
+        await updates.CheckAsync(userAsked: false, TestContext.Current.CancellationToken);
+        _settings.Current = new AppSettings { Updates = new UpdateSettings(Channel: UpdateChannel.Stable) };
+        await updates.CheckAsync(userAsked: false, TestContext.Current.CancellationToken);
+
+        _backend.Channels.Should().Equal(null, "beta", "stable");
+    }
+
+    [Fact]
+    public async Task Back_on_stable_after_a_beta_the_older_stable_is_not_installed()
+    {
+        _backend.InstalledChannel = "beta";
+        _backend.Older = "1.0.9";
+        _settings.Current = new AppSettings { Updates = new UpdateSettings(Channel: UpdateChannel.Stable) };
+        var updates = Create();
+
+        await updates.CheckAsync(userAsked: true, TestContext.Current.CancellationToken);
+
+        updates.State.Should().Be(UpdateState.OnlyOlder);
+        updates.ReadyVersion.Should().BeNull();
+        updates.StatusText.Should().Contain("The stable channel's newest is 1.0.9, which is older");
+        _notifier.Messages.Should().ContainSingle().Which.Text.Should().Contain("the next release after");
+        updates.InstallAfterExit();
+        _backend.Installs.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task A_downloaded_updates_notes_are_kept_for_whats_new()
+    {
+        _backend.Newer = "1.2.0";
+        _backend.NewerNotes = "# 1.2.0\n- Faster.";
+        var updates = Create();
+        updates.NotesFor("1.2.0").Should().BeNull();
+
+        await updates.CheckAsync(userAsked: false, TestContext.Current.CancellationToken);
+
+        updates.NotesFor("1.2.0").Should().Be("# 1.2.0\n- Faster.");
+        Directory.Delete(_notes, recursive: true);
+    }
+
+    [Fact]
     public void Nothing_is_installed_when_nothing_was_downloaded()
     {
         Create().InstallAfterExit();
@@ -122,16 +172,29 @@ public sealed class UpdateServiceTests
 
         public string? Newer { get; set; }
 
+        public string? NewerNotes { get; set; }
+
+        public string? Older { get; set; }
+
+        public string? InstalledChannel { get; set; } = "stable";
+
         public Exception? Failure { get; set; }
 
         public List<string> Checks { get; } = [];
 
+        public List<string?> Channels { get; } = [];
+
         public int Installs { get; private set; }
 
-        public Task<string?> DownloadNewerAsync(string feed, CancellationToken ct)
+        public Task<UpdateCheck> DownloadNewerAsync(string feed, string? channel, CancellationToken ct)
         {
             Checks.Add(feed);
-            return Failure is not null ? Task.FromException<string?>(Failure) : Task.FromResult(Newer);
+            Channels.Add(channel);
+            return Failure is not null ? Task.FromException<UpdateCheck>(Failure)
+                : Task.FromResult(
+                    Newer is not null ? new UpdateCheck(UpdateFound.Downloaded, Newer, NewerNotes)
+                    : Older is not null ? new UpdateCheck(UpdateFound.OnlyOlder, Older)
+                    : UpdateCheck.Nothing);
         }
 
         public void InstallAfterExit() => Installs++;

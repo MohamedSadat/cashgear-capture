@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>Updates work in the installed app (Setup.exe), not in a development build.</value>
+  </data>
+  <data name="NoAddress" xml:space="preserve">
+    <value>This copy has no update address. Packaging with -UpdateFeedUrl, or updates.feedUrl in settings.json, sets one.</value>
+  </data>
+  <data name="Checking" xml:space="preserve">
+    <value>Checking for updates…</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>You have the latest version ({0}).</value>
+  </data>
+  <data name="OnlyOlder" xml:space="preserve">
+    <value>You have version {0}. The {1} channel's newest is {2}, which is older: the next release after {0} will be offered.</value>
+    <comment>{0} the version running, {1} a channel name (stable or beta), {2} that channel's newest version</comment>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Version {0} is ready. It's installed when the app restarts.</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>The last check for updates failed (see the log).</value>
+  </data>
+  <data name="UpdatesTitle" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="CheckFailed" xml:space="preserve">
+    <value>Couldn't check for updates: {0}</value>
+  </data>
+  <data name="UpdateReadyTitle" xml:space="preserve">
+    <value>Update ready</value>
+  </data>
+  <data name="UpdateReadyMessage" xml:space="preserve">
+    <value>CashGear Capture {0} has been downloaded. Click here to restart into it now; otherwise it is installed the next time the app starts.</value>
+  </data>
+  <data name="UpdatedMessageWithNotes" xml:space="preserve">
+    <value>You are now running version {0}. Click to see what's new.</value>
+  </data>
+  <data name="ChannelStable" xml:space="preserve">
+    <value>Stable</value>
+  </data>
+  <data name="ChannelBeta" xml:space="preserve">
+    <value>Beta (early versions, may have problems)</value>
+  </data>
+  <data name="ChannelAsInstalled" xml:space="preserve">
+    <value>As installed ({0})</value>
+    <comment>{0} is a channel name such as stable</comment>
+  </data>
+  <data name="ChannelLabel" xml:space="preserve">
+    <value>_Channel:</value>
+  </data>
+  <data name="ChannelName" xml:space="preserve">
+    <value>Update channel</value>
+  </data>
+  <data name="ChannelHint" xml:space="preserve">
+    <value>Beta gets new versions first. Going back from beta to stable waits for the next stable release, so a newer beta is never replaced by an older version.</value>
+  </data>
+  <data name="WhatsNew" xml:space="preserve">
+    <value>_What's new…</value>
+  </data>
+  <data name="ReleaseNotesTitle" xml:space="preserve">
+    <value>What's new in CashGear Capture {0}</value>
+  </data>
+  <data name="NoReleaseNotes" xml:space="preserve">
+    <value>There are no release notes for version {0}.</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
+</root>

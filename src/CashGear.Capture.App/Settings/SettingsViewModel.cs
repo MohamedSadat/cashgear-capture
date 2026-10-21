@@ -59,6 +59,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly Diagnostics.DiagnosticsService? _diagnostics;
     private readonly SettingsFiles? _files;
     private readonly ISettingsFileDialogs? _fileDialogs;
+    private readonly ReleaseNotes? _releaseNotes;
     private Task _monitorWork = Task.CompletedTask;
     private bool _monitoring;
     private float[]? _testRecording;
@@ -88,8 +89,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Diagnostics.DiagnosticsService? diagnostics = null,
         IMonitorService? monitors = null,
         SettingsFiles? files = null,
-        ISettingsFileDialogs? fileDialogs = null)
+        ISettingsFileDialogs? fileDialogs = null,
+        ReleaseNotes? releaseNotes = null)
     {
+        _releaseNotes = releaseNotes;
+        UpdateChannels =
+        [
+            .. updates?.InstalledChannel is { } installed ? [new ChannelChoice(null, UpdatesText.ChannelAsInstalled(installed))] : Array.Empty<ChannelChoice>(),
+            new ChannelChoice(Core.Settings.UpdateChannel.Stable, UpdatesText.ChannelStable),
+            new ChannelChoice(Core.Settings.UpdateChannel.Beta, UpdatesText.ChannelBeta),
+        ];
         _diagnostics = diagnostics;
         _files = files;
         _fileDialogs = fileDialogs;
@@ -224,7 +233,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         [new(0, "Off (keep none)"), new(10, "10 captures"), new(20, "20 captures"), new(50, "50 captures"), new(100, "100 captures")];
 
     /// <summary>E.g. "Version 1.0.0".</summary>
-    public string VersionText => "Version " + BuildInfo.Version;
+    public string VersionText => UpdatesText.Version(BuildInfo.Version);
+
+    /// <summary>The update channels: the one installed (when known), stable and beta.</summary>
+    public IReadOnlyList<ChannelChoice> UpdateChannels { get; }
+
+    /// <summary>Shows a version's release notes (Settings › What's new).</summary>
+    [RelayCommand]
+    private void ShowReleaseNotes() => _releaseNotes?.Show(_updates?.ReadyVersion ?? BuildInfo.Version);
 
     /// <summary>Whether this copy can check for updates (installed, with an update address).</summary>
     public bool CanCheckForUpdates => _updates?.IsAvailable == true;
@@ -785,6 +801,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _checkForUpdates;
 
+    [ObservableProperty]
+    private ChannelChoice? _updateChannel;
+
     /// <summary>What the last update check found, or why updates are unavailable.</summary>
     [ObservableProperty]
     private string _updateStatus = string.Empty;
@@ -1150,7 +1169,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Overlays = Overlays.Build(current.Overlays),
         Ocr = new OcrSettings(OcrLanguage?.Tag),
         History = new HistorySettings(HistorySize?.Value ?? current.History.MaxItems),
-        Updates = current.Updates with { CheckAutomatically = CheckForUpdates },
+        Updates = current.Updates with { CheckAutomatically = CheckForUpdates, Channel = UpdateChannel?.Value },
         Tools = current.Tools with
         {
             ShowToolbarAtStartup = ShowToolbarAtStartup,
@@ -1249,6 +1268,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         CheckForUpdates = s.Updates.CheckAutomatically;
+        UpdateChannel = UpdateChannels.FirstOrDefault(c => c.Value == s.Updates.Channel) ?? UpdateChannels[0];
         foreach (var row in Hotkeys)
         {
             row.Text = s.Hotkeys.For(row.Action) ?? string.Empty;

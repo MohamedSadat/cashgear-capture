@@ -168,9 +168,6 @@
   <data name="UpdatedTitle" xml:space="preserve">
     <value>تم تحديث CashGear Capture</value>
   </data>
-  <data name="UpdatedMessage" xml:space="preserve">
-    <value>أنت تستخدم الآن الإصدار {0}.</value>
-  </data>
   <data name="IconRefused" xml:space="preserve">
     <value>CashGear Capture قيد التشغيل، لكن Windows لم يسمح له بإضافة أيقونته إلى منطقة الإعلامات.
 

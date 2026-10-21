@@ -49,6 +49,12 @@ public sealed record EncoderChoice(string Id, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>An update channel in Settings › General › Updates; null follows the channel installed.</summary>
+public sealed record ChannelChoice(UpdateChannel? Value, string Label)
+{
+    public override string ToString() => Label;
+}
+
 /// <summary>A number with a label, e.g. how many captures the history keeps.</summary>
 public sealed record CountChoice(int Value, string Label)
 {

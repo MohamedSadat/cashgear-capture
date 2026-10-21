@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>تعمل التحديثات في التطبيق المثبّت (Setup.exe)، لا في إصدار التطوير.</value>
+  </data>
+  <data name="NoAddress" xml:space="preserve">
+    <value>ليس لهذه النسخة عنوان للتحديثات. يحدده التحزيم باستخدام -UpdateFeedUrl، أو updates.feedUrl في settings.json.</value>
+  </data>
+  <data name="Checking" xml:space="preserve">
+    <value>جارٍ البحث عن تحديثات…</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>لديك أحدث إصدار ({0}).</value>
+  </data>
+  <data name="OnlyOlder" xml:space="preserve">
+    <value>لديك الإصدار {0}. أحدث إصدار في القناة {1} هو {2}، وهو أقدم: سيُعرض عليك أول إصدار يلي {0}.</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>الإصدار {0} جاهز. يُثبَّت عند إعادة تشغيل التطبيق.</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>فشلت آخر عملية بحث عن تحديثات (راجع السجل).</value>
+  </data>
+  <data name="UpdatesTitle" xml:space="preserve">
+    <value>التحديثات</value>
+  </data>
+  <data name="CheckFailed" xml:space="preserve">
+    <value>تعذر البحث عن تحديثات: {0}</value>
+  </data>
+  <data name="UpdateReadyTitle" xml:space="preserve">
+    <value>التحديث جاهز</value>
+  </data>
+  <data name="UpdateReadyMessage" xml:space="preserve">
+    <value>تم تنزيل CashGear Capture {0}. انقر هنا لإعادة التشغيل إليه الآن، وإلا فسيُثبَّت عند بدء التطبيق في المرة القادمة.</value>
+  </data>
+  <data name="UpdatedMessageWithNotes" xml:space="preserve">
+    <value>أنت تستخدم الآن الإصدار {0}. انقر لمعرفة ما الجديد.</value>
+  </data>
+  <data name="ChannelStable" xml:space="preserve">
+    <value>المستقر</value>
+  </data>
+  <data name="ChannelBeta" xml:space="preserve">
+    <value>التجريبي (إصدارات مبكرة قد تحتوي على مشكلات)</value>
+  </data>
+  <data name="ChannelAsInstalled" xml:space="preserve">
+    <value>كما ثُبّت ({0})</value>
+  </data>
+  <data name="ChannelLabel" xml:space="preserve">
+    <value>القناة (_C):</value>
+  </data>
+  <data name="ChannelName" xml:space="preserve">
+    <value>قناة التحديثات</value>
+  </data>
+  <data name="ChannelHint" xml:space="preserve">
+    <value>تحصل القناة التجريبية على الإصدارات الجديدة أولًا. عند العودة من التجريبية إلى المستقرة يُنتظر الإصدار المستقر التالي، فلا يُستبدل إصدار تجريبي أحدث بإصدار أقدم أبدًا.</value>
+  </data>
+  <data name="WhatsNew" xml:space="preserve">
+    <value>ما الجديد… (_W)</value>
+  </data>
+  <data name="ReleaseNotesTitle" xml:space="preserve">
+    <value>ما الجديد في CashGear Capture {0}</value>
+  </data>
+  <data name="NoReleaseNotes" xml:space="preserve">
+    <value>لا توجد ملاحظات إصدار للإصدار {0}.</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>الإصدار {0}</value>
+  </data>
+</root>

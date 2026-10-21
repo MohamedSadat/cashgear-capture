@@ -371,9 +371,24 @@ public sealed record HistorySettings(int MaxItems = HistorySettings.DefaultMaxIt
 /// <summary>Updates of the installed app.</summary>
 /// <param name="CheckAutomatically">Check (and download) in the background, once a day.</param>
 /// <param name="FeedUrl">Where to look: a URL or folder with a release feed. Null uses the address built into the app.</param>
-public sealed record UpdateSettings(bool CheckAutomatically = true, string? FeedUrl = null)
+/// <param name="Channel">The releases to follow; null follows the channel this copy was installed from.</param>
+public sealed record UpdateSettings(bool CheckAutomatically = true, string? FeedUrl = null, UpdateChannel? Channel = null)
 {
-    public UpdateSettings Normalize() => this with { FeedUrl = string.IsNullOrWhiteSpace(FeedUrl) ? null : FeedUrl.Trim() };
+    public UpdateSettings Normalize() => this with
+    {
+        FeedUrl = string.IsNullOrWhiteSpace(FeedUrl) ? null : FeedUrl.Trim(),
+        Channel = Channel is { } channel && !Enum.IsDefined(channel) ? null : Channel,
+    };
+}
+
+/// <summary>Which releases an installed copy updates to.</summary>
+public enum UpdateChannel
+{
+    /// <summary>Releases for everyone.</summary>
+    Stable,
+
+    /// <summary>Early versions: new features first, and maybe problems.</summary>
+    Beta,
 }
 
 /// <param name="Theme">Light, dark, or as Windows' apps are.</param>

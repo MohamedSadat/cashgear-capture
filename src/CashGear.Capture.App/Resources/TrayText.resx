@@ -162,9 +162,6 @@
   <data name="UpdatedTitle" xml:space="preserve">
     <value>CashGear Capture updated</value>
   </data>
-  <data name="UpdatedMessage" xml:space="preserve">
-    <value>You are now running version {0}.</value>
-  </data>
   <data name="IconRefused" xml:space="preserve">
     <value>CashGear Capture is running, but Windows did not let it add its icon to the notification area.
 
