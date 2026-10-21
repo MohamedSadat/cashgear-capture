@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using CashGear.Capture.App.Hotkeys;
+using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Audio;
@@ -14,6 +15,8 @@ using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Selection;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs;
+using CashGear.Capture.Outputs.Credentials;
 using CashGear.Capture.Overlays.Webcam;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -49,6 +52,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly IScreenRecorder? _recorder;
     private readonly IAudioApps? _apps;
     private readonly IAudioMonitor? _monitor;
+    private readonly DestinationRegistry? _registry;
     private readonly SynchronizationContext? _context;
     private Task _monitorWork = Task.CompletedTask;
     private bool _monitoring;
@@ -71,8 +75,19 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IAudioApps? apps = null,
         IAudioMonitor? monitor = null,
         IReadOnlyList<string>? fonts = null,
-        IWebcams? webcams = null)
+        IWebcams? webcams = null,
+        DestinationRegistry? destinations = null,
+        ICredentialStore? credentials = null,
+        IPrinter? printer = null,
+        IFilePicker? filePicker = null)
     {
+        _registry = destinations;
+        Destinations = new DestinationsViewModel(credentials, filePicker, printer) { Tester = TestDestinationAsync };
+        CaptureWorkflow = new WorkflowListViewModel(() => Available(video: false));
+        RecordingWorkflow = new WorkflowListViewModel(() => Available(video: true));
+        CaptureWorkflow.Changed += (_, _) => Revalidate();
+        Destinations.ListChanged += (_, _) => RefreshWorkflows();
+        Destinations.Edited += (_, _) => Revalidate();
         _apps = apps;
         _monitor = monitor;
         Overlays = new OverlaySettingsViewModel(apps, fonts ?? [], webcams);
@@ -133,6 +148,23 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Settings › Overlays.</summary>
     public OverlaySettingsViewModel Overlays { get; }
+
+    /// <summary>Settings › Destinations: the printer, Office, servers, uploads and apps.</summary>
+    public DestinationsViewModel Destinations { get; }
+
+    /// <summary>Settings › Output: what happens to a capture, in order.</summary>
+    public WorkflowListViewModel CaptureWorkflow { get; }
+
+    /// <summary>Settings › Output: what happens to a recording once it is saved.</summary>
+    public WorkflowListViewModel RecordingWorkflow { get; }
+
+    /// <summary>The workflow lists name and offer the destinations as they are now in the window.</summary>
+    public void RefreshWorkflows()
+    {
+        CaptureWorkflow.Refresh();
+        RecordingWorkflow.Refresh();
+        Revalidate();
+    }
 
     /// <summary>Raised when the window should close (after OK or Cancel).</summary>
     public event EventHandler? CloseRequested;
@@ -357,15 +389,6 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FileNamePreview))]
     private string _fileNameTemplate = string.Empty;
-
-    [ObservableProperty]
-    private bool _saveToFile;
-
-    [ObservableProperty]
-    private bool _copyToClipboard;
-
-    [ObservableProperty]
-    private bool _openEditor;
 
     [ObservableProperty]
     private int _delaySeconds;
@@ -798,12 +821,6 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     partial void OnFixedRegionSizeChanged(string value) => Revalidate();
 
-    partial void OnSaveToFileChanged(bool value) => Revalidate();
-
-    partial void OnCopyToClipboardChanged(bool value) => Revalidate();
-
-    partial void OnOpenEditorChanged(bool value) => Revalidate();
-
     [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task SaveAsync()
     {
@@ -856,7 +873,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         var startupChanged = StartWithWindows != _startup.IsEnabled;
+        var before = _settings.Current.Destinations;
         await _settings.UpdateAsync(BuildSettings);
+        CommitSecrets(before, _settings.Current.Destinations);
         if (startupChanged)
         {
             try
@@ -874,6 +893,93 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         RefreshHotkeyStatus();
         Saved?.Invoke(this, EventArgs.Empty);
         return true;
+    }
+
+    private OutputSettings BuildOutput(OutputSettings current) => current with
+    {
+        Folder = string.IsNullOrWhiteSpace(OutputFolder) ? null : OutputFolder.Trim(),
+        Format = Format,
+        JpegQuality = JpegQuality,
+        FileNameTemplate = FileNameTemplate.Trim(),
+    };
+
+    private DestinationSettings BuildDestinations(DestinationSettings current) =>
+        Destinations.Build(current) with { Workflow = CaptureWorkflow.Build(), RecordingWorkflow = RecordingWorkflow.Build() };
+
+    /// <summary>What the destinations need of the settings as they are in the window (Test, the workflow lists).</summary>
+    private AppSettings EditedDestinations()
+    {
+        var current = _settings.Current;
+        return current with { Output = BuildOutput(current.Output), Destinations = BuildDestinations(current.Destinations) };
+    }
+
+    /// <summary>Writes the secrets typed in the window, and forgets those of servers and uploads that were deleted.</summary>
+    private void CommitSecrets(DestinationSettings before, DestinationSettings after)
+    {
+        foreach (var server in (before.Servers ?? []).Where(s => !(after.Servers ?? []).Any(a => DestinationIds.Same(a.Id, s.Id))))
+        {
+            Destinations.Secrets.RemoveAll(CredentialKeys.Prefix(server));
+        }
+
+        foreach (var upload in (before.Uploads ?? []).Where(u => !(after.Uploads ?? []).Any(a => DestinationIds.Same(a.Id, u.Id))))
+        {
+            Destinations.Secrets.RemoveAll(CredentialKeys.Prefix(upload));
+        }
+
+        try
+        {
+            Destinations.Secrets.Commit();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        {
+            LogSecretsFailed(ex);
+            Errors = "Passwords could not be saved: " + ex.Message;
+        }
+    }
+
+    /// <summary>The destinations a workflow can have, as set up in the window; a recording's only those that take videos (and not Save to file: it is saved already).</summary>
+    private IReadOnlyList<DestinationChoice> Available(bool video)
+    {
+        var settings = EditedDestinations();
+        var all = _registry?.All(settings, Destinations.Secrets).Select(d => (d.Id, Name: d.DisplayName, Video: d.SupportsVideo))
+            ?? BuiltInDestinations(settings);
+        return [.. all
+            .Where(d => !video || (d.Video && !DestinationIds.Same(d.Id, DestinationIds.File)))
+            .Select(d => new DestinationChoice(d.Id, d.Name))];
+    }
+
+    /// <summary>Without the registry (tests): the built-in names, and the configured ones by their labels.</summary>
+    private IEnumerable<(string Id, string Name, bool Video)> BuiltInDestinations(AppSettings settings) =>
+    [
+        (DestinationIds.Editor, "Open in the editor", false),
+        (DestinationIds.File, "Save to file", true),
+        (DestinationIds.Clipboard, "Copy to clipboard", true),
+        (DestinationIds.Printer, "Print", false),
+        (DestinationIds.Word, "Word document", false),
+        (DestinationIds.PowerPoint, "PowerPoint slide", false),
+        (DestinationIds.CopyLink, "Copy the link", true),
+        .. Destinations.Servers.Select(s => (DestinationIds.Server(s.Id), s.Label, true)),
+        .. Destinations.Uploads.Select(u => (DestinationIds.Upload(u.Id), u.Label, true)),
+        .. Destinations.Apps.Select(a => (DestinationIds.App(a.Id), a.Label, true)),
+    ];
+
+    /// <summary>A destination's Test button: its own test, with the settings and secrets as they are in the window.</summary>
+    private async Task<OutputResult> TestDestinationAsync(string id)
+    {
+        if (_registry?.Find(id, EditedDestinations(), Destinations.Secrets) is not { } destination)
+        {
+            return OutputResult.Failed("This can't be tested here.");
+        }
+
+        try
+        {
+            return await destination.TestAsync(CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogTestFailed(ex, id);
+            return OutputResult.Failed(ex.Message);
+        }
     }
 
     /// <summary>The edited settings applied on top of <paramref name="current"/>.</summary>
@@ -894,17 +1000,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             CornerRadius = CornerRadius,
             Delays = ModeDelays.Aggregate(current.Capture.Delays ?? new ModeDelays(), (d, row) => d.With(row.Mode, row.Choice?.Seconds)),
         },
-        Output = current.Output with
-        {
-            Folder = string.IsNullOrWhiteSpace(OutputFolder) ? null : OutputFolder.Trim(),
-            Format = Format,
-            JpegQuality = JpegQuality,
-            FileNameTemplate = FileNameTemplate.Trim(),
-        },
-        Destinations = current.Destinations
-            .WithStep(DestinationIds.File, SaveToFile)
-            .WithStep(DestinationIds.Clipboard, CopyToClipboard)
-            .WithStep(DestinationIds.Editor, OpenEditor),
+        Output = BuildOutput(current.Output),
+        Destinations = BuildDestinations(current.Destinations),
         Hotkeys = Hotkeys.Aggregate(current.Hotkeys, (h, row) => h.With(row.Action, row.SettingText)),
         Appearance = new AppearanceSettings(Theme),
         Recording = current.Recording with
@@ -950,9 +1047,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Format = s.Output.Format;
         JpegQuality = s.Output.JpegQuality;
         FileNameTemplate = s.Output.FileNameTemplate;
-        SaveToFile = s.Destinations.IsEnabled(DestinationIds.File);
-        CopyToClipboard = s.Destinations.IsEnabled(DestinationIds.Clipboard);
-        OpenEditor = s.Destinations.IsEnabled(DestinationIds.Editor);
+        Destinations.Load(s.Destinations);
+        CaptureWorkflow.Load(s.Destinations.Workflow);
+        RecordingWorkflow.Load(s.Destinations.RecordingWorkflow);
         DelaySeconds = s.Capture.DelaySeconds;
         HideDelayMs = s.Capture.HideDelayMs;
         FixedRegionSize = s.Capture.FixedRegionSize.ToString();
@@ -1062,10 +1159,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             errors.Add("Fixed-size region: write the size as width × height in pixels, e.g. 800 × 600.");
         }
 
-        if (!SaveToFile && !CopyToClipboard && !OpenEditor)
+        if (!CaptureWorkflow.AnyEnabled)
         {
-            errors.Add("After capture: choose at least one of \"Open in the editor\", \"Save to file\" and \"Copy to clipboard\".");
+            errors.Add("After capture: switch on at least one step, such as \"Open in the editor\" or \"Save to file\".");
         }
+
+        errors.AddRange(Destinations.Problems());
 
         if (IsAppChoiceEnabled && RecordingApp is null)
         {
@@ -1142,6 +1241,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private void RefreshHotkeyStatus() => _ = ValidateHotkeys().ToList();
 
     private void OnRegistrationsChanged(object? sender, EventArgs e) => RefreshHotkeyStatus();
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The secrets could not be saved")]
+    private partial void LogSecretsFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Testing {Destination} threw")]
+    private partial void LogTestFailed(Exception ex, string destination);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Changing start-with-Windows failed")]
     private partial void LogStartupFailed(Exception ex);

@@ -265,7 +265,11 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
 
     private void OnDelay(object sender, RoutedEventArgs e) => Open((ContextMenu)Resources["DelayMenu"], DelayButton);
 
-    private void OnAfterCapture(object sender, RoutedEventArgs e) => Open((ContextMenu)Resources["AfterMenu"], AfterButton);
+    private void OnAfterCapture(object sender, RoutedEventArgs e)
+    {
+        ((CaptureToolbarViewModel)DataContext).RefreshAfterSteps();
+        Open((ContextMenu)Resources["AfterMenu"], AfterButton);
+    }
 
     private void OnTools(object sender, RoutedEventArgs e) => Open((ContextMenu)Resources["ToolsMenu"], ToolsButton);
 

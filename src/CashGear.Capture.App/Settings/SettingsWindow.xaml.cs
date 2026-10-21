@@ -74,6 +74,11 @@ public partial class SettingsWindow : Window, IThemedWindow
             _viewModel.StopMonitoring();
         }
 
+        if (ReferenceEquals(Tabs.SelectedItem, OutputTab))
+        {
+            _viewModel.RefreshWorkflows(); // servers, uploads and apps added on the Destinations tab
+        }
+
         if (ReferenceEquals(Tabs.SelectedItem, OverlaysTab))
         {
             _ = ShowOverlaysPageAsync();
@@ -235,6 +240,28 @@ public partial class SettingsWindow : Window, IThemedWindow
 
     /// <summary>The running apps are listed when the list opens (not when the window does: listing them takes a moment).</summary>
     private void OnExcludedAppsOpened(object? sender, EventArgs e) => _viewModel.Overlays.RefreshRunningApps();
+
+    /// <summary>A password, passphrase or token typed into a PasswordBox (never bound: it stays out of the binding system).</summary>
+    private void OnSecretChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is not PasswordBox box)
+        {
+            return;
+        }
+
+        switch (box.DataContext, box.Tag)
+        {
+            case (ServerViewModel server, "password"):
+                server.SetPassword(box.Password);
+                break;
+            case (ServerViewModel server, "passphrase"):
+                server.SetPassphrase(box.Password);
+                break;
+            case (UploadViewModel upload, "token"):
+                upload.SetToken(box.Password);
+                break;
+        }
+    }
 
     private void OnHotkeyBoxGotFocus(object sender, KeyboardFocusChangedEventArgs e) => _viewModel.BeginHotkeyRecording();
 

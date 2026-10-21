@@ -35,10 +35,16 @@
       <MenuItem Header="Screen _Ruler" IsCheckable="True" IsChecked="{Binding Tray.IsRulerVisible, Mode=OneWay}" Command="{Binding Tray.ToggleRulerCommand}" InputGestureText="{Binding Tray.RulerHotkey}" />
       <MenuItem Header="Cross_hair" IsCheckable="True" IsChecked="{Binding Tray.IsCrosshairVisible, Mode=OneWay}" Command="{Binding Tray.ToggleCrosshairCommand}" InputGestureText="{Binding Tray.CrosshairHotkey}" />
     </ContextMenu>
-    <ContextMenu x:Key="AfterMenu">
-      <MenuItem Header="Open in the _editor" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding OpenEditor}" />
-      <MenuItem Header="_Save to file" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding SaveToFile}" />
-      <MenuItem Header="_Copy to clipboard" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding CopyToClipboard}" />
+    <ContextMenu x:Key="AfterMenu" ItemsSource="{Binding AfterSteps}">
+      <ContextMenu.ItemContainerStyle>
+        <Style TargetType="MenuItem">
+          <Setter Property="Header" Value="{Binding Name}" />
+          <Setter Property="IsCheckable" Value="{Binding IsCheckable}" />
+          <Setter Property="StaysOpenOnClick" Value="{Binding IsCheckable}" />
+          <Setter Property="IsChecked" Value="{Binding IsChecked, Mode=TwoWay}" />
+          <Setter Property="Command" Value="{Binding Command}" />
+        </Style>
+      </ContextMenu.ItemContainerStyle>
     </ContextMenu>
     <ContextMenu x:Key="SizesMenu" ItemsSource="{Binding FixedSizes}">
       <ContextMenu.ItemContainerStyle>

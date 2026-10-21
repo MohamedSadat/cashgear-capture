@@ -98,7 +98,7 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Format.Should().Be(ImageFileFormat.Jpeg);
         vm.IsJpeg.Should().BeTrue();
         vm.JpegQuality.Should().Be(70);
-        vm.CopyToClipboard.Should().BeFalse();
+        vm.CaptureWorkflow.Steps.Select(r => (r.Destination, r.Name, r.Enabled)).Should().Equal(("file", "Save to file", true), ("editor", "Open in the editor", true));
         vm.DelaySeconds.Should().Be(3);
         vm.IncludeCursor.Should().BeTrue();
         vm.Backend.Should().Be(CaptureBackend.Gdi);
@@ -158,12 +158,13 @@ public sealed class SettingsViewModelTests : IDisposable
     {
         using var vm = Create();
 
-        vm.SaveToFile = false;
-        vm.CopyToClipboard = false;
-        vm.OpenEditor = false;
+        foreach (var step in vm.CaptureWorkflow.Steps)
+        {
+            step.Enabled = false;
+        }
 
         vm.Errors.Should().Contain("After capture");
-        vm.OpenEditor = true;
+        vm.CaptureWorkflow.Steps.Single(r => r.Destination == DestinationIds.Editor).Enabled = true;
         vm.HasErrors.Should().BeFalse("opening the editor alone is enough");
     }
 
@@ -201,8 +202,7 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.OutputFolder = @"D:\Shots";
         vm.Format = ImageFileFormat.Bmp;
         vm.FileNameTemplate = "shot_{counter}";
-        vm.SaveToFile = true;
-        vm.CopyToClipboard = false;
+        vm.CaptureWorkflow.Steps.Single(r => r.Destination == DestinationIds.File).Enabled = true;
         vm.DelaySeconds = 5;
         vm.HideDelayMs = 500;
         vm.IncludeWindowShadow = true;

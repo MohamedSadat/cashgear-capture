@@ -44,7 +44,7 @@ public sealed partial class CaptureToolbarService(
 
         // The tray's view model is made on first use (it in turn knows this service, for its menu item).
         var viewModel = new CaptureToolbarViewModel(
-            services.GetRequiredService<TrayViewModel>(), services.GetRequiredService<IWindowService>(), settings, ui)
+            services.GetRequiredService<TrayViewModel>(), services.GetRequiredService<IWindowService>(), settings, ui, services.GetService<Outputs.DestinationRegistry>())
         {
             Hide = Hide,
         };

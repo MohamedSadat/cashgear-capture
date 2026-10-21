@@ -196,6 +196,9 @@ public sealed class PendingCredentials(ICredentialStore stored) : ICredentialSto
 
     public void Set(string key, string? value) => _changes[key] = value;
 
+    /// <summary>Drops what was typed for the key: the stored secret stands again.</summary>
+    public void Revert(string key) => _changes.Remove(key);
+
     public void RemoveAll(string prefix)
     {
         foreach (var key in _changes.Keys.Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)).ToList())

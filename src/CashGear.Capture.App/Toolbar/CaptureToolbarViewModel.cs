@@ -4,6 +4,7 @@ using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -19,6 +20,30 @@ public sealed class FixedSizeChoice(PixelSize size, IAsyncRelayCommand<PixelSize
     public IAsyncRelayCommand<PixelSize> Capture => capture;
 }
 
+/// <summary>A step of the after-capture workflow in the toolbar's menu (switched on or off there), or the menu's way to Settings.</summary>
+public sealed class AfterStepChoice(string name, bool isCheckable, bool isChecked, Action<bool>? set, System.Windows.Input.ICommand? command) : ObservableObject
+{
+    private bool _isChecked = isChecked;
+
+    public string Name => name;
+
+    public bool IsCheckable => isCheckable;
+
+    public System.Windows.Input.ICommand? Command => command;
+
+    public bool IsChecked
+    {
+        get => _isChecked;
+        set
+        {
+            if (SetProperty(ref _isChecked, value))
+            {
+                set?.Invoke(value);
+            }
+        }
+    }
+}
+
 /// <summary>
 /// The capture toolbar's commands: the tray's (so a capture already running isn't stacked, and the buttons are
 /// disabled while one runs), the active window as it is when the button is clicked (the toolbar never takes the
@@ -29,21 +54,19 @@ public sealed partial class CaptureToolbarViewModel : ObservableObject
     private readonly IWindowService _windows;
     private readonly ISettingsService _settings;
     private readonly IUiDispatcher _ui;
+    private readonly DestinationRegistry? _registry;
 
-    public CaptureToolbarViewModel(TrayViewModel tray, IWindowService windows, ISettingsService settings, IUiDispatcher ui)
+    public CaptureToolbarViewModel(TrayViewModel tray, IWindowService windows, ISettingsService settings, IUiDispatcher ui, DestinationRegistry? registry = null)
     {
+        _registry = registry;
         Tray = tray;
         _windows = windows;
         _settings = settings;
         _ui = ui;
         FixedSizes = [.. Core.Selection.FixedSizes.Presets.Select(s => new FixedSizeChoice(s, CaptureFixedSizeCommand))];
         tray.PropertyChanged += OnTrayChanged;
-        settings.Changed += (_, _) => _ = _ui.InvokeAsync(() =>
-        {
-            OnPropertyChanged(nameof(OpenEditor));
-            OnPropertyChanged(nameof(SaveToFile));
-            OnPropertyChanged(nameof(CopyToClipboard));
-        });
+        settings.Changed += (_, _) => _ = _ui.InvokeAsync(RefreshAfterSteps);
+        RefreshAfterSteps();
     }
 
     /// <summary>The tray's commands, which the buttons run.</summary>
@@ -54,23 +77,21 @@ public sealed partial class CaptureToolbarViewModel : ObservableObject
 
     public IReadOnlyList<FixedSizeChoice> FixedSizes { get; }
 
-    public bool OpenEditor
-    {
-        get => _settings.Current.Destinations.IsEnabled(DestinationIds.Editor);
-        set => _ = _settings.UpdateAsync(s => s with { Destinations = s.Destinations.WithStep(DestinationIds.Editor, value) });
-    }
+    /// <summary>The after-capture workflow's steps, each switched on or off from the menu, then "Change the workflow…".</summary>
+    [ObservableProperty]
+    private IReadOnlyList<AfterStepChoice> _afterSteps = [];
 
-    public bool SaveToFile
-    {
-        get => _settings.Current.Destinations.IsEnabled(DestinationIds.File);
-        set => _ = _settings.UpdateAsync(s => s with { Destinations = s.Destinations.WithStep(DestinationIds.File, value) });
-    }
-
-    public bool CopyToClipboard
-    {
-        get => _settings.Current.Destinations.IsEnabled(DestinationIds.Clipboard);
-        set => _ = _settings.UpdateAsync(s => s with { Destinations = s.Destinations.WithStep(DestinationIds.Clipboard, value) });
-    }
+    /// <summary>Reads the workflow again (as the menu opens, and when the settings change).</summary>
+    public void RefreshAfterSteps() => AfterSteps =
+    [
+        .. (_settings.Current.Destinations.Workflow ?? []).Select(step => new AfterStepChoice(
+            _registry?.NameOf(step.Destination) ?? step.Destination,
+            isCheckable: true,
+            step.Enabled,
+            on => _ = _settings.UpdateAsync(s => s with { Destinations = s.Destinations.WithStep(step.Destination, on) }),
+            command: null)),
+        new AfterStepChoice("Change the workflow…", isCheckable: false, isChecked: false, set: null, Tray.OpenSettingsCommand),
+    ];
 
     public string RegionTip => Tip("Capture region: drag a rectangle or click a window", Tray.RegionHotkey);
 

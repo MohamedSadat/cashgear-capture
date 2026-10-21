@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.Settings"
         xmlns:wpf="clr-namespace:CashGear.Capture.App.Wpf"
+        xmlns:editor="clr-namespace:CashGear.Capture.App.Editor"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SettingsViewModel}"
         Title="CashGear Capture Settings"
@@ -26,6 +27,82 @@
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="Margin" Value="0,4,0,0" />
     </Style>
+    <Style x:Key="FieldLabel" TargetType="TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,3,8,3" />
+    </Style>
+    <editor:NullToVisibilityConverter x:Key="VisibleIfSet" />
+
+    <!-- A workflow: its steps in order (on or off, up, down, remove) and a step to add. -->
+    <DataTemplate x:Key="WorkflowList" DataType="{x:Type local:WorkflowListViewModel}">
+      <StackPanel>
+        <ItemsControl ItemsSource="{Binding Steps}" Focusable="False">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="{x:Type local:WorkflowStepRow}">
+              <DockPanel Margin="0,1">
+                <DockPanel.Style>
+                  <Style TargetType="DockPanel">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                        <Setter Property="Opacity" Value="0.6" />
+                        <Setter Property="ToolTip" Value="Its destination was deleted on the Destinations tab; the step is skipped." />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </DockPanel.Style>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                  <Button Content="↑" ToolTip="Earlier" MinWidth="28" Margin="4,0,0,0" AutomationProperties.Name="Move up"
+                          Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
+                  <Button Content="↓" ToolTip="Later" MinWidth="28" Margin="4,0,0,0" AutomationProperties.Name="Move down"
+                          Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
+                  <Button Content="✕" ToolTip="Remove this step" MinWidth="28" Margin="4,0,0,0" AutomationProperties.Name="Remove"
+                          Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
+                </StackPanel>
+                <CheckBox IsChecked="{Binding Enabled}" Content="{Binding Name}" VerticalAlignment="Center" />
+              </DockPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+          <ComboBox ItemsSource="{Binding Addable}" SelectedItem="{Binding ToAdd}" MinWidth="240" AutomationProperties.Name="Step to add" />
+          <Button Content="Add step" Command="{Binding AddCommand}" Margin="8,0,0,0" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
+    <!-- A destination's Test button and what it found. -->
+    <DataTemplate x:Key="TestRow" DataType="{x:Type local:TestableViewModel}">
+      <DockPanel Margin="0,6,0,0">
+        <Button DockPanel.Dock="Left" Content="Test" Command="{Binding TestCommand}" MinWidth="80" VerticalAlignment="Top"
+                ToolTip="Check the set-up as it is in this window (nothing is printed, opened or left behind)" />
+        <TextBlock Text="{Binding TestStatus}" TextWrapping="Wrap" Margin="10,2,0,0">
+          <TextBlock.Style>
+            <Style TargetType="TextBlock">
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding TestFailed}" Value="True">
+                  <Setter Property="Foreground" Value="#D13438" />
+                </DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </TextBlock.Style>
+        </TextBlock>
+      </DockPanel>
+    </DataTemplate>
+
+    <!-- Word or PowerPoint: a new file each time, or added to one. -->
+    <DataTemplate x:Key="OfficeEditor" DataType="{x:Type local:OfficeViewModel}">
+      <StackPanel>
+        <RadioButton Margin="0,2" IsChecked="{Binding Append, Converter={x:Static local:InverseBooleanConverter.Instance}}">
+          <TextBlock><Run Text="A new" /> <Run Text="{Binding App, Mode=OneWay}" /> <Run Text="file in the capture folder for each capture" /></TextBlock>
+        </RadioButton>
+        <RadioButton Margin="0,2" Content="Added at the end of this file:" IsChecked="{Binding Append}" />
+        <DockPanel Margin="20,2,0,0" IsEnabled="{Binding Append}">
+          <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
+          <TextBox Text="{Binding AppendPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="File to add captures to" />
+        </DockPanel>
+        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
+      </StackPanel>
+    </DataTemplate>
   </Window.Resources>
 
   <DockPanel Margin="16">
@@ -43,13 +120,17 @@
 
     <TabControl x:Name="Tabs" SelectionChanged="OnTabChanged">
       <!-- ============================== Output ============================== -->
-      <TabItem Header="Output">
+      <TabItem Header="Output" x:Name="OutputTab">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,4,12,12">
-            <TextBlock Style="{StaticResource Section}" Text="After capture" />
-            <CheckBox Margin="0,2" Content="Open in the editor" IsChecked="{Binding OpenEditor}" />
-            <CheckBox Margin="0,2" Content="Save to file" IsChecked="{Binding SaveToFile}" />
-            <CheckBox Margin="0,2" Content="Copy to clipboard" IsChecked="{Binding CopyToClipboard}" />
+            <TextBlock Style="{StaticResource Section}" Text="After capture, in this order" />
+            <ContentControl Content="{Binding CaptureWorkflow}" ContentTemplate="{StaticResource WorkflowList}" Focusable="False" />
+            <TextBlock Style="{StaticResource Hint}"
+                       Text="Steps after &quot;Open in the editor&quot; wait for its Continue button, so they get the edited image. Servers, uploads, Word and the rest are set up on the Destinations tab." />
+
+            <TextBlock Style="{StaticResource Section}" Text="After a recording is saved" />
+            <ContentControl Content="{Binding RecordingWorkflow}" ContentTemplate="{StaticResource WorkflowList}" Focusable="False" />
+            <TextBlock Style="{StaticResource Hint}" Text="A recording is always saved to the folder below first; these steps then send it on." />
 
             <TextBlock Style="{StaticResource Section}" Text="Folder" />
             <Grid>
@@ -87,6 +168,256 @@
               <Run Text="{Binding FileNamePreview, Mode=OneWay}" FontWeight="SemiBold" />
             </TextBlock>
             <ItemsControl ItemsSource="{Binding TokenHelp}" Margin="0,8,0,0" Opacity="0.7" FontFamily="Consolas" FontSize="12" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ============================== Destinations ============================== -->
+      <TabItem Header="Destinations" x:Name="DestinationsTab">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="12,4,12,12" DataContext="{Binding Destinations}">
+            <TextBlock Style="{StaticResource Hint}"
+                       Text="Where the workflow (Output tab) and the editor's Send to can send captures. Passwords and tokens are kept encrypted for your Windows account (DPAPI), never in settings.json." />
+
+            <!-- Printer -->
+            <TextBlock Style="{StaticResource Section}" Text="Printer" />
+            <Grid DataContext="{Binding Printer}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <TextBlock Style="{StaticResource FieldLabel}" Text="Printer" />
+              <ComboBox Grid.Column="1" Margin="0,3" ItemsSource="{Binding Printers}" SelectedItem="{Binding Printer}" AutomationProperties.Name="Printer" />
+              <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Size on the page" />
+              <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Fits}" SelectedItem="{Binding Fit}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Size on the page" />
+              <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="Orientation" />
+              <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Orientations}" SelectedItem="{Binding Orientation}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Orientation" />
+              <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="Margins" />
+              <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,3">
+                <Slider Minimum="0" Maximum="50" Value="{Binding MarginMm}" Width="200" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" AutomationProperties.Name="Margins in millimetres" />
+                <TextBlock VerticalAlignment="Center" Margin="8,0,0,0"><Run Text="{Binding MarginMm, Mode=OneWay}" /> <Run Text="mm" /></TextBlock>
+              </StackPanel>
+              <CheckBox Grid.Row="4" Grid.Column="1" Margin="0,3" Content="Show the print dialog each time (printer, copies, orientation)" IsChecked="{Binding ShowDialog}" />
+            </Grid>
+            <ContentControl Content="{Binding Printer}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
+
+            <!-- Word and PowerPoint -->
+            <TextBlock Style="{StaticResource Section}" Text="Word" />
+            <ContentControl Content="{Binding Word}" ContentTemplate="{StaticResource OfficeEditor}" Focusable="False" />
+            <TextBlock Style="{StaticResource Section}" Text="PowerPoint" />
+            <ContentControl Content="{Binding PowerPoint}" ContentTemplate="{StaticResource OfficeEditor}" Focusable="False" />
+
+            <!-- Servers -->
+            <TextBlock Style="{StaticResource Section}" Text="FTP, FTPS and SFTP servers" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="170" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <DockPanel Margin="0,0,12,0">
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
+                  <Button Content="Add" Command="{Binding AddServerCommand}" MinWidth="70" />
+                  <Button Content="Remove" Command="{Binding RemoveServerCommand}" MinWidth="70" Margin="6,0,0,0" />
+                </StackPanel>
+                <ListBox ItemsSource="{Binding Servers}" SelectedItem="{Binding SelectedServer}" DisplayMemberPath="Label" MinHeight="120" AutomationProperties.Name="Servers" />
+              </DockPanel>
+              <ContentControl Grid.Column="1" Content="{Binding SelectedServer}" Focusable="False">
+                <ContentControl.ContentTemplate>
+                  <DataTemplate DataType="{x:Type local:ServerViewModel}">
+                    <StackPanel>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="Name" />
+                        <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Server name" />
+                        <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Protocol" />
+                        <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Protocols}" SelectedItem="{Binding Protocol}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Protocol" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="Server" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Server address" ToolTip="ftp.example.com" />
+                        <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="Port" />
+                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,3">
+                          <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Width="70" AutomationProperties.Name="Port" />
+                          <TextBlock Text="{Binding PortHint}" Opacity="0.7" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="User name" />
+                        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,3" Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="User name" ToolTip="Empty logs in anonymously (FTP)" />
+                        <TextBlock Grid.Row="5" Style="{StaticResource FieldLabel}" Text="Password" />
+                        <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,3">
+                          <PasswordBox Tag="password" PasswordChanged="OnSecretChanged" AutomationProperties.Name="Password" />
+                          <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                            <TextBlock Text="{Binding PasswordState}" Opacity="0.7" VerticalAlignment="Center" />
+                            <Button Content="Forget" Command="{Binding ForgetPasswordCommand}" Margin="8,0,0,0" Padding="6,0" />
+                          </StackPanel>
+                        </StackPanel>
+                        <TextBlock Grid.Row="6" Style="{StaticResource FieldLabel}" Text="Key file" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}" />
+                        <DockPanel Grid.Row="6" Grid.Column="1" Margin="0,3" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}">
+                          <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding BrowseKeyFileCommand}" Margin="8,0,0,0" />
+                          <TextBox Text="{Binding KeyFile, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Private key file" ToolTip="A private key (OpenSSH or PEM) to log in with instead of the password" />
+                        </DockPanel>
+                        <TextBlock Grid.Row="7" Style="{StaticResource FieldLabel}" Text="Key passphrase" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}" />
+                        <StackPanel Grid.Row="7" Grid.Column="1" Margin="0,3" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}">
+                          <PasswordBox Tag="passphrase" PasswordChanged="OnSecretChanged" AutomationProperties.Name="Key passphrase" />
+                          <TextBlock Text="{Binding PassphraseState}" Opacity="0.7" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <TextBlock Grid.Row="8" Style="{StaticResource FieldLabel}" Text="Folder" />
+                        <TextBox Grid.Row="8" Grid.Column="1" Margin="0,3" Text="{Binding RemoteFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Folder on the server"
+                                 ToolTip="Empty for the folder you log in to; /path from the server's root; made if it isn't there" />
+                        <TextBlock Grid.Row="9" Style="{StaticResource FieldLabel}" Text="Public address" />
+                        <TextBox Grid.Row="9" Grid.Column="1" Margin="0,3" Text="{Binding PublicUrl, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Public address"
+                                 ToolTip="Where uploads can be seen on the web, with {file} for the file name, e.g. https://example.com/shots/{file}. Empty: no link." />
+                        <CheckBox Grid.Row="10" Grid.Column="1" Margin="0,3" Content="Passive mode (works through firewalls and routers)" IsChecked="{Binding Passive}"
+                                  Visibility="{Binding IsFtp, Converter={StaticResource Visible}}" />
+                      </Grid>
+                      <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding HasTrustedFingerprint, Converter={StaticResource Visible}}">
+                        <TextBlock Opacity="0.7" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="330">
+                          <Run Text="Trusted:" /> <Run Text="{Binding TrustedFingerprint, Mode=OneWay}" />
+                        </TextBlock>
+                        <Button Content="Forget" Command="{Binding ForgetFingerprintCommand}" Margin="8,0,0,0" Padding="6,0" />
+                      </StackPanel>
+                      <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
+                      <Button Content="Trust it" Command="{Binding TrustCommand}" HorizontalAlignment="Left" Margin="90,4,0,0" MinWidth="80"
+                              Visibility="{Binding UntrustedFingerprint, Converter={StaticResource VisibleIfSet}}"
+                              ToolTip="Only if the server's owner tells you this fingerprint is theirs" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ContentControl.ContentTemplate>
+              </ContentControl>
+            </Grid>
+
+            <!-- HTTP uploads -->
+            <TextBlock Style="{StaticResource Section}" Text="HTTP uploads" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="170" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <DockPanel Margin="0,0,12,0">
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
+                  <Button Content="Add" Command="{Binding AddUploadCommand}" MinWidth="70" />
+                  <Button Content="Remove" Command="{Binding RemoveUploadCommand}" MinWidth="70" Margin="6,0,0,0" />
+                </StackPanel>
+                <ListBox ItemsSource="{Binding Uploads}" SelectedItem="{Binding SelectedUpload}" DisplayMemberPath="Label" MinHeight="120" AutomationProperties.Name="HTTP uploads" />
+              </DockPanel>
+              <ContentControl Grid.Column="1" Content="{Binding SelectedUpload}" Focusable="False">
+                <ContentControl.ContentTemplate>
+                  <DataTemplate DataType="{x:Type local:UploadViewModel}">
+                    <StackPanel>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="Name" />
+                        <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Upload name" />
+                        <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Address" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,3" Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Upload address" ToolTip="https://example.com/api/upload: the capture is posted here as a form (multipart/form-data)" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="File field" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding FileField, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="File field" />
+                        <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="Form fields" VerticalAlignment="Top" />
+                        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,3" Text="{Binding FieldsText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="44" VerticalScrollBarVisibility="Auto"
+                                 AutomationProperties.Name="Form fields" ToolTip="One a line: name=value" />
+                        <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="Headers" VerticalAlignment="Top" />
+                        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,3" Text="{Binding HeadersText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="44" VerticalScrollBarVisibility="Auto"
+                                 AutomationProperties.Name="Headers" ToolTip="One a line: Name: value (not secret; put a key or token below)" />
+                        <TextBlock Grid.Row="5" Style="{StaticResource FieldLabel}" Text="Secret header" />
+                        <TextBox Grid.Row="5" Grid.Column="1" Margin="0,3" Text="{Binding AuthHeader, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Secret header name" ToolTip="Usually Authorization; empty for none" />
+                        <TextBlock Grid.Row="6" Style="{StaticResource FieldLabel}" Text="Its value" />
+                        <StackPanel Grid.Row="6" Grid.Column="1" Margin="0,3">
+                          <PasswordBox Tag="token" PasswordChanged="OnSecretChanged" AutomationProperties.Name="Secret header value" ToolTip="e.g. Bearer abc123 or Client-ID abc123" />
+                          <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                            <TextBlock Text="{Binding TokenState}" Opacity="0.7" VerticalAlignment="Center" />
+                            <Button Content="Forget" Command="{Binding ForgetTokenCommand}" Margin="8,0,0,0" Padding="6,0" />
+                          </StackPanel>
+                        </StackPanel>
+                        <TextBlock Grid.Row="7" Style="{StaticResource FieldLabel}" Text="Link in the reply" />
+                        <TextBox Grid.Row="7" Grid.Column="1" Margin="0,3" Text="{Binding LinkPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Where the link is in the reply"
+                                 ToolTip="Where the link is in the JSON reply, e.g. data.link or files[0].url. Empty when the whole reply is the link." />
+                      </Grid>
+                      <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
+                      <TextBlock Style="{StaticResource Hint}" Text="Test uploads a 1 × 1 picture called cashgear-test.png." />
+                    </StackPanel>
+                  </DataTemplate>
+                </ContentControl.ContentTemplate>
+              </ContentControl>
+            </Grid>
+
+            <!-- Apps -->
+            <TextBlock Style="{StaticResource Section}" Text="Open with another app" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="170" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <DockPanel Margin="0,0,12,0">
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
+                  <Button Content="Add" Command="{Binding AddAppCommand}" MinWidth="70" />
+                  <Button Content="Remove" Command="{Binding RemoveAppCommand}" MinWidth="70" Margin="6,0,0,0" />
+                </StackPanel>
+                <ListBox ItemsSource="{Binding Apps}" SelectedItem="{Binding SelectedApp}" DisplayMemberPath="Label" MinHeight="90" AutomationProperties.Name="Apps" />
+              </DockPanel>
+              <ContentControl Grid.Column="1" Content="{Binding SelectedApp}" Focusable="False">
+                <ContentControl.ContentTemplate>
+                  <DataTemplate DataType="{x:Type local:ExternalAppViewModel}">
+                    <StackPanel>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="Name" />
+                        <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="App name" />
+                        <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Program" />
+                        <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,3">
+                          <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
+                          <TextBox Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Program" />
+                        </DockPanel>
+                        <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="Command line" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Arguments, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Command line"
+                                 ToolTip="{}{file} is the capture's file (in quotes by default), {folder} its folder" />
+                      </Grid>
+                      <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ContentControl.ContentTemplate>
+              </ContentControl>
+            </Grid>
           </StackPanel>
         </ScrollViewer>
       </TabItem>
