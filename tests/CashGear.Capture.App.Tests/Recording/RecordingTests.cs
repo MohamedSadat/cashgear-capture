@@ -1488,7 +1488,7 @@ public sealed class ScreenRecorderTests : IDisposable
         result.AllParts.Should().HaveCount(2);
         Path.GetFileName(result.AllParts[1]).Should().Be("test (part 2).mp4");
         result.EncoderName.Should().Be("Windows software encoder (H.264), then OpenH264 (software)");
-        result.Note.Should().Contain("second file");
+        result.Note.Should().Contain("saved as another file");
         warnings.Should().ContainSingle().Which.Should().Contain("OpenH264");
         var first = TestFfmpeg.Probe(result.AllParts[0]);
         var second = TestFfmpeg.Probe(result.AllParts[1]);

@@ -533,7 +533,7 @@ internal sealed partial class ScreenRecorder(
     /// picture captured by then (by its capture time on the recording clock), which is read back from the GPU,
     /// gets its click highlights, is converted to the encoder's format and encoded with the frame's timestamp. If
     /// encoding falls far behind, frames are skipped and their timestamps simply left out. If the encoder fails,
-    /// the next one that works takes over in a new segment (saved as a second file).
+    /// the next one that works takes over in a new segment (saved as another file).
     /// </para>
     /// <para>
     /// Sound ("Recording sound" thread): each source's packets are placed on the clock by their capture time (sound
@@ -1328,7 +1328,7 @@ internal sealed partial class ScreenRecorder(
                 _encoderNames.Add(next.Candidate.DisplayName);
                 var at = Clock.Elapsed;
                 AddNote($"{failed.Candidate.DisplayName} stopped working at {(int)at.TotalMinutes}:{at.Seconds:00}; {next.Candidate.DisplayName} recorded the rest, saved as another file.");
-                _owner.OnWarning($"{failed.Candidate.DisplayName} stopped working ({ex.Message}). Recording continues with {next.Candidate.DisplayName}; it will be saved as a second file.");
+                _owner.OnWarning($"{failed.Candidate.DisplayName} stopped working ({ex.Message}). Recording continues with {next.Candidate.DisplayName}; it will be saved as another file.");
                 return;
             }
 

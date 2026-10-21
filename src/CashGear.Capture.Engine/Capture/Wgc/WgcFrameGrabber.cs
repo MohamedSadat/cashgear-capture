@@ -146,6 +146,12 @@ internal sealed partial class WgcFrameGrabber(
             try
             {
                 var item = createItem();
+                if (item.Size.Width <= 0 || item.Size.Height <= 0)
+                {
+                    // Windows 10 gives a window off every monitor no picture (0x0).
+                    throw new CaptureException($"Windows.Graphics.Capture has no picture of the {target}.");
+                }
+
                 using var framePool = Direct3D11CaptureFramePool.CreateFreeThreaded(
                     resources.WinRtDevice, hdr is null ? DirectXPixelFormat.B8G8R8A8UIntNormalized : DirectXPixelFormat.R16G16B16A16Float, 1, item.Size);
                 using var session = framePool.CreateCaptureSession(item);

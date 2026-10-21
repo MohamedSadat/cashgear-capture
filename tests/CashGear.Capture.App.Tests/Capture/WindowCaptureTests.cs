@@ -151,11 +151,12 @@ public sealed class WindowCaptureTests : IDisposable
     }
 
     /// <summary>
-    /// A window left where a disconnected monitor was: outside every monitor. Windows.Graphics.Capture still sees its
-    /// content, so the capture works (screen pixels would have nothing to give).
+    /// A window left where a disconnected monitor was: outside every monitor, so screen pixels have nothing to give.
+    /// Where Windows.Graphics.Capture still sees its content, the capture works; where it doesn't (Windows 10 gives
+    /// such a window no picture), the message says how to bring the window back.
     /// </summary>
     [Fact]
-    public Task A_window_beyond_every_monitor_is_captured_through_wgc()
+    public Task A_window_beyond_every_monitor_is_captured_through_wgc_or_explained()
     {
         InteractiveDesktop.Require();
         Assert.SkipUnless(_capabilities.IsWgcSupported, "Windows.Graphics.Capture is not supported here.");
@@ -171,10 +172,23 @@ public sealed class WindowCaptureTests : IDisposable
                 await Task.Delay(500);
                 FrameBounds(hwnd).IntersectsWith(screen).Should().BeFalse("the window is off every monitor");
 
-                using var image = await CreateService(CaptureBackend.Auto).CaptureWindowAsync(hwnd, new CaptureWindowOptions(), TestContext.Current.CancellationToken);
+                CapturedImage image;
+                try
+                {
+                    image = await CreateService(CaptureBackend.Auto).CaptureWindowAsync(hwnd, new CaptureWindowOptions(), TestContext.Current.CancellationToken);
+                }
+                catch (CaptureException e)
+                {
+                    TestContext.Current.TestOutputHelper?.WriteLine($"Windows.Graphics.Capture has no picture here: {e.Message}");
+                    e.Message.Should().Contain("is off every screen").And.Contain("Windows+Shift+Left or Right");
+                    return;
+                }
 
-                image.Metadata.Backend.Should().Be(CaptureBackend.Wgc);
-                PatternMatch(image, ClientOffset(hwnd, FrameBounds(hwnd))).Should().BeGreaterThanOrEqualTo(0.995);
+                using (image)
+                {
+                    image.Metadata.Backend.Should().Be(CaptureBackend.Wgc);
+                    PatternMatch(image, ClientOffset(hwnd, FrameBounds(hwnd))).Should().BeGreaterThanOrEqualTo(0.995);
+                }
             }
             finally
             {
