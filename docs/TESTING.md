@@ -38,6 +38,8 @@ The webcam tests use a fake camera that stamps its pictures like a real one; one
 
 The video editor's tests write their own recordings (`StampedRecording`, with the FFmpeg build above): every picture carries its frame number, with flashes and beeps at known times, so exports and the preview are checked frame by frame. Its two timed acceptance tests (1080p preview, 20-minute export, about two minutes together) run after the rest of their assembly, on their own. Nothing in them plays sound.
 
+The transcription tests use the Whisper models in `tools\whisper` and skip without them; download them once with `tools\get-whisper-models.ps1` (about 250 MB, checksum-verified). Their speech is made by Windows' own English voices in memory (nothing is played), and one test runs on the graphics card (Vulkan) when it can. The Arabic caption test reads its export back with Windows OCR and needs the Arabic OCR language.
+
 The noise-suppression tests use the real RNNoise from `tools\rnnoise` and skip without it. Build it once with `tools\get-rnnoise.ps1`, which needs Visual Studio's C++ compiler ("Desktop development with C++").
 
 The other recording tests with sound use a generated tone (no sound is played) or real system audio with whatever is playing.
@@ -67,7 +69,7 @@ Other options: `--fps 15|30|60`, `--encoder auto|software|<id>`, `--quality Smal
 | Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15); Phase 13 passes (2026-10-21); Phase 15 passes (2026-10-21) |
 | Dual monitor, mixed DPI (100% + 150%) | Phase 13 passes with the primary at 150% (2026-10-21; the whole suite, one Phase 12 failure); the by-hand steps for Phases 1–2 **pending** — see "Pending" below |
 | Monitor left of primary (negative X) | Phase 13 passes with the 100% monitor at (−1280, 200) and the primary at 150% (2026-10-21); the by-hand steps for Phases 1–2 **pending** — see "Pending" below |
-| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19, the Edge password field included; a real webcam **pending**, below); Phase 13 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 15 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 16 passes what was run (2026-10-21; by-hand checks **pending**, below); fresh install **pending** |
+| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19, the Edge password field included; a real webcam **pending**, below); Phase 13 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 15 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 16 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 17 passes what was run (2026-10-21; by-hand checks **pending**, below); fresh install **pending** |
 | Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
@@ -614,3 +616,33 @@ Same PC as Phase 15, at 100% + 100%. The editor is checked on numbers stamped in
   - **Exporting** a long recording with the graphics card's encoder; the WebM and HEVC files in browsers and players.
 - **The GPU preview** on an NVIDIA, AMD and Intel card, and its fallback under Remote Desktop and with no OpenGL driver.
 - **Mixed DPI:** the editor and export windows at 150%.
+
+## Phase 17 results (2026-10-21)
+
+Same PC as Phase 16 (Xeon E5-2680 v3, GeForce GTX 1650 with driver 457.51, Windows 10 22H2), at 100% + 100%. Zooms are checked on pictures drawn by the compositor itself (a white square tracked frame by frame), captions on stamped recordings and Windows OCR, GIFs with ffprobe, and transcription on speech made by Windows' own English voices into memory (nothing is played; this PC has no Arabic voice). The transcription tests use the models from `tools\get-whisper-models.ps1` and skip without them.
+
+| Check | Result |
+|---|---|
+| **Auto-zoom at 60 fps, acceptance** (`ZoomTests`) | pass: 600 frames of a zoom following a pointer that waits, glides, waits and jumps: the square drawn where the camera puts it to 0.126 px at worst, its speed changing by 0.68 px/frame² at most, the measured path within 0.22 px/frame² of the camera's, no back-and-forth (0 reversals) |
+| The camera (`ZoomTests`) | pass: eases in, holds and eases out about the one fixed point (the centre stays put for a centred zoom); clamped to the picture, also letterboxed (a view wider than the picture is centred on it); zooms 0.5 s apart pan without zooming out, 2 s apart zoom out between; following the pointer settles within the dead zone, inside the canvas, the same camera for frames in any order; the centre's acceleration under 3 px/frame² when the pointer jumps 800 px |
+| Zooms and effects (`ZoomTests`) | pass: a zoom saved and read back; slices keep their eases only on their own ends; a click ring drawn twice as large where the zoom puts it, keystrokes byte for byte where they were |
+| Auto-zoom (`ZoomTests`, `ZoomEditorTests`) | pass: 12 clicks and keys make 5 zooms at the expected times (typing counted at the last click, two clicks too far apart meeting halfway); a cut moves them, 2× halves their times; applied again it replaces its own and keeps one made by hand; inserted at the playhead, set in the panel, dragged and resized by its frame on the preview; says why without metadata |
+| Captions (`CaptionTests`, `CaptionEditorTests`) | pass: transcripts become captions of at most 84 letters and 7 s, cut between words and at sentence ends, word pieces kept together, letters sharing the time without word times, short words lasting 0.8 s where there is room; split and merged by the words' times and by text; a cut keeps the words said on each side; SRT and WebVTT written and read back exactly (Arabic, past an hour, other writers' files with notes and tags); the panel's text, buttons and the track's look; imported and saved |
+| Burned-in captions (`CaptionTests`) | pass: the same pixels as the image editor's text with the same look, line by line, centred above the margin, shown only during the caption, not drawn from a hidden track; Arabic wrapped in reading order with every line right to left |
+| **Arabic captions burned in, acceptance** (`CaptionBurnInTests`) | pass: an 18-word Arabic transcript as one caption of two lines on a 1280 × 720 recording, exported to MP4, the picture at 1 s read by Windows OCR (`ar-SA`): 18 of 18 words in order, the first words on the first line |
+| Range exports (`CaptionTests`, `CaptionEditorTests`) | pass: 1 s to 3 s of a stamped recording exported alone: 60 frames, source frames 30 to 89, its flash 1.5 s in; its caption saved beside it as SRT and WebVTT from 0.5 s |
+| Transcription (`TranscriptionTests`) | pass: Base (language found out: English) and Small heard Windows' voice word for word, on the processor and on the GTX 1650 (Vulkan); word times in order; cancelling stops it; words left out when tokens don't spell the text; the model list matches the script; downloads from a local server: progress, a wrong checksum refused, a cancelled one leaves nothing, kept once, found in another folder. A 7 s clip: 2.9 s on the processor, 6.9 s on the graphics card (set-up dominates) |
+| The sound heard (`TranscriptAudioTests`) | pass: a 440 Hz microphone track muted on the timeline is still heard when asked, at 16 kHz, 3 s long; 880 Hz system audio alone; both together louder |
+| Captions from speech in the window (`CaptionEditorTests`) | pass, with a fake transcriber and a model "downloaded": the microphone first, Small by default, the choices sent and remembered, the captions back as "Captions (Arabic)" in one undo step; over a range only its sound, the captions in it; nothing heard said and nothing added |
+| GIF writer (`GifWriterTests`, Media) | pass: 30 frames at 10 fps last 3 s, loop or play once (the NETSCAPE block); 16 colours without dithering is smaller than diffusion; writing before the palette refused |
+| GIF export (`GifExportTests`, `GifEditorTests`) | pass: a 4 s recording as a 160 px, 10 fps GIF playing once: 40 frames, 4 s; a range of it 20 frames; never wider than the project; the export window's GIF choices and their memory; the recording workflow's Make a GIF next to the recording, then "(2)" |
+| **GIF size, acceptance** (`GifExportTests`) | pass: a 10 s, 1280 × 720 screen-like recording at the defaults: 0.96 MB (under 5 MB), 800 × 450, 150 frames, 10.00 s, looping, in 5.6 s; asked to stay under 60% of that: 0.35 MB at 10 fps, 600 px, 128 colours |
+| The whole suite | 1395 tests without the desktop: 1298 pass and 97 skip (the desktop tests, RNNoise until it is built, the explicit ones), 0 fail |
+
+The 4 video editor desktop tests ran once by mistake in this phase (an App test run without `CASHGEAR_SKIP_INTERACTIVE=1`, after the caption milestone): 4 pass. The export window's test now expects 9 formats (the GIF); it wasn't run after that change.
+
+### Pending: by hand
+- **Captions from speech on real recordings:** English and Arabic speech (Small and Medium), a long recording on the graphics card and on the processor, the first download of a model and its progress, Cancel.
+- **Vulkan** on an AMD and an Intel card, on a PC without a Vulkan driver (the processor's runtime), and the app with only `runtimes\win-x64`.
+- **The new features in the installed app:** zooms and Auto-Zoom on a recording with metadata (the preview while playing at 60 fps), dragging a zoom's frame, captions typed in Arabic with the Arabic layout and burned into an MP4, SRT and WebVTT in VLC and a browser, GIFs in a browser and a chat app, the Make a GIF step.
+- **The desktop tests** with this phase's windows (the Captions from Speech window and the export window's new choices have no desktop test yet).

@@ -24,6 +24,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 14 | Output destinations: the after-capture workflow (and one for recordings) through the editor, a file, the clipboard, a printer, Word, PowerPoint, FTP/FTPS/SFTP, HTTP uploads (the link copied) and other apps; a Test button for each; passwords kept with DPAPI | done (a real printer, Office and real servers by hand pending) |
 | 15 | Image editor extras: effects (shadow, torn and faded edges, border, rounded corners, perspective, brightness/contrast, grayscale, sharpen, watermark) on the image or a selected area with a live preview, effect and watermark presets, spotlight and magnifier, canvas size, trim, rotate by any angle, flip, Arabic text; Combine Images, Batch Process, Images to PDF, a PDF destination | done (by-hand checks in the installed app pending) |
 | 16 | Timeline video editor: projects (`.cgcap`), frame-exact cuts, sound tracks, webcam placement, music, annotations with keyframes (Arabic text, blur, pixelate), speed and ramps, fades, crossfades, freeze frames, clicks, keystrokes and the pointer from the metadata; preview on the graphics card; export to MP4 (H.264, HEVC), WebM (VP9, AV1), M4A and MP3 | done (by-hand checks in the installed app pending) |
+| 17 | Auto-zoom (zooms around clicks and typing that follow the pointer smoothly, editable on the timeline), captions (from speech with Whisper on this PC, English and Arabic; typed; SRT/WebVTT in and out; burned in, Arabic right to left), exports of the marked range, animated GIFs (in the editor and as a recording step) | done (by-hand checks in the installed app pending) |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -39,6 +40,7 @@ Until the build is signed, Windows SmartScreen may say "Windows protected your P
 - .NET SDK 10.0.401+ (pinned in `global.json`)
 - For screen recording: FFmpeg's libraries. Run `tools\get-ffmpeg.ps1` once (it downloads a pinned, checksum-verified LGPL build into the git-ignored `tools\ffmpeg`); the build copies the six libraries the app uses next to it as `ffmpeg\`. Without them everything else works and recording says what is missing. See [docs/LICENSES.md](docs/LICENSES.md).
 - For microphone noise suppression: RNNoise. Run `tools\get-rnnoise.ps1` once; it needs Visual Studio's C++ compiler ("Desktop development with C++"). It builds `rnnoise.dll` from the pinned, checksum-verified RNNoise 0.2 source into the git-ignored `tools\rnnoise`, and the build copies it next to the app as `rnnoise\`. Without it Settings doesn't offer noise suppression.
+- For the transcription tests: Whisper models. Run `tools\get-whisper-models.ps1` once (about 250 MB: the base and small models, checksum-verified, into the git-ignored `tools\whisper`); without them those tests skip. The app itself downloads the model a user picks the first time it is needed.
 
 ## Build, test, run
 
@@ -252,7 +254,13 @@ Tray › **Video Editor** › **Open a Recording or Project…** (or **Edit the 
 - **Speed and transitions**: a clip's speed (0.25× to 8×; the sound keeps its pitch) or a speed that changes along it; Edit › **Freeze the Frame at the Playhead** (2 s, the sound waits); Edit › **Crossfade into the Next Clip** (1 s); fades in and out. What follows moves with them.
 - **Effects from the metadata** (Insert › Click Highlights, Keystrokes, Pointer Effects): rings at the clicks, the keys pressed, a halo or spotlight around the pointer; when the pointer isn't in the pictures, also a bigger pointer, a smoother path and hiding it when it stands still. They follow the pictures through cuts and speed changes.
 - **Projects**: File › **Save Project** writes `name.cgcap` (the edits; the media stays where it is, found again by its path or next to the project). **Save with Media…** puts the recordings inside, to take the project to another PC. Undo and redo (Ctrl+Z, Ctrl+Y) cover every edit.
-- **Export** (Ctrl+E): MP4 H.264 at 1080p, 720p or the project's size, MP4 HEVC, WebM with VP9 or AV1, or the sound alone as M4A or MP3, at Small, Balanced, High or Near lossless. It runs in the background with the time left and Cancel, using the graphics card's encoder when there is one (as recording does). An existing file is only replaced through the Browse dialog.
+- **Zooms** (Insert › Zoom, or the Zoom button): the screen zooms in (2× by default) over the zoom's time and back out, following the pointer from the recording's metadata smoothly (it moves when the pointer nears the edge of the view), or staying on a place. Zooms close together pan from one to the next. Select a zoom to see the whole picture with its frame: drag the frame to place it, its corner to zoom more or less; the panel sets the zoom, the place and how long it takes to zoom in and out. The clicks and the pointer from the metadata zoom with the pictures; the webcam, annotations and captions stay as they are.
+- **Auto-Zoom** (Insert › Auto-Zoom from Clicks and Typing): zooms around each group of clicks and typing in the recording's metadata, following the pointer, on a "Zoom" track. Running it again replaces its own zooms and keeps the ones you changed.
+- **Captions**: Insert › **Captions from Speech…** (or the Captions button) listens to a sound track (the microphone first) on this PC with Whisper and puts captions with their times on a new caption track: the language found out from the speech or set (English, Arabic), the model (Base 57 MB, Small 181 MB, Medium 514 MB, downloaded the first time it is used), on the graphics card when it can (Vulkan). Insert › **Caption** adds one to type. Select a caption to edit its text, split it at the playhead or merge it with the next; the panel also sets the track's look (font, size, colours, box, top or bottom). File › **Import Captions…** reads SRT and WebVTT files; **Save Captions…** writes them.
+- **Export** (Ctrl+E): MP4 H.264 at 1080p, 720p or the project's size, MP4 HEVC, WebM with VP9 or AV1, an animated GIF, or the sound alone as M4A or MP3, at Small, Balanced, High or Near lossless. It runs in the background with the time left and Cancel, using the graphics card's encoder when there is one (as recording does). An existing file is only replaced through the Browse dialog.
+  - **The marked range only**, when a range is marked.
+  - **Captions** are burned into the pictures (the caption tracks that are shown; Arabic right to left), and can also be saved beside the file as SRT and WebVTT.
+  - **GIF**: frames a second (15), width (800 px, at most the project's), dithering (a fine pattern for screens, diffusion for video, none), a size to stay under (it is made again with fewer colours, frames or pixels until it fits) and whether it plays over and over. A 10 s screen recording comes to about 1 MB. The recording workflow's **Make a GIF** step makes `name.gif` beside each recording with the same choices.
 
 ## Capture Text
 
@@ -317,16 +325,18 @@ src/CashGear.Capture.Media      FFmpeg in-process (FFmpeg.AutoGen): encoders, cr
 src/CashGear.Capture.Audio      Sound devices: WASAPI capture with Windows' timestamps, devices followed, process loopback, microphone chain, RNNoise, meters
 src/CashGear.Capture.Overlays   Recording overlays: input hooks + keystroke privacy (UI Automation), pointer shapes, Direct2D compositor, webcam (Windows.Media.Capture)
 src/CashGear.Capture.Recording  Screen recording: timestamped WGC pictures + sound -> overlays on the GPU -> encoders -> temp file -> MP4; webcam track; recovery; adding overlays later
-src/CashGear.Capture.VideoEditor  Video editor core: projects (.cgcap), undo, timeline edits, decoding for the preview, the sound mixer and playback, the Skia compositor (preview and export), metadata effects, export
+src/CashGear.Capture.VideoEditor  Video editor core: projects (.cgcap), undo, timeline edits, decoding for the preview, the sound mixer and playback, the Skia compositor (preview and export), metadata effects, zooms and auto-zoom, captions (SRT/WebVTT), export (GIF too)
+src/CashGear.Capture.Transcription  Speech to text: Whisper (whisper.cpp through Whisper.net) on the processor or the graphics card (Vulkan), models downloaded and checked
 tools/get-ffmpeg.ps1            Downloads the pinned LGPL FFmpeg build into tools/ffmpeg (not committed)
 tools/get-rnnoise.ps1           Builds rnnoise.dll from the pinned RNNoise source into tools/rnnoise (not committed; needs MSVC)
+tools/get-whisper-models.ps1    Downloads the Whisper models the transcription tests use into tools/whisper (not committed)
 tools/SyncTest                  Recording acceptance test: flashes + beeps, then sync, drift, CPU (docs/TESTING.md)
 tools/licenses                  License texts shipped with FFmpeg
 tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
 tools/make-icon.ps1             Draws the app icon
 src/CashGear.Capture.Outputs    Output destinations: registry, workflow runner, Word/PowerPoint (Open XML), PDF (Skia), FTP/FTPS (FluentFTP), SFTP (SSH.NET), HTTP upload, open with, DPAPI secrets
 src/CashGear.Capture.App        WPF app: tray, capture toolbar, screen tools, image tools (batch, combine, PDF), windows, view models, output (editor, file, clipboard, printer)
-tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, Overlays, Outputs, VideoEditor, App); the Outputs tests run their own FTP, SFTP and HTTP servers on 127.0.0.1
+tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, Overlays, Outputs, VideoEditor, Transcription, App); the Outputs tests run their own FTP, SFTP and HTTP servers on 127.0.0.1
 ```
 
 ## Files on disk
@@ -342,8 +352,10 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | A recording's metadata (pointer, clicks, keys) | `name.cgmeta.json` next to the recording |
 | Video projects | `name.cgcap` where you save them (a zip: `project.json`, and `media\` with Save with Media) |
 | The video editor's thumbnails and waveforms, and media unpacked from projects | `%LocalAppData%\CashGear\Capture\VideoEditor\` |
+| Speech models for captions (downloaded when first used) | `%LocalAppData%\CashGear\Capture\Models\Whisper\` (or a `models\` folder next to the app) |
+| Captions saved with an export, GIFs made by the recording workflow | beside the exported file or the recording (`name.srt`, `name.vtt`, `name.gif`) |
 | Effect and watermark presets, and the image tools' last choices | `%AppData%\CashGear\Capture\presets.json` |
-| What the app remembers (the last capture, the toolbar's and ruler's places, picked colours, the magnifier's zoom, the video editor's export choices, recent projects and last recording) | `%LocalAppData%\CashGear\Capture\state.json` |
+| What the app remembers (the last capture, the toolbar's and ruler's places, picked colours, the magnifier's zoom, the video editor's export, GIF and caption choices, recent projects and last recording) | `%LocalAppData%\CashGear\Capture\state.json` |
 | Passwords and tokens of the destinations (DPAPI, this Windows user only) | `%LocalAppData%\CashGear\Capture\secrets.json` |
 | Captures on their way to an upload or app (deleted after each workflow; copies opened in apps after a day) | `%LocalAppData%\CashGear\Capture\outgoing\` |
 | Installed app (Setup.exe) | `%LocalAppData%\CashGear.Capture\` (removed by uninstall; the rows above are kept) |
