@@ -63,6 +63,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly ImageTools.ImageToolWindows _imageTools;
     private readonly TimeProvider _time;
     private readonly VideoEditor.VideoEditorWindows _videoEditors;
+    private readonly Diagnostics.DiagnosticsService? _diagnostics;
 
     public TrayViewModel(
         CaptureCoordinator coordinator,
@@ -83,8 +84,10 @@ public sealed partial class TrayViewModel : ObservableObject
         Tools.ScreenTools tools,
         TimeProvider time,
         ImageTools.ImageToolWindows imageTools,
-        VideoEditor.VideoEditorWindows videoEditors)
+        VideoEditor.VideoEditorWindows videoEditors,
+        Diagnostics.DiagnosticsService? diagnostics = null)
     {
+        _diagnostics = diagnostics;
         _imageTools = imageTools;
         _videoEditors = videoEditors;
         _toolbar = toolbar;
@@ -238,6 +241,10 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [RelayCommand]
     private void OpenSettings() => _settingsWindow.Show();
+
+    /// <summary>A zip of the logs, the settings without secrets and facts about this PC, for a bug report.</summary>
+    [RelayCommand]
+    private Task ExportDiagnosticsAsync() => _diagnostics?.ExportAsync() ?? Task.CompletedTask;
 
     /// <summary>The floating capture toolbar is showing.</summary>
     public bool IsToolbarVisible => _toolbar.IsVisible;

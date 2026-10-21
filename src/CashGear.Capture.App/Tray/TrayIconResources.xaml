@@ -86,6 +86,7 @@
         <MenuItem Header="{Binding UpdateText}" Command="{Binding RestartToUpdateCommand}"
                   Visibility="{Binding IsUpdateReady, Converter={StaticResource TrayVisible}}" />
         <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" />
+        <MenuItem Header="Export _Diagnostics…" Command="{Binding ExportDiagnosticsCommand}" />
         <Separator />
         <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
       </ContextMenu>

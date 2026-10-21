@@ -90,6 +90,8 @@ internal static class AppHost
         builder.Services.AddSingleton<VideoEditor.VideoEditorWindows>();
         builder.Services.AddSingleton<VideoEditor.IVideoEditorLauncher>(sp => sp.GetRequiredService<VideoEditor.VideoEditorWindows>());
         builder.Services.AddSingleton<InterruptedRecordings>();
+        builder.Services.AddSingleton<Diagnostics.DiagnosticsExporter>();
+        builder.Services.AddSingleton<Diagnostics.DiagnosticsService>();
         builder.Services.AddSingleton<ToolStyleMemory>();
         builder.Services.AddSingleton<CashGear.Capture.Editor.Presets.IPresetStore, CashGear.Capture.Editor.Presets.JsonPresetStore>();
         builder.Services.AddSingleton<EditorWindowService>();

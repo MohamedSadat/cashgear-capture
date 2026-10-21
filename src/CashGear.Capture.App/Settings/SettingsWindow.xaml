@@ -1071,6 +1071,8 @@
           <TextBlock Style="{StaticResource Section}" Text="Advanced" />
           <Button Content="Open settings file" Command="{Binding OpenSettingsFileCommand}" HorizontalAlignment="Left" />
           <TextBlock Style="{StaticResource Hint}" Text="Edits saved in the file apply immediately." />
+          <Button Content="Export diagnostics…" Command="{Binding ExportDiagnosticsCommand}" HorizontalAlignment="Left" Margin="0,10,0,0" />
+          <TextBlock Style="{StaticResource Hint}" Text="Saves a zip for a bug report: the last week's logs, the settings without server addresses, user names or passwords, and facts about this PC (Windows, graphics cards, monitors, sound devices). Nothing is sent anywhere." />
         </StackPanel>
         </ScrollViewer>
       </TabItem>

@@ -1,9 +1,8 @@
-using System.Globalization;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Engine.Diagnostics;
 using CashGear.Capture.Media;
 using Microsoft.Extensions.Logging;
-using Vortice.DXGI;
 
 namespace CashGear.Capture.Recording;
 
@@ -100,32 +99,8 @@ internal sealed partial class EncoderService : IRecordingEncoders
     /// <summary>What detection results depend on: FFmpeg, every hardware adapter with its driver version, and Windows.</summary>
     internal static string CacheKey(string? ffmpegVersion)
     {
-        var adapters = new List<string>();
-        try
-        {
-            using var factory = DXGI.CreateDXGIFactory1<IDXGIFactory1>();
-            for (uint i = 0; factory.EnumAdapters1(i, out var adapter).Success; i++)
-            {
-                using (adapter)
-                {
-                    var description = adapter.Description1;
-                    if ((description.Flags & AdapterFlags.Software) != 0)
-                    {
-                        continue;
-                    }
-
-                    var driver = adapter.CheckInterfaceSupport(typeof(IDXGIDevice).GUID, out var version).Success
-                        ? string.Join('.', (version >> 48) & 0xFFFF, (version >> 32) & 0xFFFF, (version >> 16) & 0xFFFF, version & 0xFFFF)
-                        : "?";
-                    adapters.Add(string.Create(CultureInfo.InvariantCulture, $"{description.Description} {description.VendorId:X4}:{description.DeviceId:X4} {driver}"));
-                }
-            }
-        }
-        catch (Exception e) when (e is SharpGen.Runtime.SharpGenException or System.Runtime.InteropServices.COMException)
-        {
-            adapters.Add("adapters unknown");
-        }
-
+        var all = GraphicsAdapters.List();
+        var adapters = all.Count == 0 ? ["adapters unknown"] : all.Where(a => !a.IsSoftware).Select(a => a.ToString()).ToList();
         return $"ffmpeg {ffmpegVersion}|{string.Join(";", adapters)}|windows {Environment.OSVersion.Version}";
     }
 

@@ -54,6 +54,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly IAudioMonitor? _monitor;
     private readonly DestinationRegistry? _registry;
     private readonly SynchronizationContext? _context;
+    private readonly Diagnostics.DiagnosticsService? _diagnostics;
     private Task _monitorWork = Task.CompletedTask;
     private bool _monitoring;
     private float[]? _testRecording;
@@ -79,8 +80,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         DestinationRegistry? destinations = null,
         ICredentialStore? credentials = null,
         IPrinter? printer = null,
-        IFilePicker? filePicker = null)
+        IFilePicker? filePicker = null,
+        Diagnostics.DiagnosticsService? diagnostics = null)
     {
+        _diagnostics = diagnostics;
         _registry = destinations;
         Destinations = new DestinationsViewModel(credentials, filePicker, printer) { Tester = TestDestinationAsync };
         CaptureWorkflow = new WorkflowListViewModel(() => Available(video: false));
@@ -861,6 +864,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenSettingsFile() =>
         Process.Start(new ProcessStartInfo("notepad.exe", $"\"{_paths.SettingsFile}\"") { UseShellExecute = true })?.Dispose();
+
+    /// <summary>A zip of the logs, the settings without secrets and facts about this PC, for a bug report.</summary>
+    [RelayCommand]
+    private Task ExportDiagnosticsAsync() => _diagnostics?.ExportAsync() ?? Task.CompletedTask;
 
     private bool CanSave() => !HasErrors;
 
