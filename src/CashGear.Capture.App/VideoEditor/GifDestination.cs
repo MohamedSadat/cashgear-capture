@@ -1,7 +1,9 @@
 using System.IO;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Licensing;
 using CashGear.Capture.Media;
 using CashGear.Capture.Outputs;
 using CashGear.Capture.VideoEditor.Export;
@@ -28,7 +30,7 @@ public static class GifChoices
 /// A recording-workflow step: the saved recording is also made into an animated GIF beside it (<c>name.gif</c>, or
 /// <c>name (2).gif</c> when that is taken), with the GIF choices the export window last used.
 /// </summary>
-internal sealed class GifDestination(ProjectExporter exporter, FfmpegRuntime ffmpeg, IAppStateStore state) : IOutputDestination
+internal sealed class GifDestination(ProjectExporter exporter, FfmpegRuntime ffmpeg, IAppStateStore state, IFeatureGate? features = null) : IOutputDestination
 {
     public string Id => DestinationIds.Gif;
 
@@ -42,6 +44,11 @@ internal sealed class GifDestination(ProjectExporter exporter, FfmpegRuntime ffm
         if (item.Kind != OutputKind.Video || item.SavedPath is not { } path)
         {
             return OutputResult.Skip("GIFs are made from recordings only.");
+        }
+
+        if (!(features ?? FeatureGate.Open).IsEnabled(ProFeature.GifExport))
+        {
+            return OutputResult.Skip(CommonText.ProOnly);
         }
 
         if (ffmpeg.Problem is { } problem)

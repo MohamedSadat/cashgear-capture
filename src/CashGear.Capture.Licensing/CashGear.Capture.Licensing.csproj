@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Licences, checked offline: a licence file is signed (Ed25519) by the seller's private key and checked with the
+    public key built into the app; activating it on a PC gets a signed token bound to that PC from an activation
+    endpoint, refreshed now and then, with a grace period when the endpoint can't be reached. No WPF.
+    In this version every feature is free (FeaturePolicy.AllFree); the app asks for no licence.
+  -->
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CashGear.Capture.Licensing.Tests" />
+    <InternalsVisibleTo Include="CashGear.Capture.LicenseTool" />
+  </ItemGroup>
+
+</Project>

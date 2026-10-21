@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CashGear.Capture.Licensing\CashGear.Capture.Licensing.csproj" />
+    <ProjectReference Include="..\..\tools\LicenseTool\CashGear.Capture.LicenseTool.csproj" />
+  </ItemGroup>
+
+</Project>

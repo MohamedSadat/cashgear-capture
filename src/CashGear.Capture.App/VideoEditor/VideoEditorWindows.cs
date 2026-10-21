@@ -5,6 +5,7 @@ using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Licensing;
 using CashGear.Capture.Media;
 using CashGear.Capture.Outputs;
 using CashGear.Capture.Transcription;
@@ -55,7 +56,8 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         ITrayNotifier notifier,
         ILoggerFactory loggers,
         ITranscriber transcriber,
-        WhisperModelStore models)
+        WhisperModelStore models,
+        IFeatureGate? features = null)
     {
         _ui = ui;
         _settings = settings;
@@ -65,7 +67,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         _notifier = notifier;
         _loggers = loggers;
         _logger = loggers.CreateLogger<VideoEditorWindows>();
-        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models);
+        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models, Features: features);
     }
 
     public int OpenCount => _windows.Count;

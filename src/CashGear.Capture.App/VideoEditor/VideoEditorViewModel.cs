@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using System.IO;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Licensing;
 using CashGear.Capture.Media;
 using CashGear.Capture.Transcription;
 using CashGear.Capture.VideoEditor.Editing;
@@ -54,8 +56,12 @@ public sealed record VideoEditorServices(
     Func<IAudioOutput?> AudioOutput,
     VideoDecoding Decoding = VideoDecoding.Hardware,
     ITranscriber? Transcriber = null,
-    WhisperModelStore? Models = null)
+    WhisperModelStore? Models = null,
+    IFeatureGate? Features = null)
 {
+    /// <summary>Which Pro features may be used (all of them in this version).</summary>
+    public IFeatureGate Gate => Features ?? FeatureGate.Open;
+
     /// <summary>Where embedded media is unpacked and thumbnails are kept.</summary>
     public string CacheDirectory => Path.Combine(Paths.DataDirectory, "VideoEditor");
 }
@@ -602,12 +608,31 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             _services.State,
             _services.Shell,
             _services.Loggers.CreateLogger<ExportViewModel>(),
-            MarkedRange());
+            MarkedRange(),
+            _services.Gate);
         _dialogs.ShowExport(viewModel);
     }
 
+    /// <summary>Whether <paramref name="feature"/> may be used; says it is part of Pro when it can't.</summary>
+    private bool Allowed(ProFeature feature)
+    {
+        if (_services.Gate.IsEnabled(feature))
+        {
+            return true;
+        }
+
+        _dialogs.ShowError(CommonText.ProOnly);
+        return false;
+    }
+
     [RelayCommand]
-    private void InsertCaption() => AddCaption();
+    private void InsertCaption()
+    {
+        if (Allowed(ProFeature.Captions))
+        {
+            AddCaption();
+        }
+    }
 
     /// <summary>A caption over the marked range (else from the playhead for 3 s), selected so its text can be typed.</summary>
     public string AddCaption()
@@ -627,7 +652,13 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void Transcribe() => OpenTranscribe();
+    private void Transcribe()
+    {
+        if (Allowed(ProFeature.Captions))
+        {
+            OpenTranscribe();
+        }
+    }
 
     /// <summary>
     /// Captions from Speech: the window that makes them (over the marked range, if there is one); the captions it
@@ -657,6 +688,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ImportCaptions()
     {
+        if (!Allowed(ProFeature.Captions))
+        {
+            return;
+        }
+
         var path = _dialogs.PickMedia("Import captions", "Subtitles (*.srt;*.vtt)|*.srt;*.vtt|All files (*.*)|*.*", Folder());
         if (path is null)
         {
@@ -788,28 +824,36 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void InsertText() => Insert(AnnotationShape.Text);
+    private void InsertText() => InsertAnnotation(AnnotationShape.Text);
 
     [RelayCommand]
-    private void InsertArrow() => Insert(AnnotationShape.Arrow);
+    private void InsertArrow() => InsertAnnotation(AnnotationShape.Arrow);
 
     [RelayCommand]
-    private void InsertLine() => Insert(AnnotationShape.Line);
+    private void InsertLine() => InsertAnnotation(AnnotationShape.Line);
 
     [RelayCommand]
-    private void InsertRectangle() => Insert(AnnotationShape.Rectangle);
+    private void InsertRectangle() => InsertAnnotation(AnnotationShape.Rectangle);
 
     [RelayCommand]
-    private void InsertEllipse() => Insert(AnnotationShape.Ellipse);
+    private void InsertEllipse() => InsertAnnotation(AnnotationShape.Ellipse);
 
     [RelayCommand]
-    private void InsertHighlight() => Insert(AnnotationShape.Highlight);
+    private void InsertHighlight() => InsertAnnotation(AnnotationShape.Highlight);
 
     [RelayCommand]
-    private void InsertBlur() => Insert(AnnotationShape.Blur);
+    private void InsertBlur() => InsertAnnotation(AnnotationShape.Blur);
 
     [RelayCommand]
-    private void InsertPixelate() => Insert(AnnotationShape.Pixelate);
+    private void InsertPixelate() => InsertAnnotation(AnnotationShape.Pixelate);
+
+    private void InsertAnnotation(AnnotationShape shape)
+    {
+        if (Allowed(ProFeature.VideoEditorAnnotations))
+        {
+            Insert(shape);
+        }
+    }
 
     /// <summary>
     /// A new annotation over the marked range (else from the playhead for 3 s), selected so the panel and the preview
@@ -832,7 +876,13 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void InsertZoom() => AddZoom();
+    private void InsertZoom()
+    {
+        if (Allowed(ProFeature.AutoZoom))
+        {
+            AddZoom();
+        }
+    }
 
     /// <summary>
     /// A zoom over the marked range (else from the playhead for 3 s), following the pointer when a recording has
@@ -856,7 +906,13 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void MakeAutoZooms() => AutoZoomFromInput();
+    private void MakeAutoZooms()
+    {
+        if (Allowed(ProFeature.AutoZoom))
+        {
+            AutoZoomFromInput();
+        }
+    }
 
     /// <summary>
     /// Zooms around the clicks and typing in the recordings' metadata (replacing Auto-Zoom's earlier ones), as one
@@ -880,13 +936,21 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void InsertClicks() => InsertEffect(EffectKind.Clicks);
+    private void InsertClicks() => InsertMetadataEffect(EffectKind.Clicks);
 
     [RelayCommand]
-    private void InsertKeystrokes() => InsertEffect(EffectKind.Keystrokes);
+    private void InsertKeystrokes() => InsertMetadataEffect(EffectKind.Keystrokes);
 
     [RelayCommand]
-    private void InsertPointer() => InsertEffect(EffectKind.Pointer);
+    private void InsertPointer() => InsertMetadataEffect(EffectKind.Pointer);
+
+    private void InsertMetadataEffect(EffectKind kind)
+    {
+        if (Allowed(ProFeature.VideoEditorEffects))
+        {
+            InsertEffect(kind);
+        }
+    }
 
     /// <summary>An effect from the recordings' metadata over the marked range (else the whole timeline), selected.</summary>
     public string InsertEffect(EffectKind kind)
@@ -921,6 +985,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void FreezeFrame()
     {
+        if (!Allowed(ProFeature.VideoEditorSpeed))
+        {
+            return;
+        }
+
         StopPlaying();
         History.Apply("freeze frame", TransitionEdits.Freeze(Project, Times.FrameStart(Timeline.Playhead, Project.Canvas.Fps)));
     }
@@ -938,6 +1007,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     /// <summary>Changes a clip's speed (and its linked clips'); what follows moves with its new length.</summary>
     public void SetSpeed(string clipId, double speed, double? endSpeed, string mergeKey)
     {
+        if (!Allowed(ProFeature.VideoEditorSpeed))
+        {
+            return;
+        }
+
         StopPlaying();
         var after = TransitionEdits.SetSpeed(Project, clipId, speed, endSpeed);
         _applied = after.Find(clipId)?.Item; // the panel stays while its own slider moves
@@ -954,6 +1028,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
     public void CrossfadeFrom(string clipId)
     {
+        if (!Allowed(ProFeature.VideoEditorSpeed))
+        {
+            return;
+        }
+
         StopPlaying();
         _shown = null; // the panel's button becomes "Remove the crossfade"
         History.Apply("crossfade", TransitionEdits.Crossfade(Project, clipId));

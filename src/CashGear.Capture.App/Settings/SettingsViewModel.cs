@@ -91,8 +91,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         SettingsFiles? files = null,
         ISettingsFileDialogs? fileDialogs = null,
         ReleaseNotes? releaseNotes = null,
-        Diagnostics.CrashReporter? crashReports = null)
+        Diagnostics.CrashReporter? crashReports = null,
+        LicenseService? license = null)
     {
+        LicenseText = license?.Summary ?? CommonText.AllFeaturesIncluded;
         _releaseNotes = releaseNotes;
         CrashReportsAvailable = crashReports?.IsAvailable == true;
         CrashReportsText = CrashReportsAvailable ? DiagnosticsText.CrashReportsHint : DiagnosticsText.NoCrashReportAddress;
@@ -915,6 +917,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>A zip of the logs, the settings without secrets and facts about this PC, for a bug report.</summary>
     [RelayCommand]
     private Task ExportDiagnosticsAsync() => _diagnostics?.ExportAsync() ?? Task.CompletedTask;
+
+    /// <summary>What the licence unlocks (Settings › General › Licence).</summary>
+    public string LicenseText { get; }
 
     /// <summary>Whether this copy has somewhere to send crash reports (Settings › General › Privacy).</summary>
     public bool CrashReportsAvailable { get; }

@@ -4,6 +4,7 @@ using CashGear.Capture.App.VideoEditor;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Licensing;
 using CashGear.Capture.Outputs;
 using CashGear.Capture.Outputs.Credentials;
 using Microsoft.Extensions.Logging;
@@ -21,7 +22,8 @@ public sealed partial class AppDestinations(
     IVideoEditorLauncher? videoEditor = null,
     CashGear.Capture.VideoEditor.Export.ProjectExporter? exporter = null,
     CashGear.Capture.Media.FfmpegRuntime? ffmpeg = null,
-    IAppStateStore? state = null) : IDestinationSource
+    IAppStateStore? state = null,
+    IFeatureGate? features = null) : IDestinationSource
 {
     public IEnumerable<IOutputDestination> Create(AppSettings settings, ICredentialStore credentials)
     {
@@ -34,7 +36,7 @@ public sealed partial class AppDestinations(
 
         if (exporter is not null && ffmpeg is not null && state is not null)
         {
-            yield return new GifDestination(exporter, ffmpeg, state);
+            yield return new GifDestination(exporter, ffmpeg, state, features ?? FeatureGate.Open);
         }
         yield return new FileDestination(settings.Output, paths.ResolveCaptureDirectory(settings.Output), output, counter, this);
         yield return new ClipboardDestination(output);

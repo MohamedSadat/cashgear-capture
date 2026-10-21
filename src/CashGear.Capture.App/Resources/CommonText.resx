@@ -48,4 +48,20 @@
   <data name="Question" xml:space="preserve">
     <value>Question</value>
   </data>
+  <data name="AllFeaturesIncluded" xml:space="preserve">
+    <value>Every feature is included in this version.</value>
+  </data>
+  <data name="ProEdition" xml:space="preserve">
+    <value>CashGear Capture Pro: every feature is unlocked.</value>
+  </data>
+  <data name="FreeEdition" xml:space="preserve">
+    <value>The free edition: video editor annotations, speed and effects, zooms, captions and GIFs need Pro.</value>
+  </data>
+  <data name="ProOnly" xml:space="preserve">
+    <value>This is part of CashGear Capture Pro.</value>
+  </data>
+  <data name="LicenseSection" xml:space="preserve">
+    <value>Licence</value>
+    <comment>Settings &gt; General</comment>
+  </data>
 </root>

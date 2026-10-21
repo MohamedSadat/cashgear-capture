@@ -45,4 +45,19 @@
   <data name="Question" xml:space="preserve">
     <value>سؤال</value>
   </data>
+  <data name="AllFeaturesIncluded" xml:space="preserve">
+    <value>كل الميزات مشمولة في هذا الإصدار.</value>
+  </data>
+  <data name="ProEdition" xml:space="preserve">
+    <value>CashGear Capture Pro: كل الميزات مفتوحة.</value>
+  </data>
+  <data name="FreeEdition" xml:space="preserve">
+    <value>الإصدار المجاني: تحتاج التعليقات التوضيحية والسرعة والتأثيرات في محرر الفيديو، والتكبير، والتسميات التوضيحية، وملفات GIF إلى الإصدار Pro.</value>
+  </data>
+  <data name="ProOnly" xml:space="preserve">
+    <value>هذه الميزة جزء من CashGear Capture Pro.</value>
+  </data>
+  <data name="LicenseSection" xml:space="preserve">
+    <value>الترخيص</value>
+  </data>
 </root>

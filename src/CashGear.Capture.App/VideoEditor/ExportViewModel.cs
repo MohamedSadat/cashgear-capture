@@ -3,6 +3,7 @@ using System.IO;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Licensing;
 using CashGear.Capture.Media;
 using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Export;
@@ -46,8 +47,9 @@ public sealed partial class ExportViewModel : ObservableObject
     private CancellationTokenSource? _cancel;
     private string? _confirmed;
 
-    public ExportViewModel(VideoProject project, string name, string folder, ProjectExporter exporter, ISettingsService settings, IAppStateStore state, IShell shell, ILogger logger, TimeRange? range = null)
+    public ExportViewModel(VideoProject project, string name, string folder, ProjectExporter exporter, ISettingsService settings, IAppStateStore state, IShell shell, ILogger logger, TimeRange? range = null, IFeatureGate? features = null)
     {
+        Presets = (features ?? FeatureGate.Open).IsEnabled(ProFeature.GifExport) ? ExportPresets.All : [.. ExportPresets.All.Where(p => !p.IsGif)];
         _project = project;
         _range = range;
         _exporter = exporter;
@@ -56,7 +58,7 @@ public sealed partial class ExportViewModel : ObservableObject
         _shell = shell;
         _logger = logger;
         var remembered = state.Current.VideoEditor ?? new VideoEditorState();
-        _selectedPreset = ExportPresets.Find(remembered.ExportPreset) ?? ExportPresets.Mp4H264Hd;
+        _selectedPreset = Presets.FirstOrDefault(p => p == ExportPresets.Find(remembered.ExportPreset)) ?? ExportPresets.Mp4H264Hd;
         _quality = Qualities.FirstOrDefault(q => q.Value == remembered.ExportQuality) ?? Qualities[2];
         _path = System.IO.Path.Combine(folder, Safe(name) + _selectedPreset.Extension);
         _onlyRange = range is not null;
@@ -147,7 +149,8 @@ public sealed partial class ExportViewModel : ObservableObject
     /// <summary>How long the export is: the marked range, or the whole timeline.</summary>
     private double Duration => OnlyRange && _range is { } range ? Math.Min(range.To, _project.Duration) - range.From : _project.Duration;
 
-    public IReadOnlyList<ExportPreset> Presets => ExportPresets.All;
+    /// <summary>The kinds of file to export to (the GIF one only where GIFs may be made).</summary>
+    public IReadOnlyList<ExportPreset> Presets { get; }
 
     public IReadOnlyList<QualityChoice> Qualities { get; } =
     [
