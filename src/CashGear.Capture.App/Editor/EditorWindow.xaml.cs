@@ -169,6 +169,9 @@ public partial class EditorWindow : Window, IThemedWindow
         Key.B => EditorTool.Blur,
         Key.X => EditorTool.Pixelate,
         Key.C => EditorTool.Crop,
+        Key.M => EditorTool.Area,
+        Key.O => EditorTool.Spotlight,
+        Key.G => EditorTool.Magnify,
         _ => null,
     };
 
@@ -205,6 +208,9 @@ public partial class EditorWindow : Window, IThemedWindow
     /// <summary>Arabic or Hebrew text is typed right to left, as the annotation will show it (right-aligned).</summary>
     private void FollowTextDirection() =>
         TextEditor.FlowDirection = Bidi.IsRightToLeft(TextEditor.Text) ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+
+    /// <summary>Presets saved since the menu was last opened show up at once.</summary>
+    private void OnEffectsOpened(object sender, RoutedEventArgs e) => (DataContext as EditorViewModel)?.RefreshPresets();
 
     /// <summary>Destinations set up in Settings since the menu was last opened show up at once.</summary>
     private void OnSendToOpened(object sender, RoutedEventArgs e) => (DataContext as EditorViewModel)?.RefreshSendTargets();

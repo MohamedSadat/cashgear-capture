@@ -116,36 +116,6 @@ public sealed class ImageOperationsTests
         moved.Style.StrokeWidth.Should().Be(8);
     }
 
-    [Fact]
-    public void A_border_grows_the_canvas_and_shifts_annotations()
-    {
-        using var image = TestImages.Solid(10, 10, SKColors.White);
-        var rect = new RectangleAnnotation(new AnnotationId(1), Style, new SKRect(1, 1, 5, 5));
-
-        var bordered = ImageOperations.AddBorder(State(image, rect), 3, SKColors.Blue);
-
-        using var result = bordered.Image;
-        result.Width.Should().Be(16);
-        TestImages.Pixel(result, 0, 0).Should().Be(SKColors.Blue);
-        TestImages.Pixel(result, 15, 8).Should().Be(SKColors.Blue);
-        TestImages.Pixel(result, 3, 3).Should().Be(SKColors.White);
-        ((RectangleAnnotation)bordered.Annotations[0]).Rect.Should().Be(new SKRect(4, 4, 8, 8));
-    }
-
-    [Fact]
-    public void A_shadow_adds_a_transparent_margin_around_the_unchanged_image()
-    {
-        using var image = TestImages.Noise(30, 20);
-        var margin = DropShadow.MarginFor(DropShadow.DefaultRadius, DropShadow.DefaultOffsetY);
-
-        var shadowed = ImageOperations.AddShadow(State(image));
-
-        using var result = shadowed.Image;
-        result.Width.Should().Be(30 + (2 * margin));
-        TestImages.Pixel(result, 0, 0).Alpha.Should().Be(0);
-        TestImages.Pixel(result, margin + 5, margin + 7).Should().Be(TestImages.Pixel(image, 5, 7));
-        TestImages.Pixel(result, margin + 15, margin + 20 + 2).Alpha.Should().BeGreaterThan(0, "the shadow falls below the image");
-    }
 }
 
 public sealed class SkiaImagingTests
@@ -196,7 +166,8 @@ public sealed class SkiaImagingTests
 
         ImageOperations.Crop(state, SKRectI.Create(2, 2, 3, 3)).Image.Dispose();
         ImageOperations.Rotate(state, clockwise: false).Image.Dispose();
-        ImageOperations.AddBorder(state, 2, SKColors.Red).Image.Dispose();
+        ImageOperations.Flip(state, horizontal: true).Image.Dispose();
+        ImageOperations.CanvasSize(state, 12, 12, CashGear.Capture.Editor.Effects.Anchor.Center, SKColors.Red).Image.Dispose();
 
         TestImages.Bytes(image).Should().Equal(before);
     }

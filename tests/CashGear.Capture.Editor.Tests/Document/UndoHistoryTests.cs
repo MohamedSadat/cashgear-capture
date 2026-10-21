@@ -217,7 +217,7 @@ public sealed class ImageOwnershipTests
         var session = new EditorSession(doc);
         session.Rotate(clockwise: true);
         var rotated = doc.Image;
-        session.AddBorder(2, SKColors.Black);
+        session.ApplyEffects([new CashGear.Capture.Editor.Effects.BorderEffect(2, SKColors.Black)], toArea: false, SKColors.White);
         var bordered = doc.Image;
         session.Undo();
 

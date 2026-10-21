@@ -79,6 +79,7 @@ internal static class AppHost
         builder.Services.AddSingleton<AddOverlaysController>();
         builder.Services.AddSingleton<InterruptedRecordings>();
         builder.Services.AddSingleton<ToolStyleMemory>();
+        builder.Services.AddSingleton<CashGear.Capture.Editor.Presets.IPresetStore, CashGear.Capture.Editor.Presets.JsonPresetStore>();
         builder.Services.AddSingleton<EditorWindowService>();
         builder.Services.AddSingleton<IEditorLauncher>(sp => sp.GetRequiredService<EditorWindowService>());
         builder.Services.AddSingleton<IHotkeyService, Win32HotkeyService>();

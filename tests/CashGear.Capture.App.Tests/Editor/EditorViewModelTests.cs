@@ -250,7 +250,23 @@ internal sealed class FakeEditorDialogs : IEditorDialogs
 
     public SKSizeI? AskImageSize(SKSizeI current) => null;
 
-    public (int Thickness, SKColor Color)? AskBorder(SKColor suggested) => null;
+    /// <summary>What the Effects window does when shown (default: closed with Cancel).</summary>
+    public Func<EffectsViewModel, bool>? Effects { get; set; }
+
+    public Func<ParameterDialogViewModel, bool>? ImageDialog { get; set; }
+
+    public string? ImageFile { get; set; }
+
+    /// <summary>The name typed when asked (null: the suggestion).</summary>
+    public string? Name { get; set; }
+
+    public bool ShowEffects(EffectsViewModel viewModel) => Effects?.Invoke(viewModel) ?? false;
+
+    public bool ShowImageDialog(ParameterDialogViewModel viewModel) => ImageDialog?.Invoke(viewModel) ?? false;
+
+    public string? PickImageFile() => ImageFile;
+
+    public string? AskName(string title, string suggested) => Name ?? suggested;
 
     public SaveChangesChoice AskSaveChanges(string documentName)
     {

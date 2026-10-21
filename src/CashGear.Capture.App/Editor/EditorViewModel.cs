@@ -6,9 +6,11 @@ using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Document;
+using CashGear.Capture.Editor.Effects;
 using CashGear.Capture.Editor.Imaging;
 using CashGear.Capture.Editor.Interaction;
 using CashGear.Capture.Editor.Model;
+using CashGear.Capture.Editor.Presets;
 using CashGear.Capture.Editor.Rendering;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -41,6 +43,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     private readonly CaptureMetadata _metadata;
     private readonly ILogger<EditorViewModel> _logger;
     private readonly IEditorOutputs? _outputs;
+    private readonly IPresetStore? _presets;
     private IReadOnlyList<WorkflowStep> _pending;
     private bool _loadingPanel;
     private int _messageVersion;
@@ -57,10 +60,12 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         IEditorDialogs dialogs,
         ILogger<EditorViewModel> logger,
         IEditorOutputs? outputs = null,
-        IReadOnlyList<WorkflowStep>? pending = null)
+        IReadOnlyList<WorkflowStep>? pending = null,
+        IPresetStore? presets = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         _outputs = outputs;
+        _presets = presets;
         _pending = pending ?? [];
         _metadata = metadata;
         _filePath = filePath;
@@ -111,7 +116,10 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
 
     public string Title => $"{(IsDirty ? "• " : string.Empty)}{DocumentName} – CashGear Capture";
 
-    public string ImageSizeText => $"{Document.Width} × {Document.Height}";
+    /// <summary>The image's size, or the previewed one's while an image dialog is open.</summary>
+    public string ImageSizeText => Session.Preview is { } preview
+        ? $"{preview.Image.Width} × {preview.Image.Height}"
+        : $"{Document.Width} × {Document.Height}";
 
     public string ZoomText => $"{Viewport.Zoom * 100:0.#}%";
 
@@ -141,7 +149,12 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     /// <summary>What the panel edits: the selected annotation, or the next one the tool will draw.</summary>
     public string PanelTitle => Session.Selected is { } selected
         ? "Selected " + selected.Kind.DisplayName()
-        : Tool.Creates() is { } kind ? "New " + kind.DisplayName() : Tool == EditorTool.Crop ? "Crop" : "Select";
+        : Tool.Creates() is { } kind ? "New " + kind.DisplayName() : Tool switch
+        {
+            EditorTool.Crop => "Crop",
+            EditorTool.Area => "Area",
+            _ => "Select",
+        };
 
     public string ToolHint => Tool switch
     {
@@ -151,6 +164,9 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         EditorTool.Text => "Click to type. Click outside or press Esc to finish.",
         EditorTool.StepNumber => "Click to place the next number; drag a number to move it.",
         EditorTool.Crop => "Drag the area to keep, adjust it, then press Enter (Esc cancels).",
+        EditorTool.Area => "Drag over the part that the Effects menu should change (Esc clears it).",
+        EditorTool.Spotlight => "Drag over what to light up; the rest of the image is dimmed.",
+        EditorTool.Magnify => "Drag over the part to magnify. Drag the round callout to move it; its grip sets the zoom.",
         _ => "Drag to draw. Shift makes a square or circle.",
     };
 
@@ -172,7 +188,23 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
 
     public string FontSizeLabel => (Session.Selected?.Kind ?? Tool.Creates()) == AnnotationKind.StepNumber ? "Size" : "Font size";
 
-    public string StrengthLabel => (Session.Selected?.Kind ?? Tool.Creates()) == AnnotationKind.Pixelate ? "Cell size" : "Strength";
+    public string StrengthLabel => (Session.Selected?.Kind ?? Tool.Creates()) switch
+    {
+        AnnotationKind.Pixelate => "Cell size",
+        AnnotationKind.Magnify => "Zoom",
+        _ => "Strength",
+    };
+
+    private bool IsMagnifier => (Session.Selected?.Kind ?? Tool.Creates()) == AnnotationKind.Magnify;
+
+    public double StrengthMinimum => IsMagnifier ? MagnifyAnnotation.MinZoom : 2;
+
+    public double StrengthMaximum => IsMagnifier ? MagnifyAnnotation.MaxZoom : 40;
+
+    public double StrengthStep => IsMagnifier ? 0.5 : 1;
+
+    /// <summary>A spotlight's opacity is how dark the rest of the image gets.</summary>
+    public string OpacityLabel => (Session.Selected?.Kind ?? Tool.Creates()) == AnnotationKind.Spotlight ? "Dim" : "Opacity";
 
     [ObservableProperty]
     private SolidColorBrush _colorBrush = Brushes.Red;
@@ -308,6 +340,10 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowStrength));
         OnPropertyChanged(nameof(FontSizeLabel));
         OnPropertyChanged(nameof(StrengthLabel));
+        OnPropertyChanged(nameof(StrengthMinimum));
+        OnPropertyChanged(nameof(StrengthMaximum));
+        OnPropertyChanged(nameof(StrengthStep));
+        OnPropertyChanged(nameof(OpacityLabel));
     }
 
     // ---------------------------------------------------------------- edit commands
@@ -366,17 +402,70 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void AddBorder()
+    private void FlipHorizontal() => ImageEdit(() => Session.Flip(horizontal: true));
+
+    [RelayCommand]
+    private void FlipVertical() => ImageEdit(() => Session.Flip(horizontal: false));
+
+    /// <summary>Crops away plain borders around the picture, and says when there were none.</summary>
+    [RelayCommand]
+    private void AutoTrim() => ImageEdit(() => ShowMessage(Session.AutoTrim() ? $"Trimmed to {Document.Width} × {Document.Height}" : "There are no plain borders to trim"));
+
+    [RelayCommand]
+    private void CanvasSize() => ShowImageDialog(new CanvasSizeViewModel(Session));
+
+    [RelayCommand]
+    private void RotateBy() => ShowImageDialog(new RotateViewModel(Session));
+
+    /// <summary>The Effects window, starting with one effect (by its id, see <see cref="EffectItemViewModel.Kinds"/>) or none.</summary>
+    [RelayCommand]
+    private void OpenEffects(string? kind)
     {
         FinishTextEdit();
-        if (_dialogs.AskBorder(_styles.Get(EditorTool.Rectangle).Color) is { } border)
+        IEnumerable<ImageEffect> first = EffectItemViewModel.Kinds.FirstOrDefault(k => k.Id == kind) is { } found ? [found.Create()] : [];
+        var viewModel = new EffectsViewModel(Session, EffectContext(), first);
+        _ = viewModel.RefreshAsync();
+        if (!_dialogs.ShowEffects(viewModel))
         {
-            ImageEdit(() => Session.AddBorder(border.Thickness, border.Color));
+            viewModel.Cancel();
         }
     }
 
+    /// <summary>Grayscale has nothing to set: applied at once (to the selected area, if there is one).</summary>
     [RelayCommand]
-    private void AddShadow() => ImageEdit(Session.AddShadow);
+    private void Grayscale() => ImageEdit(() => Session.ApplyEffects([new GrayscaleEffect()], toArea: true, SKColors.White));
+
+    /// <summary>One entry of the Effects › Presets menu.</summary>
+    public sealed record PresetMenuItem(string Name, IRelayCommand Apply);
+
+    [ObservableProperty]
+    private IReadOnlyList<PresetMenuItem> _effectPresets = [];
+
+    public bool HasPresets => _presets is not null;
+
+    /// <summary>Lists the effect presets as they are now (called as the menu opens).</summary>
+    public void RefreshPresets() => EffectPresets = _presets is null
+        ? []
+        : [.. _presets.Current.EffectPresets.Select(p => new PresetMenuItem(p.Name, new RelayCommand(() => ApplyPreset(p))))];
+
+    /// <summary>A saved preset in one click, to the selected area if there is one.</summary>
+    public void ApplyPreset(EffectPreset preset)
+    {
+        ArgumentNullException.ThrowIfNull(preset);
+        ImageEdit(() => Session.ApplyEffects(preset.Effects, toArea: true, SKColors.White, preset.Name));
+    }
+
+    private void ShowImageDialog(ParameterDialogViewModel viewModel)
+    {
+        FinishTextEdit();
+        _ = viewModel.RefreshAsync();
+        if (!_dialogs.ShowImageDialog(viewModel))
+        {
+            viewModel.Cancel();
+        }
+    }
+
+    private EffectEditorContext EffectContext() => new(FontFamilies, _dialogs.PickImageFile, _dialogs.AskName, _presets);
 
     private void ImageEdit(Action edit)
     {
@@ -636,6 +725,10 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
 
     private void OnSessionInvalidated(object? sender, EventArgs e)
     {
+        // A previewed edit may have another size (a shadow's margin, a turned image).
+        var shown = Session.Preview?.Image ?? Document.Image;
+        Viewport.SetImageSize(new SKSizeI(shown.Width, shown.Height));
+        OnPropertyChanged(nameof(ImageSizeText));
         OnPropertyChanged(nameof(IsCropping));
         OnPropertyChanged(nameof(CropSizeText));
         ApplyCropCommand.NotifyCanExecuteChanged();

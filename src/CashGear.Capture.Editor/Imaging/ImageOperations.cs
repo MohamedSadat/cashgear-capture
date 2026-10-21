@@ -72,41 +72,6 @@ public static class ImageOperations
         return new DocumentState(image, Transform(state.Annotations, SKMatrix.CreateScale(sx, sy), (sx + sy) / 2));
     }
 
-    /// <summary>A solid frame of <paramref name="thickness"/> pixels around the image (the canvas grows; transparent parts stay transparent).</summary>
-    public static DocumentState AddBorder(DocumentState state, int thickness, SKColor color)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(thickness);
-        var w = state.Image.Width + (2 * thickness);
-        var h = state.Image.Height + (2 * thickness);
-        var image = SkiaImaging.Draw(w, h, c =>
-        {
-            using var paint = new SKPaint { Color = color, Style = SKPaintStyle.Fill };
-            c.DrawRect(0, 0, w, thickness, paint);
-            c.DrawRect(0, h - thickness, w, thickness, paint);
-            c.DrawRect(0, thickness, thickness, h - (2 * thickness), paint);
-            c.DrawRect(w - thickness, thickness, thickness, h - (2 * thickness), paint);
-            c.DrawImage(state.Image, thickness, thickness, Exact, null);
-        });
-        return new DocumentState(image, Transform(state.Annotations, SKMatrix.CreateTranslation(thickness, thickness), 1));
-    }
-
-    /// <summary>The same soft drop shadow as window captures (<see cref="DropShadow"/>), on a transparent margin.</summary>
-    public static DocumentState AddShadow(DocumentState state)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        var metadata = new CaptureMetadata
-        {
-            Kind = CaptureKind.Region,
-            SourceBounds = new PixelRect(0, 0, state.Image.Width, state.Image.Height),
-        };
-        using var source = SkiaImaging.ToCapturedImage(state.Image, metadata);
-        using var shadowed = DropShadow.Apply(source);
-        var margin = DropShadow.MarginFor(DropShadow.DefaultRadius, DropShadow.DefaultOffsetY);
-        var image = SkiaImaging.ToSKImage(shadowed);
-        return new DocumentState(image, Transform(state.Annotations, SKMatrix.CreateTranslation(margin, margin), 1));
-    }
-
     /// <summary>
     /// A canvas of <paramref name="width"/> × <paramref name="height"/> with the image placed at <paramref name="anchor"/>
     /// (the rest filled with <paramref name="background"/>); a smaller canvas cuts the image. Annotations move with

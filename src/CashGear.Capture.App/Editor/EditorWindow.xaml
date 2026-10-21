@@ -149,6 +149,27 @@
             <TextBlock Style="{StaticResource ToolLabel}" Text="Crop" />
           </StackPanel>
         </local:ToolButton>
+        <local:ToolButton ToolTip="Select an area for effects (M)"
+                     IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Area}}">
+          <StackPanel>
+            <Path Style="{StaticResource ToolIcon}" Data="M3,3 H7 M10,3 H13 M16,3 H17 V7 M17,10 V13 M17,16 V17 H13 M10,17 H7 M4,17 H3 V13 M3,10 V7 M3,4 V3" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="Area" />
+          </StackPanel>
+        </local:ToolButton>
+        <local:ToolButton ToolTip="Spotlight (O)"
+                     IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Spotlight}}">
+          <StackPanel>
+            <Path Style="{StaticResource ToolIcon}" Fill="#60808080" Data="M1,1 H19 V19 H1 Z M6,6 V14 H14 V6 Z" StrokeThickness="0.8" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="Spotlight" />
+          </StackPanel>
+        </local:ToolButton>
+        <local:ToolButton ToolTip="Magnify (G)"
+                     IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Magnify}}">
+          <StackPanel>
+            <Path Style="{StaticResource ToolIcon}" Data="M2,14 A2.5,2.5 0 1 1 7,14 A2.5,2.5 0 1 1 2,14 Z M6.5,12 L9.5,9.5 M9,7 A5,5 0 1 1 19,7 A5,5 0 1 1 9,7 Z" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="Magnify" />
+          </StackPanel>
+        </local:ToolButton>
 
         <Rectangle Width="1" Margin="8,4" Fill="#40808080" />
 
@@ -158,10 +179,38 @@
           <MenuItem Header="Image ▾">
             <MenuItem Header="Rotate left" Command="{Binding RotateLeftCommand}" />
             <MenuItem Header="Rotate right" Command="{Binding RotateRightCommand}" />
+            <MenuItem Header="Rotate by an angle…" Command="{Binding RotateByCommand}" />
+            <MenuItem Header="Flip horizontally" Command="{Binding FlipHorizontalCommand}" />
+            <MenuItem Header="Flip vertically" Command="{Binding FlipVerticalCommand}" />
             <Separator />
             <MenuItem Header="Resize…" Command="{Binding ResizeImageCommand}" />
-            <MenuItem Header="Add border…" Command="{Binding AddBorderCommand}" />
-            <MenuItem Header="Add shadow" Command="{Binding AddShadowCommand}" />
+            <MenuItem Header="Canvas size…" Command="{Binding CanvasSizeCommand}" />
+            <MenuItem Header="Trim plain borders" Command="{Binding AutoTrimCommand}" />
+          </MenuItem>
+          <MenuItem Header="Effects ▾" SubmenuOpened="OnEffectsOpened" AutomationProperties.Name="Effects"
+                    ToolTip="Effects change the whole image, or the area selected with the Area tool">
+            <MenuItem Header="Drop shadow…" Command="{Binding OpenEffectsCommand}" CommandParameter="shadow" />
+            <MenuItem Header="Torn edge…" Command="{Binding OpenEffectsCommand}" CommandParameter="tornEdge" />
+            <MenuItem Header="Faded edges…" Command="{Binding OpenEffectsCommand}" CommandParameter="fadeEdge" />
+            <MenuItem Header="Border…" Command="{Binding OpenEffectsCommand}" CommandParameter="border" />
+            <MenuItem Header="Rounded corners…" Command="{Binding OpenEffectsCommand}" CommandParameter="roundedCorners" />
+            <MenuItem Header="Perspective…" Command="{Binding OpenEffectsCommand}" CommandParameter="perspective" />
+            <Separator />
+            <MenuItem Header="Brightness and contrast…" Command="{Binding OpenEffectsCommand}" CommandParameter="adjust" />
+            <MenuItem Header="Grayscale" Command="{Binding GrayscaleCommand}" />
+            <MenuItem Header="Sharpen…" Command="{Binding OpenEffectsCommand}" CommandParameter="sharpen" />
+            <Separator />
+            <MenuItem Header="Watermark…" Command="{Binding OpenEffectsCommand}" CommandParameter="watermark" />
+            <Separator />
+            <MenuItem Header="Presets" ItemsSource="{Binding EffectPresets}" Visibility="{Binding HasPresets, Converter={StaticResource Visible}}">
+              <MenuItem.ItemContainerStyle>
+                <Style TargetType="MenuItem">
+                  <Setter Property="Header" Value="{Binding Name}" />
+                  <Setter Property="Command" Value="{Binding Apply}" />
+                </Style>
+              </MenuItem.ItemContainerStyle>
+            </MenuItem>
+            <MenuItem Header="Effects and presets…" Command="{Binding OpenEffectsCommand}" />
           </MenuItem>
         </Menu>
 
@@ -293,12 +342,13 @@
               <Run Text="{Binding StrengthLabel, Mode=OneWay}" /><Run Text=":" />
               <Run Text="{Binding Strength, Mode=OneWay}" />
             </TextBlock>
-            <Slider Minimum="2" Maximum="40" Value="{Binding Strength}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="Strength" />
+            <Slider Minimum="{Binding StrengthMinimum}" Maximum="{Binding StrengthMaximum}" Value="{Binding Strength}" IsSnapToTickEnabled="True"
+                    TickFrequency="{Binding StrengthStep}" AutomationProperties.Name="{Binding StrengthLabel}" />
           </StackPanel>
 
           <StackPanel Visibility="{Binding ShowOpacity, Converter={StaticResource Visible}}">
             <TextBlock Style="{StaticResource Section}">
-              <Run Text="Opacity:" />
+              <Run Text="{Binding OpacityLabel, Mode=OneWay}" /><Run Text=":" />
               <Run Text="{Binding Opacity, Mode=OneWay}" /><Run Text="%" />
             </TextBlock>
             <Slider Minimum="10" Maximum="100" Value="{Binding Opacity}" IsSnapToTickEnabled="True" TickFrequency="5" AutomationProperties.Name="Opacity" />

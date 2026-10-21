@@ -27,7 +27,17 @@ public interface IEditorDialogs
 
     SKSizeI? AskImageSize(SKSizeI current);
 
-    (int Thickness, SKColor Color)? AskBorder(SKColor suggested);
+    /// <summary>Shows the Effects window (modal); true when the user applied the effects.</summary>
+    bool ShowEffects(EffectsViewModel viewModel);
+
+    /// <summary>Shows a small image dialog (canvas size, rotate; modal); true when applied.</summary>
+    bool ShowImageDialog(ParameterDialogViewModel viewModel);
+
+    /// <summary>A picture file (for a watermark), or null if the user cancelled.</summary>
+    string? PickImageFile();
+
+    /// <summary>A name (for a preset), or null if the user cancelled.</summary>
+    string? AskName(string title, string suggested);
 
     SaveChangesChoice AskSaveChanges(string documentName);
 
@@ -67,12 +77,32 @@ internal sealed class WpfEditorDialogs(Window owner, AppTheme theme) : IEditorDi
         return window.ShowDialog() == true && viewModel.IsValid ? viewModel.Result : null;
     }
 
-    public (int Thickness, SKColor Color)? AskBorder(SKColor suggested)
+    public bool ShowEffects(EffectsViewModel viewModel)
     {
-        var viewModel = new BorderViewModel(suggested);
-        var window = new BorderWindow { Owner = owner, DataContext = viewModel };
+        var window = new EffectsWindow { Owner = owner, DataContext = viewModel };
         Theming.Apply(window, theme);
-        return window.ShowDialog() == true ? (viewModel.Thickness, viewModel.Color.Value) : null;
+        return window.ShowDialog() == true;
+    }
+
+    public bool ShowImageDialog(ParameterDialogViewModel viewModel)
+    {
+        var window = new ImageEditWindow { Owner = owner, DataContext = viewModel };
+        Theming.Apply(window, theme);
+        return window.ShowDialog() == true;
+    }
+
+    public string? PickImageFile()
+    {
+        var dialog = new OpenFileDialog { Title = "Choose the watermark picture", Filter = CashGear.Capture.Editor.Batch.ImageFiles.DialogFilter, CheckFileExists = true };
+        return dialog.ShowDialog(owner) == true ? dialog.FileName : null;
+    }
+
+    public string? AskName(string title, string suggested)
+    {
+        var viewModel = new NameViewModel(suggested);
+        var window = new NameWindow { Owner = owner, DataContext = viewModel, Title = title };
+        Theming.Apply(window, theme);
+        return window.ShowDialog() == true && viewModel.IsValid ? viewModel.Name.Trim() : null;
     }
 
     public SaveChangesChoice AskSaveChanges(string documentName) =>
@@ -140,17 +170,12 @@ public sealed partial class ResizeImageViewModel(SKSizeI original) : ObservableO
     private static int Scale(int value, int to, int from) => Math.Max(1, (int)Math.Round(value * (double)to / from));
 }
 
-/// <summary>The Add border dialog: thickness and colour.</summary>
-public sealed partial class BorderViewModel(SKColor suggested) : ObservableObject
+/// <summary>The name prompt (a preset's name).</summary>
+public sealed partial class NameViewModel(string suggested) : ObservableObject
 {
-    public IReadOnlyList<ColorSwatch> Palette { get; } = [.. EditorColors.Palette.Select(c => new ColorSwatch(c))];
-
     [ObservableProperty]
-    private int _thickness = 4;
+    [NotifyPropertyChangedFor(nameof(IsValid))]
+    private string _name = suggested;
 
-    [ObservableProperty]
-    private ColorSwatch _color = new(suggested);
-
-    [RelayCommand]
-    private void SetColor(ColorSwatch swatch) => Color = swatch;
+    public bool IsValid => !string.IsNullOrWhiteSpace(Name);
 }

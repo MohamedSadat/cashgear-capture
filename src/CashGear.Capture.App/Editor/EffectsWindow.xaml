@@ -1,0 +1,79 @@
+<Window x:Class="CashGear.Capture.App.Editor.EffectsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.Editor"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:EffectsViewModel}"
+        Title="Effects" Width="620" Height="600" MinWidth="520" MinHeight="420"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+  <Window.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <local:EditParameterTemplates />
+      </ResourceDictionary.MergedDictionaries>
+      <BooleanToVisibilityConverter x:Key="Visible" />
+    </ResourceDictionary>
+  </Window.Resources>
+
+  <DockPanel Margin="16">
+    <!-- Saved effect presets -->
+    <ContentControl DockPanel.Dock="Top" Content="{Binding Presets}" Focusable="False" />
+
+    <!-- OK / Cancel, the area, and what went wrong -->
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+      <StackPanel Visibility="{Binding HasArea, Converter={StaticResource Visible}}">
+        <CheckBox Content="Only the selected area (Area tool)" IsChecked="{Binding ToArea}" />
+        <ContentControl Content="{Binding Background}" Focusable="False" Visibility="{Binding ToArea, Converter={StaticResource Visible}}" />
+      </StackPanel>
+      <TextBlock Text="{Binding Error}" Foreground="#C42B1C" TextWrapping="Wrap" Margin="0,6,0,0" />
+      <TextBlock Text="The image shows the result while this window is open. Annotations under effects other than a shadow or a border are merged into the image (Undo brings them back)."
+                 TextWrapping="Wrap" Opacity="0.75" Margin="0,6,0,0" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+        <Button x:Name="ApplyButton" Content="Apply" IsDefault="True" MinWidth="90" Margin="0,0,8,0" Click="OnApply" />
+        <Button Content="Cancel" IsCancel="True" MinWidth="90" />
+      </StackPanel>
+    </StackPanel>
+
+    <Grid Margin="0,8,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="16" />
+        <ColumnDefinition />
+      </Grid.ColumnDefinitions>
+
+      <!-- The effects, applied top to bottom -->
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Applied in this order" Margin="0,0,0,4" />
+        <WrapPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+          <Menu Background="Transparent" Margin="0,0,4,4">
+            <MenuItem Header="Add ▾" ItemsSource="{Binding Kinds}" AutomationProperties.Name="Add an effect">
+              <MenuItem.ItemContainerStyle>
+                <Style TargetType="MenuItem">
+                  <Setter Property="Header" Value="{Binding Name}" />
+                  <Setter Property="Command" Value="{Binding DataContext.AddEffectCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                  <Setter Property="CommandParameter" Value="{Binding}" />
+                </Style>
+              </MenuItem.ItemContainerStyle>
+            </MenuItem>
+          </Menu>
+          <Button Content="Remove" Command="{Binding RemoveCommand}" Margin="0,0,4,4" />
+          <Button Content="↑" Command="{Binding MoveUpCommand}" ToolTip="Earlier" AutomationProperties.Name="Move up" Margin="0,0,4,4" MinWidth="32" />
+          <Button Content="↓" Command="{Binding MoveDownCommand}" ToolTip="Later" AutomationProperties.Name="Move down" Margin="0,0,4,4" MinWidth="32" />
+        </WrapPanel>
+        <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" DisplayMemberPath="Name" AutomationProperties.Name="Effects" />
+      </DockPanel>
+      <TextBlock Text="Add an effect to start." Opacity="0.6" Margin="8,30,0,0" IsHitTestVisible="False"
+                 Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}" />
+
+      <!-- The selected effect's settings -->
+      <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel>
+          <TextBlock Text="{Binding Selected.Name}" FontSize="15" FontWeight="SemiBold" />
+          <ItemsControl ItemsSource="{Binding Selected.Parameters}" Focusable="False" Margin="0,0,8,0" />
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</Window>

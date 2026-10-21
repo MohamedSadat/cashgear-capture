@@ -459,10 +459,6 @@ public sealed class EditorSession
 
     public void ResizeImage(int width, int height) => RunImageEdit("resize image", s => ImageOperations.Resize(s, width, height));
 
-    public void AddBorder(int thickness, SKColor color) => RunImageEdit("add border", s => ImageOperations.AddBorder(s, thickness, color));
-
-    public void AddShadow() => RunImageEdit("add shadow", ImageOperations.AddShadow);
-
     public void Flip(bool horizontal) =>
         RunImageEdit(horizontal ? "flip horizontally" : "flip vertically", s => ImageOperations.Flip(s, horizontal));
 

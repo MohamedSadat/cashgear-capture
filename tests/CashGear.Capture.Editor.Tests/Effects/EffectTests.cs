@@ -49,17 +49,20 @@ public sealed class EffectTests
     }
 
     [Fact]
-    public void A_border_around_a_plain_capture_is_the_same_as_the_old_border()
+    public void A_border_around_a_plain_capture_is_a_solid_frame()
     {
         using var image = TestImages.Noise(25, 17);
-        var state = new DocumentState(image, []);
 
         var output = new BorderEffect(5, SKColors.Blue).Apply(image);
 
         using var result = output.Image;
-        using var old = ImageOperations.AddBorder(state, 5, SKColors.Blue).Image;
+        using var frame = SkiaImaging.Draw(35, 27, c =>
+        {
+            c.Clear(SKColors.Blue);
+            c.DrawImage(image, 5, 5, new SKSamplingOptions(SKFilterMode.Nearest), null);
+        });
         output.Offset.Should().Be(new SKPointI(5, 5));
-        TestImages.Bytes(result).Should().Equal(TestImages.Bytes(old));
+        TestImages.Bytes(result).Should().Equal(TestImages.Bytes(frame));
     }
 
     [Fact]

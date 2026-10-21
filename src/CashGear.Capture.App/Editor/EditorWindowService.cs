@@ -7,6 +7,7 @@ using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Document;
 using CashGear.Capture.Editor.Imaging;
 using CashGear.Capture.Editor.Interaction;
+using CashGear.Capture.Editor.Presets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SkiaSharp;
@@ -87,7 +88,8 @@ public sealed partial class EditorWindowService(
             dialogs,
             services.GetRequiredService<ILogger<EditorViewModel>>(),
             services.GetService<IEditorOutputs>(),
-            pending);
+            pending,
+            services.GetService<IPresetStore>());
 
         var created = new EditorWindow(viewModel, theme);
         window = created;
@@ -110,7 +112,13 @@ public sealed partial class EditorWindowService(
 
         public SKSizeI? AskImageSize(SKSizeI current) => Dialogs.AskImageSize(current);
 
-        public (int Thickness, SKColor Color)? AskBorder(SKColor suggested) => Dialogs.AskBorder(suggested);
+        public bool ShowEffects(EffectsViewModel viewModel) => Dialogs.ShowEffects(viewModel);
+
+        public bool ShowImageDialog(ParameterDialogViewModel viewModel) => Dialogs.ShowImageDialog(viewModel);
+
+        public string? PickImageFile() => Dialogs.PickImageFile();
+
+        public string? AskName(string title, string suggested) => Dialogs.AskName(title, suggested);
 
         public SaveChangesChoice AskSaveChanges(string documentName) => Dialogs.AskSaveChanges(documentName);
 
