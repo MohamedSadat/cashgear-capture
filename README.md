@@ -21,6 +21,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 11 | Pro audio: devices followed during a recording, one app's sound (or all but one), microphone noise gate / compressor / limiter and RNNoise, level meters, microphone test, loudness to −16 LUFS, push-to-talk | done (RNNoise build and manual sound checks pending) |
 | 12 | Recording overlays: clicks, pointer effects, keystrokes (never from password fields), webcam, drawing on the screen; drawn on the GPU or added later from a metadata track | done (real webcam check pending) |
 | 13 | Capture parity with FastStone: floating capture toolbar; fixed-size, freehand, polygon, rounded, object (UI Automation) and open-menu captures, transparent outside their shape; repeat last capture; a delay per kind of capture; magnifier, colour picker, screen ruler, crosshair | done |
+| 14 | Output destinations: the after-capture workflow (and one for recordings) through the editor, a file, the clipboard, a printer, Word, PowerPoint, FTP/FTPS/SFTP, HTTP uploads (the link copied) and other apps; a Test button for each; passwords kept with DPAPI | done (a real printer, Office and real servers by hand pending) |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -102,16 +103,39 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 
 | Tab | What |
 |---|---|
-| Output | After capture: open in the editor / save to file / copy to clipboard (any combination); folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
+| Output | After capture: the workflow, in order (open in the editor, save to file, copy, print, Word, PowerPoint, a server, an upload, an app, copy the link; each on or off). After a recording is saved: its own steps. Folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
+| Destinations | The printer, Word and PowerPoint, FTP/FTPS/SFTP servers, HTTP uploads and apps to open captures with, each with a Test button (see [Output destinations](#output-destinations)) |
 | Capture | Capture delay (also in the tray) and a delay per kind of capture, hide delay, the capture toolbar at startup, cursor, window shadow, fixed-size region and rounded corners, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
 | Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer. Sound: system audio on/off, all sound / only one app / all except one app, the output device (the default, followed, or one by name), the microphone (none, the Windows default or a connected one); with both, one mixed track, a track per source, or both. Microphone processing (noise suppression with its strength, noise gate with its threshold, compressor, limiter), live level meters, the microphone test, evening out loudness when saving. FFmpeg's version |
 | Overlays | Draw the overlays into the video or add them later; the metadata file; clicks (colours, size, sound); pointer (halo or spotlight, size, hide when idle); keystrokes (shortcuts or all keys, position, font, size, time, apps never shown); webcam (camera, picture, shape, size, border, mirror, placement preview); drawing (pen colour, width, fade) |
 | Hotkeys | Record hotkeys; each shows whether it is active. Push to talk |
 | General | Start with Windows, text recognition language (Automatic or one installed language), screen tools (the ruler's pixels per inch, how the colour picker copies), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file |
 
-Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved.
+Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved. The destinations' passwords and tokens are not in it (see [Output destinations](#output-destinations)).
 
 File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window, scrolling, object, menu, recording), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
+
+## Output destinations
+
+What happens to a capture is a **workflow** (Settings › Output): its steps run in order, each can be switched off, and any destination set up on Settings › **Destinations** can be added. For example: Open in the editor → Save to file → Office server → Copy the link.
+
+- **The editor.** Steps after "Open in the editor" wait for the editor's **Continue** button and get the edited image. The editor's **Send to** menu sends the image to any destination at any time.
+- **One notification** sums up each run: what was saved, uploaded or copied, and what failed (a failed step doesn't stop the others). Clicking it shows the saved file, or opens the link.
+- **Recordings** have a workflow of their own, run after the MP4 is saved (nothing more by default). The clipboard takes a recording as a file, to paste into a folder, a chat or an email.
+- **The toolbar's after-capture button** switches the workflow's steps on and off.
+
+Destinations, each with a **Test** button (it checks the set-up as it is in the window; it never prints, opens Office or leaves files behind):
+
+| Destination | What it does |
+|---|---|
+| Printer | The print dialog, or straight to the chosen (or default) printer. One capture per page: as large as fits, filling the page, or as big as on the screen; portrait, landscape, or landscape for wide captures; margins |
+| Word, PowerPoint | A new `.docx` / `.pptx` in the capture folder, or added at the end of a chosen file (a paragraph, a slide). The picture is as big as on the screen, shrunk to fit. Office isn't needed to make them |
+| FTP, FTPS, SFTP | Host, port, user and password (or an SFTP key file), a folder (made if missing), passive or active FTP. A public address with `{file}` (`https://example.com/shots/{file}`) gives each upload a link. Files are never overwritten |
+| HTTP upload | Posts the file as a form (multipart/form-data) with any fields and headers, and one secret header such as `Authorization: Bearer …`. The link is read from the JSON reply by a path such as `data.link` or `files[0].url` (empty: the whole reply is the link) |
+| Open with | Any program with a command line such as `"{file}"` (Paint.NET, Photoshop, …) |
+| Copy the link | Copies the links the uploads before it made |
+
+**Security.** An FTPS certificate that Windows doesn't trust, and every SFTP server's key, must be trusted once from the Test button, which shows its SHA-256 fingerprint; a key that changes later is refused, and nothing is sent before. Passwords, key passphrases and the secret header are encrypted for your Windows account with DPAPI in `%LocalAppData%\CashGear\Capture\secrets.json`, never in settings.json. They are saved on OK or Apply and never shown again.
 
 ## Delayed capture
 
@@ -136,7 +160,7 @@ Freehand, polygon, rounded and menu captures are transparent outside their shape
 
 ## Capture toolbar
 
-Tray › **Capture Toolbar** (or Settings › Capture to show it at every start) shows a small bar with a button for every kind of capture, repeat, recording, the screen tools, the delay, what happens after a capture (editor, file, clipboard) and Settings. It stays on top, never takes the focus (so "active window" still means your window and an open menu stays open) and is never in a capture or a recording. Drag it by its grip; dropped at the edge of a screen it docks there, as a column on the left and right edges. Where it was is remembered.
+Tray › **Capture Toolbar** (or Settings › Capture to show it at every start) shows a small bar with a button for every kind of capture, repeat, recording, the screen tools, the delay, what happens after a capture (the workflow's steps, each on or off) and Settings. It stays on top, never takes the focus (so "active window" still means your window and an open menu stays open) and is never in a capture or a recording. Drag it by its grip; dropped at the edge of a screen it docks there, as a column on the left and right edges. Where it was is remembered.
 
 ## Screen tools
 
@@ -258,8 +282,9 @@ tools/SyncTest                  Recording acceptance test: flashes + beeps, then
 tools/licenses                  License texts shipped with FFmpeg
 tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
 tools/make-icon.ps1             Draws the app icon
-src/CashGear.Capture.App        WPF app: tray, capture toolbar, screen tools, windows, view models, output
-tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, Overlays, App)
+src/CashGear.Capture.Outputs    Output destinations: registry, workflow runner, Word/PowerPoint (Open XML), FTP/FTPS (FluentFTP), SFTP (SSH.NET), HTTP upload, open with, DPAPI secrets
+src/CashGear.Capture.App        WPF app: tray, capture toolbar, screen tools, windows, view models, output (editor, file, clipboard, printer)
+tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, Overlays, Outputs, App); the Outputs tests run their own FTP, SFTP and HTTP servers on 127.0.0.1
 ```
 
 ## Files on disk
@@ -274,4 +299,6 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | Which encoders work here | `%LocalAppData%\CashGear\Capture\encoders.json` |
 | A recording's metadata (pointer, clicks, keys) | `name.cgmeta.json` next to the recording |
 | What the app remembers (the last capture, the toolbar's and ruler's places, picked colours, the magnifier's zoom) | `%LocalAppData%\CashGear\Capture\state.json` |
+| Passwords and tokens of the destinations (DPAPI, this Windows user only) | `%LocalAppData%\CashGear\Capture\secrets.json` |
+| Captures on their way to an upload or app (deleted after each workflow; copies opened in apps after a day) | `%LocalAppData%\CashGear\Capture\outgoing\` |
 | Installed app (Setup.exe) | `%LocalAppData%\CashGear.Capture\` (removed by uninstall; the rows above are kept) |

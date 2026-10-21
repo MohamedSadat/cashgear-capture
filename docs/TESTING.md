@@ -499,3 +499,41 @@ With the primary monitor at 150%, `CursorShapeTests.The_arrow_and_the_text_beam_
 - **By eye:** the magnifier, the crosshair and the ruler are left out of every capture, so no test can see how they look: check them on both monitors at both scales.
 - **Windows 11:** the toolbar and tools' exclusion from capture, and object capture through UI Automation.
 
+## Phase 14 results (2026-10-21)
+
+Same PC as Phase 13, at 100% + 100%. The destinations are tested against servers that the Outputs tests start themselves on 127.0.0.1: an FTP/FTPS server written for the tests, an SSH server on FxSsh with a small SFTP v3 handler, and Kestrel for HTTP. Nothing is printed, no Office app is opened and nothing leaves the PC. Word and PowerPoint files are checked with the Open XML SDK's validator (Office 2019 rules).
+
+| Check | Result |
+|---|---|
+| Settings: schema 4 → 5 (`SettingsMigrationTests`) | pass: all 8 combinations of the old switches become File, Clipboard, Editor in that order, each on or off as it was. A workflow already in the file wins, and a file without the switches gets the new default |
+| The workflow in the app (`OutputWorkflowTests`): the real registry and runner, files saved with WIC | pass: the three old switches still save (under the template's name), copy and open the editor with the saved file, and say nothing. Save alone says where, and a click shows the file. Copy alone uses no `{counter}` number and makes no file. A full-screen capture saves each monitor too. The steps after the editor go to it. An upload gets the saved file, or else a temporary JPEG (the chosen format) that is deleted afterwards, and Copy the link copies its link. A failed step is reported with what worked. A recording goes through its own workflow (the clipboard as a file to copy, an upload), skipping the printer. The editor sends its own file, or saves a new one |
+| FTP and FTPS (`FtpDestinationTests`) | pass: an upload in passive mode into a new folder, with its link. A taken name gets " (2)" and the old file stays. Active mode works. A self-signed certificate is refused with its fingerprint before the password is sent; once trusted (pasted in lower case with spaces), Test writes and deletes its file and the upload is encrypted (AUTH TLS, PROT P). A changed certificate is refused. Implicit TLS works. A wrong password, an anonymous login to the login folder and a server that isn't there are all handled |
+| SFTP (`SftpDestinationTests`) | pass: an unknown host key is refused with its fingerprint before logging in; once trusted, Test, an upload and " (2)" work. Logins with an RSA key file (PKCS#1), and with an encrypted PKCS#8 key without and then with its passphrase. A server with another key is refused before the password is sent. A wrong password is reported, and a missing user, password or key is reported without connecting |
+| HTTP upload (`HttpUploadDestinationTests`, `LinkPathTests`) | pass: the file (its name and type), the form fields, the headers and the secret header reach the server, and the link is read from `data.link`. Also: a plain-text reply; a 401 with the start of the reply; replies without the link, with something that isn't a link, or not JSON; a secret header with no value saved, which isn't sent; addresses that aren't http(s); Test's 1 × 1 PNG; a recording as `video/mp4`; a server that isn't there. The dot path: names, `[n]`, `$.`, a match without regard to case, and errors that say where it went wrong |
+| Word and PowerPoint (`OfficeDestinationTests`) | pass: a new document holds the exact picture, shrunk to the text width in proportion; a small capture keeps its size on the screen (192 px at 200% is 1 inch). A chosen landscape document takes two captures, keeping its content and page settings, with unique ids. A new presentation has one 16:9 slide with the picture centred; two more slides are added with unique ids from 256. A document open elsewhere is refused and left unchanged. A text file, a missing file and no file chosen are reported. Taken names get " (2)", and recordings are skipped. Every file passes the validator |
+| Secrets (`CredentialStoreTests`) | pass: a secret reads back after a restart, and the file holds neither its text nor its plain base64. A value copied to another key can't be read. A damaged file, and values that aren't DPAPI, read as missing. Empty removes a secret. A deleted destination's secrets go and the others stay. Typed secrets wait for Commit |
+| Open with (`OpenWithDestinationTests`) | pass: the command line gets the file and the folder. Programs are found by path, on the PATH and with environment variables. A capture that wasn't saved is copied and kept for the app; a saved one is opened where it is. A missing program is reported. Test starts nothing |
+| The printed page (`PrintPageTests`) | pass: rendered to pixels, a fitted capture is centred inside blank margins and a filled one is cut off at them. A page is written to an XPS document and read back |
+| The workflow runner (`WorkflowRunnerTests`) | pass: the steps run in order, those switched off skipped. A failing, a missing and a throwing step don't stop the rest. Copy the link copies the links made before it, or is skipped quietly. The steps after the editor are handed to it, and run at once if it can't open. A recording skips the steps for pictures only. Cancelling stops the run. Also: the registry's order, the destinations made from the settings, an item making its file once and deleting only its own, and old outgoing files cleaned |
+| Settings (`SettingsDestinationsTests`) | pass: a typed password is stored only on Apply (an emptied box changes nothing), and Cancel stores nothing. A deleted server takes its secrets, and its step is marked missing. Test uses what is typed, and Trust it tests again. A new upload can be added to both workflows at once (a recording's only offers what takes videos). Steps move up and down and go. Incomplete destinations are listed as problems. The printer and Office settings are saved. An app's Test, and Word's Test of a missing file |
+| The Settings window on the desktop (`SettingsDestinationsTests`) | pass: the Output tab shows the steps as check boxes. The Destinations tab shows every field and list, with the server's, upload's and app's values and three empty password boxes. A typed password reaches the window's secrets, not the store |
+| The editor (`EditorSendTests`) | pass: Continue runs the waiting steps once, on the edited image. A File step makes its file the editor's. Send to lists the destinations and sends the saved file when nothing has changed. Without destinations nothing is offered |
+| The whole suite | 1117 tests: 1107 pass and 10 skip (the 6 RNNoise tests until it is built, and 4 explicit), 0 fail; the real-microphone test ran. The first desktop run stopped in the App tests: the toolbar's after-capture button crashed a toolbar test (fixed). After the fix, the App tests pass (238, 1 explicit skip) |
+
+### Pending: by hand
+- **A real printer.** Each fit and orientation, and the margins. Also the print dialog when no window of the app is in front, since it may open behind other windows.
+- **Office.**
+  - **Word and PowerPoint:** open the new files and the ones captures were added to, and check the picture's size.
+  - **LibreOffice:** the same files open there too.
+- **Real servers.**
+  - **FTPS:** FileZilla Server, and vsftpd with `require_ssl_reuse=YES`.
+  - **SFTP:** OpenSSH with a password, an RSA or Ed25519 key, and an encrypted key.
+  - **Behind a router:** passive mode through NAT, and active mode refused by a firewall.
+- **A real image host or a self-hosted upload API:** the link read from its reply and copied.
+- **Open with** Paint.NET or Photoshop, for a capture that wasn't saved.
+- **In the installed app:**
+  - the toolbar's after-capture menu;
+  - Continue in the editor, and Send to;
+  - a recording copied to the clipboard and pasted into Explorer and a chat app;
+  - a notification's click (the file, the link).
+- **Upgrading** an installed 1.0.x whose settings.json still has the after-capture switches (schema 4).

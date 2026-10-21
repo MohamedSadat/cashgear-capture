@@ -1166,3 +1166,120 @@ FastStone Capture's ways of capturing, in CashGear Capture: a floating capture t
 - **The ruler and the crosshair's readout are opaque.**
 - **A repeated scrolling capture** scrolls from where the window is now, like the first.
 - **HDR monitors** are not handled yet (Phase 18): the colour picker and the magnifier read SDR values.
+
+## Phase 14 — Output Destinations (2026-10-21)
+
+What happens after a capture is now a workflow: an ordered list of destinations — the editor, a file, the clipboard, a printer, Word, PowerPoint, FTP/FTPS and SFTP servers, HTTP uploads (with the link copied) and other apps. Each destination has a Test button, and passwords and tokens are kept encrypted with DPAPI.
+
+### Added
+- **The after-capture workflow** (Settings › Output). Its steps run in order, and each can be switched off.
+  - **Editing it:** a step can be moved up or down, removed, or added from every destination set up so far, including ones added on the Destinations tab a moment ago.
+  - **Steps after the editor wait for it.** The editor shows a **Continue** button that runs them on the edited image, for example "Continue: Save to file → Office → Copy the link".
+  - **Failures.** A step that fails doesn't stop the others. One notification sums up the run: what was saved, uploaded and copied, and what failed. A click shows the saved file, or else opens the link.
+  - **Old settings.** The three after-capture switches became the first three steps, in the order they always ran (save, copy, then the editor), so an upgraded copy does exactly what it did. New installs open the editor, as before.
+  - **Nothing to do.** With every step off, captures are refused with the same warning as before.
+- **What happens to a recording** (Settings › Output). It is a workflow of its own, run after the MP4 is saved.
+  - **The clipboard** takes the recording as a file, to paste into a folder, a chat or an email.
+  - **Also:** servers, uploads, apps and Copy the link.
+  - **Off by default:** a recording is only saved, as before.
+- **The editor's Send to menu** sends the image as it is now, annotations included, to any destination. Its file is sent as it is when it has no unsaved changes. Save to file makes a new file in the capture folder, which Ctrl+S then updates.
+- **The toolbar's after-capture menu** lists the workflow's steps, each switched on or off there, and "Change the workflow…" opens Settings.
+- **Destinations** (a new Settings › **Destinations** tab):
+  - **Printer.**
+    - **Where it prints:** through the print dialog (printer, copies, orientation), or straight to the chosen printer or Windows' default.
+    - **On the page:** one capture per page, as large as fits, filling the page (the edges cut off), or as big as it was on the screen. The page is portrait or landscape, or landscape only for wide captures, with margins of 0 to 50 mm.
+  - **Word and PowerPoint** (Open XML SDK; no Office needed).
+    - **The file:** a new `.docx` or `.pptx` in the capture folder, named like the capture, or one added to at the end (a paragraph, or a slide on the blank layout).
+    - **The picture's size:** as big as it was on the screen (its pixels at the monitor's scale), shrunk to fit between the margins or on the slide. A new presentation is 16:9.
+  - **FTP, FTPS and SFTP servers** (FluentFTP, SSH.NET).
+    - **Settings:** host, port, user, password, a folder (made if missing; empty is the login folder), and passive or active mode for FTP.
+    - **A link:** a public address with `{file}` gives each upload a link.
+    - **SFTP** can log in with a key file and its passphrase.
+    - **No overwriting:** a name that is taken gets " (2)".
+    - **Who the server is:** an FTPS certificate that Windows doesn't trust (often self-signed) is accepted only by the SHA-256 fingerprint the user chose to trust after a Test. An SFTP server's host key is always trusted that way, on first use as OpenSSH does, and a key that changes later is refused. Nothing is sent, not even the password, before the server is trusted.
+  - **HTTP uploads.**
+    - **The request:** a multipart/form-data POST with the file field, any form fields and headers, and one secret header (`Authorization: Bearer …`, `Client-ID …`), whose value is kept with DPAPI.
+    - **The link** is found in the JSON reply by a dot path (`data.link`, `files[0].url`; a leading `$.` is allowed). With no path, the whole reply is the link. Any self-hosted API or image host fits.
+  - **Open with** a program (Paint.NET, Photoshop, …) and a command line with `{file}` and `{folder}`. A capture that wasn't saved is copied to `outgoing\opened` first and kept for a day, so the program can still read it after the workflow.
+  - **Copy the link:** the links the steps before it made, one per line.
+  - **Test buttons** check the set-up as it is in the window, typed passwords included. They never print, open Office or leave a file behind:
+    - **printer:** it is installed, and how pages will be laid out;
+    - **Word, PowerPoint:** the file is a document of that kind and isn't open in Office (or the folder takes new files);
+    - **servers:** log in, make the folder, write and delete a test file;
+    - **uploads:** post a 1 × 1 PNG and show the link;
+    - **apps:** the program is there (on the PATH too); nothing is started.
+
+    A certificate or key that isn't trusted yet is shown with its fingerprint and a **Trust it** button, which tests again.
+- **Secrets.** Passwords, key passphrases and header values are encrypted with DPAPI for the current Windows user, in `%LocalAppData%\CashGear\Capture\secrets.json` (never settings.json).
+  - **Bound to their key:** a value copied to another key can't be read.
+  - **In the window:** they are typed into password boxes and never shown again. They are written only on OK or Apply, and removed with their server or upload. An emptied box keeps the saved value; **Forget** removes it.
+- **Inside.**
+  - **Outputs** (new project):
+    - `IOutputDestination` and a built-in registry (no plugins); `OutputItem`;
+    - the workflow runner;
+    - the destinations above;
+    - `DpapiCredentialStore` and `PendingCredentials`;
+    - `LinkPath`.
+  - **Core:** `DestinationSettings` (schema 5), `PrintLayout`, and copying files to the clipboard (`IOutputService`).
+  - **App:**
+    - the editor, file, clipboard and printer destinations;
+    - `OutputWorkflow` (captures, recordings, the editor's Continue and Send to, the notification);
+    - the Settings view models.
+  - **Temporary files.** A capture that needs a file before it is saved gets a temporary one in the format of Settings › Output, in `%LocalAppData%\CashGear\Capture\outgoing`. It is deleted when the workflow ends, and what a crash leaves is cleaned after a day.
+
+### Deviations from the spec
+- **FTP and SFTP are tested against servers inside the test project**, not a Docker container: this PC has neither Docker nor CI.
+  - **FTP:** a small FTP/FTPS server written for the tests (passive and active, explicit and implicit TLS with a throwaway certificate).
+  - **SFTP:** an SSH server on FxSsh 1.4.0 (MIT, test-only) with a small SFTP v3 handler, since FxSsh's own SFTP code is only in its sample app.
+
+  Both listen on 127.0.0.1 only.
+- **`IOutputDestination` also has `TestAsync`** (the Test button). Its results can carry a link, a file and an untrusted fingerprint.
+- **Test buttons where there is something to set up:** the printer, Word, PowerPoint, and every server, upload and app. The editor, Save to file, the clipboard and Copy the link have none.
+- **Secrets are kept apart from settings.json**, in `secrets.json` in LocalAppData. The settings file stays readable and editable by hand, and secrets don't roam with the profile.
+- **The link's path is a dot path**, not full JSONPath.
+- **Recordings have their own workflow** (the spec only has one, for captures); by default it does nothing.
+- **The printer's Test prints nothing**: it names the printer and the layout.
+
+### Fixed during development
+- **Encrypted key files.** SSH.NET reports one opened without its passphrase as a BouncyCastle "pad block corrupted" error, not its own exception. Such keys are now recognised (PEM's ENCRYPTED headers, OpenSSH's bcrypt) and the passphrase is asked for.
+- **Fingerprints written another way** didn't match, such as `sha256 ab cd …` against `SHA256:AB:CD:…`. Hex fingerprints are now compared without their prefix, colons, spaces and case.
+- **`{counter}`.** Naming each capture as it entered the workflow would have used up a counter number for captures that were only copied or edited. The name is now made the first time a step needs a file.
+- **Settings didn't check a destination again** when one of its fields changed (only when one was added or renamed).
+- **An emptied password box** would have deleted the saved password. It now keeps it, and Forget removes it.
+- **Explicit styles on inputs** in the new Settings XAML would have replaced the Fluent theme's styles, so they were changed to plain margins.
+- **The toolbar's after-capture button** crashed when its window had no view model of its own, as in the toolbar's desktop tests. That took the whole App test process down; the desktop run found it.
+
+### Tested
+- **1117 automated tests** at 100% + 100%: 1107 pass and 10 are skipped (the 6 RNNoise tests until `rnnoise.dll` is built, and 4 explicit). The real-microphone test ran this time. Phase 13 had 941. New:
+  - **Core:**
+    - the schema 5 migration, for every combination of the old switches;
+    - the Destinations section: defaults, cleaning, unique ids, equality, and the JSON round trip without secrets;
+    - the page layout: fit, fill, actual size from 100% to 200%, orientation, margins.
+  - **Outputs** (a new project, 96 tests):
+    - **FTP, FTPS and SFTP** against servers the tests start on 127.0.0.1:
+      - passive and active FTP, explicit and implicit TLS;
+      - untrusted and changed certificates and host keys, refused before the password is sent;
+      - logins with passwords, RSA keys and encrypted keys.
+    - **HTTP uploads** to Kestrel: the multipart form, the headers, the secret header, the link by path, and the errors.
+    - **Word and PowerPoint** files that pass the Open XML validator: new, added to twice, open elsewhere, not a document.
+    - **The rest:** DPAPI secrets, Open with, the workflow runner.
+  - **App:**
+    - **The workflow end to end,** saving files for real: the old switches behave as before; the notifications; `{counter}`; temporary files; recordings; the editor's Send to and Continue.
+    - **The printed page,** rendered to pixels and written to XPS.
+    - **Settings:** the workflow lists and the Destinations tab, and the window's XAML on the desktop.
+- **The desktop run found a crash:** the toolbar's after-capture button crashed the App test process (Fixed during development). After the fix, the App tests pass: 238, with 1 explicit skip.
+- **Not run** (pending in TESTING.md):
+  - a real printer;
+  - the files opened in Word, PowerPoint and LibreOffice;
+  - real FTPS, SFTP and upload servers;
+  - Open with a real app;
+  - the workflow by hand in the installed app.
+
+### Known limitations
+- **The workflow runs within the capture.** A slow upload holds the next capture until it is done, or until its 2-minute timeout. There is no progress or Cancel for uploads (Phase 18).
+- **Office.** Only the picture goes in (no caption). A document open in Word or PowerPoint is refused until it is closed. A new Word document is A4, or US Letter where the region doesn't use the metric system.
+- **The printer.** There is no print preview. With 0 mm margins, the printer's own unprintable edge cuts the picture off.
+- **FTP.** No FTP proxies. FTPS servers that require the data connection to reuse the control connection's TLS session (vsftpd's `require_ssl_reuse`) aren't tested.
+- **SFTP.** Keys in the formats SSH.NET reads (OpenSSH, PEM, PKCS#8). No SSH agent or Pageant, and no keyboard-interactive login.
+- **HTTP.** POST with multipart/form-data only, and one secret header. The link is found by path, not built from pieces of the reply.
+- **A notification's click** shows the first file, or opens the first link.
