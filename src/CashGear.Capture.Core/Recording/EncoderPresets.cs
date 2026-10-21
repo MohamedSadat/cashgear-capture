@@ -18,6 +18,7 @@ public enum VideoCodec
     H264,
     Hevc,
     Av1,
+    Vp9,
 }
 
 /// <summary>The video a recording encodes: its size in pixels (even) and frame rate.</summary>
@@ -65,8 +66,71 @@ public static class EncoderPresets
 
     public static IReadOnlyList<EncoderCandidate> SoftwareFallbacks { get; } = [WindowsSoftwareH264, OpenH264];
 
+    /// <summary>VP9 in software (libvpx), for WebM exports.</summary>
+    public static EncoderCandidate Vp9 { get; } = new("libvpx-vp9", "libvpx-vp9", VideoCodec.Vp9, false, "VP9 (software)");
+
+    /// <summary>AV1 in software (SVT-AV1), for exports when no graphics card encodes AV1.</summary>
+    public static EncoderCandidate SvtAv1 { get; } = new("libsvtav1", "libsvtav1", VideoCodec.Av1, false, "SVT-AV1 (software)");
+
+    /// <summary>HEVC in software (Kvazaar), for exports when no graphics card encodes HEVC.</summary>
+    public static EncoderCandidate Kvazaar { get; } = new("libkvazaar", "libkvazaar", VideoCodec.Hevc, false, "Kvazaar (software HEVC)");
+
+    /// <summary>
+    /// Software encoders only exports use. They aren't in <see cref="All"/>, so recording's detection (and its cached
+    /// results) doesn't change; an export simply tries to open them.
+    /// </summary>
+    public static IReadOnlyList<EncoderCandidate> ExportSoftware { get; } = [Vp9, SvtAv1, Kvazaar];
+
     public static EncoderCandidate? Find(string? id) =>
-        All.FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase));
+        All.Concat(ExportSoftware).FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The encoders to try for a setting, best first, keeping only those detection found working.</summary>
+    public static IReadOnlyList<(EncoderCandidate Candidate, EncoderProbe Probe)> Usable(string? setting, IReadOnlyList<EncoderProbe> detected)
+    {
+        ArgumentNullException.ThrowIfNull(detected);
+        return Preference(setting)
+            .Select(c => (Candidate: c, Probe: detected.FirstOrDefault(p => p.Id == c.Id)))
+            .Where(x => x.Probe is { Works: true })
+            .Select(x => (x.Candidate, x.Probe!))
+            .ToList();
+    }
+
+    /// <summary>
+    /// The encoders an export of <paramref name="codec"/> tries, best first: the graphics card's (those detection
+    /// found working) unless the setting is <see cref="Software"/>, then the software ones. Software encoders that
+    /// detection doesn't cover are tried as they are.
+    /// </summary>
+    public static IReadOnlyList<(EncoderCandidate Candidate, EncoderProbe Probe)> ForExport(VideoCodec codec, string? setting, IReadOnlyList<EncoderProbe> detected)
+    {
+        ArgumentNullException.ThrowIfNull(detected);
+        var software = string.Equals(setting, Software, StringComparison.OrdinalIgnoreCase);
+        var result = new List<(EncoderCandidate, EncoderProbe)>();
+        foreach (var candidate in All.Concat(ExportSoftware).Where(c => c.Codec == codec))
+        {
+            var probe = detected.FirstOrDefault(p => p.Id == candidate.Id);
+            if (candidate.Hardware && (software || probe is not { Works: true }))
+            {
+                continue;
+            }
+
+            if (!candidate.Hardware && probe is { Works: false })
+            {
+                continue;
+            }
+
+            result.Add((candidate, probe ?? new EncoderProbe(candidate.Id, true)));
+        }
+
+        // The chosen encoder first, when it encodes this codec.
+        if (Find(setting) is { } chosen && result.FindIndex(r => r.Item1 == chosen) is > 0 and var at)
+        {
+            var item = result[at];
+            result.RemoveAt(at);
+            result.Insert(0, item);
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// The encoders to try for a setting, best first. A chosen encoder is followed by the software ones, which are
@@ -87,8 +151,8 @@ public static class EncoderPresets
         return All.Where(c => c.Codec == VideoCodec.H264).ToList();
     }
 
-    /// <summary>OpenH264 takes planar YUV 4:2:0; every other encoder gets NV12.</summary>
-    public static bool UsesPlanarYuv(EncoderCandidate encoder) => encoder == OpenH264;
+    /// <summary>OpenH264 and the export-only software encoders take planar YUV 4:2:0; every other encoder gets NV12.</summary>
+    public static bool UsesPlanarYuv(EncoderCandidate encoder) => encoder == OpenH264 || ExportSoftware.Contains(encoder);
 
     /// <summary>
     /// The encoder's FFmpeg options for a preset. <paramref name="qualityMode"/> false means detection found the
@@ -140,6 +204,24 @@ public static class EncoderPresets
             case "libopenh264":
                 Add("rc_mode", "bitrate");
                 Add("b", BitRate(preset, width, height, fps));
+                break;
+            case "libvpx-vp9":
+                // Constant quality ("crf" with no bit rate cap); "good" at speed 5 with row threads keeps exports quick.
+                Add("deadline", "good");
+                Add("cpu-used", 5);
+                Add("row-mt", 1);
+                Add("crf", Pick(preset, 40, 34, 28, 18));
+                Add("b", 0);
+                break;
+            case "libsvtav1":
+                Add("preset", 8);
+                Add("crf", Pick(preset, 42, 35, 29, 20));
+                Add("b", 0);
+                break;
+            case "libkvazaar":
+                // FFmpeg's default bit rate (200 kbit/s) would override the quality: no bit rate.
+                Add("kvazaar-params", string.Create(CultureInfo.InvariantCulture, $"preset=veryfast,qp={Pick(preset, 34, 28, 24, 18)}"));
+                Add("b", 0);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(encoder), encoder, "No settings for this encoder.");

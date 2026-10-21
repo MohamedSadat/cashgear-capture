@@ -116,6 +116,25 @@ public sealed class EncoderPresetsTests
     public void Only_OpenH264_takes_planar_YUV()
     {
         EncoderPresets.All.Where(EncoderPresets.UsesPlanarYuv).Should().Equal(EncoderPresets.OpenH264);
+        EncoderPresets.ExportSoftware.Should().OnlyContain(c => EncoderPresets.UsesPlanarYuv(c), "the export-only software encoders take planar YUV too");
+    }
+
+    [Fact]
+    public void Exports_try_working_hardware_then_software_encoders_of_their_codec()
+    {
+        IReadOnlyList<EncoderProbe> detected =
+        [
+            new("h264_nvenc", false), new("h264_mf_hw", true), new("h264_mf", true), new("libopenh264", true),
+            new("hevc_nvenc", true), new("hevc_mf_hw", false), new("av1_nvenc", false),
+        ];
+
+        EncoderPresets.ForExport(VideoCodec.H264, EncoderPresets.Auto, detected).Select(e => e.Candidate.Id).Should().Equal("h264_mf_hw", "h264_mf", "libopenh264");
+        EncoderPresets.ForExport(VideoCodec.H264, EncoderPresets.Software, detected).Select(e => e.Candidate.Id).Should().Equal("h264_mf", "libopenh264");
+        EncoderPresets.ForExport(VideoCodec.H264, "libopenh264", detected).Select(e => e.Candidate.Id).Should().Equal("libopenh264", "h264_mf_hw", "h264_mf");
+        EncoderPresets.ForExport(VideoCodec.Hevc, EncoderPresets.Auto, detected).Select(e => e.Candidate.Id).Should().Equal("hevc_nvenc", "libkvazaar");
+        EncoderPresets.ForExport(VideoCodec.Av1, EncoderPresets.Auto, detected).Select(e => e.Candidate.Id).Should().Equal("libsvtav1");
+        EncoderPresets.ForExport(VideoCodec.Vp9, EncoderPresets.Auto, []).Select(e => e.Candidate.Id).Should().Equal("libvpx-vp9");
+        EncoderPresets.Find("LIBVPX-VP9").Should().Be(EncoderPresets.Vp9);
     }
 
     [Fact]

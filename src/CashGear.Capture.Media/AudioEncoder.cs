@@ -3,8 +3,9 @@ using FFmpeg.AutoGen.Abstractions;
 namespace CashGear.Capture.Media;
 
 /// <summary>
-/// FFmpeg's own AAC encoder for one sound track: 48 kHz stereo, 160 kbit/s, fed interleaved float samples
-/// <see cref="FrameSize"/> at a time. Timestamps are sample positions (time base 1/48000).
+/// One sound track's encoder: FFmpeg's own AAC (the recordings') by default, or another codec for exports (Opus for
+/// WebM, MP3). 48 kHz stereo, fed interleaved float samples <see cref="FrameSize"/> at a time. Timestamps are sample
+/// positions (time base 1/48000).
 /// </summary>
 public sealed unsafe class AudioEncoder : IDisposable
 {
@@ -36,16 +37,24 @@ public sealed unsafe class AudioEncoder : IDisposable
 
     internal AVCodecContext* Context => _context;
 
-    public static AudioEncoder Open(int stream, int bitRate = DefaultBitRate)
+    /// <summary>FFmpeg's names of the codecs exports use.</summary>
+    public const string Aac = "aac";
+    public const string Opus = "libopus";
+    public const string Mp3 = "libmp3lame";
+
+    /// <param name="codec">FFmpeg's encoder: <see cref="Aac"/>, <see cref="Opus"/> or <see cref="Mp3"/>.</param>
+    public static AudioEncoder Open(int stream, int bitRate = DefaultBitRate, string codec = Aac)
     {
-        var codec = ffmpeg.avcodec_find_encoder_by_name("aac");
-        if (codec is null)
+        var encoder = ffmpeg.avcodec_find_encoder_by_name(codec);
+        if (encoder is null)
         {
-            throw new FfmpegException("The aac encoder isn't in this FFmpeg build.");
+            throw new FfmpegException($"The {codec} encoder isn't in this FFmpeg build.");
         }
 
-        var context = ffmpeg.avcodec_alloc_context3(codec);
-        context->sample_fmt = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+        var context = ffmpeg.avcodec_alloc_context3(encoder);
+
+        // libopus takes interleaved float; AAC and LAME planar.
+        context->sample_fmt = codec == Opus ? AVSampleFormat.AV_SAMPLE_FMT_FLT : AVSampleFormat.AV_SAMPLE_FMT_FLTP;
         context->sample_rate = SampleRate;
         ffmpeg.av_channel_layout_default(&context->ch_layout, Channels);
         context->bit_rate = bitRate;
@@ -53,11 +62,11 @@ public sealed unsafe class AudioEncoder : IDisposable
         context->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
 
         using var log = FfmpegLog.Capture();
-        var result = ffmpeg.avcodec_open2(context, codec, null);
+        var result = ffmpeg.avcodec_open2(context, encoder, null);
         if (result < 0)
         {
             ffmpeg.avcodec_free_context(&context);
-            throw new FfmpegException("Opening the aac encoder", result, log.Summary());
+            throw new FfmpegException($"Opening the {codec} encoder", result, log.Summary());
         }
 
         return new AudioEncoder(context, stream);
@@ -75,6 +84,13 @@ public sealed unsafe class AudioEncoder : IDisposable
         FfmpegException.Check(ffmpeg.av_frame_make_writable(_frame), "Preparing a sound frame");
         _frame->nb_samples = samples;
         _frame->pts = pts;
+        if (_context->sample_fmt == AVSampleFormat.AV_SAMPLE_FMT_FLT)
+        {
+            interleaved.CopyTo(new Span<float>(_frame->data[0], samples * Channels));
+            Send(_frame, output);
+            return;
+        }
+
         var left = new Span<float>(_frame->data[0], samples);
         var right = new Span<float>(_frame->data[1], samples);
         for (var i = 0; i < samples; i++)

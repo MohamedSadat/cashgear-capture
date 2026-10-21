@@ -95,11 +95,7 @@ internal sealed partial class EncoderService : IRecordingEncoders
 
     /// <summary>The encoders to try for a setting, best first, keeping only those detection found working.</summary>
     public static IReadOnlyList<(EncoderCandidate Candidate, EncoderProbe Probe)> Usable(string setting, IReadOnlyList<EncoderProbe> detected) =>
-        EncoderPresets.Preference(setting)
-            .Select(c => (Candidate: c, Probe: detected.FirstOrDefault(p => p.Id == c.Id)))
-            .Where(x => x.Probe is { Works: true })
-            .Select(x => (x.Candidate, x.Probe!))
-            .ToList();
+        EncoderPresets.Usable(setting, detected);
 
     /// <summary>What detection results depend on: FFmpeg, every hardware adapter with its driver version, and Windows.</summary>
     internal static string CacheKey(string? ffmpegVersion)

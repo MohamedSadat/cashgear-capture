@@ -5,7 +5,22 @@ namespace CashGear.Capture.Media;
 
 /// <param name="Index">Index among all the file's streams.</param>
 /// <param name="Start">The first packet's time in seconds.</param>
-public sealed record MediaStreamInfo(int Index, bool IsVideo, string Codec, string? Title, bool IsDefault, double Start, double Duration, int Width, int Height);
+/// <param name="FrameRate">A video's frames per second (its average, or the stream's base rate), else 0.</param>
+/// <param name="SampleRate">A sound stream's samples per second, else 0.</param>
+/// <param name="Channels">A sound stream's channels, else 0.</param>
+public sealed record MediaStreamInfo(
+    int Index,
+    bool IsVideo,
+    string Codec,
+    string? Title,
+    bool IsDefault,
+    double Start,
+    double Duration,
+    int Width,
+    int Height,
+    double FrameRate = 0,
+    int SampleRate = 0,
+    int Channels = 0);
 
 /// <summary>Receives decoded sound mixed to mono, starting at <paramref name="time"/> seconds.</summary>
 public delegate void MonoSoundHandler(double time, int sampleRate, ReadOnlySpan<float> samples);
@@ -103,17 +118,27 @@ public sealed unsafe class MediaReader : IDisposable
                 title = ffmpeg.av_dict_get(stream->metadata, "name", null, 0); // how MP4 track names come back
             }
 
+            if ((stream->disposition & ffmpeg.AV_DISPOSITION_ATTACHED_PIC) != 0)
+            {
+                continue; // cover art in a music file
+            }
+
             var timeBase = ffmpeg.av_q2d(stream->time_base);
+            var rate = stream->avg_frame_rate.num > 0 ? stream->avg_frame_rate : stream->r_frame_rate;
+            var isVideo = parameters->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO;
             streams.Add(new MediaStreamInfo(
                 (int)i,
-                parameters->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO,
+                isVideo,
                 ffmpeg.avcodec_get_name(parameters->codec_id),
                 title is null ? null : Marshal.PtrToStringUTF8((nint)title->value),
                 (stream->disposition & ffmpeg.AV_DISPOSITION_DEFAULT) != 0,
                 stream->start_time == ffmpeg.AV_NOPTS_VALUE ? 0 : stream->start_time * timeBase,
                 stream->duration == ffmpeg.AV_NOPTS_VALUE ? 0 : stream->duration * timeBase,
                 parameters->width,
-                parameters->height));
+                parameters->height,
+                isVideo && rate.num > 0 && rate.den > 0 ? ffmpeg.av_q2d(rate) : 0,
+                isVideo ? 0 : parameters->sample_rate,
+                isVideo ? 0 : parameters->ch_layout.nb_channels));
         }
 
         Streams = streams;
