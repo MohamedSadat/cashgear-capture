@@ -129,6 +129,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     private TimelineItem? _shown;
     private TimelineItem? _applied;
     private (float X, float Y, float Scale) _preview = (0, 0, 1);
+    private volatile bool _waitingForPictures;
     private PreviewDrag? _drag;
     private int _drags;
 
@@ -149,7 +150,14 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         History.Changed += (_, _) => OnProjectChanged();
         Timeline.Changed += (_, _) => OnTimelineChanged();
         Timeline.SeekRequested += (_, time) => Seek(time);
-        Frames.FrameReady += (_, _) => PreviewInvalidated?.Invoke(this, EventArgs.Empty);
+        Frames.FrameReady += (_, _) =>
+        {
+            // Pictures decoded ahead don't need a new draw; one the last draw went without does.
+            if (_waitingForPictures)
+            {
+                PreviewInvalidated?.Invoke(this, EventArgs.Empty);
+            }
+        };
         services.Previews.Changed += OnPreviewsChanged;
         Engine.Ended += (_, _) => OnPropertyChanged(nameof(IsPlaying));
         RebuildTracks();
@@ -321,6 +329,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
 
         canvas.Restore();
+        _waitingForPictures = result.Missing > 0;
         return result.Missing;
     }
 

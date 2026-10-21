@@ -52,6 +52,18 @@ public sealed class PreviewTests : IDisposable
         arrived.Should().BeGreaterThan(0);
         frames.Failures.Should().BeEmpty();
     }
+}
+
+[CollectionDefinition(nameof(PreviewAcceptance), DisableParallelization = true)]
+public sealed class PreviewAcceptance;
+
+/// <summary>Timed, so it runs alone, after the other tests of the assembly.</summary>
+[Collection(nameof(PreviewAcceptance))]
+public sealed class PreviewAcceptanceTests : IDisposable
+{
+    private readonly TestMediaFiles _media = new("cashgear-preview-acceptance-");
+
+    public void Dispose() => _media.Dispose();
 
     /// <summary>
     /// Phase 16 acceptance: the preview plays 1080p at full frame rate with hardware decoding. A 10 s 1080p30
@@ -110,21 +122,21 @@ public sealed class PreviewTests : IDisposable
         frames.IsHardware.Should().BeTrue();
         shown.Should().BeGreaterThanOrEqualTo(297, "at least 99% of the pictures are shown at 30 fps");
     }
+}
 
-    /// <summary>Notes the number stamped in each picture the compositor gets.</summary>
-    private sealed class StampingFrames(IFrameProvider inner) : IFrameProvider
+/// <summary>Notes the number stamped in each picture the compositor gets.</summary>
+internal sealed class StampingFrames(IFrameProvider inner) : IFrameProvider
+{
+    public List<int> Shown { get; } = [];
+
+    public VideoFrame? Frame(Clip clip, MediaAsset asset, double sourceTime)
     {
-        public List<int> Shown { get; } = [];
-
-        public VideoFrame? Frame(Clip clip, MediaAsset asset, double sourceTime)
+        var frame = inner.Frame(clip, asset, sourceTime);
+        if (frame is not null)
         {
-            var frame = inner.Frame(clip, asset, sourceTime);
-            if (frame is not null)
-            {
-                Shown.Add(StampedRecording.ReadStamp(frame.Pixels, frame.Width));
-            }
-
-            return frame;
+            Shown.Add(StampedRecording.ReadStamp(frame.Pixels, frame.Width));
         }
+
+        return frame;
     }
 }

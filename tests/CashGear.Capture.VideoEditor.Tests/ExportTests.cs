@@ -199,6 +199,25 @@ public sealed class ExportTests : IDisposable
         await act.Should().ThrowAsync<ExportException>().WithMessage("*empty*");
     }
 
+    /// <summary>The source picture each output frame should show (for the acceptance tests too).</summary>
+    internal static List<int> ExpectedFrames(VideoProject project) => Expected(project);
+}
+
+[CollectionDefinition(nameof(ExportAcceptance), DisableParallelization = true)]
+public sealed class ExportAcceptance;
+
+/// <summary>Long and busy, so it runs alone, after the other tests of the assembly.</summary>
+[Collection(nameof(ExportAcceptance))]
+public sealed class ExportAcceptanceTests : IDisposable
+{
+    private readonly TestMediaFiles _media = new("cashgear-export-acceptance-");
+
+    public void Dispose() => _media.Dispose();
+
+    private static ProjectExporter Exporter() => new(new SoftwareEncoders(), NullLogger<ProjectExporter>.Instance);
+
+    private static List<int> Expected(VideoProject project) => ExportTests.ExpectedFrames(project);
+
     /// <summary>
     /// Phase 16 acceptance (M1): cutting 3 segments out of a 20-minute recording and exporting it gives the right
     /// duration and no A/V desync. The recording has a flash with a beep every 2 s and every picture numbered.

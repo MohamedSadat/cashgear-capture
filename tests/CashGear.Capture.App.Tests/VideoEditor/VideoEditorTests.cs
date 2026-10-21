@@ -115,7 +115,8 @@ public abstract class VideoEditorTestBase : IDisposable
         var path = Path.Combine(Root, "recordings", name);
         if (!File.Exists(path))
         {
-            new StampedRecording { Path = path, Seconds = 4, Tracks = ["Microphone", "System audio"], ToneTracks = new HashSet<int> { 0, 1 } }.Write();
+            // On a worker (MTA) thread: Media Foundation's encoder refuses the STA thread window tests run on.
+            Task.Run(() => new StampedRecording { Path = path, Seconds = 4, Tracks = ["Microphone", "System audio"], ToneTracks = new HashSet<int> { 0, 1 } }.Write()).GetAwaiter().GetResult();
         }
 
         return path;

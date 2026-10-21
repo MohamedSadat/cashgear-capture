@@ -26,6 +26,7 @@ internal sealed partial class PreviewHost : Border
     private bool _rendering;
     private SKColor _surround = new(0x10, 0x10, 0x10);
     private int _renderWidth;
+    private long _drawnFrame = -1;
 
     /// <summary>Drawing on the graphics card.</summary>
     public bool UsesGpu { get; private set; }
@@ -54,10 +55,14 @@ internal sealed partial class PreviewHost : Border
         }
     }
 
+    /// <summary>Draws again: on the render loop's next frame, or now when the loop isn't running.</summary>
     public void Invalidate()
     {
         _dirty = true;
-        _surface?.InvalidateVisual();
+        if (!_rendering)
+        {
+            _surface?.InvalidateVisual();
+        }
     }
 
     public void Stop()
@@ -124,7 +129,10 @@ internal sealed partial class PreviewHost : Border
         }
     }
 
-    /// <summary>Every WPF frame: playback moves on, and the preview is drawn when it is playing or something changed.</summary>
+    /// <summary>
+    /// Every WPF frame: playback moves on, and the preview is drawn when the playhead reaches a new video frame or
+    /// something changed (an edit, a picture that was still being decoded).
+    /// </summary>
     private void OnRendering(object? sender, EventArgs e)
     {
         if (_viewModel is null)
@@ -133,9 +141,11 @@ internal sealed partial class PreviewHost : Border
         }
 
         _viewModel.Tick();
-        if (_viewModel.IsPlaying || _dirty)
+        var frame = (long)Math.Floor((_viewModel.Position * _viewModel.Project.Canvas.Fps) + 1e-6);
+        if (_dirty || (_viewModel.IsPlaying && frame != _drawnFrame))
         {
             _dirty = false;
+            _drawnFrame = frame;
             _surface?.InvalidateVisual();
         }
     }
@@ -166,7 +176,7 @@ internal sealed partial class PreviewHost : Border
             return;
         }
 
-        if (_viewModel.RenderPreview(canvas, width, height, Surround) > 0 && !_viewModel.IsPlaying)
+        if (_viewModel.RenderPreview(canvas, width, height, Surround) > 0)
         {
             _dirty = true; // a picture is still on its way: draw again when it comes
         }

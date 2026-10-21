@@ -62,6 +62,8 @@ public sealed class VideoEditorWindowTests : VideoEditorTestBase
             vm.PlayPauseCommand.Execute(null);
             vm.Position.Should().BeInRange(0.6, 1.6, "about a second played");
             (window.PreviewPaints - before).Should().BeGreaterThan(15, "frames were drawn while playing");
+            TestContext.Current.TestOutputHelper?.WriteLine(
+                $"Preview asked for the graphics card: {gpu}; on it: {window.PreviewUsesGpu}; {window.PreviewPaints - before} frames drawn in a second of playing; decoding on the graphics card: {vm.Frames.IsHardware}");
         }
         finally
         {
