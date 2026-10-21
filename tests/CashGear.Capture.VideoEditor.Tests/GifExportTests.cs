@@ -39,7 +39,7 @@ internal static class SyntheticScreen
             fill.Color = new SKColor(0x2B, 0x57, 0x9A);
             canvas.DrawRect(SKRect.Create(window.Left, window.Top, window.Width, 34), fill);
             fill.Color = SKColors.White;
-            canvas.DrawText("Notes — CashGear Capture test", window.Left + 12, window.Top + 22, font, fill);
+            canvas.DrawText("Notes — CashGear Capture test", window.Left + 12, window.Top + 22, SKTextAlign.Left, font, fill);
             fill.Color = new SKColor(0xF0, 0xF0, 0xF0);
             canvas.DrawRect(SKRect.Create(window.Left, window.Top + 34, window.Width, 40), fill);
             for (var b = 0; b < 8; b++)
@@ -59,7 +59,7 @@ internal static class SyntheticScreen
                 }
 
                 fill.Color = new SKColor(0x30, 0x30, 0x30);
-                canvas.DrawText($"Document {i + 1}", window.Left + 16, window.Top + 84 + (i * 34), font, fill);
+                canvas.DrawText($"Document {i + 1}", window.Left + 16, window.Top + 84 + (i * 34), SKTextAlign.Left, font, fill);
                 fill.Color = new SKColor(0xF4, 0xF6, 0xF8);
             }
 
@@ -71,13 +71,13 @@ internal static class SyntheticScreen
             for (var line = 0; line < 30; line++)
             {
                 var text = string.Join(' ', Words.Split(' ').Skip(line % 7).Take(12));
-                canvas.DrawText($"{line + 1}. {text}", window.Left + 240, window.Top + 110 + (line * 24) - scroll, font, fill);
+                canvas.DrawText($"{line + 1}. {text}", window.Left + 240, window.Top + 110 + (line * 24) - scroll, SKTextAlign.Left, font, fill);
             }
 
             // Typing from 2 s to 5 s, a letter every other frame.
             var typed = Words[..Math.Clamp((n - 60) / 2, 0, Words.Length)];
             fill.Color = new SKColor(0x10, 0x40, 0x90);
-            canvas.DrawText("> " + typed + (n / 15 % 2 == 0 ? "|" : ""), window.Left + 240, window.Top + 110 + (31 * 24) - scroll - 400, font, fill);
+            canvas.DrawText("> " + typed + (n / 15 % 2 == 0 ? "|" : ""), window.Left + 240, window.Top + 110 + (31 * 24) - scroll - 400, SKTextAlign.Left, font, fill);
             canvas.Restore();
 
             // The pointer glides across, then circles.

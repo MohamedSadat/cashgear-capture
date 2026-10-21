@@ -46,14 +46,14 @@ public sealed class TranscriptAudioTests : IDisposable
         var system = project.Tracks.Single(t => t.Name == "System audio");
         project = project.WithTrack(microphone with { Muted = true });
 
-        var voice = TranscriptAudio.Render(project, [microphone.Id]);
+        var voice = TranscriptAudio.Render(project, [microphone.Id], ct: TestContext.Current.CancellationToken);
         voice.Length.Should().Be(3 * TranscriptAudio.SampleRate);
         Frequency(voice.AsSpan(1000, 40_000)).Should().BeApproximately(440, 1, "the microphone's tone, though muted on the timeline");
         var level = Rms(voice.AsSpan(1000, 40_000));
         level.Should().BeGreaterThan(0.05);
 
-        Frequency(TranscriptAudio.Render(project, [system.Id]).AsSpan(1000, 40_000)).Should().BeApproximately(880, 2);
-        var both = TranscriptAudio.Render(project);
+        Frequency(TranscriptAudio.Render(project, [system.Id], ct: TestContext.Current.CancellationToken).AsSpan(1000, 40_000)).Should().BeApproximately(880, 2);
+        var both = TranscriptAudio.Render(project, ct: TestContext.Current.CancellationToken);
         Rms(both.AsSpan(1000, 40_000)).Should().BeGreaterThan(level, "both tracks");
     }
 }

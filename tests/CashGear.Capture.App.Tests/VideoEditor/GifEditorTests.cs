@@ -41,7 +41,7 @@ public sealed class GifEditorTests : VideoEditorTestBase
     public async Task A_recording_can_be_made_into_a_gif_by_the_recording_workflow()
     {
         var recording = Recording("workflow.mp4");
-        await State.UpdateAsync(s => s with { VideoEditor = new VideoEditorState { GifFps = 10, GifWidth = 160 } });
+        await State.UpdateAsync(s => s with { VideoEditor = new VideoEditorState { GifFps = 10, GifWidth = 160 } }, TestContext.Current.CancellationToken);
         var destination = new GifDestination(Services.Exporter, TestMedia.Require(), State);
         (destination.Id, destination.DisplayName, destination.SupportsVideo).Should().Be(("gif", "Make a GIF", true));
 
