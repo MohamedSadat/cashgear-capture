@@ -36,6 +36,8 @@ dotnet test --project tests/CashGear.Capture.Overlays.Tests --filter-method "*br
 
 The webcam tests use a fake camera that stamps its pictures like a real one; one test lists and opens the real cameras (none here).
 
+The video editor's tests write their own recordings (`StampedRecording`, with the FFmpeg build above): every picture carries its frame number, with flashes and beeps at known times, so exports and the preview are checked frame by frame. Its two timed acceptance tests (1080p preview, 20-minute export, about two minutes together) run after the rest of their assembly, on their own. Nothing in them plays sound.
+
 The noise-suppression tests use the real RNNoise from `tools\rnnoise` and skip without it. Build it once with `tools\get-rnnoise.ps1`, which needs Visual Studio's C++ compiler ("Desktop development with C++").
 
 The other recording tests with sound use a generated tone (no sound is played) or real system audio with whatever is playing.
@@ -65,7 +67,7 @@ Other options: `--fps 15|30|60`, `--encoder auto|software|<id>`, `--quality Smal
 | Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15); Phase 13 passes (2026-10-21); Phase 15 passes (2026-10-21) |
 | Dual monitor, mixed DPI (100% + 150%) | Phase 13 passes with the primary at 150% (2026-10-21; the whole suite, one Phase 12 failure); the by-hand steps for Phases 1–2 **pending** — see "Pending" below |
 | Monitor left of primary (negative X) | Phase 13 passes with the 100% monitor at (−1280, 200) and the primary at 150% (2026-10-21); the by-hand steps for Phases 1–2 **pending** — see "Pending" below |
-| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19, the Edge password field included; a real webcam **pending**, below); Phase 13 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 15 passes what was run (2026-10-21; by-hand checks **pending**, below); fresh install **pending** |
+| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19, the Edge password field included; a real webcam **pending**, below); Phase 13 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 15 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 16 passes what was run (2026-10-21; by-hand checks **pending**, below); fresh install **pending** |
 | Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
@@ -580,3 +582,35 @@ Same PC as Phase 14, at 100% + 100%. The effects, the batch and the PDFs are che
 - **Images to PDF:** open the PDFs in Edge, Acrobat Reader and SumatraPDF; each paper size, grids, the smaller file.
 - **The PDF destination** in the workflow and in Send to.
 - **Mixed DPI:** the new windows at 150%.
+
+## Phase 16 results (2026-10-21)
+
+Same PC as Phase 15, at 100% + 100%. The editor is checked on numbers stamped into test recordings: `StampedRecording` writes MP4s (H.264 and AAC, as recordings are) whose every picture carries its frame number in its top row, with flashes and 1 kHz beeps on known frames and samples, so a decoded frame says which source frame it is and a beep says where its sound went. Nothing plays sound: the preview tests use a stopwatch clock instead of a sound device.
+
+| Check | Result |
+|---|---|
+| Frame-exact reading (`StreamReaderTests`, Media) | pass: seeking to any time (forward, back, inside a keyframe interval, on frame boundaries, before the start, after the end) gives the frame shown then and the next ones in turn, with hardware (D3D11VA) and software decoding; hardware frames are within 3 levels of software; keyframes only gives 0, 2 and 4 s; half-size reads keep the stamp |
+| Sound reading and speed (`StreamReaderTests`) | pass: the same beep lands on the same sample after seeks to four different times (within 2.5 samples); 44.1 kHz WAV comes out at 48 kHz with its pitch; atempo at 2×, 1.5×, 0.5× and 0.25× gives the length within 1% and keeps a 440 Hz tone at 440 Hz |
+| Export containers (`ExportWriterTests`) | pass: H.264 + AAC MP4, HEVC (hvc1) + AAC MP4, VP9 + Opus WebM, AV1 + Opus WebM, M4A and MP3, each probed with ffprobe (format, codecs, 2 s); sound that comes before the video's first packet waits; a second video is named and not the default |
+| Projects (`EditTests`, `ProjectFileTests`) | pass: a recording becomes linked clips (the Mixed track left out when the sources are there); splits keep each side linked; three cuts out of 60 s leave 43.5 s with every source time in place; deletes, ripple deletes, moves and trims stop at neighbours, 0 and the source; time maps with speed, ramps and freezes both ways; slices keep fades only on their own ends; the history merges drags and keeps the saved marker |
+| **Re-open, acceptance** (`ProjectFileTests`) | pass: a project with every kind of clip setting saved and opened again reads back as the same JSON; moved with its media it finds them by their relative paths; missing media is reported and located (its metadata found again); embedded media is unpacked and stays inside when saved again; damaged and newer files are refused |
+| The compositor (`CompositorTests`, `AnnotationTests`, `EffectTests`) | pass: letterboxing, the webcam's circle and border, hidden tracks, fades and a crossfade's blend; rectangles moving with keyframes; **text in English and Arabic identical byte for byte to the image editor's drawing**; a blur across a red/blue edge mixes them inside its area only, without darkening its edges; pixelate cells; click rings where the overlay planner puts them (and earlier after a cut before them); keystroke captions; a pointer drawn at twice its size, hidden after standing still, not drawn when it is in the pictures (a halo still is) |
+| Playback (`PlaybackTests`, `PreviewTests`) | pass: reading forward seeks once; the decoder thread gives exact frames and stays ahead while playing; the mixer's levels with volumes, mute, solo, fades and music; beeps on their samples after two cuts (one reader per clip); 2× keeps 440 Hz, a 1×–3× ramp gives about 880 Hz in its middle; silence under a freeze; the clock follows the sound device's played samples and falls back to a stopwatch |
+| **Preview, acceptance** (`PreviewTests`, on its own) | pass: a 10 s 1080p30 recording decoded on the graphics card, drawn 60 times a second into a 1280 × 720 view on the engine's clock: 299 of 300 pictures shown, no draw waited for a picture, 8.9 ms a draw on average (14.7 ms at most) |
+| **M1 cuts, acceptance** (`ExportTests`) | pass: 100 s, 10.5 s and 60 s cut out of a 20-minute 320 × 180 recording: 1029.5 s and 30,885 frames exported (66 s), every frame the source frame the timeline shows, every one of the 515 flashes with its beep within 0.1 ms |
+| Exports (`ExportTests`, `MultiTrackTests`, `TransitionTests`, `AnnotationTests`) | pass: two cuts exported frame by frame with the flashes and beeps in step; every preset's codecs and size (720p, HEVC at a multiple of 8, sound only); cancelling leaves no file; a moved and resized webcam where it was put; an annotation shown only in its time; a 2× part and a freeze frame by frame, the beeps (pitch kept) where they belong |
+| The timeline (`TimelineTests`) | pass: rows (top layer first, sound at the bottom); hits on items and their edges; snapping to edges, the playhead and 0 within 8 px; zooming at the mouse; scrubbing; dragging with and without linked clips as one undo step; trimming to the playhead; ranges; the drawing (rows, playhead) |
+| The editor's view model (`VideoEditorTests`, `MultiTrackEditorTests`, `AnnotationEditorTests`, `TransitionEditorTests`, `EffectEditorTests`) | pass: the frame at the playhead in the preview; split, cut a range, ripple delete, undo; track switches and volume sliders (one step per drag, headers kept); save and close; another recording and music added; the panel's settings for clips, pictures, annotations and effects, and their undo; dragging and resizing pictures and annotations on the preview, keyframes made by dragging; speed (one step per drag), ramp, freeze length, crossfade and its removal; inserting annotations and effects |
+| Export window (`VideoEditorTests`) | pass: the export lands beside an existing file as " (2)" without touching it; the preset and quality are remembered; sound-only presets change the extension and say so |
+| Entry points (`VideoEditorTests`) | pass: the recording workflow's step opens the recording; `--video-editor` parses |
+| The windows on the desktop (`VideoEditorWindowTests`, user approved, on their own) | pass: the editor window with the preview on the graphics card (OpenGL) and in memory: the first frame drawn, the track headers, the time and the buttons; a second of playing moves the playhead and draws 30 frames (decoding on the graphics card); closing with unsaved changes asks, and Discard closes; the export window shows its 8 formats and its buttons. The first run failed in set-up (the test recording was encoded on the STA thread, which Media Foundation refuses); fixed in the tests |
+| The whole suite | 1358 tests without the desktop: 1261 pass and 97 skip (the desktop tests, RNNoise until it is built, the explicit ones), 0 fail; then the 4 video editor desktop tests (user approved, that group only): 4 pass |
+
+### Pending: by hand
+- **The video editor in the installed app:**
+  - **Opening:** tray › Video Editor (open, edit the last recording), the recording workflow's step, a `.cgcap` opened from the dialog, a project whose media moved.
+  - **Playing:** a real recording with sound through the speakers: picture and sound together, scrubbing, the frame steps.
+  - **Editing:** cuts, ranges, drags and trims with the mouse, music, a webcam recording's placement, annotations (Arabic typed with the Arabic layout), speed, freezes, crossfades, effects from a "Keep the video clean" recording.
+  - **Exporting** a long recording with the graphics card's encoder; the WebM and HEVC files in browsers and players.
+- **The GPU preview** on an NVIDIA, AMD and Intel card, and its fallback under Remote Desktop and with no OpenGL driver.
+- **Mixed DPI:** the editor and export windows at 150%.

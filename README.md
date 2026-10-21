@@ -23,6 +23,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 13 | Capture parity with FastStone: floating capture toolbar; fixed-size, freehand, polygon, rounded, object (UI Automation) and open-menu captures, transparent outside their shape; repeat last capture; a delay per kind of capture; magnifier, colour picker, screen ruler, crosshair | done |
 | 14 | Output destinations: the after-capture workflow (and one for recordings) through the editor, a file, the clipboard, a printer, Word, PowerPoint, FTP/FTPS/SFTP, HTTP uploads (the link copied) and other apps; a Test button for each; passwords kept with DPAPI | done (a real printer, Office and real servers by hand pending) |
 | 15 | Image editor extras: effects (shadow, torn and faded edges, border, rounded corners, perspective, brightness/contrast, grayscale, sharpen, watermark) on the image or a selected area with a live preview, effect and watermark presets, spotlight and magnifier, canvas size, trim, rotate by any angle, flip, Arabic text; Combine Images, Batch Process, Images to PDF, a PDF destination | done (by-hand checks in the installed app pending) |
+| 16 | Timeline video editor: projects (`.cgcap`), frame-exact cuts, sound tracks, webcam placement, music, annotations with keyframes (Arabic text, blur, pixelate), speed and ramps, fades, crossfades, freeze frames, clicks, keystrokes and the pointer from the metadata; preview on the graphics card; export to MP4 (H.264, HEVC), WebM (VP9, AV1), M4A and MP3 | done (by-hand checks in the installed app pending) |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -79,6 +80,7 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `--repeat-last` | The last capture again: the same kind, the same pixels or window |
 | `--toolbar` | Show or hide the capture toolbar |
 | `--magnifier`, `--color-picker`, `--ruler`, `--crosshair` | The screen tools |
+| `--video-editor` | Pick a recording or a project to open in the [video editor](#video-editor) |
 | `--exit` | Shut the running instance down |
 
 ## Hotkeys
@@ -104,7 +106,7 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 
 | Tab | What |
 |---|---|
-| Output | After capture: the workflow, in order (open in the editor, save to file, copy, print, Word, PowerPoint, PDF, a server, an upload, an app, copy the link; each on or off). After a recording is saved: its own steps. Folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
+| Output | After capture: the workflow, in order (open in the editor, save to file, copy, print, Word, PowerPoint, PDF, a server, an upload, an app, copy the link; each on or off). After a recording is saved: its own steps (open in the video editor, copy, upload…). Folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
 | Destinations | The printer, Word and PowerPoint, PDF, FTP/FTPS/SFTP servers, HTTP uploads and apps to open captures with, each with a Test button (see [Output destinations](#output-destinations)) |
 | Capture | Capture delay (also in the tray) and a delay per kind of capture, hide delay, the capture toolbar at startup, cursor, window shadow, fixed-size region and rounded corners, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
 | Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer. Sound: system audio on/off, all sound / only one app / all except one app, the output device (the default, followed, or one by name), the microphone (none, the Windows default or a connected one); with both, one mixed track, a track per source, or both. Microphone processing (noise suppression with its strength, noise gate with its threshold, compressor, limiter), live level meters, the microphone test, evening out loudness when saving. FFmpeg's version |
@@ -122,7 +124,7 @@ What happens to a capture is a **workflow** (Settings › Output): its steps run
 
 - **The editor.** Steps after "Open in the editor" wait for the editor's **Continue** button and get the edited image. The editor's **Send to** menu sends the image to any destination at any time.
 - **One notification** sums up each run: what was saved, uploaded or copied, and what failed (a failed step doesn't stop the others). Clicking it shows the saved file, or opens the link.
-- **Recordings** have a workflow of their own, run after the MP4 is saved (nothing more by default). The clipboard takes a recording as a file, to paste into a folder, a chat or an email.
+- **Recordings** have a workflow of their own, run after the MP4 is saved (nothing more by default). The clipboard takes a recording as a file, to paste into a folder, a chat or an email; **Open in the video editor** opens it in the [video editor](#video-editor).
 - **The toolbar's after-capture button** switches the workflow's steps on and off.
 
 Destinations, each with a **Test** button (it checks the set-up as it is in the window; it never prints, opens Office or leaves files behind):
@@ -236,7 +238,21 @@ Settings › **Overlays** chooses what recordings show of what you do. Everythin
   - **Keys:** Esc stops drawing (the drawings stay), Delete clears them, Ctrl+Z undoes, 1–4 pick a tool.
   - **Fading:** drawings can fade away by themselves after a set time.
 - **Metadata file**: next to each recording, `name.cgmeta.json` keeps the pointer on every frame, the clicks, the keys (only as the keystroke overlay showed them), which app was in front, and when you drew. All times are on the video's clock.
-- **Adding overlays later**: with "Keep the video clean" in Settings, nothing is drawn while recording. Tray › **Add Overlays to a Recording…** then writes `name (overlays).mp4` with the overlays as Settings has them now, from the metadata file. The recording itself isn't changed.
+- **Adding overlays later**: with "Keep the video clean" in Settings, nothing is drawn while recording. Tray › **Add Overlays to a Recording…** then writes `name (overlays).mp4` with the overlays as Settings has them now, from the metadata file. The recording itself isn't changed. The [video editor](#video-editor) does the same as effects you can change, cut and time.
+
+## Video editor
+
+Tray › **Video Editor** › **Open a Recording or Project…** (or **Edit the Last Recording**, or the recording workflow's step **Open in the video editor**). A recording opens as a project: its screen, its webcam (where it was recorded; hidden when it is already in the pictures), a sound track per source (the microphone and system audio apart when the recording kept them apart), and, for recordings made with "Keep the video clean", its clicks, keys and pointer as effects. Nothing ever changes the recording: **Export** makes a new file.
+
+- **The window**: the preview on top (drawn on the graphics card when it can, else in memory; under Remote Desktop always in memory), the transport (start, a frame back, play/pause, a frame on, end, the time), the timeline with a header per track (mute, solo, shown, lock, and a volume slider for sound), and the selected item's settings on the right.
+- **Cutting**: **S** splits every clip at the playhead. Mark a range (drag over an empty part of a track, Shift+drag on the ruler, or **I** and **O**) and press **Delete** to take it out of every track, closing the gap; Delete on a selected clip removes it and its linked clips (a recording's screen, webcam and sound), **Shift+Delete** removes its time too. Drag clips to move them (Alt: without their linked clips), drag their edges to trim; both snap to edges, the playhead and 0 (Alt: no snapping). Locked tracks are never changed.
+- **Sound**: each track's volume and mute or solo; each clip's volume (0–200%) and fades. File › **Add Music…** puts a sound file on a track of its own at 30%.
+- **Pictures**: drag the webcam (or any picture) on the preview to move it, its corner to resize it; the panel sets its size, place, shape (rectangle, rounded, circle), border, mirror and opacity.
+- **Annotations** (Insert menu, or the Text, Arrow and Blur buttons): text (any language, Arabic shaped and right to left), arrows, lines, rectangles, ellipses, highlights, and blurred or pixelated areas, over the playhead or the marked range, fading in and out. Drag them on the preview; with **keyframes** (the panel's Add a keyframe at the playhead) they move from one place to the next, evenly or smoothly.
+- **Speed and transitions**: a clip's speed (0.25× to 8×; the sound keeps its pitch) or a speed that changes along it; Edit › **Freeze the Frame at the Playhead** (2 s, the sound waits); Edit › **Crossfade into the Next Clip** (1 s); fades in and out. What follows moves with them.
+- **Effects from the metadata** (Insert › Click Highlights, Keystrokes, Pointer Effects): rings at the clicks, the keys pressed, a halo or spotlight around the pointer; when the pointer isn't in the pictures, also a bigger pointer, a smoother path and hiding it when it stands still. They follow the pictures through cuts and speed changes.
+- **Projects**: File › **Save Project** writes `name.cgcap` (the edits; the media stays where it is, found again by its path or next to the project). **Save with Media…** puts the recordings inside, to take the project to another PC. Undo and redo (Ctrl+Z, Ctrl+Y) cover every edit.
+- **Export** (Ctrl+E): MP4 H.264 at 1080p, 720p or the project's size, MP4 HEVC, WebM with VP9 or AV1, or the sound alone as M4A or MP3, at Small, Balanced, High or Near lossless. It runs in the background with the time left and Cancel, using the graphics card's encoder when there is one (as recording does). An existing file is only replaced through the Browse dialog.
 
 ## Capture Text
 
@@ -301,6 +317,7 @@ src/CashGear.Capture.Media      FFmpeg in-process (FFmpeg.AutoGen): encoders, cr
 src/CashGear.Capture.Audio      Sound devices: WASAPI capture with Windows' timestamps, devices followed, process loopback, microphone chain, RNNoise, meters
 src/CashGear.Capture.Overlays   Recording overlays: input hooks + keystroke privacy (UI Automation), pointer shapes, Direct2D compositor, webcam (Windows.Media.Capture)
 src/CashGear.Capture.Recording  Screen recording: timestamped WGC pictures + sound -> overlays on the GPU -> encoders -> temp file -> MP4; webcam track; recovery; adding overlays later
+src/CashGear.Capture.VideoEditor  Video editor core: projects (.cgcap), undo, timeline edits, decoding for the preview, the sound mixer and playback, the Skia compositor (preview and export), metadata effects, export
 tools/get-ffmpeg.ps1            Downloads the pinned LGPL FFmpeg build into tools/ffmpeg (not committed)
 tools/get-rnnoise.ps1           Builds rnnoise.dll from the pinned RNNoise source into tools/rnnoise (not committed; needs MSVC)
 tools/SyncTest                  Recording acceptance test: flashes + beeps, then sync, drift, CPU (docs/TESTING.md)
@@ -309,7 +326,7 @@ tools/package.ps1               Builds the installer and update packages (Velopa
 tools/make-icon.ps1             Draws the app icon
 src/CashGear.Capture.Outputs    Output destinations: registry, workflow runner, Word/PowerPoint (Open XML), PDF (Skia), FTP/FTPS (FluentFTP), SFTP (SSH.NET), HTTP upload, open with, DPAPI secrets
 src/CashGear.Capture.App        WPF app: tray, capture toolbar, screen tools, image tools (batch, combine, PDF), windows, view models, output (editor, file, clipboard, printer)
-tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, Overlays, Outputs, App); the Outputs tests run their own FTP, SFTP and HTTP servers on 127.0.0.1
+tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engine, Media, Audio, Overlays, Outputs, VideoEditor, App); the Outputs tests run their own FTP, SFTP and HTTP servers on 127.0.0.1
 ```
 
 ## Files on disk
@@ -323,8 +340,10 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | Recordings in progress (and ones a crash left) | `%LocalAppData%\CashGear\Capture\Recordings\Temp\` |
 | Which encoders work here | `%LocalAppData%\CashGear\Capture\encoders.json` |
 | A recording's metadata (pointer, clicks, keys) | `name.cgmeta.json` next to the recording |
+| Video projects | `name.cgcap` where you save them (a zip: `project.json`, and `media\` with Save with Media) |
+| The video editor's thumbnails and waveforms, and media unpacked from projects | `%LocalAppData%\CashGear\Capture\VideoEditor\` |
 | Effect and watermark presets, and the image tools' last choices | `%AppData%\CashGear\Capture\presets.json` |
-| What the app remembers (the last capture, the toolbar's and ruler's places, picked colours, the magnifier's zoom) | `%LocalAppData%\CashGear\Capture\state.json` |
+| What the app remembers (the last capture, the toolbar's and ruler's places, picked colours, the magnifier's zoom, the video editor's export choices, recent projects and last recording) | `%LocalAppData%\CashGear\Capture\state.json` |
 | Passwords and tokens of the destinations (DPAPI, this Windows user only) | `%LocalAppData%\CashGear\Capture\secrets.json` |
 | Captures on their way to an upload or app (deleted after each workflow; copies opened in apps after a day) | `%LocalAppData%\CashGear\Capture\outgoing\` |
 | Installed app (Setup.exe) | `%LocalAppData%\CashGear.Capture\` (removed by uninstall; the rows above are kept) |

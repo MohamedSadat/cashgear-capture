@@ -1422,3 +1422,81 @@ The editor gets effects, a watermark, a spotlight and a magnifier, and more ways
   - **Pages:** Skia rounds page sizes to whole points (A4 is 595 × 842).
   - **No extras:** no captions, headers or page numbers, and no adding to an existing PDF.
 - **Effects window:** each preview starts from a copy of the image, so very large images (8K and up) preview with a short delay.
+
+## Phase 16 — Timeline Video Editor (2026-10-21)
+
+Recordings can now be edited on a timeline without changing them: cut out parts frame by frame, set each sound track's level, move and resize the webcam, add music, text, arrows, shapes and blurred areas that move with keyframes, speed clips up or ramp their speed, fade and crossfade, freeze a frame, and draw the clicks, keys and pointer from the recording's metadata. The edits are a project (`.cgcap`); **Export** makes a new MP4, WebM, M4A or MP3. The preview is drawn on the graphics card and the export through the very same compositor, so what is seen is what is exported. The phase came in five milestones, each tagged (`phase-16-m1-done` … `phase-16-m5-done`).
+
+### Added
+- **The video editor** (tray › **Video Editor** › Open a Recording or Project… or Edit the Last Recording, the recording workflow's **Open in the video editor** step, `--video-editor`):
+  - **Opening a recording** makes a project: its size and frame rate, the screen, the webcam placed where it was recorded (hidden when the recording already shows it), a sound track per source (the "Mixed" track left out when the sources are there too), all linked; a recording made with "Keep the video clean" also gets its overlays as effects.
+  - **The window:** menus (File, Edit, Insert, View), the preview, the transport (start, a frame back, play/pause, a frame on, end, the time), the timeline with a header per track (mute, solo, shown, lock, a volume slider for sound, Delete the Track), and the selected item's settings on the right. Keys: S, Del, Shift+Del, I, O, Esc, ←, →, Home, End, Space, Ctrl+Z/Y/S/E, zoom.
+  - **Closing** asks about unsaved changes, and so does exiting the app.
+- **M1 — Trim and cut:**
+  - **Split** every clip at the playhead; **cut out a range** from every unlocked track (the gap closes); **delete** a clip with its linked clips, or **ripple delete** it with its time.
+  - **The timeline:** click or drag the ruler to scrub, drag clips to move them (Alt: without their linked clips), drag edges to trim; moves and trims snap to edges, the playhead and 0 (Alt: no snapping); a drag is one undo step. Thumbnails along video clips and waveforms in sound clips, made in the background and kept on disk.
+  - **Playing:** the sound is mixed ahead on its own thread and the preview follows the sound device's clock (a stopwatch without a device).
+  - **Projects:** `.cgcap` files (a zip of `project.json`, stored `media\` with **Save with Media…**); media found where it was or next to the project, missing media offered to be located; undo and redo for every edit.
+  - **Export:** MP4 H.264 at 1080p, 720p or the project's size, MP4 HEVC, WebM VP9 or AV1 with Opus, M4A or MP3, at four qualities, on a background thread with progress, the time left and Cancel (no file left). The video encoder is the graphics card's when recording's detection found one, else software. A file already there is only replaced through the Browse dialog; otherwise the export gets " (2)".
+- **M2 — Multi-track:** each sound track's volume, mute and solo; each clip's volume (0–200%) and fades; File › **Add Music…** on a track of its own at 30%; pictures (the webcam, or any clip) dragged and resized on the preview, with size, place, shape (rectangle, rounded, circle), border, mirror and opacity in the panel.
+- **M3 — Annotations** (Insert menu, Text/Arrow/Blur buttons): text (shaped and ordered like the image editor's, Arabic included), arrows, lines, rectangles, ellipses, highlights, blurred and pixelated areas; over the playhead or the marked range on annotation tracks; fades; dragged, resized and their line ends moved on the preview; keyframes (added at the playhead, or by dragging when there are already two) move them evenly or smoothly.
+- **M4 — Speed and transitions:** a clip's speed from 0.25× to 8× (the sound keeps its pitch) or changing evenly along it; crossfades into the next clip; freeze frames (the sound waits); each moves what follows on every unlocked track.
+- **M5 — Effects from the metadata** (Insert › Click Highlights, Keystrokes, Pointer Effects): rings at the clicks, keystroke captions, a halo or spotlight around the pointer, and, when the app draws the pointer, a bigger pointer, a smoother path and hiding it when it stands still. They follow each clip's source time, so cuts, speed and freezes keep them on their pictures.
+- **Inside.**
+  - **New project `CashGear.Capture.VideoEditor`** (no WPF):
+    - `Model/`: `VideoProject`, `Track`, `Clip`, `AnnotationItem`, `EffectItem`, `ProjectJson`, `ProjectFile`, `ProjectFactory`;
+    - `Editing/`: `ProjectHistory`, `TimelineEdits`, `PlacementEdits`, `TrackEdits`, `AnnotationEdits`, `TransitionEdits`;
+    - `Playback/`: `VideoFrame`/`FramePool`, `FrameCursor`, `FrameSource`, `PreviewFrames`, `TimelineMixer`, `PlaybackEngine`, `WasapiAudioOutput`, `MediaPreviews`;
+    - `Rendering/`: `FrameCompositor`, `MetadataOverlays`;
+    - `Timeline/`: `TimelineView`, `TimelineSession`, `TimelineRenderer`;
+    - `Export/`: `ExportPresets`, `ProjectExporter`.
+  - **Media:** `VideoStreamReader` (frame-exact seeks, Direct3D 11 hardware decoding through one shared device), `AudioStreamReader` (48 kHz stereo, sample-exact seeks), `TempoFilter` (atempo), `ExportWriter` (MP4, WebM, M4A, MP3), Opus and MP3 in `AudioEncoder`, frame rate and sound details in `MediaStreamInfo`.
+  - **Core:** export-only encoders (libvpx-vp9, libsvtav1, libkvazaar) and `EncoderPresets.Usable`/`ForExport`; `AppState.VideoEditor`; `DestinationIds.VideoEditor`; `InstanceCommand.VideoEditor`.
+  - **App:** `VideoEditorWindow`, `PreviewHost` (SKGLElement, falling back to SKElement), `TimelineControl`, `VideoEditorViewModel`, `ItemProperties` (the panel, on the image editor's parameter templates; a `NoteParameter` template), `ExportWindow`, `VideoEditorWindows`, `VideoEditorDestination`; the tray's Video Editor menu; the last recording remembered.
+  - **Tests:** a new `CashGear.Capture.VideoEditor.Tests`; `StampedRecording` writes test recordings whose every picture carries its number.
+
+### Deviations from the spec
+- **The export draws every frame with the preview's Skia compositor and encodes it in the app** (the user's choice), instead of building an FFmpeg filter graph: text (Arabic too), blur and keyframes look the same in both, and cuts are exact to the frame. The sound is mixed in C#; FFmpeg's atempo keeps the pitch at other speeds.
+- **The GPU preview uses OpenGL** (SkiaSharp's `SKGLElement`, the user's choice of a GPU preview with a fallback), not a Direct3D Skia context: WPF can host OpenGL through SkiaSharp.Views.WPF without new packages. Decoding is on the graphics card (D3D11VA); each picture is then copied to memory and converted to BGRA, not kept as a GPU texture.
+- **Undo keeps snapshots of the project** (records are immutable), with the image editor's rules for merging and the saved marker, rather than a command per kind of edit.
+- **Crossfades are overlaps** made by Crossfade into the Next Clip (at most half the shorter clip), not transition objects; only a cross-dissolve.
+- **A speed ramp is an even change** from a start to an end speed per clip, not a curve; its sound is resampled, so its pitch follows the speed (constant speeds keep their pitch).
+- **No Edit button on the "Recording saved" notification:** tray balloons have one click action (it shows the file). Tray › Video Editor › **Edit the Last Recording** takes its place (as planned with the user), with the recording workflow's step, off by default.
+- **Recordings made with "Keep the video clean" open with their overlays as effects** (not in the spec), so they look as recorded and can be changed.
+- **The GIF preset** is left to Phase 17, as the spec says.
+- **HEVC exports** have sizes in multiples of 8 (Kvazaar, the software fallback, takes no other).
+- **The VideoEditor project targets Windows** (it plays sound through NAudio's WASAPI), unlike Editor and Media.
+
+### Fixed during development
+- **Exports stopped with "Encoding sound failed: Invalid argument":** the sound was encoded up to each video frame, which left short AAC frames in the middle. Only the last frame of an export may be short now.
+- **Kvazaar refused 320 × 180** (not a multiple of 8): HEVC exports round their size to 8.
+- **Small pictures on the preview could only be resized:** the resize grip covered all of a 45 px webcam. It takes at most a quarter of a picture now.
+- **A click just inside a clip's end picked the next clip's start** (items were tested last to first): the item under the pointer comes first now.
+- **A recording opened with its pictures below its sound tracks** when the project had no picture track yet: the screen and webcam now go above the sound.
+- **atempo gives up to 0.6% fewer samples** than the speed asks (0.25×: 7.95 s for 8 s): the mixer fills or cuts each clip's sound to its exact length on the timeline.
+- **The preview was drawn about 90 times a second while playing** (every picture decoded ahead asked for a draw): it is drawn when the playhead reaches a new frame, or when a picture it went without arrives, 30 times a second for a 30 fps project.
+- **The 1080p preview acceptance test showed 290 of 300 pictures** when it ran beside the 20-minute export test: the two timed acceptance tests now run on their own, after the rest of their assembly.
+
+### Tested
+- **1358 automated tests** without the desktop: 1261 pass and 97 are skipped (the desktop tests, which need approval to run, the 6 RNNoise tests until `rnnoise.dll` is built, and the explicit ones), 0 fail. Phase 15 had 1242; the 116 new ones are 73 in the new VideoEditor test project, 23 in App, 19 in Media and 1 in Core.
+- **Acceptance (automated):**
+  - **M1:** three cuts (100 s, 10.5 s and 60 s) out of a synthetic 20-minute recording (320 × 180, 30 fps, every picture numbered, a flash and a 1 kHz beep every 2 s) exported to MP4: the duration is right to the frame (1029.5 s, 30,885 frames), every frame is the source frame the timeline shows then, and every flash has its beep within 0.1 ms (515 pairs). It made the recording in 43 s and exported it in 66 s.
+  - **Preview:** a 10 s 1080p30 recording decoded on the graphics card and drawn 60 times a second into a 1280 × 720 view on the playback engine's clock: 299 of the 300 pictures shown, no draw waited for a picture, 8.9 ms a draw on average.
+  - **Re-open:** a project with every kind of item saved and opened again reads back as the same JSON, also moved with its media, with missing media located, and with its media inside.
+- **Media:** frame-exact seeks forward and back with hardware and software decoding, hardware pictures within 3 levels of software; keyframes only; scaled reads; sound seeks landing on the same sample each time; 44.1 kHz resampled; atempo lengths and pitch; each container probed with ffprobe.
+- **VideoEditor:** splits, cuts, deletes, moves and trims (with links and locks), time maps with speed, ramps and freezes; the history; compositor pixels (letterbox, webcam circle, border, fades, crossfades, annotations, text identical to the image editor's in English and Arabic, blur and pixelate); the mixer (volumes, solo, fades, beeps on their samples across cuts, music, speed and ramp pitch, silence under a freeze); the playback clock; the timeline's geometry and drags; exports frame by frame after cuts, a 2× part and a freeze, with the beeps where they belong; every preset; cancelling; metadata effects against the overlay planner, after a cut, a bigger and a hidden pointer, smoothing.
+- **App:** the editor's view model with stamped recordings (frames at the playhead, every command, the panel's settings and their undo steps, dragging on the preview, music, tracks, annotations and keyframes, speed, freeze and crossfade, effects), the export window's view model, the workflow step and the switch; desktop tests for the windows.
+- **The desktop tests of the video editor** (user approved, this group only): the window with the preview on the graphics card and in memory, each playing a second (30 frames drawn, decoding on the graphics card), closing with unsaved changes, the export window: 4 of 4 pass. The first run failed in the tests' set-up: they wrote their test recording on the STA thread, which Media Foundation's encoder refuses; it is written on a worker thread now.
+- **Not run** (pending in TESTING.md): the other desktop tests (unchanged since Phase 15, where they passed); the editor by hand in the installed app; the GPU preview on other graphics cards and under Remote Desktop; real recordings with a webcam and metadata; long exports with the graphics card's encoders.
+
+### Known limitations
+- **Preview:**
+  - Each picture is copied from the graphics card and converted on the processor, at the project's size at most: a 4K project previews more slowly than 1080p, and speeds above 4× can stutter (every picture is decoded).
+  - The sound plays on Windows' default output device only.
+- **Editing:**
+  - Annotations: no freehand, step numbers, spotlights or magnifiers; keyframes move and resize them but don't change colour or opacity; text is resized by its font size.
+  - Crossfades and fades are linear; a ramped clip's sound changes pitch.
+  - Effects need the recording's metadata file; a bigger, smoother or hidden pointer only when the pointer isn't in the pictures; click sounds aren't added.
+- **Projects:** media is found by its path (or next to the project); Save with Media copies whole recordings into the file.
+- **Export:** the whole timeline only (no range); one mixed sound track; no 10-bit or HDR; GIF in Phase 17.
+- **Disk:** thumbnails, waveforms and media unpacked from projects stay in `%LocalAppData%\CashGear\Capture\VideoEditor\` until deleted by hand.
