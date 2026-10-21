@@ -52,6 +52,25 @@ public static class AnnotationEdits
         return (project with { Tracks = [.. project.Tracks, track] }, item.Id);
     }
 
+    /// <summary>
+    /// A metadata effect from <paramref name="at"/> for <paramref name="length"/> seconds on the first effect track
+    /// with room for it (a new one on top if none has).
+    /// </summary>
+    public static (VideoProject Project, string Id) AddEffect(VideoProject project, EffectKind kind, double at, double length)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        var item = new EffectItem { Id = Ids.New(), Kind = kind, Start = Times.Round(Math.Max(0, at)), Length = Times.Round(Math.Max(TimelineEdits.ShortestItem, length)) };
+        var free = project.Tracks.FirstOrDefault(t => t.Kind == TrackKind.Effect && !t.Locked && !t.Items.Any(i => i.Overlaps(item.Start, item.End)));
+        if (free is not null)
+        {
+            return (project.WithTrack(free.WithItems([.. free.Items, item])), item.Id);
+        }
+
+        var count = project.Tracks.Count(t => t.Kind == TrackKind.Effect);
+        var track = new Track(Ids.New(), TrackKind.Effect, count == 0 ? "Effects" : $"Effects {count + 1}", [item]);
+        return (project with { Tracks = [.. project.Tracks, track] }, item.Id);
+    }
+
     /// <summary>Whether <paramref name="point"/> is on the annotation at <paramref name="time"/>, and on which grip.</summary>
     public static PreviewGrip? HitTest(AnnotationItem item, double time, SKPoint point, double grip)
     {

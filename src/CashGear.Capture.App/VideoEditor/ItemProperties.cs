@@ -1,6 +1,9 @@
 using System.Windows.Media;
+using System.IO;
 using CashGear.Capture.App.Editor;
+using CashGear.Capture.Core.Settings;
 using CashGear.Capture.VideoEditor.Model;
+using EffectKind = CashGear.Capture.VideoEditor.Model.EffectKind;
 using CashGear.Capture.VideoEditor.Rendering;
 using SkiaSharp;
 
@@ -47,6 +50,9 @@ public static class ItemProperties
                 _ => "Video clip",
             },
             AnnotationItem annotation => ShapeName(annotation.Shape),
+            EffectItem { Kind: EffectKind.Clicks } => "Click highlights",
+            EffectItem { Kind: EffectKind.Keystrokes } => "Keystrokes",
+            EffectItem => "Pointer effects",
             _ => "Item",
         };
     }
@@ -60,6 +66,11 @@ public static class ItemProperties
         if (item is AnnotationItem annotation)
         {
             return ForAnnotation(annotation, current, apply, keyframes);
+        }
+
+        if (item is EffectItem effect)
+        {
+            return ForEffect(project, effect, current, apply);
         }
 
         var list = new List<EditParameter>();
@@ -243,6 +254,118 @@ public static class ItemProperties
         {
             list.Add(new ActionParameter($"Add a keyframe at the playhead ({annotation.Keyframes.Count} now)", new CommunityToolkit.Mvvm.Input.RelayCommand(keyframes.Add)));
             list.Add(new ActionParameter("Remove the keyframe at the playhead", new CommunityToolkit.Mvvm.Input.RelayCommand(keyframes.Remove)));
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// Whether the recordings an effect is over have the pointer in their pictures (then it can't be resized,
+    /// smoothed or hidden), and whether any has metadata at all.
+    /// </summary>
+    public static (bool HasMetadata, bool PointerInPictures) MetadataOf(VideoProject project)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        var any = false;
+        var inPictures = false;
+        foreach (var asset in project.Assets.Where(a => a.MetadataPath is not null))
+        {
+            try
+            {
+                var metadata = Core.Overlays.RecordingMetadata.Load(asset.MetadataPath!);
+                any = true;
+                inPictures |= metadata.CursorInVideo;
+            }
+            catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
+            {
+                // not readable: no effects from it
+            }
+        }
+
+        return (any, inPictures);
+    }
+
+    private static IReadOnlyList<EditParameter> ForEffect(VideoProject project, EffectItem effect, Func<VideoProject> current, Apply apply)
+    {
+        var list = new List<EditParameter>();
+        void Change<T>(T parameter, string name, Func<EffectItem, EffectItem> update)
+            where T : EditParameter
+        {
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is "Value" or "Selected" && current().Find(effect.Id)?.Item is EffectItem now)
+                {
+                    apply(update(now), name, $"property {effect.Id} {name}");
+                }
+            };
+            list.Add(parameter);
+        }
+
+        var (hasMetadata, pointerInPictures) = MetadataOf(project);
+        if (!hasMetadata)
+        {
+            list.Add(new NoteParameter("No recording here has a metadata file, so there are no clicks, keys or pointer to show. Recordings get one when Settings › Overlays › Save a metadata file is on."));
+        }
+
+        switch (effect.Kind)
+        {
+            case EffectKind.Clicks:
+            {
+                var clicks = effect.Clicks ?? new ClickOverlaySettings();
+                var left = new ColorParameter("Left button", FrameCompositor.Color(clicks.LeftColor, SKColors.Yellow));
+                Change(left, "left colour", e => e with { Clicks = (e.Clicks ?? new ClickOverlaySettings()) with { LeftColor = Hex(left.Value.Value) } });
+                var right = new ColorParameter("Right button", FrameCompositor.Color(clicks.RightColor, SKColors.Red));
+                Change(right, "right colour", e => e with { Clicks = (e.Clicks ?? new ClickOverlaySettings()) with { RightColor = Hex(right.Value.Value) } });
+                var size = new NumberParameter("Size", 20, 200, clicks.Size, 1, " px");
+                Change(size, "click size", e => e with { Clicks = (e.Clicks ?? new ClickOverlaySettings()) with { Size = (int)size.Value } });
+                break;
+            }
+
+            case EffectKind.Keystrokes:
+            {
+                var keys = effect.Keystrokes ?? new KeystrokeOverlaySettings();
+                var position = new ChoiceParameter("Position",
+                [
+                    new(OverlayAnchor.BottomCenter, "Bottom centre"), new(OverlayAnchor.BottomLeft, "Bottom left"), new(OverlayAnchor.BottomRight, "Bottom right"),
+                    new(OverlayAnchor.TopCenter, "Top centre"), new(OverlayAnchor.TopLeft, "Top left"), new(OverlayAnchor.TopRight, "Top right"),
+                ], keys.Position);
+                Change(position, "keys position", e => e with { Keystrokes = (e.Keystrokes ?? new KeystrokeOverlaySettings()) with { Position = position.As<OverlayAnchor>() } });
+                var size = new NumberParameter("Size", 8, 72, keys.FontSize, 1, " pt");
+                Change(size, "keys size", e => e with { Keystrokes = (e.Keystrokes ?? new KeystrokeOverlaySettings()) with { FontSize = (int)size.Value } });
+                var fade = new NumberParameter("Shown for", 0.5, 10, keys.FadeSeconds, 0.1, " s");
+                Change(fade, "keys time", e => e with { Keystrokes = (e.Keystrokes ?? new KeystrokeOverlaySettings()) with { FadeSeconds = fade.Value } });
+                break;
+            }
+
+            default:
+            {
+                var pointer = effect.Pointer ?? new PointerOverlaySettings();
+                var highlight = new ChoiceParameter("Around the pointer", [new(PointerEffect.None, "Nothing"), new(PointerEffect.Halo, "A halo"), new(PointerEffect.Spotlight, "A spotlight (the rest dimmed)")], pointer.Effect);
+                Change(highlight, "pointer highlight", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Effect = highlight.As<PointerEffect>() } });
+                var color = new ColorParameter("Halo colour", FrameCompositor.Color(pointer.Color, SKColors.Yellow));
+                Change(color, "halo colour", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Color = Hex(color.Value.Value) } });
+                var radius = new NumberParameter("Radius", 20, 300, pointer.Radius, 1, " px");
+                Change(radius, "pointer radius", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Radius = (int)radius.Value } });
+                var dim = new NumberParameter("Dim the rest", 10, 90, pointer.Dim, 1, " %");
+                Change(dim, "dim", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Dim = (int)dim.Value } });
+                if (pointerInPictures)
+                {
+                    list.Add(new NoteParameter("The pointer is in this recording's pictures, so it can't be made bigger, smoother or hidden here. Recordings made with Settings › Overlays › Keep the video clean leave it out for the editor to draw."));
+                }
+                else
+                {
+                    var scale = new NumberParameter("Pointer size", 50, 300, pointer.Scale * 100, 5, " %");
+                    Change(scale, "pointer size", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Scale = scale.Value / 100 } });
+                    var smoothing = new NumberParameter("Smooth its movement", 0, 100, effect.Smoothing * 100, 5, " %");
+                    Change(smoothing, "smoothing", e => e with { Smoothing = smoothing.Value / 100 });
+                    var idle = new SwitchParameter("Hide it when it stands still", pointer.HideWhenIdle);
+                    Change(idle, "hide when idle", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { HideWhenIdle = idle.Value } });
+                    var after = new NumberParameter("After", 0.5, 10, pointer.IdleSeconds, 0.5, " s");
+                    Change(after, "idle time", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { IdleSeconds = after.Value } });
+                }
+
+                break;
+            }
         }
 
         return list;

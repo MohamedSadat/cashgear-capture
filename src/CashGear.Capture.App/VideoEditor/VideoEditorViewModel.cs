@@ -7,6 +7,7 @@ using CashGear.Capture.Media;
 using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Export;
 using CashGear.Capture.VideoEditor.Model;
+using EffectKind = CashGear.Capture.VideoEditor.Model.EffectKind;
 using CashGear.Capture.VideoEditor.Playback;
 using CashGear.Capture.VideoEditor.Rendering;
 using CashGear.Capture.VideoEditor.Timeline;
@@ -658,6 +659,27 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             Seek(from);
         }
 
+        return id;
+    }
+
+    [RelayCommand]
+    private void InsertClicks() => InsertEffect(EffectKind.Clicks);
+
+    [RelayCommand]
+    private void InsertKeystrokes() => InsertEffect(EffectKind.Keystrokes);
+
+    [RelayCommand]
+    private void InsertPointer() => InsertEffect(EffectKind.Pointer);
+
+    /// <summary>An effect from the recordings' metadata over the marked range (else the whole timeline), selected.</summary>
+    public string InsertEffect(EffectKind kind)
+    {
+        StopPlaying();
+        var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (0, Math.Max(Project.Duration, 1));
+        var (project, id) = AnnotationEdits.AddEffect(Project, kind, from, length);
+        History.Apply(kind switch { EffectKind.Clicks => "add click highlights", EffectKind.Keystrokes => "add keystrokes", _ => "add pointer effects" }, project);
+        Timeline.SetRange(null);
+        Timeline.Select(id);
         return id;
     }
 

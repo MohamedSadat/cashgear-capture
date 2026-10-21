@@ -110,6 +110,11 @@
     </StackPanel>
   </DataTemplate>
 
+  <DataTemplate DataType="{x:Type local:NoteParameter}">
+    <TextBlock Margin="0,8,0,0" Text="{Binding Label}" TextWrapping="Wrap" Opacity="0.75"
+               Visibility="{Binding IsVisible, Converter={StaticResource ParameterVisible}}" />
+  </DataTemplate>
+
   <DataTemplate DataType="{x:Type local:ActionParameter}">
     <Button Margin="0,8,0,0" HorizontalAlignment="Left" Content="{Binding Label}" Command="{Binding Command}"
             Visibility="{Binding IsVisible, Converter={StaticResource ParameterVisible}}" />

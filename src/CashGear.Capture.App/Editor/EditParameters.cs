@@ -184,6 +184,9 @@ public sealed class AnchorCell(AnchorParameter owner, Anchor anchor) : Observabl
     internal void Refresh() => OnPropertyChanged(nameof(IsSelected));
 }
 
+/// <summary>A line of explanation among the settings (why some can't be changed).</summary>
+public sealed class NoteParameter(string label) : EditParameter(label);
+
 /// <summary>A button that does something to the other settings ("New pattern").</summary>
 public sealed class ActionParameter(string label, IRelayCommand command) : EditParameter(label)
 {

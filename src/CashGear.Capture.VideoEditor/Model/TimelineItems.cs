@@ -34,6 +34,7 @@ public enum ItemEdge
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(Clip), "clip")]
 [JsonDerivedType(typeof(AnnotationItem), "annotation")]
+[JsonDerivedType(typeof(EffectItem), "effect")]
 public abstract record TimelineItem
 {
     public required string Id { get; init; }

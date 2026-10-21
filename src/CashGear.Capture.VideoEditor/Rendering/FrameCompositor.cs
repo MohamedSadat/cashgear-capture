@@ -31,6 +31,10 @@ public sealed class FrameCompositor
     private static readonly SKSamplingOptions Sampling = new(SKFilterMode.Linear, SKMipmapMode.None);
 
     private readonly IFrameProvider _frames;
+    private readonly MetadataOverlays _overlays = new();
+
+    /// <summary>The recordings' metadata the effect tracks draw from.</summary>
+    public MetadataOverlays Overlays => _overlays;
 
     public FrameCompositor(IFrameProvider frames)
     {
@@ -104,6 +108,16 @@ public sealed class FrameCompositor
             var track = project.Tracks[index];
             if (track.Hidden)
             {
+                continue;
+            }
+
+            if (track.Kind == TrackKind.Effect)
+            {
+                foreach (var effect in track.Items.OfType<EffectItem>().Where(e => e.Covers(time)))
+                {
+                    _overlays.Draw(canvas, project, index, effect, time);
+                }
+
                 continue;
             }
 

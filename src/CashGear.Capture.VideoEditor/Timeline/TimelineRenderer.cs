@@ -189,6 +189,9 @@ public sealed class TimelineRenderer : IDisposable
             Clip clip => project.Asset(clip.AssetId)?.Name ?? "Missing media",
             AnnotationItem { Shape: AnnotationShape.Text } written => written.Text.ReplaceLineEndings(" "),
             AnnotationItem annotation => annotation.Shape.ToString(),
+            EffectItem { Kind: EffectKind.Clicks } => "Click highlights",
+            EffectItem { Kind: EffectKind.Keystrokes } => "Keystrokes",
+            EffectItem => "Pointer",
             _ => item.GetType().Name,
         };
 

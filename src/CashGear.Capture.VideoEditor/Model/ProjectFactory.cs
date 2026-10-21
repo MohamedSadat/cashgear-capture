@@ -162,6 +162,34 @@ public static class ProjectFactory
         var tracks = project.Tracks.Take(firstPicture).Concat(sounds).Concat(project.Tracks.Skip(firstPicture)).ToList();
         var lastPicture = tracks.FindLastIndex(t => t.HasPictures);
         tracks.InsertRange(lastPicture >= 0 ? lastPicture + 1 : tracks.TakeWhile(t => t.Kind == TrackKind.Audio).Count(), pictures);
+
+        // A recording whose overlays were kept to be added later gets them as effects (the pointer too, when the
+        // pictures don't have it), over the whole recording; they can be changed or deleted like any item.
+        if (metadata is { OverlaysInVideo: false })
+        {
+            var effects = new List<TimelineItem>();
+            EffectItem Effect(EffectKind kind) => new() { Id = Ids.New(), Kind = kind, Start = Times.Round(at), Length = Times.Round(asset.Duration) };
+            if (metadata.Clicks.Count > 0)
+            {
+                effects.Add(Effect(EffectKind.Clicks));
+            }
+
+            if (metadata.Keys.Count > 0)
+            {
+                effects.Add(Effect(EffectKind.Keystrokes));
+            }
+
+            if (!metadata.CursorInVideo)
+            {
+                effects.Add(Effect(EffectKind.Pointer));
+            }
+
+            if (effects.Count > 0)
+            {
+                tracks.Add(new Track(Ids.New(), TrackKind.Effect, "Effects", effects));
+            }
+        }
+
         return project with { Tracks = tracks };
     }
 

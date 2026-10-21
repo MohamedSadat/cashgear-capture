@@ -113,6 +113,10 @@
         <Separator />
         <MenuItem Header="_Blur an Area" Command="{Binding InsertBlurCommand}" />
         <MenuItem Header="_Pixelate an Area" Command="{Binding InsertPixelateCommand}" />
+        <Separator />
+        <MenuItem Header="_Click Highlights" Command="{Binding InsertClicksCommand}" ToolTip="Rings at the clicks, from the recording's metadata" />
+        <MenuItem Header="_Keystrokes" Command="{Binding InsertKeystrokesCommand}" ToolTip="The keys pressed, from the recording's metadata" />
+        <MenuItem Header="Pointer _Effects" Command="{Binding InsertPointerCommand}" ToolTip="A halo or spotlight, a bigger or smoother pointer, from the recording's metadata" />
       </MenuItem>
       <MenuItem Header="_View">
         <MenuItem Header="Zoom _In" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
