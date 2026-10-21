@@ -87,6 +87,7 @@ public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Tra
         TrackKind.Webcam => "Webcam",
         TrackKind.Audio => "Sound",
         TrackKind.Annotation => "Annotations",
+        TrackKind.Caption => "Captions",
         _ => "Effects",
     };
 

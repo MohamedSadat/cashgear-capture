@@ -56,6 +56,9 @@ public enum TrackKind
 
     /// <summary>Effects from a recording's metadata (clicks, keystrokes, the pointer) and zooms into the screen.</summary>
     Effect,
+
+    /// <summary>Captions: written, or made from speech; burned in while the track is shown, and saved as SRT or VTT.</summary>
+    Caption,
 }
 
 /// <summary>
@@ -64,6 +67,7 @@ public enum TrackKind
 /// </summary>
 /// <param name="Hidden">A picture track that isn't drawn (a webcam that is already in the screen's pictures).</param>
 /// <param name="Volume">The track's sound level: 1 is as recorded, up to 2.</param>
+/// <param name="Captions">How a caption track's captions look (null: the default look).</param>
 public sealed record Track(
     string Id,
     TrackKind Kind,
@@ -73,7 +77,8 @@ public sealed record Track(
     bool Solo = false,
     bool Locked = false,
     bool Hidden = false,
-    double Volume = 1)
+    double Volume = 1,
+    CaptionStyle? Captions = null)
 {
     [JsonIgnore]
     public bool HasPictures => Kind is TrackKind.Video or TrackKind.Webcam;

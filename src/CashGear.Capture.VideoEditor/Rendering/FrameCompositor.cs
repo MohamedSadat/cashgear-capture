@@ -18,10 +18,10 @@ public interface IFrameProvider
 public readonly record struct CompositionResult(int Missing);
 
 /// <summary>
-/// Draws a project at a moment: the background, then the picture tracks from the bottom up (each clip where its
-/// placement puts it, faded in and out, crossfading where clips overlap), then the annotations and effects. The
-/// preview (on the GPU or in memory) and the export both draw through it, in the canvas's own pixels: the caller
-/// scales the canvas to the view or to the export's size.
+/// Draws a project at a moment: the background, then the tracks from the bottom up: pictures (each clip where its
+/// placement puts it, faded in and out, crossfading where clips overlap; the screen through the zooms' camera),
+/// annotations, effects and captions. The preview (on the GPU or in memory) and the export both draw through it, in
+/// the canvas's own pixels: the caller scales the canvas to the view or to the export's size.
 /// </summary>
 public sealed class FrameCompositor
 {
@@ -33,6 +33,7 @@ public sealed class FrameCompositor
     private readonly IFrameProvider _frames;
     private readonly MetadataOverlays _overlays = new();
     private readonly ZoomCamera _camera;
+    private readonly CaptionRenderer _captions = new();
 
     /// <summary>The recordings' metadata the effect tracks draw from.</summary>
     public MetadataOverlays Overlays => _overlays;
@@ -125,6 +126,16 @@ public sealed class FrameCompositor
                 foreach (var effect in track.Items.OfType<EffectItem>().Where(e => e.Covers(time)))
                 {
                     _overlays.Draw(canvas, project, index, effect, time, camera);
+                }
+
+                continue;
+            }
+
+            if (track.Kind == TrackKind.Caption)
+            {
+                foreach (var caption in track.Items.OfType<CaptionItem>().Where(c => c.Covers(time) && c.Text.Length > 0))
+                {
+                    _captions.Draw(canvas, caption, track.Captions ?? new CaptionStyle(), size);
                 }
 
                 continue;

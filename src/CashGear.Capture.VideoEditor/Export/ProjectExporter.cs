@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Media;
+using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.VideoEditor.Playback;
 using CashGear.Capture.VideoEditor.Rendering;
@@ -29,13 +30,33 @@ public sealed class ExportException : Exception
 
 /// <param name="Path">The file to write (replaced if it exists: the caller asked).</param>
 /// <param name="EncoderSetting">The recording setting for the encoder (automatic, software only or one encoder).</param>
-public sealed record ExportRequest(VideoProject Project, ExportPreset Preset, QualityPreset Quality, string Path, string? EncoderSetting = null);
+/// <param name="Range">Only this part of the timeline (null: all of it).</param>
+/// <param name="BurnCaptions">Whether caption tracks that are shown are drawn into the pictures.</param>
+/// <param name="CaptionFiles">Subtitle files written next to the file (same name), from every caption track.</param>
+public sealed record ExportRequest(
+    VideoProject Project,
+    ExportPreset Preset,
+    QualityPreset Quality,
+    string Path,
+    string? EncoderSetting = null,
+    TimeRange? Range = null,
+    bool BurnCaptions = true,
+    CaptionFiles CaptionFiles = CaptionFiles.None)
+{
+    /// <summary>The project as the export makes it: the range only, caption tracks hidden when they aren't burned in.</summary>
+    public VideoProject Prepared()
+    {
+        var project = Range is { } range ? ProjectRange.Extract(Project, range) : Project;
+        return BurnCaptions ? project : project with { Tracks = [.. project.Tracks.Select(t => t.Kind == TrackKind.Caption ? t with { Hidden = true } : t)] };
+    }
+}
 
 /// <param name="Remaining">The estimated time left, once there is enough to tell.</param>
 public sealed record ExportProgress(double Fraction, TimeSpan Elapsed, TimeSpan? Remaining);
 
 /// <param name="Encoder">The video encoder used (null for sound only).</param>
-public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed);
+/// <param name="CaptionPaths">The subtitle files written next to it.</param>
+public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed, IReadOnlyList<string>? CaptionPaths = null);
 
 /// <summary>
 /// Makes a file from a project on a background thread: each frame drawn by the same <see cref="FrameCompositor"/>
@@ -61,11 +82,12 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
             throw new ExportException(problem);
         }
 
-        var project = request.Project;
-        if (project.Duration <= 0)
+        if (request.Project.Duration <= 0)
         {
             throw new ExportException("The timeline is empty: there is nothing to export.");
         }
+
+        var project = request.Prepared();
 
         var detected = request.Preset.HasVideo ? await encoders.DetectAsync(ct: ct).ConfigureAwait(false) : [];
         var partial = request.Path + ".partial";
@@ -73,10 +95,10 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         LogStarted(request.Path, request.Preset.Id, request.Quality);
         try
         {
-            var result = Write(request, partial, detected, progress, ct);
+            var result = Write(request with { Project = project, Range = null }, partial, detected, progress, ct);
             File.Move(partial, request.Path, overwrite: true);
             LogFinished(request.Path, result.Frames, result.Elapsed.TotalSeconds);
-            return result with { Path = request.Path };
+            return result with { Path = request.Path, CaptionPaths = WriteCaptions(project, request.Path, request.CaptionFiles) };
         }
         catch (FfmpegException e)
         {
@@ -200,6 +222,29 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         var bytes = writer.Finish();
         Report(1);
         return new ExportResult(partial, TimeSpan.FromSeconds((double)count / fps), count, bytes, video.Candidate.DisplayName, watch.Elapsed);
+    }
+
+    /// <summary>The subtitle files asked for, next to <paramref name="path"/> (none when no caption has text).</summary>
+    private static IReadOnlyList<string> WriteCaptions(VideoProject project, string path, CaptionFiles files)
+    {
+        var cues = SubtitleFiles.Cues(project);
+        var written = new List<string>();
+        if (cues.Count == 0)
+        {
+            return written;
+        }
+
+        foreach (var (flag, format) in new[] { (CaptionFiles.Srt, SubtitleFormat.Srt), (CaptionFiles.Vtt, SubtitleFormat.Vtt) })
+        {
+            if (files.HasFlag(flag))
+            {
+                var file = Path.ChangeExtension(path, SubtitleFiles.Extension(format));
+                SubtitleFiles.Save(file, cues, format);
+                written.Add(file);
+            }
+        }
+
+        return written;
     }
 
     /// <summary>The first encoder of the codec that opens at the export's size, in the order the settings prefer.</summary>
