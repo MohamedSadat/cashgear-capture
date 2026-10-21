@@ -50,6 +50,9 @@ public sealed record OverlayScene(IReadOnlyList<OverlayItem> Items)
     public static OverlayScene Empty { get; } = new([]);
 
     public bool IsEmpty => Items.Count == 0;
+
+    /// <summary>A scene to plan into again and again (<see cref="OverlayPlanner.Plan(InputTimeline, TimeSpan, OverlayScene)"/>): one list, no new objects per frame.</summary>
+    public static OverlayScene Reusable() => new(new List<OverlayItem>());
 }
 
 /// <summary>
@@ -81,6 +84,9 @@ public sealed class OverlayPlanner
     private readonly OverlayColor _right;
     private readonly OverlayColor _middle;
     private readonly OverlayColor _halo;
+    private readonly List<Click> _clicks = [];
+    private SpotlightItem? _lastSpotlight;
+    private HaloItem? _lastHalo;
 
     /// <param name="origin">The frame's top-left on the virtual screen.</param>
     /// <param name="scale">The monitor's scale (1 at 100%).</param>
@@ -111,8 +117,28 @@ public sealed class OverlayPlanner
 
     public OverlayScene Plan(InputTimeline timeline, TimeSpan time)
     {
-        ArgumentNullException.ThrowIfNull(timeline);
         var items = new List<OverlayItem>();
+        Fill(items, timeline, time);
+        return items.Count == 0 ? OverlayScene.Empty : new OverlayScene(items);
+    }
+
+    /// <summary>
+    /// As <see cref="Plan(InputTimeline, TimeSpan)"/>, into <paramref name="scene"/> (made by
+    /// <see cref="OverlayScene.Reusable"/>), which is returned: a recording plans every frame this way without
+    /// allocating, and the scene is valid until the next call.
+    /// </summary>
+    public OverlayScene Plan(InputTimeline timeline, TimeSpan time, OverlayScene scene)
+    {
+        ArgumentNullException.ThrowIfNull(scene);
+        var items = scene.Items as List<OverlayItem> ?? throw new ArgumentException("Plan into a scene from OverlayScene.Reusable().", nameof(scene));
+        items.Clear();
+        Fill(items, timeline, time);
+        return scene;
+    }
+
+    private void Fill(List<OverlayItem> items, InputTimeline timeline, TimeSpan time)
+    {
+        ArgumentNullException.ThrowIfNull(timeline);
         var pointer = timeline.Pointer(time);
         var x = pointer.At.X - _origin.X;
         var y = pointer.At.Y - _origin.Y;
@@ -121,11 +147,24 @@ public sealed class OverlayPlanner
 
         switch (settings.Effect)
         {
+            // While the pointer stands still the same item serves again: an item a frame adds up while recording.
             case PointerEffect.Spotlight:
-                items.Add(new SpotlightItem(x, y, settings.Radius * _scale, settings.Dim / 100.0));
+                var (radius, dim) = (settings.Radius * _scale, settings.Dim / 100.0);
+                if (_lastSpotlight is not { } spot || spot.X != x || spot.Y != y || spot.Radius != radius || spot.Dim != dim)
+                {
+                    _lastSpotlight = new SpotlightItem(x, y, radius, dim);
+                }
+
+                items.Add(_lastSpotlight);
                 break;
             case PointerEffect.Halo when shown > 0:
-                items.Add(new HaloItem(x, y, settings.Radius * _scale, _halo.WithOpacity(shown)));
+                var (size, color) = (settings.Radius * _scale, _halo.WithOpacity(shown));
+                if (_lastHalo is not { } halo || halo.X != x || halo.Y != y || halo.Radius != size || halo.Color != color)
+                {
+                    _lastHalo = new HaloItem(x, y, size, color);
+                }
+
+                items.Add(_lastHalo);
                 break;
         }
 
@@ -156,8 +195,6 @@ public sealed class OverlayPlanner
         {
             AddCaptions(items, timeline, time);
         }
-
-        return items.Count == 0 ? OverlayScene.Empty : new OverlayScene(items);
     }
 
     /// <summary>1, or less while fading out after the pointer stood still too long (when hiding an idle pointer).</summary>
@@ -176,7 +213,8 @@ public sealed class OverlayPlanner
     private void AddClicks(List<OverlayItem> items, InputTimeline timeline, TimeSpan time, double x, double y)
     {
         var size = _settings.ClickSettings.Size * _scale;
-        foreach (var click in timeline.Clicks(time, RingTime))
+        timeline.Clicks(time, RingTime, _clicks);
+        foreach (var click in _clicks)
         {
             var color = click.Button switch
             {

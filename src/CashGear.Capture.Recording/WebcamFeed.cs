@@ -239,7 +239,11 @@ internal sealed partial class WebcamFeed : IDisposable
             _writer.BeginSegment(StreamSetup.From(encoder), packets[0].Seconds);
         }
 
-        packets.ForEach(_writer.Write);
+        foreach (var packet in packets)
+        {
+            _writer.Write(packet);
+        }
+
         packets.Clear();
         return true;
     }

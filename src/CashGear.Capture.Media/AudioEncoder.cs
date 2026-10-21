@@ -132,7 +132,7 @@ public sealed unsafe class AudioEncoder : IDisposable
             }
 
             FfmpegException.Check(result, "Encoding sound");
-            output.Add(new EncodedPacket(_packet, Stream, _context->time_base));
+            output.Add(EncodedPacket.Take(_packet, Stream, _context->time_base));
         }
     }
 

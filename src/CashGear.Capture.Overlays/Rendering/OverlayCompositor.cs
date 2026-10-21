@@ -39,6 +39,9 @@ public sealed class OverlayCompositor : IDisposable
     private readonly Dictionary<(string, float), IDWriteTextFormat> _formats = [];
     private ID2D1Bitmap1? _webcam;
     private long _webcamVersion = -1;
+    private readonly GradientStop[] _stops = new GradientStop[3];
+    private CachedGradient? _halo;
+    private CachedGradient? _spotlight;
 
     public OverlayCompositor(ID3D11Device device, int width, int height, CursorLibrary? cursors)
     {
@@ -100,9 +103,11 @@ public sealed class OverlayCompositor : IDisposable
         _context.BeginDraw();
         try
         {
-            foreach (var item in scene.Items)
+            // By index: a foreach over the list's interface would box an enumerator every frame.
+            var items = scene.Items;
+            for (var i = 0; i < items.Count; i++)
             {
-                switch (item)
+                switch (items[i])
                 {
                     case SpotlightItem spotlight:
                         DrawSpotlight(spotlight);
@@ -149,6 +154,8 @@ public sealed class OverlayCompositor : IDisposable
         }
 
         _webcam?.Dispose();
+        _halo?.Dispose();
+        _spotlight?.Dispose();
         _brush.Dispose();
         _write.Dispose();
         _context.Target = null;
@@ -164,24 +171,62 @@ public sealed class OverlayCompositor : IDisposable
     private void DrawSpotlight(SpotlightItem spotlight)
     {
         // Clear inside the circle, a soft edge over its outer fifth, then the dimming everywhere beyond.
-        var dim = new Color4(0, 0, 0, (float)spotlight.Dim);
-        var clear = new Color4(0, 0, 0, 0);
-        using var stops = _context.CreateGradientStopCollection([new GradientStop(0, clear), new GradientStop(0.8f, clear), new GradientStop(1, dim)]);
         var radius = (float)spotlight.Radius * 1.25f;
-        using var brush = _context.CreateRadialGradientBrush(
-            new RadialGradientBrushProperties(new Vector2((float)spotlight.X, (float)spotlight.Y), Vector2.Zero, radius, radius), stops);
+        var brush = Gradient(ref _spotlight, new Color4(0, 0, 0, (float)spotlight.Dim), static (dim, stops) =>
+        {
+            var clear = new Color4(0, 0, 0, 0);
+            (stops[0], stops[1], stops[2]) = (new GradientStop(0, clear), new GradientStop(0.8f, clear), new GradientStop(1, dim));
+        });
+        Place(brush, new Vector2((float)spotlight.X, (float)spotlight.Y), radius);
         _context.FillRectangle(new RawRectF(0, 0, Width, Height), brush);
     }
 
     private void DrawHalo(HaloItem halo)
     {
-        var color = Color(halo.Color);
-        using var stops = _context.CreateGradientStopCollection(
-            [new GradientStop(0, color), new GradientStop(0.6f, new Color4(color.R, color.G, color.B, color.A * 0.8f)), new GradientStop(1, new Color4(color.R, color.G, color.B, 0))]);
         var radius = (float)halo.Radius;
         var centre = new Vector2((float)halo.X, (float)halo.Y);
-        using var brush = _context.CreateRadialGradientBrush(new RadialGradientBrushProperties(centre, Vector2.Zero, radius, radius), stops);
+        var brush = Gradient(ref _halo, Color(halo.Color), static (color, stops) =>
+            (stops[0], stops[1], stops[2]) = (
+                new GradientStop(0, color),
+                new GradientStop(0.6f, new Color4(color.R, color.G, color.B, color.A * 0.8f)),
+                new GradientStop(1, new Color4(color.R, color.G, color.B, 0))));
+        Place(brush, centre, radius);
         _context.FillEllipse(new Ellipse(centre, radius, radius), brush);
+    }
+
+    /// <summary>
+    /// A radial gradient brush whose stops come from <paramref name="color"/>, kept while the colour stays the
+    /// same (made again only when it changes, as a halo fading out does), so a frame makes no new objects.
+    /// </summary>
+    private ID2D1RadialGradientBrush Gradient(ref CachedGradient? cache, Color4 color, Action<Color4, GradientStop[]> stops)
+    {
+        if (cache is { } cached && cached.Color.Equals(color))
+        {
+            return cached.Brush;
+        }
+
+        cache?.Dispose();
+        stops(color, _stops);
+        var collection = _context.CreateGradientStopCollection(_stops);
+        var brush = _context.CreateRadialGradientBrush(new RadialGradientBrushProperties(Vector2.Zero, Vector2.Zero, 1, 1), collection);
+        cache = new CachedGradient(color, collection, brush);
+        return brush;
+    }
+
+    private static void Place(ID2D1RadialGradientBrush brush, Vector2 centre, float radius)
+    {
+        brush.Center = centre;
+        brush.RadiusX = radius;
+        brush.RadiusY = radius;
+    }
+
+    private sealed record CachedGradient(Color4 Color, ID2D1GradientStopCollection Stops, ID2D1RadialGradientBrush Brush) : IDisposable
+    {
+        public void Dispose()
+        {
+            Brush.Dispose();
+            Stops.Dispose();
+        }
     }
 
     private void DrawCursor(CursorItem cursor)

@@ -7,6 +7,7 @@ using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Engine.Capture.Wgc;
 using CashGear.Capture.Engine.Display;
+using CashGear.Capture.Interop.Com;
 using CashGear.Capture.Overlays.Rendering;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -56,13 +57,13 @@ internal sealed partial class WgcAreaStream : IPictureStream
     private readonly TaskCompletionSource _firstFrame = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly List<Picture> _pictures = [];
     private readonly Func<long, long>? _slotOf;
-    private readonly ConcurrentBag<ID3D11Texture2D> _free = [];
+    private readonly ConcurrentQueue<Picture> _free = new();
     private readonly ILoggerFactory _loggers;
     private readonly ILogger _logger;
     private readonly HdrInfo? _hdr;
     private readonly DirectXPixelFormat _poolFormat;
 
-    private List<ID3D11Texture2D> _textures = [];
+    private List<Picture> _textures = [];
     private MonitorInfo _monitor;
     private D3DDeviceManager _devices;
     private PixelRect _crop;
@@ -72,6 +73,10 @@ internal sealed partial class WgcAreaStream : IPictureStream
     private ID3D11Texture2D? _toned;
     private GraphicsCaptureItem? _item;
     private Direct3D11CaptureFramePool? _pool;
+    private nint _poolAbi;
+    private bool _abiChecked;
+    private bool _abiWorks;
+    private long _callbackAllocated;
     private GraphicsCaptureSession? _session;
     private ID3D11Texture2D? _staging;
     private SizeInt32 _poolSize;
@@ -121,6 +126,12 @@ internal sealed partial class WgcAreaStream : IPictureStream
     public ID3D11Device Device => _resources!.Device;
 
     public int Generation => Volatile.Read(ref _generation);
+
+    /// <summary>Bytes the frame callbacks allocated in all (tests: none per picture).</summary>
+    internal long CallbackAllocatedBytes => Interlocked.Read(ref _callbackAllocated);
+
+    /// <summary>Frames are read through the WinRT ABI directly (checked against the projection on the first frame).</summary>
+    internal bool UsesAbi => _abiWorks;
 
     public bool ResizePending
     {
@@ -256,7 +267,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
     {
         if (picture.Generation == Generation)
         {
-            _free.Add(picture.Texture);
+            _free.Enqueue(picture);
         }
     }
 
@@ -485,6 +496,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
         }
 
         _pool = Direct3D11CaptureFramePool.CreateFreeThreaded(_resources.WinRtDevice, _poolFormat, PoolBuffers, _poolSize);
+        _poolAbi = ((WinRT.IWinRTObject)_pool).NativeObject.ThisPtr;
         _session = _pool.CreateCaptureSession(_item);
         _session.IsCursorCaptureEnabled = _includeCursor;
         CreateTargets();
@@ -507,6 +519,14 @@ internal sealed partial class WgcAreaStream : IPictureStream
     /// <summary>Ends the capture session (not under a lock; see <see cref="Dispose"/>).</summary>
     private void StopCapture()
     {
+        // The capture's WinRT objects were made on the thread pool (MTA); an STA thread (a window's, a test's) is
+        // refused when it closes them ("marshalled for a different thread"), so it closes them from the pool.
+        if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+        {
+            Task.Run(StopCapture).GetAwaiter().GetResult();
+            return;
+        }
+
         if (_pool is not null)
         {
             _pool.FrameArrived -= OnFrameArrived;
@@ -521,6 +541,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
         _pool?.Dispose();
         _session = null;
         _pool = null;
+        _poolAbi = 0;
         _item = null;
     }
 
@@ -532,7 +553,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
             _pictures.Clear();
         }
 
-        List<ID3D11Texture2D> textures;
+        List<Picture> textures;
         lock (_gate)
         {
             textures = _textures;
@@ -542,15 +563,15 @@ internal sealed partial class WgcAreaStream : IPictureStream
         ReleaseTextures(textures);
     }
 
-    private void ReleaseTextures(List<ID3D11Texture2D> textures)
+    private void ReleaseTextures(List<Picture> pictures)
     {
-        foreach (var texture in textures)
+        foreach (var picture in pictures)
         {
-            _toneMapper?.Forget(texture);
-            texture.Dispose();
+            _toneMapper?.Forget(picture.Texture);
+            picture.Texture.Dispose();
         }
 
-        while (_free.TryTake(out _))
+        while (_free.TryDequeue(out _))
         {
         }
     }
@@ -578,12 +599,12 @@ internal sealed partial class WgcAreaStream : IPictureStream
         CPUAccessFlags = cpu,
     };
 
-    /// <summary>A free texture for the next picture, a new one while fewer than <see cref="MaxTextures"/> exist, or null (under <see cref="_gate"/>).</summary>
-    private ID3D11Texture2D? RentTexture()
+    /// <summary>A free picture (with its texture) for the next frame, a new one while fewer than <see cref="MaxTextures"/> exist, or null (under <see cref="_gate"/>).</summary>
+    private Picture? RentPicture()
     {
-        if (_free.TryTake(out var texture))
+        if (_free.TryDequeue(out var picture))
         {
-            return texture;
+            return picture;
         }
 
         if (_textures.Count >= MaxTextures)
@@ -591,9 +612,9 @@ internal sealed partial class WgcAreaStream : IPictureStream
             return null;
         }
 
-        texture = _resources!.Device.CreateTexture2D(Description(ResourceUsage.Default, CpuAccessFlags.None));
-        _textures.Add(texture);
-        return texture;
+        picture = new Picture(_resources!.Device.CreateTexture2D(Description(ResourceUsage.Default, CpuAccessFlags.None)));
+        _textures.Add(picture);
+        return picture;
     }
 
     private void OnItemClosed(GraphicsCaptureItem sender, object args)
@@ -602,9 +623,13 @@ internal sealed partial class WgcAreaStream : IPictureStream
         Closed?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Runs on a capture worker thread for every frame Windows delivers.</summary>
+    /// <summary>
+    /// Runs on a capture worker thread for every frame Windows delivers. After the first frame (read through the
+    /// projection and checked against the ABI) frames are read through the WinRT ABI, which allocates nothing.
+    /// </summary>
     private void OnFrameArrived(Direct3D11CaptureFramePool sender, object args)
     {
+        var before = GC.GetAllocatedBytesForCurrentThread();
         lock (_gate)
         {
             if (_disposed || _paused || _lost || _failure is not null)
@@ -614,57 +639,14 @@ internal sealed partial class WgcAreaStream : IPictureStream
 
             try
             {
-                using var frame = sender.TryGetNextFrame();
-                if (frame is null)
+                if (_abiWorks)
                 {
-                    return;
+                    OnFrame(sender);
                 }
-
-                var size = frame.ContentSize;
-                if (size.Width != _poolSize.Width || size.Height != _poolSize.Height)
+                else
                 {
-                    // The monitor changed resolution; later frames come at the new size.
-                    _poolSize = size;
-                    sender.Recreate(_resources!.WinRtDevice, _poolFormat, PoolBuffers, size);
+                    OnFrameProjected(sender);
                 }
-
-                if (size.Width != _monitorSize.Width || size.Height != _monitorSize.Height)
-                {
-                    _monitorSize = size;
-                    var next = ResizedArea.Crop(_crop, size.Width, size.Height, _wholeMonitor)
-                        ?? throw new CaptureException($"{_monitor.ShortName} is now {size.Width}x{size.Height}, and the recorded area isn't on it any more, so the recording stopped.");
-                    _pendingCrop = next == _crop ? null : next;
-                    if (_pendingCrop is not null)
-                    {
-                        LogResizing(_monitor.ShortName, size.Width, size.Height, next);
-                    }
-                }
-
-                if (_pendingCrop is not null)
-                {
-                    return; // the recorder moves to the new size first
-                }
-
-                var timestamp = QpcTime.FromHundredNanoseconds(frame.SystemRelativeTime.Ticks, Stopwatch.Frequency);
-                if (RentTexture() is not { } target)
-                {
-                    Interlocked.Increment(ref _skipped); // every texture is queued or in use: the recorder is far behind
-                    return;
-                }
-
-                using (var texture = WgcInterop.GetTexture(frame.Surface))
-                {
-                    // Not under the context lock: Windows may hold the device's own lock while it calls here, and the
-                    // video thread holds the context lock while it waits for the device (reading back, drawing).
-                    // The device is multithread-protected, so this copy is serialized with theirs anyway.
-                    _resources!.Context.CopySubresourceRegion(
-                        target, 0, 0, 0, 0, texture, 0, new Box(_crop.X, _crop.Y, 0, _crop.Right, _crop.Bottom, 1));
-                }
-
-                Queue(new Picture(target, timestamp, _slotOf?.Invoke(timestamp) ?? -1, Generation));
-                Interlocked.Increment(ref _delivered);
-                Interlocked.Exchange(ref _lastPictureAt, Stopwatch.GetTimestamp());
-                _firstFrame.TrySetResult();
             }
             catch (Exception ex) when (DeviceLostException.IsLost(ex))
             {
@@ -677,6 +659,128 @@ internal sealed partial class WgcAreaStream : IPictureStream
                 LogFailed(ex);
             }
         }
+
+        Interlocked.Add(ref _callbackAllocated, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+
+    /// <summary>A frame through the ABI: no wrapper objects.</summary>
+    private unsafe void OnFrame(Direct3D11CaptureFramePool sender)
+    {
+        var frame = CaptureFrameAbi.TryGetNextFrame(_poolAbi);
+        if (frame == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var (width, height) = CaptureFrameAbi.ContentSize(frame);
+            var ticks = CaptureFrameAbi.SystemRelativeTime(frame);
+            if (!Sized(sender, new SizeInt32 { Width = width, Height = height }))
+            {
+                return;
+            }
+
+            if (RentPicture() is not { } target)
+            {
+                Interlocked.Increment(ref _skipped); // every texture is queued or in use: the recorder is far behind
+                return;
+            }
+
+            var texture = CaptureFrameAbi.Texture(frame, InteropGuids.ID3D11Texture2D);
+            try
+            {
+                CaptureFrameAbi.CopySubresourceRegion(_resources!.Context.NativePointer, target.Texture.NativePointer, texture, _crop.X, _crop.Y, _crop.Right, _crop.Bottom);
+            }
+            finally
+            {
+                CaptureFrameAbi.Release(texture);
+            }
+
+            Deliver(target, QpcTime.FromHundredNanoseconds(ticks, Stopwatch.Frequency));
+        }
+        finally
+        {
+            CaptureFrameAbi.CloseAndRelease(frame);
+        }
+    }
+
+    /// <summary>A frame through the projection (the first, and every one if the ABI check failed).</summary>
+    private void OnFrameProjected(Direct3D11CaptureFramePool sender)
+    {
+        using var frame = sender.TryGetNextFrame();
+        if (frame is null)
+        {
+            return;
+        }
+
+        if (!_abiChecked)
+        {
+            // The ABI must read this very frame as the projection does before the recorder relies on it.
+            _abiChecked = true;
+            var native = ((WinRT.IWinRTObject)frame).NativeObject.ThisPtr;
+            var size = CaptureFrameAbi.ContentSize(native);
+            _abiWorks = _poolAbi != 0
+                && size == (frame.ContentSize.Width, frame.ContentSize.Height)
+                && CaptureFrameAbi.SystemRelativeTime(native) == frame.SystemRelativeTime.Ticks;
+            LogAbi(_abiWorks);
+        }
+
+        if (!Sized(sender, frame.ContentSize))
+        {
+            return;
+        }
+
+        var timestamp = QpcTime.FromHundredNanoseconds(frame.SystemRelativeTime.Ticks, Stopwatch.Frequency);
+        if (RentPicture() is not { } target)
+        {
+            Interlocked.Increment(ref _skipped);
+            return;
+        }
+
+        using (var texture = WgcInterop.GetTexture(frame.Surface))
+        {
+            // Not under the context lock: Windows may hold the device's own lock while it calls here, and the
+            // video thread holds the context lock while it waits for the device (reading back, drawing).
+            // The device is multithread-protected, so this copy is serialized with theirs anyway.
+            _resources!.Context.CopySubresourceRegion(
+                target.Texture, 0, 0, 0, 0, texture, 0, new Box(_crop.X, _crop.Y, 0, _crop.Right, _crop.Bottom, 1));
+        }
+
+        Deliver(target, timestamp);
+    }
+
+    private void Deliver(Picture target, long timestamp)
+    {
+        Queue(target.Set(timestamp, _slotOf?.Invoke(timestamp) ?? -1, Generation));
+        Interlocked.Increment(ref _delivered);
+        Interlocked.Exchange(ref _lastPictureAt, Stopwatch.GetTimestamp());
+        _firstFrame.TrySetResult();
+    }
+
+    /// <summary>Follows the monitor's size; false while the recorder has yet to move to a new area size (the frame is skipped).</summary>
+    private bool Sized(Direct3D11CaptureFramePool sender, SizeInt32 size)
+    {
+        if (size.Width != _poolSize.Width || size.Height != _poolSize.Height)
+        {
+            // The monitor changed resolution; later frames come at the new size.
+            _poolSize = size;
+            sender.Recreate(_resources!.WinRtDevice, _poolFormat, PoolBuffers, size);
+        }
+
+        if (size.Width != _monitorSize.Width || size.Height != _monitorSize.Height)
+        {
+            _monitorSize = size;
+            var next = ResizedArea.Crop(_crop, size.Width, size.Height, _wholeMonitor)
+                ?? throw new CaptureException($"{_monitor.ShortName} is now {size.Width}x{size.Height}, and the recorded area isn't on it any more, so the recording stopped.");
+            _pendingCrop = next == _crop ? null : next;
+            if (_pendingCrop is not null)
+            {
+                LogResizing(_monitor.ShortName, size.Width, size.Height, next);
+            }
+        }
+
+        return _pendingCrop is null; // else the recorder moves to the new size first
     }
 
     /// <summary>Adds a picture: it replaces a queued one for the same frame, and the oldest goes when the queue is full.</summary>
@@ -732,4 +836,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Recording capture: {Monitor} went away")]
     private partial void LogClosed(string monitor);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recording capture reads frames through the WinRT ABI: {Works}")]
+    private partial void LogAbi(bool works);
 }

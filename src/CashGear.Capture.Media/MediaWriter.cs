@@ -1,4 +1,4 @@
-using System.Threading.Channels;
+using System.Collections.Concurrent;
 using FFmpeg.AutoGen.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -64,7 +64,9 @@ public sealed unsafe partial class MediaWriter : IDisposable
     private readonly Func<int, string> _segmentPath;
     private readonly IReadOnlyList<StreamSetup> _audio;
     private readonly ILogger _logger;
-    private readonly Channel<object> _queue = Channel.CreateUnbounded<object>(new UnboundedChannelOptions { SingleReader = true });
+    // A queue and a count of what is in it: posting and waiting allocate nothing (a channel's waits did, per wake-up).
+    private readonly ConcurrentQueue<object> _queue = new();
+    private readonly SemaphoreSlim _available = new(0);
     private readonly List<SegmentFile> _segments = [];
     private readonly List<EncodedPacket> _waiting = [];
     private readonly Thread _thread;
@@ -72,6 +74,8 @@ public sealed unsafe partial class MediaWriter : IDisposable
     private int[] _streamOf = [];
     private int _queued;
     private int _warned;
+    private long _allocated;
+    private volatile bool _completed;
     private Exception? _failure;
 
     /// <param name="segmentPath">The file for segment n (1, 2, …).</param>
@@ -105,6 +109,9 @@ public sealed unsafe partial class MediaWriter : IDisposable
 
     public Exception? Failure => Volatile.Read(ref _failure);
 
+    /// <summary>Bytes the writer thread has allocated so far (tests: none per packet).</summary>
+    internal long AllocatedBytes => Interlocked.Read(ref _allocated);
+
     /// <summary>Starts a new file for the video from now on; <paramref name="video"/> is owned by the writer.</summary>
     public void BeginSegment(StreamSetup video, double start) => Post(new Begin(video, start));
 
@@ -122,13 +129,13 @@ public sealed unsafe partial class MediaWriter : IDisposable
     /// <summary>Writes everything queued, finishes the current file and stops the thread.</summary>
     public bool Complete(TimeSpan timeout)
     {
-        _queue.Writer.TryComplete();
+        Finish();
         return _thread.Join(timeout);
     }
 
     public void Dispose()
     {
-        _queue.Writer.TryComplete();
+        Finish();
         if (_thread.Join(TimeSpan.FromSeconds(30)))
         {
             foreach (var setup in _audio)
@@ -138,41 +145,78 @@ public sealed unsafe partial class MediaWriter : IDisposable
         }
     }
 
+    /// <summary>No more items: the thread writes what is queued and ends (once; a second call does nothing).</summary>
+    private void Finish()
+    {
+        if (!_completed)
+        {
+            _completed = true;
+            _available.Release(); // a wake-up with nothing behind it: the end
+        }
+    }
+
     private void Post(object item)
     {
-        if (!_queue.Writer.TryWrite(item))
+        if (_completed)
         {
             Discard(item);
+            return;
         }
+
+        _queue.Enqueue(item);
+        _available.Release();
     }
 
     private void Run()
     {
-        var reader = _queue.Reader;
-        while (reader.WaitToReadAsync().AsTask().GetAwaiter().GetResult())
+        while (true)
         {
-            while (reader.TryRead(out var item))
+            _available.Wait();
+            if (!_queue.TryDequeue(out var item))
             {
-                if (item is EncodedPacket)
-                {
-                    Interlocked.Decrement(ref _queued);
-                }
+                break; // only the end's wake-up finds the queue empty
+            }
 
-                if (Failure is not null)
-                {
-                    Discard(item);
-                    continue;
-                }
+            if (item is EncodedPacket)
+            {
+                Interlocked.Decrement(ref _queued);
+            }
 
+            if (Failure is not null)
+            {
+                Discard(item);
+                continue;
+            }
+
+            try
+            {
+                Handle(item);
+            }
+            catch (Exception e) when (e is FfmpegException or IOException or UnauthorizedAccessException)
+            {
+                Fail(e);
+            }
+
+            Volatile.Write(ref _allocated, GC.GetAllocatedBytesForCurrentThread());
+        }
+
+        // Anything posted while the end was being signalled.
+        while (_queue.TryDequeue(out var late))
+        {
+            if (Failure is null && late is not Begin)
+            {
                 try
                 {
-                    Handle(item);
+                    Handle(late);
+                    continue;
                 }
                 catch (Exception e) when (e is FfmpegException or IOException or UnauthorizedAccessException)
                 {
                     Fail(e);
                 }
             }
+
+            Discard(late);
         }
 
         try

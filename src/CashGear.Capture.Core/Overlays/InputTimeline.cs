@@ -137,9 +137,18 @@ public sealed class InputTimeline
     /// <summary>Presses that may still show at <paramref name="time"/>: down within <paramref name="window"/> before it, or held then.</summary>
     public IReadOnlyList<Click> Clicks(TimeSpan time, TimeSpan window)
     {
+        var result = new List<Click>();
+        Clicks(time, window, result);
+        return result;
+    }
+
+    /// <summary>As <see cref="Clicks(TimeSpan, TimeSpan)"/>, into <paramref name="result"/> (cleared first): nothing is allocated.</summary>
+    public void Clicks(TimeSpan time, TimeSpan window, List<Click> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        result.Clear();
         lock (_gate)
         {
-            var result = new List<Click>();
             foreach (var click in _clicks)
             {
                 if (click.Down > time)
@@ -154,8 +163,6 @@ public sealed class InputTimeline
                     result.Add(held ? click with { Up = null } : click);
                 }
             }
-
-            return result;
         }
     }
 

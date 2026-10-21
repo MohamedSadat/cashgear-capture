@@ -141,6 +141,9 @@ internal sealed partial class ScreenRecorder(
 
     public double SaveProgress => _saving?.SaveProgress ?? 0;
 
+    /// <summary>What the running recording's threads have allocated (tests).</summary>
+    internal AllocationCounts? Allocations => _session?.Allocations;
+
     public event EventHandler? StateChanged;
 
     public event EventHandler<string>? Warning;
@@ -555,6 +558,11 @@ internal sealed partial class ScreenRecorder(
         private readonly Parts _parts;
         private readonly IPictureStream _stream;
         private readonly MediaWriter _writer;
+
+        /// <summary><see cref="MediaWriter.Write"/> made into a delegate once (a method group makes a new one at every use).</summary>
+        private readonly Action<EncodedPacket> _write;
+        private long _videoAllocated;
+        private long _soundAllocated;
         private readonly RecordingFolder _folder;
         private readonly IReadOnlyList<SoundTrack> _tracks;
         private readonly ILoggerFactory _loggers;
@@ -568,6 +576,7 @@ internal sealed partial class ScreenRecorder(
         private readonly CursorLibrary _cursors = new();
         private OverlayPlanner? _planner;
         private OverlayCompositor? _compositor;
+        private readonly OverlayScene _scene = OverlayScene.Reusable();
         private byte[] _picture = [];
         private bool _awaitingPicture;
         private long _lostSince;
@@ -639,6 +648,7 @@ internal sealed partial class ScreenRecorder(
             _parts = parts;
             _stream = parts.Stream!;
             _writer = parts.Writer!;
+            _write = _writer.Write;
             _folder = parts.Folder!;
             _manifest = manifest;
             _tracks = tracks;
@@ -681,6 +691,10 @@ internal sealed partial class ScreenRecorder(
         public string? SoundNote => _soundNote;
 
         public double SaveProgress => Volatile.Read(ref _saveProgress);
+
+        /// <summary>What the recording's threads have allocated so far, and how much they made (tests: nothing per frame).</summary>
+        public AllocationCounts Allocations => new(
+            Volatile.Read(ref _videoAllocated), Volatile.Read(ref _soundAllocated), _writer.AllocatedBytes, _grid.Written, _mixer?.Mixed ?? 0);
 
         /// <summary>The microphone's processing, when it has any.</summary>
         public MicrophoneChain? MicrophoneChain { get; }
@@ -999,7 +1013,7 @@ internal sealed partial class ScreenRecorder(
                     }
 
                     var time = _grid.TimeOf(step.Slot);
-                    var scene = _planner?.Plan(_timeline ?? NoInput, time) ?? OverlayScene.Empty;
+                    var scene = _planner?.Plan(_timeline ?? NoInput, time, _scene) ?? OverlayScene.Empty;
                     var changed = false;
                     try
                     {
@@ -1067,6 +1081,8 @@ internal sealed partial class ScreenRecorder(
                     {
                         _grid.Produced(repeated);
                     }
+
+                    Volatile.Write(ref _videoAllocated, GC.GetAllocatedBytesForCurrentThread());
                 }
 
                 if (_failure is null)
@@ -1322,7 +1338,7 @@ internal sealed partial class ScreenRecorder(
                 TrySaveManifest();
             }
 
-            packets.ForEach(_writer.Write);
+            packets.ForEach(_write);
             packets.Clear();
         }
 
@@ -1416,11 +1432,12 @@ internal sealed partial class ScreenRecorder(
                             encoder.Flush(packets);
                         }
 
-                        packets.ForEach(_writer.Write);
+                        packets.ForEach(_write);
                         packets.Clear();
                         break;
                     }
 
+                    Volatile.Write(ref _soundAllocated, GC.GetAllocatedBytesForCurrentThread());
                     Thread.Sleep(10);
                 }
             }
@@ -1441,7 +1458,7 @@ internal sealed partial class ScreenRecorder(
                 _parts.Audio[i].Encode(samples.AsSpan(0, frames * AudioMixer.Channels), position, packets);
             }
 
-            packets.ForEach(_writer.Write);
+            packets.ForEach(_write);
             packets.Clear();
         }
 
@@ -1612,3 +1629,6 @@ public static class RecordingServiceCollectionExtensions
 
 /// <summary>What a picture stream is asked to capture.</summary>
 internal sealed record StreamRequest(MonitorInfo Monitor, PixelRect Area, bool IncludeCursor, Func<long, long> SlotOf, HdrInfo? Hdr);
+
+/// <summary>Bytes the video, sound and file threads have allocated, and the video frames and sound frames made by then.</summary>
+internal readonly record struct AllocationCounts(long Video, long Sound, long Writer, long Frames, long SoundFrames);

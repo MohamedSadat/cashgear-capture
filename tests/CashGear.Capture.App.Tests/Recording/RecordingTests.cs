@@ -1049,6 +1049,44 @@ public sealed class ScreenRecorderTests : IDisposable
     }
 
     /// <summary>
+    /// The capture's frame callback allocates nothing per picture once running: frames are read through the WinRT ABI
+    /// (checked against the projection on the first frame) into pooled pictures.
+    /// </summary>
+    [Fact(Timeout = 60_000)]
+    public async Task The_capture_callback_allocates_nothing_per_picture()
+    {
+        var (recorder, options) = Create();
+        var ct = TestContext.Current.CancellationToken;
+        WgcAreaStream? stream = null;
+        recorder.StreamFactory = async (request, token) =>
+            stream = await WgcAreaStream.StartAsync(_interop, request.Monitor, request.Area, request.IncludeCursor, _loggers, token, request.SlotOf, request.Hdr);
+        await StaDispatcher.RunAsync(async () =>
+        {
+            var square = Square(options.Area.X + 20, options.Area.Y + 20, 24, options.Monitor.Scale.ScaleX, repaint: true);
+            try
+            {
+                await recorder.StartAsync(options, ct);
+                await UntilRecorded(recorder, 1, ct);
+                var (bytes, pictures) = (stream!.CallbackAllocatedBytes, stream.Delivered);
+                await UntilRecorded(recorder, 4, ct);
+                var perPicture = (stream.CallbackAllocatedBytes - bytes) / (double)(stream.Delivered - pictures);
+                var allocations = recorder.Allocations!.Value;
+                await recorder.StopAsync(ct);
+
+                TestContext.Current.TestOutputHelper?.WriteLine($"{stream.Delivered - pictures} pictures, {perPicture:0.0} B each in the callback");
+                stream.UsesAbi.Should().BeTrue("the ABI read the first frame as the projection did");
+                (stream.Delivered - pictures).Should().BeGreaterThan(60, "the square repaints every refresh");
+                perPicture.Should().Be(0);
+                allocations.Frames.Should().BeGreaterThan(100);
+            }
+            finally
+            {
+                square.Close();
+            }
+        });
+    }
+
+    /// <summary>
     /// The real capture rebuilt after its device is lost: a read fails as a removed device's would and the device is
     /// dropped; the stream makes a new device, capture item, pool and session, and the recording goes on in one file.
     /// </summary>

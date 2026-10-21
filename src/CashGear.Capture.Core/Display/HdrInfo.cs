@@ -13,10 +13,11 @@ public sealed record HdrInfo(double SdrWhiteNits, double? MaxNits = null)
     public const double ScRgbWhiteNits = 80;
 
     /// <summary>
-    /// SDR white on an SDR monitor: the float capture path gives what an 8-bit capture gives (tests use it on the
-    /// SDR monitors they have).
+    /// An SDR monitor read as float: Windows hands such frames over with SDR white at 2.0 in scRGB (160 nits;
+    /// measured on Windows 10 22H2, where every grey level came out exactly twice its linear value). With it the float
+    /// path gives what an 8-bit capture gives, which the tests check on the SDR monitors they have.
     /// </summary>
-    public static HdrInfo Sdr { get; } = new(ScRgbWhiteNits);
+    public static HdrInfo Sdr { get; } = new(2 * ScRgbWhiteNits);
 
     /// <summary>What scRGB values are multiplied by so SDR white comes to 1.0.</summary>
     public float WhiteScale => SdrWhiteNits > 0 ? (float)(ScRgbWhiteNits / SdrWhiteNits) : 1;

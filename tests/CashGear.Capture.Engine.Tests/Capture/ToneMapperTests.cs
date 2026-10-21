@@ -16,8 +16,8 @@ public sealed class ToneMapperTests : IDisposable
     [Fact]
     public void Sdr_values_come_out_as_their_srgb_bytes_with_sdr_white_at_255()
     {
-        // scRGB on an SDR monitor (white = 1.0): what an 8-bit capture would give.
-        var pixels = Draw(HdrInfo.Sdr.WhiteScale, (0, 0, 0, 1), (0.5f, 0.5f, 0.5f, 1), (1, 1, 1, 1), (0.2158f, 0.0f, 1.0f, 1), (0.001f, 0.002f, 0.003f, 0.5f));
+        // scRGB with SDR white at 1.0 (80 nits): the sRGB bytes of the same light.
+        var pixels = Draw(new HdrInfo(HdrInfo.ScRgbWhiteNits).WhiteScale, (0, 0, 0, 1), (0.5f, 0.5f, 0.5f, 1), (1, 1, 1, 1), (0.2158f, 0.0f, 1.0f, 1), (0.001f, 0.002f, 0.003f, 0.5f));
 
         pixels[0].Should().Be((0, 0, 0, 255));
         pixels[1].Should().Be((188, 188, 188, 255)); // linear 0.5 is sRGB 187.5

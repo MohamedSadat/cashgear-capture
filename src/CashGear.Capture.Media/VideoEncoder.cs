@@ -36,6 +36,9 @@ public sealed unsafe partial class VideoEncoder : IDisposable
 
     public EncoderCandidate Candidate { get; }
 
+    /// <summary>"Encoding with h264_mf": made once, as the error's wording is passed on every packet.</summary>
+    private string Encoding => field ??= $"Encoding with {Candidate.FfmpegName}";
+
     public VideoFormat Format { get; }
 
     /// <summary>The stream its packets are for (see <see cref="EncodedPacket.Stream"/>).</summary>
@@ -144,7 +147,7 @@ public sealed unsafe partial class VideoEncoder : IDisposable
 
         if (result < 0 && !(frame is null && result == ffmpeg.AVERROR_EOF))
         {
-            throw new FfmpegException($"Encoding with {Candidate.FfmpegName}", result);
+            throw new FfmpegException(Encoding, result);
         }
 
         Receive(output);
@@ -160,8 +163,8 @@ public sealed unsafe partial class VideoEncoder : IDisposable
                 return;
             }
 
-            FfmpegException.Check(result, $"Encoding with {Candidate.FfmpegName}");
-            output.Add(new EncodedPacket(_packet, Stream, _context->time_base));
+            FfmpegException.Check(result, Encoding);
+            output.Add(EncodedPacket.Take(_packet, Stream, _context->time_base));
         }
     }
 

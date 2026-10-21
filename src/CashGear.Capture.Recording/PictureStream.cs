@@ -7,9 +7,30 @@ namespace CashGear.Capture.Recording;
 /// <summary>
 /// A picture of the recorded area on the GPU, when it was captured (a <see cref="System.Diagnostics.Stopwatch"/>
 /// timestamp, or the recording clock's), the video frame it belongs to (-1 when the stream wasn't told how to work
-/// that out), and the stream's <see cref="IPictureStream.Generation"/> it was made in.
+/// that out), and the stream's <see cref="IPictureStream.Generation"/> it was made in. A stream keeps one per texture
+/// and fills it again for each frame (<see cref="Set"/>), so a frame makes no new object.
 /// </summary>
-internal sealed record Picture(ID3D11Texture2D Texture, long Timestamp, long Slot, int Generation = 0);
+internal sealed class Picture(ID3D11Texture2D texture)
+{
+    public Picture(ID3D11Texture2D texture, long timestamp, long slot, int generation = 0)
+        : this(texture) => Set(timestamp, slot, generation);
+
+    public ID3D11Texture2D Texture { get; } = texture;
+
+    public long Timestamp { get; private set; }
+
+    public long Slot { get; private set; }
+
+    public int Generation { get; private set; }
+
+    public Picture Set(long timestamp, long slot, int generation)
+    {
+        Timestamp = timestamp;
+        Slot = slot;
+        Generation = generation;
+        return this;
+    }
+}
 
 /// <summary>
 /// Where the recorder's pictures come from: a running capture of an area of one monitor (<see cref="WgcAreaStream"/>),
