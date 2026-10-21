@@ -86,6 +86,27 @@ public sealed record PresetLibrary(
         this with { Watermarks = [.. WatermarkPresets.Where(p => !string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))] };
 
     /// <summary>
+    /// Presets from an imported settings file added to these: one with the name of one here replaces it, the others
+    /// are kept; the image tools' last choices become the imported ones.
+    /// </summary>
+    public PresetLibrary MergedWith(PresetLibrary imported)
+    {
+        ArgumentNullException.ThrowIfNull(imported);
+        var merged = imported.EffectPresets.Aggregate(this, (library, preset) => library.WithEffects(preset));
+        merged = imported.WatermarkPresets.Aggregate(merged, (library, preset) => library.WithWatermark(preset));
+        return merged with { Batch = imported.Batch, Combine = imported.Combine, Pdf = imported.Pdf };
+    }
+
+    /// <summary>The library as presets.json writes it (for an exported settings file).</summary>
+    public string ToJson() => System.Text.Json.JsonSerializer.Serialize(Normalize(), PresetJsonContext.Readable.PresetLibrary);
+
+    /// <summary>A library read from <see cref="ToJson"/>'s text.</summary>
+    /// <exception cref="System.Text.Json.JsonException">Not a presets library.</exception>
+    public static PresetLibrary FromJson(string json) =>
+        (System.Text.Json.JsonSerializer.Deserialize(json, PresetJsonContext.Default.PresetLibrary)
+            ?? throw new System.Text.Json.JsonException("The presets are null.")).Normalize();
+
+    /// <summary>
     /// Names trimmed; presets without a name or without effects dropped; for a name used twice (in any case), the
     /// first kept; every value in range.
     /// </summary>

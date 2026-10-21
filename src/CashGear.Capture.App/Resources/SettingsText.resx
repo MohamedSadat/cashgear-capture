@@ -42,4 +42,60 @@
   <data name="RestartForLanguage" xml:space="preserve">
     <value>Restart CashGear Capture now to show it in the new language?</value>
   </data>
+  <data name="SettingsSection" xml:space="preserve">
+    <value>Settings</value>
+    <comment>Settings &gt; General: the section with import, export and reset</comment>
+  </data>
+  <data name="ExportSettings" xml:space="preserve">
+    <value>_Export settings…</value>
+  </data>
+  <data name="ImportSettings" xml:space="preserve">
+    <value>_Import settings…</value>
+  </data>
+  <data name="ResetAllSettings" xml:space="preserve">
+    <value>Reset _all settings…</value>
+  </data>
+  <data name="SettingsTransferHint" xml:space="preserve">
+    <value>Export saves the settings and the image editor's presets in one file, to keep a copy or use them on another PC. Passwords and tokens are never in it: destinations that need one ask for it again.</value>
+  </data>
+  <data name="PortableFolder" xml:space="preserve">
+    <value>This is a portable copy: its settings, logs and data are kept in {0}.</value>
+    <comment>{0} is a folder</comment>
+  </data>
+  <data name="ExportTitle" xml:space="preserve">
+    <value>Export settings</value>
+  </data>
+  <data name="ImportTitle" xml:space="preserve">
+    <value>Import settings</value>
+  </data>
+  <data name="SettingsFileFilter" xml:space="preserve">
+    <value>CashGear Capture settings (*.json)|*.json|All files (*.*)|*.*</value>
+    <comment>File dialog filter: translate only the descriptions</comment>
+  </data>
+  <data name="SettingsFileName" xml:space="preserve">
+    <value>CashGear Capture settings</value>
+    <comment>Suggested file name for an export</comment>
+  </data>
+  <data name="ConfirmImport" xml:space="preserve">
+    <value>Replace all settings with the ones in {0}? The current settings are kept in a backup next to settings.json, and changes not applied yet in this window are lost.</value>
+    <comment>{0} is a file name</comment>
+  </data>
+  <data name="ConfirmResetAll" xml:space="preserve">
+    <value>Reset every setting to how it was when CashGear Capture was installed? The language and the choice about crash reports stay; the current settings are kept in a backup next to settings.json. Presets, history and recordings aren't touched.</value>
+  </data>
+  <data name="Exported" xml:space="preserve">
+    <value>Settings exported to {0}.</value>
+  </data>
+  <data name="Imported" xml:space="preserve">
+    <value>Settings imported from {0}.</value>
+  </data>
+  <data name="ImportedFromVersion" xml:space="preserve">
+    <value>Settings imported from {0} (exported by version {1}).</value>
+  </data>
+  <data name="ResetDone" xml:space="preserve">
+    <value>Every setting is back to its default.</value>
+  </data>
+  <data name="TransferFailed" xml:space="preserve">
+    <value>That didn't work: {0}</value>
+  </data>
 </root>

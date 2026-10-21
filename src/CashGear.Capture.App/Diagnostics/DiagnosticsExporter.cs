@@ -200,6 +200,8 @@ public sealed partial class DiagnosticsExporter(
                 ["run"] = LoggingSetup.RunId,
                 ["processId"] = Environment.ProcessId,
                 ["path"] = AppContext.BaseDirectory,
+                ["portable"] = paths.PortableRoot is not null,
+                ["language"] = CultureInfo.CurrentUICulture.Name,
                 ["administrator"] = Elevation.IsElevated,
                 ["dotnet"] = RuntimeInformation.FrameworkDescription,
                 ["startedAt"] = process.StartTime.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture),
@@ -247,7 +249,7 @@ public sealed partial class DiagnosticsExporter(
             ["version"] = Environment.OSVersion.VersionString,
             ["remoteSession"] = Engine.Display.Win32DesktopState.Instance.IsRemoteSession,
             ["secureScreen"] = Engine.Display.Win32DesktopState.IsSecureNow(),
-            ["uiLanguage"] = CultureInfo.CurrentUICulture.Name,
+            ["uiLanguage"] = Platform.AppLanguage.Windows.Name,
             ["culture"] = CultureInfo.CurrentCulture.Name,
         };
     }

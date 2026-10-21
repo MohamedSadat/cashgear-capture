@@ -13,8 +13,13 @@ internal static class InstanceNames
 
     public static string PipeName { get; } = $"CashGear.Capture.{UserKey()}.{SessionId()}{Instance()}";
 
-    /// <summary>A copy started with <c>CASHGEAR_INSTANCE</c> is a separate instance (tools\Bench beside the installed app).</summary>
-    private static string Instance() => Core.Settings.AppPaths.InstanceName is { } name ? "." + name : string.Empty;
+    /// <summary>
+    /// A copy started with <c>CASHGEAR_INSTANCE</c> is a separate instance (tools\Bench beside the installed app), and
+    /// so is a portable copy (one per folder).
+    /// </summary>
+    private static string Instance() =>
+        (Core.Settings.AppPaths.InstanceName is { } name ? "." + name : string.Empty)
+        + (Core.Settings.PortableMode.FindRoot(AppContext.BaseDirectory) is { } root ? "." + Core.Settings.PortableMode.InstanceName(root) : string.Empty);
 
     private static string UserKey()
     {

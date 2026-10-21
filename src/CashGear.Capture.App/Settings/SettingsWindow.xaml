@@ -1089,6 +1089,18 @@
             <TextBlock Text="{Binding UpdateStatus}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="10,0,0,0" MaxWidth="440" Opacity="0.8" />
           </StackPanel>
 
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.SettingsSection}" />
+          <TextBlock Text="{Binding PortableText}" TextWrapping="Wrap" Margin="0,0,0,8"
+                     Visibility="{Binding PortableText, Converter={StaticResource VisibleIfSet}}" />
+          <WrapPanel>
+            <Button Content="{x:Static r:SettingsText.ExportSettings}" Command="{Binding ExportSettingsCommand}" Margin="0,0,8,6" />
+            <Button Content="{x:Static r:SettingsText.ImportSettings}" Command="{Binding ImportSettingsCommand}" Margin="0,0,8,6" />
+            <Button Content="{x:Static r:SettingsText.ResetAllSettings}" Command="{Binding ResetAllSettingsCommand}" Margin="0,0,8,6" />
+          </WrapPanel>
+          <TextBlock Text="{Binding SettingsFileStatus}" TextWrapping="Wrap" Opacity="0.8" AutomationProperties.LiveSetting="Polite"
+                     Visibility="{Binding SettingsFileStatus, Converter={StaticResource VisibleIfSet}}" />
+          <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.SettingsTransferHint}" />
+
           <TextBlock Style="{StaticResource Section}" Text="Advanced" />
           <Button Content="Open settings file" Command="{Binding OpenSettingsFileCommand}" HorizontalAlignment="Left" />
           <TextBlock Style="{StaticResource Hint}" Text="Edits saved in the file apply immediately." />

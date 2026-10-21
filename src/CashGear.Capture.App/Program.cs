@@ -1,3 +1,4 @@
+using System.IO;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.SingleInstance;
@@ -17,6 +18,14 @@ public static class Program
         Log.Logger = LoggingSetup.CreateLogger(paths);
         var log = Log.ForContext(typeof(Program));
         var command = InstanceCommandParser.FromArgs(args);
+        if (paths.PortableRoot is { } portable)
+        {
+            foreach (var copied in PortableMode.SeedFrom(paths, AppPaths.ForUser()))
+            {
+                log.Information("Portable copy in {Folder}: started with this user's {File}", portable, Path.GetFileName(copied));
+            }
+        }
+
         AppLanguage.Start(paths.SettingsFile);
 
         try

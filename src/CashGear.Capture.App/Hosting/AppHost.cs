@@ -69,6 +69,8 @@ internal static class AppHost
         builder.Services.AddSingleton<IFolderPicker, WpfFolderPicker>();
         builder.Services.AddSingleton<IFilePicker, WpfFilePicker>();
         builder.Services.AddSingleton<SettingsWindowService>();
+        builder.Services.AddSingleton<SettingsFiles>();
+        builder.Services.AddSingleton<ISettingsFileDialogs, WpfSettingsFileDialogs>();
         builder.Services.AddSingleton<RegionSelector>();
         builder.Services.AddSingleton<IScrollPlatform, Win32ScrollPlatform>();
         builder.Services.AddSingleton<ScrollTargetFinder>();

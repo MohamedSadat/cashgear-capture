@@ -39,4 +39,55 @@
   <data name="RestartForLanguage" xml:space="preserve">
     <value>هل تريد إعادة تشغيل CashGear Capture الآن لعرضه باللغة الجديدة؟</value>
   </data>
+  <data name="SettingsSection" xml:space="preserve">
+    <value>الإعدادات</value>
+  </data>
+  <data name="ExportSettings" xml:space="preserve">
+    <value>تصدير الإعدادات… (_E)</value>
+  </data>
+  <data name="ImportSettings" xml:space="preserve">
+    <value>استيراد الإعدادات… (_I)</value>
+  </data>
+  <data name="ResetAllSettings" xml:space="preserve">
+    <value>إعادة تعيين كل الإعدادات… (_A)</value>
+  </data>
+  <data name="SettingsTransferHint" xml:space="preserve">
+    <value>يحفظ التصدير الإعدادات والإعدادات المسبقة لمحرر الصور في ملف واحد، للاحتفاظ بنسخة منها أو استخدامها على جهاز آخر. لا تُحفظ فيه كلمات المرور والرموز المميزة أبدًا: تطلبها الوجهات التي تحتاجها من جديد.</value>
+  </data>
+  <data name="PortableFolder" xml:space="preserve">
+    <value>هذه نسخة محمولة: تُحفظ إعداداتها وسجلاتها وبياناتها في {0}.</value>
+  </data>
+  <data name="ExportTitle" xml:space="preserve">
+    <value>تصدير الإعدادات</value>
+  </data>
+  <data name="ImportTitle" xml:space="preserve">
+    <value>استيراد الإعدادات</value>
+  </data>
+  <data name="SettingsFileFilter" xml:space="preserve">
+    <value>إعدادات CashGear Capture (*.json)|*.json|كل الملفات (*.*)|*.*</value>
+  </data>
+  <data name="SettingsFileName" xml:space="preserve">
+    <value>إعدادات CashGear Capture</value>
+  </data>
+  <data name="ConfirmImport" xml:space="preserve">
+    <value>هل تريد استبدال كل الإعدادات بإعدادات الملف {0}؟ تُحفظ الإعدادات الحالية في نسخة احتياطية بجانب settings.json، وتضيع التغييرات التي لم تُطبَّق بعد في هذه النافذة.</value>
+  </data>
+  <data name="ConfirmResetAll" xml:space="preserve">
+    <value>هل تريد إعادة كل إعداد إلى ما كان عليه عند تثبيت CashGear Capture؟ تبقى اللغة واختيارك بشأن تقارير الأعطال كما هما، وتُحفظ الإعدادات الحالية في نسخة احتياطية بجانب settings.json. لا تتأثر الإعدادات المسبقة والسجل والتسجيلات.</value>
+  </data>
+  <data name="Exported" xml:space="preserve">
+    <value>صُدّرت الإعدادات إلى {0}.</value>
+  </data>
+  <data name="Imported" xml:space="preserve">
+    <value>استُوردت الإعدادات من {0}.</value>
+  </data>
+  <data name="ImportedFromVersion" xml:space="preserve">
+    <value>استُوردت الإعدادات من {0} (صدّرها الإصدار {1}).</value>
+  </data>
+  <data name="ResetDone" xml:space="preserve">
+    <value>عادت كل الإعدادات إلى قيمها الافتراضية.</value>
+  </data>
+  <data name="TransferFailed" xml:space="preserve">
+    <value>لم ينجح ذلك: {0}</value>
+  </data>
 </root>

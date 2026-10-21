@@ -19,11 +19,21 @@ public sealed record AppPaths(
     /// <summary>Copies of recent captures and their thumbnails.</summary>
     public string HistoryDirectory => Path.Combine(DataDirectory, "history");
 
+    /// <summary>A portable copy's folder (<see cref="PortableMode"/>), whose <c>Data</c> holds all of the above; null when installed.</summary>
+    public string? PortableRoot { get; init; }
+
+    /// <summary>
+    /// The folders of the app running from <see cref="AppContext.BaseDirectory"/>: a portable copy's own
+    /// (<see cref="Portable"/>), or else this Windows user's (<see cref="ForUser"/>).
+    /// </summary>
+    public static AppPaths FromEnvironment() =>
+        PortableMode.FindRoot(AppContext.BaseDirectory) is { } root ? Portable(root) : ForUser();
+
     /// <summary>
     /// The usual folders, or with <c>CASHGEAR_INSTANCE=name</c> folders of their own (<c>CashGear\Capture-name</c>):
     /// a second copy (tools\Bench) then runs beside the installed one without sharing its settings or data.
     /// </summary>
-    public static AppPaths FromEnvironment()
+    public static AppPaths ForUser()
     {
         var folder = InstanceName is { } name ? "Capture-" + name : "Capture";
         return new(
@@ -31,8 +41,21 @@ public sealed record AppPaths(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CashGear", folder),
             LogDirectory: Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CashGear", folder, "logs"),
-            DefaultCaptureDirectory: Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "CashGear Capture"));
+            DefaultCaptureDirectory: DefaultCaptures());
+    }
+
+    /// <summary>A portable copy's folders: settings, logs and data in <c>&lt;root&gt;\Data</c>; captures still go to Pictures.</summary>
+    public static AppPaths Portable(string root)
+    {
+        var data = Path.Combine(root, PortableMode.DataFolder);
+        return new AppPaths(
+            SettingsDirectory: data,
+            LogDirectory: Path.Combine(data, "logs"),
+            DefaultCaptureDirectory: DefaultCaptures(),
+            DataDirectoryOverride: data)
+        {
+            PortableRoot = root,
+        };
     }
 
     /// <summary>
@@ -57,4 +80,7 @@ public sealed record AppPaths(
             ? Environment.ExpandEnvironmentVariables(folder)
             : DefaultCaptureDirectory;
     }
+
+    private static string DefaultCaptures() =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "CashGear Capture");
 }

@@ -4,6 +4,7 @@ using System.IO;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Capture;
@@ -56,6 +57,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly DestinationRegistry? _registry;
     private readonly SynchronizationContext? _context;
     private readonly Diagnostics.DiagnosticsService? _diagnostics;
+    private readonly SettingsFiles? _files;
+    private readonly ISettingsFileDialogs? _fileDialogs;
     private Task _monitorWork = Task.CompletedTask;
     private bool _monitoring;
     private float[]? _testRecording;
@@ -83,9 +86,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IPrinter? printer = null,
         IFilePicker? filePicker = null,
         Diagnostics.DiagnosticsService? diagnostics = null,
-        IMonitorService? monitors = null)
+        IMonitorService? monitors = null,
+        SettingsFiles? files = null,
+        ISettingsFileDialogs? fileDialogs = null)
     {
         _diagnostics = diagnostics;
+        _files = files;
+        _fileDialogs = fileDialogs;
+        PortableText = paths.PortableRoot is { } portable ? SettingsText.PortableFolder(Path.Combine(portable, PortableMode.DataFolder)) : null;
         HdrStatus = DescribeHdr(monitors?.GetMonitors() ?? []);
         _registry = destinations;
         Destinations = new DestinationsViewModel(credentials, filePicker, printer) { Tester = TestDestinationAsync };
@@ -885,6 +893,78 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>A zip of the logs, the settings without secrets and facts about this PC, for a bug report.</summary>
     [RelayCommand]
     private Task ExportDiagnosticsAsync() => _diagnostics?.ExportAsync() ?? Task.CompletedTask;
+
+    /// <summary>For a portable copy: where it keeps its settings and data. Null when installed.</summary>
+    public string? PortableText { get; }
+
+    /// <summary>What the last export, import or reset did.</summary>
+    [ObservableProperty]
+    private string? _settingsFileStatus;
+
+    /// <summary>Saves the settings and presets in one file (Settings › General).</summary>
+    [RelayCommand]
+    private async Task ExportSettingsAsync()
+    {
+        if (_files is null || _fileDialogs?.PickExportFile(SettingsText.SettingsFileName + SettingsTransfer.Extension) is not { } path)
+        {
+            return;
+        }
+
+        await Transfer(async () =>
+        {
+            await _files.ExportAsync(path);
+            SettingsFileStatus = SettingsText.Exported(path);
+        });
+    }
+
+    /// <summary>Replaces the settings with an exported file's, after asking; the form shows them at once.</summary>
+    [RelayCommand]
+    private async Task ImportSettingsAsync()
+    {
+        if (_files is null || _fileDialogs?.PickImportFile() is not { } path
+            || !_fileDialogs.Confirm(SettingsText.ConfirmImport(Path.GetFileName(path))))
+        {
+            return;
+        }
+
+        await Transfer(async () =>
+        {
+            var imported = await _files.ImportAsync(path);
+            Load(_settings.Current, StartWithWindows);
+            SettingsFileStatus = imported.AppVersion is { } version
+                ? SettingsText.ImportedFromVersion(Path.GetFileName(path), version)
+                : SettingsText.Imported(Path.GetFileName(path));
+        });
+    }
+
+    /// <summary>Every setting back to its default (not just this form, as Reset to defaults below is), after asking.</summary>
+    [RelayCommand]
+    private async Task ResetAllSettingsAsync()
+    {
+        if (_files is null || _fileDialogs?.Confirm(SettingsText.ConfirmResetAll) != true)
+        {
+            return;
+        }
+
+        await Transfer(async () =>
+        {
+            await _files.ResetAsync();
+            Load(_settings.Current, StartWithWindows);
+            SettingsFileStatus = SettingsText.ResetDone;
+        });
+    }
+
+    private async Task Transfer(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SettingsImportException or System.Text.Json.JsonException)
+        {
+            SettingsFileStatus = SettingsText.TransferFailed(ex.Message);
+        }
+    }
 
     internal static string DescribeHdr(IReadOnlyList<MonitorInfo> monitors)
     {
