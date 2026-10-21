@@ -351,14 +351,28 @@ public sealed partial class BatchViewModel : ObservableObject, IDisposable
         Status = "Starting…";
         IsRunning = true;
         _run = new CancellationTokenSource();
+        // A report posted just before the end can arrive after it: once finished, reports are ignored.
+        var finished = false;
+        var gate = new object();
         var progress = new Progress<BatchProgress>(p =>
         {
-            Progress = p.Total == 0 ? 0 : 100.0 * p.Finished / p.Total;
-            Status = Describe(p);
+            lock (gate)
+            {
+                if (!finished)
+                {
+                    Progress = p.Total == 0 ? 0 : 100.0 * p.Finished / p.Total;
+                    Status = Describe(p);
+                }
+            }
         });
         try
         {
             var result = await BatchProcessor.RunAsync(job, progress, _run.Token);
+            lock (gate)
+            {
+                finished = true;
+            }
+
             Result = result;
             foreach (var failure in result.Failures)
             {

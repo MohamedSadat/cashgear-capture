@@ -42,9 +42,17 @@ public abstract class ImageToolTestBase : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(Root))
+        // A preview started by the last change may still be reading a picture: give it a moment.
+        for (var attempt = 0; Directory.Exists(Root); attempt++)
         {
-            Directory.Delete(Root, recursive: true);
+            try
+            {
+                Directory.Delete(Root, recursive: true);
+            }
+            catch (IOException) when (attempt < 20)
+            {
+                Thread.Sleep(100);
+            }
         }
     }
 
