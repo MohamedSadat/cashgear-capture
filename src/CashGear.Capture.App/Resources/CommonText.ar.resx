@@ -60,4 +60,88 @@
   <data name="LicenseSection" xml:space="preserve">
     <value>الترخيص</value>
   </data>
+  <data name="Apply" xml:space="preserve">
+    <value>تطبيق</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>حفظ</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>فتح</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>استعراض…</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>إزالة</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>إضافة</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>حذف</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>نسخ</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>تحرير</value>
+  </data>
+  <data name="Test" xml:space="preserve">
+    <value>اختبار</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>إعادة تسمية</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>إعادة تعيين</value>
+  </data>
+  <data name="Done" xml:space="preserve">
+    <value>تم</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>بلا</value>
+  </data>
+  <data name="Automatic" xml:space="preserve">
+    <value>تلقائي</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>تراجع</value>
+  </data>
+  <data name="Redo" xml:space="preserve">
+    <value>إعادة</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>إيقاف</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>إيقاف مؤقت</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>استئناف</value>
+  </data>
+  <data name="SecondsFormat" xml:space="preserve">
+    <value>{0} ث</value>
+  </data>
+  <data name="MinutesFormat" xml:space="preserve">
+    <value>{0} د</value>
+  </data>
+  <data name="MillisecondsFormat" xml:space="preserve">
+    <value>{0} ms</value>
+  </data>
+  <data name="PixelsFormat" xml:space="preserve">
+    <value>{0} px</value>
+  </data>
+  <data name="PointsFormat" xml:space="preserve">
+    <value>{0} pt</value>
+  </data>
+  <data name="PercentFormat" xml:space="preserve">
+    <value>{0}%</value>
+  </data>
+  <data name="FpsFormat" xml:space="preserve">
+    <value>{0} fps</value>
+  </data>
+  <data name="Megabytes" xml:space="preserve">
+    <value>{0:0.0} MB</value>
+  </data>
 </root>

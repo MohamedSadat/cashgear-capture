@@ -45,6 +45,17 @@ public sealed class ResxGeneratorTests
     }
 
     [Fact]
+    public void A_key_ending_in_Format_is_the_template_itself_for_XAML_StringFormat()
+    {
+        var result = Compiler.Generate(
+            "namespace Demo; public static class Use { public static string F() => Demo.Resources.DemoText.SecondsFormat; }",
+            Resx("DemoText.resx", ("SecondsFormat", "{0} s")));
+
+        result.Compiler.Should().BeEmpty();
+        result.Generated[0].Should().Contain("public static string SecondsFormat => GetString(\"SecondsFormat\");");
+    }
+
+    [Fact]
     public void A_format_called_with_the_wrong_number_of_arguments_does_not_compile()
     {
         var result = Compiler.Generate(

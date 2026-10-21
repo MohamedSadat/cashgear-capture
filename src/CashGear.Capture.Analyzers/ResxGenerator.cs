@@ -208,7 +208,12 @@ public sealed class ResxGenerator : IIncrementalGenerator
             code.AppendLine();
             code.AppendLine("        /// <summary>" + ResxFile.ForDocComment(single.Value) + "</summary>");
             var arity = single.Placeholders.Count == 0 ? 0 : single.Placeholders.Max() + 1;
-            if (arity == 0 && !single.Value.Contains("{") && !single.Value.Contains("}"))
+            if (single.Name.EndsWith("Format", StringComparison.Ordinal))
+            {
+                // A format string for WPF (StringFormat={x:Static …}) or string.Format: the template itself.
+                code.AppendLine("        public static string " + single.Name + " => GetString(" + ResxFile.Quote(single.Name) + ");");
+            }
+            else if (arity == 0 && !single.Value.Contains("{") && !single.Value.Contains("}"))
             {
                 code.AppendLine("        public static string " + single.Name + " => GetString(" + ResxFile.Quote(single.Name) + ");");
             }

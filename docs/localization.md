@@ -21,6 +21,7 @@ using CashGear.Capture.App.Resources;
 TrayText.CaptureRegion                // a string
 TrayText.UpdateReady(version)         // "Version {0} is ready": one argument per placeholder, checked by the compiler
 CommonText.Seconds(count)             // plural forms: picks "_one"/"_other", in Arabic also "_zero", "_two", "_few", "_many"
+CommonText.SecondsFormat               // a key ending in "Format" is the template itself ("{0} s"), for StringFormat
 ```
 
 In XAML:
