@@ -16,6 +16,24 @@ public sealed class DisplayServiceTests
             .Should().BeTrue("the test exe carries the same PerMonitorV2 manifest as the app");
     }
 
+    /// <summary>The display configuration API answers here; an HDR monitor it names is one Windows lists (none on the development PC).</summary>
+    [Fact]
+    public void Hdr_monitors_are_found_among_the_listed_monitors()
+    {
+        InteractiveDesktop.Require();
+
+        var hdr = HdrDetector.Read();
+        var monitors = new Win32MonitorService(NullLogger<Win32MonitorService>.Instance).GetMonitors();
+
+        // Every active path names a listed monitor (the structs' layout is right), colour depth included.
+        var paths = HdrDetector.Paths();
+        paths.Select(p => p.Name).Distinct().Should().BeEquivalentTo(monitors.Select(m => m.DeviceName));
+        paths.Should().AllSatisfy(p => p.BitsPerColor.Should().BeOneOf(6u, 8u, 10u, 12u, 16u));
+        hdr.Keys.Should().BeSubsetOf(monitors.Select(m => m.DeviceName));
+        monitors.Where(m => m.Hdr is not null).Select(m => m.DeviceName).Should().BeEquivalentTo(hdr.Keys);
+        hdr.Values.Should().AllSatisfy(h => h.SdrWhiteNits.Should().BeInRange(80, 480));
+    }
+
     [Fact]
     public void Monitors_have_exactly_one_primary_listed_first_at_origin()
     {

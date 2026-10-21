@@ -108,6 +108,7 @@ public enum FullScreenOutput
 /// <param name="FixedRegionHeight">Fixed-size region: the height last used (pixels).</param>
 /// <param name="CornerRadius">Rounded region: the corner radius last used (pixels).</param>
 /// <param name="Delays">A delay per capture mode that overrides <paramref name="DelaySeconds"/>.</param>
+/// <param name="Hdr">How monitors in HDR mode are read.</param>
 public sealed record CaptureSettings(
     CaptureBackend Backend = CaptureBackend.Auto,
     bool IncludeCursor = false,
@@ -121,7 +122,8 @@ public sealed record CaptureSettings(
     int FixedRegionWidth = 800,
     int FixedRegionHeight = 600,
     int CornerRadius = CaptureSettings.DefaultCornerRadius,
-    ModeDelays? Delays = null)
+    ModeDelays? Delays = null,
+    HdrCapture Hdr = HdrCapture.Auto)
 {
     /// <summary>Never null when made by the constructor (or read from a file), so settings compare by value.</summary>
     public ModeDelays? Delays { get; init; } = Delays ?? new ModeDelays();
@@ -153,6 +155,7 @@ public sealed record CaptureSettings(
         FixedRegionHeight = Math.Clamp(FixedRegionHeight, 1, MaxFixedRegionSide),
         CornerRadius = Math.Clamp(CornerRadius, 0, MaxCornerRadius),
         Delays = (Delays ?? new ModeDelays()).Normalize(),
+        Hdr = Enum.IsDefined(Hdr) ? Hdr : HdrCapture.Auto,
     };
 
     [JsonIgnore]

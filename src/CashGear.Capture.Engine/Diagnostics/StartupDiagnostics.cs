@@ -65,7 +65,7 @@ internal sealed partial class StartupDiagnostics(
         var all = monitors.GetMonitors();
         foreach (var m in all)
         {
-            LogMonitor(m.DeviceName, m.IsPrimary, m.Bounds, m.WorkArea, m.DpiX);
+            LogMonitor(m.DeviceName, m.IsPrimary, m.Bounds, m.WorkArea, m.DpiX, m.Hdr is { } hdr ? $"on, SDR white {hdr.SdrWhiteNits:0} nits, peak {hdr.MaxNits?.ToString("0", System.Globalization.CultureInfo.InvariantCulture) ?? "?"} nits" : "off");
         }
 
         var bounds = VirtualScreen.GetBounds(all.Select(m => m.Bounds));
@@ -90,8 +90,8 @@ internal sealed partial class StartupDiagnostics(
     [LoggerMessage(Level = LogLevel.Error, Message = "Process is NOT PerMonitorV2 DPI aware; captures on scaled monitors will be wrong. Check app.manifest.")]
     private partial void LogNotPerMonitorV2();
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Monitor {Device} primary={IsPrimary} bounds={Bounds} work={WorkArea} dpi={Dpi}")]
-    private partial void LogMonitor(string device, bool isPrimary, PixelRect bounds, PixelRect workArea, uint dpi);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Monitor {Device} primary={IsPrimary} bounds={Bounds} work={WorkArea} dpi={Dpi} hdr={Hdr}")]
+    private partial void LogMonitor(string device, bool isPrimary, PixelRect bounds, PixelRect workArea, uint dpi, string hdr);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Virtual screen {Bounds} from {Count} monitor(s); matches SM_*VIRTUALSCREEN")]
     private partial void LogVirtualScreen(PixelRect bounds, int count);

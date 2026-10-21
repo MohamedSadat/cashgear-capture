@@ -7,6 +7,7 @@ using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Capture;
+using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Imaging;
@@ -81,9 +82,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         ICredentialStore? credentials = null,
         IPrinter? printer = null,
         IFilePicker? filePicker = null,
-        Diagnostics.DiagnosticsService? diagnostics = null)
+        Diagnostics.DiagnosticsService? diagnostics = null,
+        IMonitorService? monitors = null)
     {
         _diagnostics = diagnostics;
+        HdrStatus = DescribeHdr(monitors?.GetMonitors() ?? []);
         _registry = destinations;
         Destinations = new DestinationsViewModel(credentials, filePicker, printer) { Tester = TestDestinationAsync };
         CaptureWorkflow = new WorkflowListViewModel(() => Available(video: false));
@@ -178,6 +181,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public IReadOnlyList<ImageFileFormat> Formats { get; } = Enum.GetValues<ImageFileFormat>();
 
     public IReadOnlyList<CaptureBackend> Backends { get; } = Enum.GetValues<CaptureBackend>();
+
+    public IReadOnlyList<HdrCapture> HdrChoices { get; } = Enum.GetValues<HdrCapture>();
+
+    /// <summary>Which monitors are in HDR mode now, and what that means for captures.</summary>
+    public string HdrStatus { get; private set; } = string.Empty;
 
     public IReadOnlyList<FullScreenOutput> FullScreenOutputs { get; } = Enum.GetValues<FullScreenOutput>();
 
@@ -746,6 +754,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private CaptureBackend _backend;
 
     [ObservableProperty]
+    private HdrCapture _hdr;
+
+    [ObservableProperty]
     private FullScreenOutput _fullScreenOutput;
 
     [ObservableProperty]
@@ -868,6 +879,15 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>A zip of the logs, the settings without secrets and facts about this PC, for a bug report.</summary>
     [RelayCommand]
     private Task ExportDiagnosticsAsync() => _diagnostics?.ExportAsync() ?? Task.CompletedTask;
+
+    internal static string DescribeHdr(IReadOnlyList<MonitorInfo> monitors)
+    {
+        var hdr = monitors.Where(m => m.Hdr is not null).ToList();
+        var now = hdr.Count == 0
+            ? "No monitor is in HDR mode now."
+            : string.Join(", ", hdr.Select(m => $"{m.ShortName} is in HDR mode (SDR content at {m.Hdr!.SdrWhiteNits:0} nits)")) + ".";
+        return now + " On a monitor in HDR mode, captures, recordings and the magnifier read the screen in 16-bit float and turn it into SDR the way an SDR monitor would show it; HDR highlights brighter than SDR white become white. This uses Windows.Graphics.Capture, so Windows 10 shows its yellow border on that monitor.";
+    }
 
     private bool CanSave() => !HasErrors;
 
@@ -999,6 +1019,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Capture = current.Capture with
         {
             Backend = Backend,
+            Hdr = Hdr,
             IncludeCursor = IncludeCursor,
             HideDelayMs = HideDelayMs,
             FullScreenOutput = FullScreenOutput,
@@ -1129,6 +1150,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IncludeCursor = s.Capture.IncludeCursor;
         IncludeWindowShadow = s.Capture.IncludeWindowShadow;
         Backend = s.Capture.Backend;
+        Hdr = s.Capture.Hdr;
         FullScreenOutput = s.Capture.FullScreenOutput;
         StartWithWindows = startWithWindows;
         Theme = s.Appearance.Theme;

@@ -28,6 +28,7 @@ public static class EngineServiceCollectionExtensions
         services.AddSingleton<IFrameGrabber>(sp => sp.GetRequiredService<WgcFrameGrabber>());
         services.AddSingleton<IWindowGrabber>(sp => sp.GetRequiredService<WgcFrameGrabber>());
         services.AddSingleton<IScreenCaptureService, ScreenCaptureService>();
+        services.AddSingleton<ILiveMonitorCapture, LiveMonitorCapture>();
 
         services.AddSingleton<IStartupDiagnostics, StartupDiagnostics>();
         services.AddSingleton<Core.Ocr.IOcrService, Ocr.WindowsOcrService>();

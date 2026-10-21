@@ -8,7 +8,11 @@ namespace CashGear.Capture.Engine.Capture;
 /// <param name="Monitor">The monitor the area lies on.</param>
 /// <param name="Area">Virtual-screen rectangle to capture; must lie within <c>Monitor.Bounds</c>.</param>
 /// <param name="FrameTimeout">How long a frame-based backend may wait for a frame.</param>
-internal readonly record struct FrameRequest(MonitorInfo Monitor, PixelRect Area, bool IncludeCursor, TimeSpan FrameTimeout);
+internal readonly record struct FrameRequest(MonitorInfo Monitor, PixelRect Area, bool IncludeCursor, TimeSpan FrameTimeout)
+{
+    /// <summary>Read the monitor as 16-bit float and tone-map it to SDR (WGC only); null reads it as 8-bit.</summary>
+    public HdrInfo? Hdr { get; init; }
+}
 
 /// <param name="Window">The window to capture (its handle and visible frame bounds).</param>
 /// <param name="Dpi">Scale of the monitor the window is mostly on (metadata only).</param>
@@ -17,7 +21,11 @@ internal readonly record struct WindowRequest(
     bool IncludeCursor,
     TimeSpan FrameTimeout,
     DpiScale Dpi,
-    string? MonitorName);
+    string? MonitorName)
+{
+    /// <summary>Read the window as 16-bit float and tone-map it to SDR (it is on a monitor in HDR mode); null reads it as 8-bit.</summary>
+    public HdrInfo? Hdr { get; init; }
+}
 
 /// <summary>A backend that can capture a window's own content, even where other windows cover it.</summary>
 internal interface IWindowGrabber

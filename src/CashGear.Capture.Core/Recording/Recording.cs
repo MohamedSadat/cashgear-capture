@@ -63,7 +63,8 @@ public sealed record RecordingOptions(
     string? SystemAudioAppName = null,
     MicrophoneProcessing? MicrophoneProcessing = null,
     bool NormalizeLoudness = false,
-    OverlaySettings? Overlays = null);
+    OverlaySettings? Overlays = null,
+    HdrInfo? Hdr = null);
 
 /// <param name="Path">The (first) file saved.</param>
 /// <param name="FramesDropped">Frames skipped because encoding fell behind (the picture holds still for that long).</param>

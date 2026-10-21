@@ -13,6 +13,7 @@ public sealed unsafe partial class Win32MonitorService(ILogger<Win32MonitorServi
     public IReadOnlyList<MonitorInfo> GetMonitors()
     {
         var monitors = new List<MonitorInfo>(4);
+        var hdr = HdrDetector.Current();
         foreach (var handle in NativeEnumerators.EnumDisplayMonitors())
         {
             var info = MONITORINFOEXW.Create();
@@ -36,7 +37,10 @@ public sealed unsafe partial class Win32MonitorService(ILogger<Win32MonitorServi
                 info.rcWork.ToPixelRect(),
                 dpiX,
                 dpiY,
-                (info.dwFlags & User32.MonitorInfoFPrimary) != 0));
+                (info.dwFlags & User32.MonitorInfoFPrimary) != 0)
+            {
+                Hdr = hdr.GetValueOrDefault(info.DeviceName),
+            });
         }
 
         return monitors

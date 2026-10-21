@@ -13,6 +13,16 @@ public enum CaptureBackend
     Gdi,
 }
 
+/// <summary>How captures read a monitor in HDR mode.</summary>
+public enum HdrCapture
+{
+    /// <summary>As 16-bit float, tone-mapped to SDR, so captures look as the screen does (WGC, also on Windows 10).</summary>
+    Auto,
+
+    /// <summary>As 8-bit, the way Windows hands it to older apps (HDR monitors' captures look washed out).</summary>
+    Off,
+}
+
 /// <summary>What a capture targeted.</summary>
 public enum CaptureKind
 {

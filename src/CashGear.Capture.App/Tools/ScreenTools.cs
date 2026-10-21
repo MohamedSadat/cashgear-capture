@@ -25,7 +25,8 @@ public sealed partial class ScreenTools(
     RegionSelector selector,
     IOutputService output,
     ITrayNotifier notifier,
-    ILogger<ScreenTools> logger)
+    ILogger<ScreenTools> logger,
+    Engine.Capture.Wgc.ILiveMonitorCapture? live = null)
 {
     private ScreenMagnifier? _magnifier;
     private ColorPickerWindow? _picker;
@@ -60,7 +61,7 @@ public sealed partial class ScreenTools(
             return;
         }
 
-        _magnifier = ScreenMagnifier.Open(monitors, state);
+        _magnifier = ScreenMagnifier.Open(monitors, state, settings.Current.Capture.Hdr == HdrCapture.Auto ? live : null);
         _magnifier.Closed += (_, _) => _magnifier = null;
         LogTool("magnifier", true);
     }

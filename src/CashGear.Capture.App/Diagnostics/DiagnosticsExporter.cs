@@ -264,6 +264,9 @@ public sealed partial class DiagnosticsExporter(
                 ["workArea"] = monitor.WorkArea.ToString(),
                 ["dpi"] = monitor.DpiX,
                 ["scale"] = Math.Round(monitor.Scale.ScaleX * 100) + "%",
+                ["hdr"] = monitor.Hdr is { } hdr
+                    ? new JsonObject { ["sdrWhiteNits"] = Math.Round(hdr.SdrWhiteNits), ["maxNits"] = hdr.MaxNits is { } max ? Math.Round(max) : null }
+                    : false,
             });
         }
 

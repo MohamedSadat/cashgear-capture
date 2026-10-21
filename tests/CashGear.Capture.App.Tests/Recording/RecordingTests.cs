@@ -1049,6 +1049,91 @@ public sealed class ScreenRecorderTests : IDisposable
     }
 
     /// <summary>
+    /// The recorder's HDR path on an SDR monitor: the same area captured as 16-bit float and tone-mapped reads back as
+    /// the 8-bit capture's bytes (compared where the screen held still between two 8-bit pictures).
+    /// </summary>
+    [Fact(Timeout = 60_000)]
+    public async Task A_float_stream_reads_back_the_8_bit_pictures()
+    {
+        InteractiveDesktop.Require();
+        var monitor = new Win32MonitorService(NullLogger<Win32MonitorService>.Instance).GetMonitors().First(m => m.IsPrimary);
+        var area = new PixelRect(monitor.Bounds.X + 100, monitor.Bounds.Y + 100, 320, 240);
+        var ct = TestContext.Current.CancellationToken;
+        await StaDispatcher.RunAsync(async () =>
+        {
+            var square = Square(area.X + 20, area.Y + 20, 24, monitor.Scale.ScaleX);
+            var plain = await WgcAreaStream.StartAsync(_interop, monitor, area, includeCursor: false, _loggers, ct);
+            var toned = await WgcAreaStream.StartAsync(_interop, monitor, area, includeCursor: false, _loggers, ct, hdr: Core.Display.HdrInfo.Sdr);
+            try
+            {
+                byte[]? last = null, lastToned = null;
+                for (var attempt = 0; attempt < 5; attempt++)
+                {
+                    await Task.Delay(300, ct);
+                    var before = last = Newest(plain, last);
+                    var middle = lastToned = Newest(toned, lastToned);
+                    await Task.Delay(100, ct);
+                    var after = last = Newest(plain, last);
+                    long stable = 0, matching = 0;
+                    for (var i = 0; i < before.Length; i += 4)
+                    {
+                        if (Near(before, after, i, 0))
+                        {
+                            stable++;
+                            matching += Near(before, middle, i, 1) ? 1 : 0;
+                        }
+                    }
+
+                    if (stable < before.Length / 4 / 2)
+                    {
+                        continue; // the screen kept changing
+                    }
+
+                    ((double)matching / stable).Should().BeGreaterThanOrEqualTo(0.999, "tone-mapped float pictures equal the 8-bit ones within a level");
+                    return;
+                }
+
+                Assert.Skip("The screen kept changing; could not compare.");
+            }
+            finally
+            {
+                plain.Dispose();
+                toned.Dispose();
+                square.Close();
+            }
+        });
+
+        // The newest picture's bytes, or the last ones read when the screen hasn't changed since.
+        static byte[] Newest(WgcAreaStream stream, byte[]? previous)
+        {
+            Picture? newest = null;
+            while (stream.TryTake(out var picture))
+            {
+                if (newest is not null)
+                {
+                    stream.Release(newest);
+                }
+
+                newest = picture;
+            }
+
+            if (newest is null)
+            {
+                previous.Should().NotBeNull("Windows sends a picture at least when the stream starts");
+                return previous!;
+            }
+
+            var bytes = new byte[stream.Width * stream.Height * 4];
+            stream.Read(newest!, bytes);
+            stream.Release(newest!);
+            return bytes;
+        }
+
+        static bool Near(byte[] a, byte[] b, int i, int tolerance) =>
+            Math.Abs(a[i] - b[i]) <= tolerance && Math.Abs(a[i + 1] - b[i + 1]) <= tolerance && Math.Abs(a[i + 2] - b[i + 2]) <= tolerance;
+    }
+
+    /// <summary>
     /// Releases <paramref name="stream"/> on another thread while this one holds the stream's lock, so the release
     /// waits for the lock first and the next frame's callback waits behind it. True if the release returns.
     /// </summary>

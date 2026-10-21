@@ -11,6 +11,7 @@ using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Engine.Capture.Wgc;
 using CashGear.Capture.Interop.Native;
 
 namespace CashGear.Capture.App.Tools;
@@ -23,7 +24,9 @@ namespace CashGear.Capture.App.Tools;
 /// buttons (a click closes it) before any window gets them; the pointer still moves freely. It has the keyboard
 /// too: + and − zoom, arrows move the pointer a pixel (Ctrl: 10), Esc closes it.</item>
 /// <item>Every frame it reads the square under the pointer with GDI (Windows.Graphics.Capture would show its yellow
-/// border on Windows 10) and shows it at a whole zoom, pixel for pixel, on the monitor's scale. The lens is an
+/// border on Windows 10) and shows it at a whole zoom, pixel for pixel, on the monitor's scale. On a monitor in HDR
+/// mode GDI's copy is washed out, so there it reads a live Windows.Graphics.Capture stream of that monitor, tone-mapped
+/// to SDR (with the yellow border on Windows 10), as long as the square is on it. The lens is an
 /// opaque window left out of captures, so it never sees itself and the pixels it reads are exact. (A see-through
 /// window over the screen to take the mouse would not do: while one is up, Windows composes the screen with some
 /// pixels a level off, even in captures that leave it out.)</item>
@@ -41,13 +44,16 @@ public sealed unsafe class ScreenMagnifier
     private readonly IAppStateStore _state;
     private readonly LensWindow _lens;
     private readonly ScreenSampler _sampler = new();
+    private readonly ILiveMonitorCapture? _live;
+    private ILiveMonitorStream? _hdrStream;
     private nint _hook;
     private int _wheel;
     private bool _closed;
 
-    private ScreenMagnifier(IMonitorService monitors, IAppStateStore state)
+    private ScreenMagnifier(IMonitorService monitors, IAppStateStore state, ILiveMonitorCapture? live)
     {
         _monitors = monitors;
+        _live = live;
         _state = state;
         Zoom = Magnifier.ClampZoom(state.Current.MagnifierZoom);
         _lens = new LensWindow(this);
@@ -70,10 +76,11 @@ public sealed unsafe class ScreenMagnifier
     public bool IsOpen => !_closed;
 
     /// <summary>Opens it (UI thread). It closes itself on a click or Esc.</summary>
-    public static ScreenMagnifier Open(IMonitorService monitors, IAppStateStore state)
+    /// <param name="live">Reads monitors in HDR mode (null: GDI everywhere).</param>
+    public static ScreenMagnifier Open(IMonitorService monitors, IAppStateStore state, ILiveMonitorCapture? live = null)
     {
         _active?.Close();
-        var magnifier = new ScreenMagnifier(monitors, state);
+        var magnifier = new ScreenMagnifier(monitors, state, live);
         magnifier.Start();
         return magnifier;
     }
@@ -100,6 +107,8 @@ public sealed unsafe class ScreenMagnifier
 
         _lens.Close();
         _sampler.Dispose();
+        _hdrStream?.Dispose();
+        _hdrStream = null;
         var zoom = Zoom;
         _ = _state.UpdateAsync(s => s with { MagnifierZoom = zoom });
         Closed?.Invoke(this, EventArgs.Empty);
@@ -133,7 +142,7 @@ public sealed unsafe class ScreenMagnifier
         var monitor = monitors.FirstOrDefault(m => m.Bounds.Contains(cursor)) ?? monitors[0];
         var size = (int)Math.Round(LensDips * monitor.Scale.ScaleX);
         var source = Magnifier.Source(cursor, size, Zoom);
-        var pixels = _sampler.Sample(source);
+        var pixels = SampleHdr(monitor, source) is { IsEmpty: false } hdr ? hdr : _sampler.Sample(source);
         if (pixels.IsEmpty)
         {
             return;
@@ -154,6 +163,23 @@ public sealed unsafe class ScreenMagnifier
         var centre = pixels.Slice(((source.Height / 2 * source.Width) + (source.Width / 2)) * 4, 4);
         _lens.Present(Pixels, source, Zoom, size, cursor, (centre[2], centre[1], centre[0]));
         ToolWindowStyle.Place(_lens, LensBounds);
+    }
+
+    /// <summary>The square from the live stream of <paramref name="monitor"/> when it is in HDR mode and holds the square; else empty (GDI reads it).</summary>
+    private ReadOnlySpan<byte> SampleHdr(MonitorInfo monitor, PixelRect source)
+    {
+        if (_live is null || monitor.Hdr is not { } hdr || !monitor.Bounds.Contains(source))
+        {
+            return [];
+        }
+
+        if (_hdrStream is null || _hdrStream.Monitor.DeviceName != monitor.DeviceName || _hdrStream.Monitor.Bounds != monitor.Bounds)
+        {
+            _hdrStream?.Dispose();
+            _hdrStream = _live.Open(monitor, hdr);
+        }
+
+        return _hdrStream is null ? [] : _hdrStream.Sample(source);
     }
 
     private void OnWheel(int delta)

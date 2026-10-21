@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Engine.Capture;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -42,6 +43,55 @@ public sealed class ScreenCaptureServiceTests
         _wgc.Requests.Should().ContainSingle();
         _gdi.Requests.Should().BeEmpty();
         image.Metadata.Backend.Should().Be(CaptureBackend.Wgc);
+    }
+
+    [Fact]
+    public async Task A_monitor_in_hdr_mode_is_read_as_float_through_wgc_even_on_windows10()
+    {
+        var hdr = new Core.Display.HdrInfo(240, 1000);
+        var primary = Layout.Primary with { Hdr = hdr };
+        var service = Create(CaptureBackend.Auto, FakeCapabilities.Windows10, [Layout.Secondary, primary]);
+
+        using (var image = await service.CaptureMonitorAsync(primary, Ct))
+        {
+            image.Metadata.Backend.Should().Be(CaptureBackend.Wgc);
+        }
+
+        _wgc.Requests.Should().ContainSingle().Which.Hdr.Should().Be(hdr);
+        _gdi.Requests.Should().BeEmpty();
+
+        // Across both monitors: the SDR one as before (GDI on Windows 10), the HDR one as float.
+        using (await service.CaptureAllMonitorsAsync(Ct))
+        {
+        }
+
+        _gdi.Requests.Should().ContainSingle().Which.Hdr.Should().BeNull();
+        _wgc.Requests.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Hdr_off_reads_an_hdr_monitor_as_8_bit_the_usual_way()
+    {
+        var primary = Layout.Primary with { Hdr = new Core.Display.HdrInfo(240) };
+        var settings = new FakeSettingsService(new AppSettings { Capture = new CaptureSettings(Backend: CaptureBackend.Auto, Hdr: HdrCapture.Off) });
+        var service = Create(CaptureBackend.Auto, FakeCapabilities.Windows10, [Layout.Secondary, primary], settings);
+
+        using var image = await service.CaptureMonitorAsync(primary, Ct);
+
+        _gdi.Requests.Should().ContainSingle().Which.Hdr.Should().BeNull();
+        _wgc.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Gdi_chosen_by_hand_is_kept_for_an_hdr_monitor()
+    {
+        var primary = Layout.Primary with { Hdr = new Core.Display.HdrInfo(240) };
+        var service = Create(CaptureBackend.Gdi, FakeCapabilities.Windows11, [Layout.Secondary, primary]);
+
+        using var image = await service.CaptureMonitorAsync(primary, Ct);
+
+        _gdi.Requests.Should().ContainSingle();
+        _wgc.Requests.Should().BeEmpty();
     }
 
     public static TheoryData<string> Failures => ["com", "timeout", "invalid"];
@@ -199,11 +249,11 @@ public sealed class ScreenCaptureServiceTests
     }
 
     private ScreenCaptureService Create(
-        CaptureBackend preference, ICaptureCapabilities capabilities, Core.Display.MonitorInfo[]? monitors = null) =>
+        CaptureBackend preference, ICaptureCapabilities capabilities, Core.Display.MonitorInfo[]? monitors = null, FakeSettingsService? settings = null) =>
         new(
             new FakeMonitorService(monitors ?? [Layout.Secondary, Layout.Primary]),
             new FakeWindowService(),
-            FakeSettingsService.With(preference),
+            settings ?? FakeSettingsService.With(preference),
             new CaptureBackendSelector(capabilities),
             [_gdi, _wgc],
             [],

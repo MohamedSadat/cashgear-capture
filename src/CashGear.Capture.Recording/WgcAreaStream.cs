@@ -31,7 +31,8 @@ internal sealed record Picture(ID3D11Texture2D Texture, long Timestamp, long Slo
 /// recording's frame rate, so the queue keeps one picture per frame: a newer picture for the same frame replaces
 /// the older one. When the recorder falls far behind, the oldest are dropped. Only the pictures the recorder
 /// actually encodes are read back to the CPU (<see cref="Read"/>). Uses its own D3D11 device, so screenshots
-/// taken meanwhile don't wait for it.
+/// taken meanwhile don't wait for it. A monitor in HDR mode is captured as 16-bit float and each picture read
+/// is tone-mapped to SDR first (<see cref="ToneMapper"/>).
 /// </summary>
 internal sealed partial class WgcAreaStream : IDisposable
 {
@@ -52,8 +53,12 @@ internal sealed partial class WgcAreaStream : IDisposable
     private readonly ConcurrentBag<ID3D11Texture2D> _free = [];
     private readonly List<ID3D11Texture2D> _textures = [];
     private readonly ILogger _logger;
+    private readonly HdrInfo? _hdr;
+    private readonly DirectXPixelFormat _poolFormat;
 
     private D3DResources? _resources;
+    private ToneMapper? _toneMapper;
+    private ID3D11Texture2D? _toned;
     private Direct3D11CaptureFramePool? _pool;
     private GraphicsCaptureSession? _session;
     private ID3D11Texture2D? _staging;
@@ -63,9 +68,11 @@ internal sealed partial class WgcAreaStream : IDisposable
     private Exception? _failure;
     private bool _disposed;
 
-    private WgcAreaStream(MonitorInfo monitor, PixelRect area, Func<long, long>? slotOf, ILoggerFactory loggers)
+    private WgcAreaStream(MonitorInfo monitor, PixelRect area, Func<long, long>? slotOf, HdrInfo? hdr, ILoggerFactory loggers)
     {
         _slotOf = slotOf;
+        _hdr = hdr;
+        _poolFormat = hdr is null ? DirectXPixelFormat.B8G8R8A8UIntNormalized : DirectXPixelFormat.R16G16B16A16Float;
         _devices = new D3DDeviceManager(loggers.CreateLogger<D3DDeviceManager>());
         _logger = loggers.CreateLogger<WgcAreaStream>();
         _crop = new PixelRect(area.X - monitor.Bounds.X, area.Y - monitor.Bounds.Y, area.Width, area.Height);
@@ -88,9 +95,10 @@ internal sealed partial class WgcAreaStream : IDisposable
 
     /// <summary>Starts capturing <paramref name="area"/> of <paramref name="monitor"/> and waits for the first picture.</summary>
     /// <param name="slotOf">The video frame a picture captured at a timestamp belongs to; pictures for the same frame replace each other.</param>
+    /// <param name="hdr">Capture as float and tone-map with this white level (a monitor in HDR mode); null captures 8-bit.</param>
     public static async Task<WgcAreaStream> StartAsync(
         WgcInterop interop, MonitorInfo monitor, PixelRect area, bool includeCursor, ILoggerFactory loggers, CancellationToken ct,
-        Func<long, long>? slotOf = null)
+        Func<long, long>? slotOf = null, HdrInfo? hdr = null)
     {
         if (!monitor.Bounds.Contains(area))
         {
@@ -100,7 +108,7 @@ internal sealed partial class WgcAreaStream : IDisposable
         // WinRT objects must not be created on the caller's (possibly STA UI) thread.
         var stream = await Task.Run(() =>
         {
-            var created = new WgcAreaStream(monitor, area, slotOf, loggers);
+            var created = new WgcAreaStream(monitor, area, slotOf, hdr, loggers);
             try
             {
                 created.Start(interop, monitor, includeCursor);
@@ -162,7 +170,7 @@ internal sealed partial class WgcAreaStream : IDisposable
         lock (_contextGate)
         {
             ThrowIfFailed();
-            ReadBack(picture.Texture, destination);
+            ReadBack(ToSdr(picture.Texture), destination);
         }
     }
 
@@ -176,12 +184,24 @@ internal sealed partial class WgcAreaStream : IDisposable
         lock (_contextGate)
         {
             ThrowIfFailed();
-            compositor.Compose(_resources!.Context, picture.Texture, scene, webcam);
+            compositor.Compose(_resources!.Context, ToSdr(picture.Texture), scene, webcam);
             ReadBack(compositor.Target, destination);
         }
     }
 
-    /// <summary>Reads a texture of the area's size back as top-down BGRA (under the context lock).</summary>
+    /// <summary>A picture as 8-bit BGRA: itself, or tone-mapped into <see cref="_toned"/> when it is float (under the context lock).</summary>
+    private ID3D11Texture2D ToSdr(ID3D11Texture2D picture)
+    {
+        if (_toneMapper is null)
+        {
+            return picture;
+        }
+
+        _toneMapper.Draw(_resources!.Context, picture, _toned!, 0, 0, _hdr!.WhiteScale);
+        return _toned!;
+    }
+
+    /// <summary>Reads an 8-bit texture of the area's size back as top-down BGRA (under the context lock).</summary>
     private unsafe void ReadBack(ID3D11Texture2D texture, Span<byte> destination)
     {
         var context = _resources!.Context;
@@ -236,6 +256,8 @@ internal sealed partial class WgcAreaStream : IDisposable
         }
 
         _staging?.Dispose();
+        _toned?.Dispose();
+        _toneMapper?.Dispose();
         _devices.Dispose();
     }
 
@@ -252,14 +274,18 @@ internal sealed partial class WgcAreaStream : IDisposable
         _resources = _devices.Acquire();
         var item = interop.CreateItemForMonitor(monitor.Handle);
         _poolSize = item.Size;
-        _pool = Direct3D11CaptureFramePool.CreateFreeThreaded(
-            _resources.WinRtDevice, DirectXPixelFormat.B8G8R8A8UIntNormalized, PoolBuffers, _poolSize);
+        _pool = Direct3D11CaptureFramePool.CreateFreeThreaded(_resources.WinRtDevice, _poolFormat, PoolBuffers, _poolSize);
         _session = _pool.CreateCaptureSession(item);
         _session.IsCursorCaptureEnabled = includeCursor;
-        _staging = _resources.Device.CreateTexture2D(Description(ResourceUsage.Staging, CpuAccessFlags.Read));
+        _staging = _resources.Device.CreateTexture2D(Description(ResourceUsage.Staging, CpuAccessFlags.Read) with { Format = Format.B8G8R8A8_UNorm });
+        if (_hdr is not null)
+        {
+            _toneMapper = new ToneMapper(_resources.Device);
+            _toned = _resources.Device.CreateTexture2D(ToneMapper.TargetDescription(Width, Height));
+        }
         _pool.FrameArrived += OnFrameArrived;
         _session.StartCapture();
-        LogStarted(monitor.ShortName, _crop, includeCursor);
+        LogStarted(monitor.ShortName, _crop, includeCursor, _hdr is null ? "off" : $"tone-mapped, SDR white {_hdr.SdrWhiteNits:0} nits");
     }
 
     private Texture2DDescription Description(ResourceUsage usage, CpuAccessFlags cpu) => new()
@@ -268,10 +294,10 @@ internal sealed partial class WgcAreaStream : IDisposable
         Height = (uint)Height,
         MipLevels = 1,
         ArraySize = 1,
-        Format = Format.B8G8R8A8_UNorm,
+        Format = _hdr is null ? Format.B8G8R8A8_UNorm : ToneMapper.SourceFormat,
         SampleDescription = new SampleDescription(1, 0),
         Usage = usage,
-        BindFlags = BindFlags.None,
+        BindFlags = _hdr is null || usage == ResourceUsage.Staging ? BindFlags.None : BindFlags.ShaderResource,
         CPUAccessFlags = cpu,
     };
 
@@ -319,7 +345,7 @@ internal sealed partial class WgcAreaStream : IDisposable
                 {
                     // The monitor changed resolution; later frames come at the new size.
                     _poolSize = size;
-                    sender.Recreate(_resources!.WinRtDevice, DirectXPixelFormat.B8G8R8A8UIntNormalized, PoolBuffers, size);
+                    sender.Recreate(_resources!.WinRtDevice, _poolFormat, PoolBuffers, size);
                 }
 
                 if (_crop.Right > size.Width || _crop.Bottom > size.Height)
@@ -386,8 +412,8 @@ internal sealed partial class WgcAreaStream : IDisposable
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Recording capture started on {Monitor}, area {Crop} (cursor {Cursor})")]
-    private partial void LogStarted(string monitor, PixelRect crop, bool cursor);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recording capture started on {Monitor}, area {Crop} (cursor {Cursor}, HDR {Hdr})")]
+    private partial void LogStarted(string monitor, PixelRect crop, bool cursor, string hdr);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Recording capture failed")]
     private partial void LogFailed(Exception ex);

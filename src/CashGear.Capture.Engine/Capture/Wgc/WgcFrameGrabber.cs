@@ -1,5 +1,6 @@
 using System.Buffers;
 using CashGear.Capture.Core.Capture;
+using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Engine.Display;
@@ -65,6 +66,7 @@ internal sealed partial class WgcFrameGrabber(
                 return (crop, request.ToMetadata(Backend, time));
             },
             keepAlpha: false,
+            request.Hdr,
             ct);
     }
 
@@ -92,6 +94,7 @@ internal sealed partial class WgcFrameGrabber(
                 return (crop, metadata);
             },
             keepAlpha: true, // Windows 11 rounded corners come through transparent
+            request.Hdr,
             ct);
     }
 
@@ -132,6 +135,7 @@ internal sealed partial class WgcFrameGrabber(
         TimeSpan frameTimeout,
         Func<PixelSize, (PixelRect Crop, CaptureMetadata Metadata)> describe,
         bool keepAlpha,
+        HdrInfo? hdr,
         CancellationToken ct)
     {
         await _gate.WaitAsync(ct).ConfigureAwait(false);
@@ -143,7 +147,7 @@ internal sealed partial class WgcFrameGrabber(
             {
                 var item = createItem();
                 using var framePool = Direct3D11CaptureFramePool.CreateFreeThreaded(
-                    resources.WinRtDevice, DirectXPixelFormat.B8G8R8A8UIntNormalized, 1, item.Size);
+                    resources.WinRtDevice, hdr is null ? DirectXPixelFormat.B8G8R8A8UIntNormalized : DirectXPixelFormat.R16G16B16A16Float, 1, item.Size);
                 using var session = framePool.CreateCaptureSession(item);
                 session.IsCursorCaptureEnabled = includeCursor;
                 if (borderless && OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348))
@@ -152,7 +156,7 @@ internal sealed partial class WgcFrameGrabber(
                 }
 
                 using var frame = await WaitForFrameAsync(framePool, session, target, frameTimeout, ct).ConfigureAwait(false);
-                return CopyFrame(frame, describe, keepAlpha, resources);
+                return CopyFrame(frame, describe, keepAlpha, hdr, resources);
             }
             catch
             {
@@ -208,6 +212,7 @@ internal sealed partial class WgcFrameGrabber(
         Direct3D11CaptureFrame frame,
         Func<PixelSize, (PixelRect Crop, CaptureMetadata Metadata)> describe,
         bool keepAlpha,
+        HdrInfo? hdr,
         D3DResources resources)
     {
         using var texture = WgcInterop.GetTexture(frame.Surface);
@@ -221,7 +226,10 @@ internal sealed partial class WgcFrameGrabber(
             throw new CaptureException($"Nothing to copy: {crop} is not inside the {content.Width}x{content.Height} frame.");
         }
 
-        var stagingDescription = description with
+        // An HDR frame is tone-mapped into an 8-bit texture of the crop's size first; an SDR one is copied whole.
+        using var toned = hdr is null ? null : ToneMap(texture, crop, hdr, resources);
+        var copied = toned ?? texture;
+        var stagingDescription = copied.Description with
         {
             Usage = ResourceUsage.Staging,
             BindFlags = BindFlags.None,
@@ -232,7 +240,8 @@ internal sealed partial class WgcFrameGrabber(
             SampleDescription = new(1, 0),
         };
         using var staging = resources.Device.CreateTexture2D(stagingDescription);
-        resources.Context.CopyResource(staging, texture);
+        resources.Context.CopyResource(staging, copied);
+        var origin = toned is null ? crop : crop with { X = 0, Y = 0 };
 
         var image = CapturedImage.Allocate(crop.Width, crop.Height, metadata, pool, clear: false);
         try
@@ -242,7 +251,7 @@ internal sealed partial class WgcFrameGrabber(
             {
                 var rowPitch = (int)mapped.RowPitch;
                 var rowBytes = crop.Width * CapturedImage.BytesPerPixel;
-                var start = (byte*)mapped.DataPointer + (crop.Y * rowPitch) + (crop.X * CapturedImage.BytesPerPixel);
+                var start = (byte*)mapped.DataPointer + (origin.Y * rowPitch) + (origin.X * CapturedImage.BytesPerPixel);
                 var source = new ReadOnlySpan<byte>(start, (rowPitch * (crop.Height - 1)) + rowBytes);
                 PixelBuffer.CopyRows(source, rowPitch, image.Pixels, image.Stride, rowBytes, crop.Height);
             }
@@ -257,6 +266,23 @@ internal sealed partial class WgcFrameGrabber(
         catch
         {
             image.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>The crop of a float (scRGB) frame, tone-mapped to 8-bit sRGB on the GPU.</summary>
+    private static ID3D11Texture2D ToneMap(ID3D11Texture2D frame, PixelRect crop, HdrInfo hdr, D3DResources resources)
+    {
+        var target = resources.Device.CreateTexture2D(ToneMapper.TargetDescription(crop.Width, crop.Height));
+        try
+        {
+            using var mapper = new ToneMapper(resources.Device);
+            mapper.Draw(resources.Context, frame, target, crop.X, crop.Y, hdr.WhiteScale);
+            return target;
+        }
+        catch
+        {
+            target.Dispose();
             throw;
         }
     }

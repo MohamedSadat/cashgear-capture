@@ -5,6 +5,7 @@
     <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
     <!-- Same PerMonitorV2 manifest as the app so captured sizes are physical pixels. -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

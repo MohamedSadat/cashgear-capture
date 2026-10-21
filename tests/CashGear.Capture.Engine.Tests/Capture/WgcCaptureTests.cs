@@ -88,6 +88,43 @@ public sealed class WgcCaptureTests : IDisposable
         await AssertMatchesGdiAsync(monitor, area);
     }
 
+    /// <summary>
+    /// The HDR path on an SDR monitor: Windows hands over the same screen as 16-bit float (SDR white = 1.0), and the
+    /// tone mapper must turn it back into the 8-bit capture's bytes.
+    /// </summary>
+    [Fact]
+    public async Task A_float_capture_tone_mapped_equals_the_8_bit_capture()
+    {
+        RequireWgc();
+
+        foreach (var monitor in _monitors)
+        {
+            var b = monitor.Bounds;
+            var area = new PixelRect(b.X + (b.Width / 8), b.Y + (b.Height / 8), b.Width * 3 / 4, b.Height * 3 / 4);
+            var compared = false;
+            for (var attempt = 0; attempt < 5 && !compared; attempt++)
+            {
+                using var before = await _wgc.CaptureAsync(Request(monitor, area), Ct);
+                using var toned = await _wgc.CaptureAsync(Request(monitor, area) with { Hdr = HdrInfo.Sdr }, Ct);
+                using var after = await _wgc.CaptureAsync(Request(monitor, area), Ct);
+
+                toned.Width.Should().Be(area.Width);
+                toned.Height.Should().Be(area.Height);
+                var (stable, matching) = CompareOnStablePixels(before, toned, after, tolerance: 1);
+                if (stable < 0.5)
+                {
+                    await Task.Delay(250, Ct);
+                    continue;
+                }
+
+                matching.Should().BeGreaterThanOrEqualTo(0.999, $"on {monitor.DeviceName}, the tone-mapped float capture should be the 8-bit one within a level ({stable:P0} of pixels held still)");
+                compared = true;
+            }
+
+            Assert.SkipUnless(compared, $"{monitor.DeviceName} kept changing; could not compare.");
+        }
+    }
+
     [Fact]
     public async Task Area_outside_the_monitor_is_rejected()
     {
@@ -196,7 +233,7 @@ public sealed class WgcCaptureTests : IDisposable
     /// ±2. A margin at the edges is ignored: on Windows 10 the yellow WGC border is drawn on screen around the
     /// monitor and can still be visible to the next GDI grab.
     /// </summary>
-    private static (double Stable, double Matching) CompareOnStablePixels(CapturedImage before, CapturedImage candidate, CapturedImage after)
+    private static (double Stable, double Matching) CompareOnStablePixels(CapturedImage before, CapturedImage candidate, CapturedImage after, int tolerance = 2)
     {
         candidate.Width.Should().Be(before.Width);
         candidate.Height.Should().Be(before.Height);
@@ -210,13 +247,13 @@ public sealed class WgcCaptureTests : IDisposable
             for (var i = margin * 4; i < (before.Width - margin) * 4; i += 4)
             {
                 total++;
-                if (!Same(rb, ra, i))
+                if (!Same(rb, ra, i, 2))
                 {
                     continue;
                 }
 
                 stable++;
-                if (Same(rb, rc, i))
+                if (Same(rb, rc, i, tolerance))
                 {
                     matching++;
                 }
@@ -225,7 +262,7 @@ public sealed class WgcCaptureTests : IDisposable
 
         return (stable / (double)total, stable == 0 ? 0 : matching / (double)stable);
 
-        static bool Same(Span<byte> x, Span<byte> y, int i) =>
-            Math.Abs(x[i] - y[i]) <= 2 && Math.Abs(x[i + 1] - y[i + 1]) <= 2 && Math.Abs(x[i + 2] - y[i + 2]) <= 2;
+        static bool Same(Span<byte> x, Span<byte> y, int i, int tolerance) =>
+            Math.Abs(x[i] - y[i]) <= tolerance && Math.Abs(x[i + 1] - y[i + 1]) <= tolerance && Math.Abs(x[i + 2] - y[i + 2]) <= tolerance;
     }
 }

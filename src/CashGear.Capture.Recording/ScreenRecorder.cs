@@ -253,7 +253,7 @@ internal sealed partial class ScreenRecorder(
                 // Keys are shown once their privacy check is done: frames are made a little later so a key lands on its own frame.
                 var grid = new FrameGrid(options.Fps, overlays is { BurnIn: true } && overlays.KeystrokeSettings.Mode != KeystrokeMode.Off ? KeystrokeLag : null);
                 parts.Stream = await WgcAreaStream.StartAsync(
-                    interop, options.Monitor, area, options.IncludeCursor && !ownPointer, loggers, ct, timestamp => grid.SlotOf(clock.MapInstant(timestamp))).ConfigureAwait(false);
+                    interop, options.Monitor, area, options.IncludeCursor && !ownPointer, loggers, ct, timestamp => grid.SlotOf(clock.MapInstant(timestamp)), options.Hdr).ConfigureAwait(false);
 
                 var chain = options.MicrophoneProcessing is { } processing && sources.Any(s => s.Kind == RecordingSound.Microphone)
                     ? _processors.Create(processing)

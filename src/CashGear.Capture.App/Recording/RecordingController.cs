@@ -194,7 +194,8 @@ public sealed partial class RecordingController
                 recording.SystemAudioAppName,
                 recording.MicrophoneProcessing,
                 recording.NormalizeLoudness,
-                current.Overlays);
+                current.Overlays,
+                Hdr: current.Capture.Hdr == HdrCapture.Auto ? monitor.Hdr : null);
             await _recorder.StartAsync(options, ct).ConfigureAwait(false);
             if (recording.PushToTalk is { } talk && HotkeyGesture.TryParse(talk, out var key) && _recorder.Sound.HasFlag(RecordingSound.Microphone))
             {

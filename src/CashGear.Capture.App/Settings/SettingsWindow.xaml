@@ -548,6 +548,11 @@
             <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" ItemTemplate="{StaticResource EnumItem}"
                       HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Capture method" />
             <TextBlock Style="{StaticResource Hint}" Text="Automatic avoids the yellow capture border on Windows 10 and still captures covered windows correctly." />
+
+            <TextBlock Style="{StaticResource Section}" Text="HDR monitors" />
+            <ComboBox ItemsSource="{Binding HdrChoices}" SelectedItem="{Binding Hdr}" ItemTemplate="{StaticResource EnumItem}"
+                      HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="HDR monitors" />
+            <TextBlock Style="{StaticResource Hint}" Text="{Binding HdrStatus}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>

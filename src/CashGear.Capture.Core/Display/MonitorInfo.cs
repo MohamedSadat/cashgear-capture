@@ -21,6 +21,9 @@ public sealed record MonitorInfo(
 {
     public DpiScale Scale => DpiScale.FromDpi(DpiX, DpiY);
 
+    /// <summary>The monitor's HDR mode, or null when it shows SDR (most monitors).</summary>
+    public HdrInfo? Hdr { get; init; }
+
     /// <summary>Device name without the <c>\\.\</c> prefix, safe for file names (e.g. <c>DISPLAY1</c>).</summary>
     public string ShortName => DeviceName.StartsWith(@"\\.\", StringComparison.Ordinal) ? DeviceName[4..] : DeviceName;
 }

@@ -102,6 +102,8 @@ public sealed class EnumLabelConverter : IValueConverter
         CaptureBackend.Auto => "Automatic (recommended)",
         CaptureBackend.Wgc => "Windows.Graphics.Capture",
         CaptureBackend.Gdi => "GDI (classic)",
+        HdrCapture.Auto => "Tone-map to SDR, as on the screen (recommended)",
+        HdrCapture.Off => "As Windows gives it to older apps (8-bit)",
         FullScreenOutput.AllMonitors => "One image of all monitors",
         FullScreenOutput.EachMonitor => "One image per monitor",
         FullScreenOutput.AllAndEachMonitor => "Both",

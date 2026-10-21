@@ -96,10 +96,15 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         var monitors = _monitors.GetMonitors();
         var onScreen = Covered(window.Bounds, monitors) == window.Bounds.Area;
         var unobstructed = onScreen && !_windows.IsOccluded(hwnd);
-        var backend = _selector.ForWindow(_settings.Current.Capture.Backend, unobstructed);
         var host = monitors
             .OrderByDescending(m => m.Bounds.Intersect(window.Bounds).Area)
             .FirstOrDefault(m => m.Bounds.IntersectsWith(window.Bounds));
+
+        // A window on a monitor in HDR mode is read as float and tone-mapped: only WGC can.
+        var hdr = HdrFor(host);
+        var backend = hdr is not null && _settings.Current.Capture.Backend == CaptureBackend.Auto
+            ? CaptureBackend.Wgc
+            : _selector.ForWindow(_settings.Current.Capture.Backend, unobstructed);
 
         CapturedImage image;
         if (backend == CaptureBackend.Wgc && _windowGrabber is not null)
@@ -108,7 +113,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
             {
                 var timeout = TimeSpan.FromMilliseconds(_settings.Current.Capture.WgcFrameTimeoutMs);
                 image = await _windowGrabber.CaptureWindowAsync(
-                    new WindowRequest(window, options.IncludeCursor, timeout, host?.Scale ?? DpiScale.Identity, host?.ShortName), ct)
+                    new WindowRequest(window, options.IncludeCursor, timeout, host?.Scale ?? DpiScale.Identity, host?.ShortName) { Hdr = hdr }, ct)
                     .ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -166,6 +171,10 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
     private static string Describe(WindowInfo window) => window.Title.Length > 0 ? window.Title : window.ClassName;
 
     private CaptureBackend ScreenBackend() => _selector.ForScreen(_settings.Current.Capture.Backend);
+
+    /// <summary>How to read a monitor: as float, tone-mapped, when it is in HDR mode (unless Settings say not to); else null.</summary>
+    private HdrInfo? HdrFor(MonitorInfo? monitor) =>
+        monitor?.Hdr is { } hdr && _settings.Current.Capture.Hdr == HdrCapture.Auto ? hdr : null;
 
     private async Task<CapturedImage> ComposeAsync(
         PixelRect target,
@@ -230,7 +239,14 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         MonitorInfo monitor, PixelRect area, CaptureBackend backend, bool includeCursor, CancellationToken ct)
     {
         var options = _settings.Current.Capture;
-        var request = new FrameRequest(monitor, area, includeCursor, TimeSpan.FromMilliseconds(options.WgcFrameTimeoutMs));
+        var hdr = HdrFor(monitor);
+        var request = new FrameRequest(monitor, area, includeCursor, TimeSpan.FromMilliseconds(options.WgcFrameTimeoutMs)) { Hdr = hdr };
+
+        // GDI's copy of a monitor in HDR mode looks washed out: such a monitor is read with WGC unless GDI was chosen.
+        if (hdr is not null && options.Backend == CaptureBackend.Auto)
+        {
+            backend = CaptureBackend.Wgc;
+        }
 
         if (backend == CaptureBackend.Wgc && _grabbers.TryGetValue(CaptureBackend.Wgc, out var wgc))
         {
