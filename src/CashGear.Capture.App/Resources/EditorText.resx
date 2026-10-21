@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ToolSelect" xml:space="preserve">
+    <value>Select</value>
+    <comment>editor toolbar tool, and the panel title for it</comment>
+  </data>
+  <data name="ToolSelectTip" xml:space="preserve">
+    <value>Select and move (V)</value>
+    <comment>the letter is the tool's key</comment>
+  </data>
+  <data name="ToolArrow" xml:space="preserve">
+    <value>Arrow</value>
+  </data>
+  <data name="ToolArrowTip" xml:space="preserve">
+    <value>Arrow (A)</value>
+  </data>
+  <data name="ToolLine" xml:space="preserve">
+    <value>Line</value>
+  </data>
+  <data name="ToolLineTip" xml:space="preserve">
+    <value>Line (L)</value>
+  </data>
+  <data name="ToolRectangle" xml:space="preserve">
+    <value>Rectangle</value>
+  </data>
+  <data name="ToolRectangleTip" xml:space="preserve">
+    <value>Rectangle (R)</value>
+  </data>
+  <data name="ToolEllipse" xml:space="preserve">
+    <value>Ellipse</value>
+  </data>
+  <data name="ToolEllipseTip" xml:space="preserve">
+    <value>Ellipse (E)</value>
+  </data>
+  <data name="ToolPen" xml:space="preserve">
+    <value>Pen</value>
+  </data>
+  <data name="ToolPenTip" xml:space="preserve">
+    <value>Pen (D)</value>
+  </data>
+  <data name="ToolHighlight" xml:space="preserve">
+    <value>Highlight</value>
+  </data>
+  <data name="ToolHighlightTip" xml:space="preserve">
+    <value>Highlighter (H)</value>
+  </data>
+  <data name="ToolText" xml:space="preserve">
+    <value>Text</value>
+    <comment>editor tool, and a watermark kind</comment>
+  </data>
+  <data name="ToolTextTip" xml:space="preserve">
+    <value>Text (T)</value>
+  </data>
+  <data name="ToolStep" xml:space="preserve">
+    <value>Step</value>
+  </data>
+  <data name="ToolStepTip" xml:space="preserve">
+    <value>Step number (N)</value>
+  </data>
+  <data name="ToolBlur" xml:space="preserve">
+    <value>Blur</value>
+  </data>
+  <data name="ToolBlurTip" xml:space="preserve">
+    <value>Blur (B)</value>
+  </data>
+  <data name="ToolPixelate" xml:space="preserve">
+    <value>Pixelate</value>
+  </data>
+  <data name="ToolPixelateTip" xml:space="preserve">
+    <value>Pixelate (X)</value>
+  </data>
+  <data name="ToolCrop" xml:space="preserve">
+    <value>Crop</value>
+    <comment>editor tool, and the panel title for it</comment>
+  </data>
+  <data name="ToolCropTip" xml:space="preserve">
+    <value>Crop (C)</value>
+  </data>
+  <data name="ToolArea" xml:space="preserve">
+    <value>Area</value>
+    <comment>editor tool that selects an area for effects, and the panel title for it</comment>
+  </data>
+  <data name="ToolAreaTip" xml:space="preserve">
+    <value>Select an area for effects (M)</value>
+  </data>
+  <data name="ToolSpotlight" xml:space="preserve">
+    <value>Spotlight</value>
+  </data>
+  <data name="ToolSpotlightTip" xml:space="preserve">
+    <value>Spotlight (O)</value>
+  </data>
+  <data name="ToolMagnify" xml:space="preserve">
+    <value>Magnify</value>
+  </data>
+  <data name="ToolMagnifyTip" xml:space="preserve">
+    <value>Magnify (G)</value>
+  </data>
+  <data name="ImageMenu" xml:space="preserve">
+    <value>Image ▾</value>
+  </data>
+  <data name="RotateLeft" xml:space="preserve">
+    <value>Rotate left</value>
+  </data>
+  <data name="RotateRight" xml:space="preserve">
+    <value>Rotate right</value>
+  </data>
+  <data name="RotateByAngle" xml:space="preserve">
+    <value>Rotate by an angle…</value>
+  </data>
+  <data name="FlipHorizontally" xml:space="preserve">
+    <value>Flip horizontally</value>
+  </data>
+  <data name="FlipVertically" xml:space="preserve">
+    <value>Flip vertically</value>
+  </data>
+  <data name="ResizeMenu" xml:space="preserve">
+    <value>Resize…</value>
+  </data>
+  <data name="CanvasSizeMenu" xml:space="preserve">
+    <value>Canvas size…</value>
+  </data>
+  <data name="TrimPlainBorders" xml:space="preserve">
+    <value>Trim plain borders</value>
+  </data>
+  <data name="EffectsMenu" xml:space="preserve">
+    <value>Effects ▾</value>
+  </data>
+  <data name="Effects" xml:space="preserve">
+    <value>Effects</value>
+    <comment>the Effects menu's name and the Effects window's title</comment>
+  </data>
+  <data name="EffectsMenuTip" xml:space="preserve">
+    <value>Effects change the whole image, or the area selected with the Area tool</value>
+  </data>
+  <data name="DropShadowMenu" xml:space="preserve">
+    <value>Drop shadow…</value>
+  </data>
+  <data name="TornEdgeMenu" xml:space="preserve">
+    <value>Torn edge…</value>
+  </data>
+  <data name="FadedEdgesMenu" xml:space="preserve">
+    <value>Faded edges…</value>
+  </data>
+  <data name="BorderMenu" xml:space="preserve">
+    <value>Border…</value>
+  </data>
+  <data name="RoundedCornersMenu" xml:space="preserve">
+    <value>Rounded corners…</value>
+  </data>
+  <data name="PerspectiveMenu" xml:space="preserve">
+    <value>Perspective…</value>
+  </data>
+  <data name="BrightnessContrastMenu" xml:space="preserve">
+    <value>Brightness and contrast…</value>
+  </data>
+  <data name="SharpenMenu" xml:space="preserve">
+    <value>Sharpen…</value>
+  </data>
+  <data name="WatermarkMenu" xml:space="preserve">
+    <value>Watermark…</value>
+  </data>
+  <data name="Presets" xml:space="preserve">
+    <value>Presets</value>
+  </data>
+  <data name="EffectsAndPresets" xml:space="preserve">
+    <value>Effects and presets…</value>
+  </data>
+  <data name="CopyTip" xml:space="preserve">
+    <value>Copy the image with its annotations (Ctrl+C)</value>
+  </data>
+  <data name="SaveTip" xml:space="preserve">
+    <value>Save (Ctrl+S)</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>Save as…</value>
+  </data>
+  <data name="SaveAsTip" xml:space="preserve">
+    <value>Save as (Ctrl+Shift+S)</value>
+  </data>
+  <data name="SendToMenu" xml:space="preserve">
+    <value>Send to ▾</value>
+  </data>
+  <data name="SendTo" xml:space="preserve">
+    <value>Send to</value>
+  </data>
+  <data name="SendToTip" xml:space="preserve">
+    <value>Send the image with its annotations to a printer, Word, a server, an app…</value>
+  </data>
+  <data name="ContinueTip" xml:space="preserve">
+    <value>The rest of the after-capture workflow, with the image as it is now</value>
+  </data>
+  <data name="ContinueTo" xml:space="preserve">
+    <value>Continue: {0}</value>
+    <comment>{0} lists the workflow's remaining steps</comment>
+  </data>
+  <data name="ZoomOutTip" xml:space="preserve">
+    <value>Zoom out (Ctrl+−)</value>
+  </data>
+  <data name="ZoomInTip" xml:space="preserve">
+    <value>Zoom in (Ctrl++)</value>
+  </data>
+  <data name="Fit" xml:space="preserve">
+    <value>Fit</value>
+  </data>
+  <data name="FitTip" xml:space="preserve">
+    <value>Fit in the window (Ctrl+0)</value>
+  </data>
+  <data name="ActualSizeTip" xml:space="preserve">
+    <value>Actual size (Ctrl+1)</value>
+  </data>
+  <data name="Colour" xml:space="preserve">
+    <value>Colour</value>
+  </data>
+  <data name="ColourHex" xml:space="preserve">
+    <value>Colour (hex)</value>
+  </data>
+  <data name="Fill" xml:space="preserve">
+    <value>Fill</value>
+  </data>
+  <data name="CurrentFill" xml:space="preserve">
+    <value>Current fill</value>
+  </data>
+  <data name="LineWidthLabel" xml:space="preserve">
+    <value>Line width:</value>
+    <comment>followed by the width</comment>
+  </data>
+  <data name="LineWidth" xml:space="preserve">
+    <value>Line width</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>Font</value>
+    <comment>a typeface</comment>
+  </data>
+  <data name="Bold" xml:space="preserve">
+    <value>Bold</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="FontSize" xml:space="preserve">
+    <value>Font size</value>
+  </data>
+  <data name="CellSize" xml:space="preserve">
+    <value>Cell size</value>
+    <comment>pixelation's square size</comment>
+  </data>
+  <data name="Zoom" xml:space="preserve">
+    <value>Zoom</value>
+    <comment>a magnifier's zoom</comment>
+  </data>
+  <data name="Strength" xml:space="preserve">
+    <value>Strength</value>
+    <comment>how strong a blur is</comment>
+  </data>
+  <data name="Opacity" xml:space="preserve">
+    <value>Opacity</value>
+  </data>
+  <data name="Dim" xml:space="preserve">
+    <value>Dim</value>
+    <comment>how dark a spotlight makes the rest of the image</comment>
+  </data>
+  <data name="Arrange" xml:space="preserve">
+    <value>Arrange</value>
+  </data>
+  <data name="BringToFront" xml:space="preserve">
+    <value>Bring to front</value>
+  </data>
+  <data name="SendToBack" xml:space="preserve">
+    <value>Send to back</value>
+  </data>
+  <data name="CropTo" xml:space="preserve">
+    <value>Crop to</value>
+    <comment>followed by the size, 800 × 600</comment>
+  </data>
+  <data name="ApplyCrop" xml:space="preserve">
+    <value>Apply crop</value>
+  </data>
+  <data name="EnterKey" xml:space="preserve">
+    <value>Enter</value>
+    <comment>the key's name, as on the keycap</comment>
+  </data>
+  <data name="EscKey" xml:space="preserve">
+    <value>Esc</value>
+    <comment>the key's name, as on the keycap</comment>
+  </data>
+  <data name="AnnotationText" xml:space="preserve">
+    <value>Annotation text</value>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>{0} – CashGear Capture</value>
+    <comment>the editor's title; {0} is the file or capture name</comment>
+  </data>
+  <data name="CaptureName" xml:space="preserve">
+    <value>Capture {0:HH.mm.ss}</value>
+    <comment>an unsaved capture's name; {0} is when it was taken</comment>
+  </data>
+  <data name="UndoTip" xml:space="preserve">
+    <value>Undo {0} (Ctrl+Z)</value>
+    <comment>{0} names the change (add arrow)</comment>
+  </data>
+  <data name="UndoNothingTip" xml:space="preserve">
+    <value>Undo (Ctrl+Z)</value>
+  </data>
+  <data name="RedoTip" xml:space="preserve">
+    <value>Redo {0} (Ctrl+Y)</value>
+    <comment>{0} names the change (add arrow)</comment>
+  </data>
+  <data name="RedoNothingTip" xml:space="preserve">
+    <value>Redo (Ctrl+Y)</value>
+  </data>
+  <data name="PanelSelected" xml:space="preserve">
+    <value>Selected {0}</value>
+    <comment>properties panel title; {0} is an annotation kind (arrow)</comment>
+  </data>
+  <data name="PanelNew" xml:space="preserve">
+    <value>New {0}</value>
+    <comment>properties panel title; {0} is the kind the tool draws (arrow)</comment>
+  </data>
+  <data name="HintSelect" xml:space="preserve">
+    <value>Click to select, drag to move; grips resize (Shift keeps proportions). Delete removes, arrow keys nudge.</value>
+  </data>
+  <data name="HintLine" xml:space="preserve">
+    <value>Drag to draw. Shift snaps to 45°.</value>
+  </data>
+  <data name="HintFreehand" xml:space="preserve">
+    <value>Drag to draw freehand.</value>
+  </data>
+  <data name="HintText" xml:space="preserve">
+    <value>Click to type. Click outside or press Esc to finish.</value>
+  </data>
+  <data name="HintStep" xml:space="preserve">
+    <value>Click to place the next number; drag a number to move it.</value>
+  </data>
+  <data name="HintCrop" xml:space="preserve">
+    <value>Drag the area to keep, adjust it, then press Enter (Esc cancels).</value>
+  </data>
+  <data name="HintArea" xml:space="preserve">
+    <value>Drag over the part that the Effects menu should change (Esc clears it).</value>
+  </data>
+  <data name="HintSpotlight" xml:space="preserve">
+    <value>Drag over what to light up; the rest of the image is dimmed.</value>
+  </data>
+  <data name="HintMagnify" xml:space="preserve">
+    <value>Drag over the part to magnify. Drag the round callout to move it; its grip sets the zoom.</value>
+  </data>
+  <data name="HintShape" xml:space="preserve">
+    <value>Drag to draw. Shift makes a square or circle.</value>
+  </data>
+  <data name="TrimmedTo" xml:space="preserve">
+    <value>Trimmed to {0} × {1}</value>
+    <comment>the new width and height</comment>
+  </data>
+  <data name="NoBordersToTrim" xml:space="preserve">
+    <value>There are no plain borders to trim</value>
+  </data>
+  <data name="ChangeFailed" xml:space="preserve">
+    <value>That change could not be made: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="CopiedToClipboard" xml:space="preserve">
+    <value>Copied to the clipboard</value>
+  </data>
+  <data name="CopyFailed" xml:space="preserve">
+    <value>Could not copy to the clipboard: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="SendFailed" xml:space="preserve">
+    <value>Could not send the image: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>Could not save {0}: {1}</value>
+    <comment>{0} file name, {1} the reason</comment>
+  </data>
+  <data name="SavedFile" xml:space="preserve">
+    <value>Saved {0}</value>
+    <comment>{0} file name</comment>
+  </data>
+  <data name="SaveCaptureAsTitle" xml:space="preserve">
+    <value>Save capture as</value>
+  </data>
+  <data name="SaveImageFilter" xml:space="preserve">
+    <value>PNG image (*.png)|*.png|JPEG image (*.jpg)|*.jpg;*.jpeg|Bitmap (*.bmp)|*.bmp</value>
+    <comment>save-file dialog filter: translate the descriptions only</comment>
+  </data>
+  <data name="ChooseWatermarkPicture" xml:space="preserve">
+    <value>Choose the watermark picture</value>
+  </data>
+  <data name="SaveChangesQuestion" xml:space="preserve">
+    <value>Save the changes to {0}?</value>
+    <comment>{0} file or capture name</comment>
+  </data>
+  <data name="ResizeImageTitle" xml:space="preserve">
+    <value>Resize image</value>
+  </data>
+  <data name="ResizeNowFormat" xml:space="preserve">
+    <value>Now {0} × {1} pixels. Annotations are scaled with the image.</value>
+    <comment>{0} width, {1} height</comment>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>Width</value>
+  </data>
+  <data name="Height" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="KeepProportions" xml:space="preserve">
+    <value>Keep proportions</value>
+  </data>
+  <data name="NameTitle" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="NamePrompt" xml:space="preserve">
+    <value>Name (a name already used replaces that preset)</value>
+  </data>
+  <data name="PreviewNote" xml:space="preserve">
+    <value>The image shows the result while this window is open.</value>
+  </data>
+  <data name="OnlySelectedArea" xml:space="preserve">
+    <value>Only the selected area (Area tool)</value>
+  </data>
+  <data name="EffectsNote" xml:space="preserve">
+    <value>The image shows the result while this window is open. Annotations under effects other than a shadow or a border are merged into the image (Undo brings them back).</value>
+  </data>
+  <data name="AppliedInOrder" xml:space="preserve">
+    <value>Applied in this order</value>
+  </data>
+  <data name="AddMenu" xml:space="preserve">
+    <value>Add ▾</value>
+  </data>
+  <data name="AddEffect" xml:space="preserve">
+    <value>Add an effect</value>
+  </data>
+  <data name="Earlier" xml:space="preserve">
+    <value>Earlier</value>
+    <comment>moves the effect up the list</comment>
+  </data>
+  <data name="Later" xml:space="preserve">
+    <value>Later</value>
+    <comment>moves the effect down the list</comment>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="AddEffectToStart" xml:space="preserve">
+    <value>Add an effect to start.</value>
+  </data>
+  <data name="NoneTransparent" xml:space="preserve">
+    <value>None (transparent)</value>
+  </data>
+  <data name="DropShadow" xml:space="preserve">
+    <value>Drop shadow</value>
+  </data>
+  <data name="TornEdge" xml:space="preserve">
+    <value>Torn edge</value>
+  </data>
+  <data name="FadedEdges" xml:space="preserve">
+    <value>Faded edges</value>
+  </data>
+  <data name="Border" xml:space="preserve">
+    <value>Border</value>
+  </data>
+  <data name="RoundedCorners" xml:space="preserve">
+    <value>Rounded corners</value>
+  </data>
+  <data name="Perspective" xml:space="preserve">
+    <value>Perspective</value>
+  </data>
+  <data name="BrightnessContrast" xml:space="preserve">
+    <value>Brightness and contrast</value>
+  </data>
+  <data name="Grayscale" xml:space="preserve">
+    <value>Grayscale</value>
+  </data>
+  <data name="Sharpen" xml:space="preserve">
+    <value>Sharpen</value>
+  </data>
+  <data name="Watermark" xml:space="preserve">
+    <value>Watermark</value>
+  </data>
+  <data name="Softness" xml:space="preserve">
+    <value>Softness</value>
+  </data>
+  <data name="Across" xml:space="preserve">
+    <value>Across</value>
+    <comment>a shadow's sideways offset</comment>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>Down</value>
+    <comment>a shadow's downward offset</comment>
+  </data>
+  <data name="Darkness" xml:space="preserve">
+    <value>Darkness</value>
+  </data>
+  <data name="Thickness" xml:space="preserve">
+    <value>Thickness</value>
+  </data>
+  <data name="Top" xml:space="preserve">
+    <value>Top</value>
+  </data>
+  <data name="RightSide" xml:space="preserve">
+    <value>Right side</value>
+  </data>
+  <data name="Bottom" xml:space="preserve">
+    <value>Bottom</value>
+  </data>
+  <data name="LeftSide" xml:space="preserve">
+    <value>Left side</value>
+  </data>
+  <data name="Depth" xml:space="preserve">
+    <value>Depth</value>
+  </data>
+  <data name="ToothWidth" xml:space="preserve">
+    <value>Tooth width</value>
+  </data>
+  <data name="NewPattern" xml:space="preserve">
+    <value>New pattern</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>Radius</value>
+  </data>
+  <data name="Angle" xml:space="preserve">
+    <value>Angle</value>
+  </data>
+  <data name="PerspectiveTurned" xml:space="preserve">
+    <value>Turned</value>
+    <comment>which way a perspective tilts the image</comment>
+  </data>
+  <data name="LeftOrRight" xml:space="preserve">
+    <value>Left or right (a side goes away)</value>
+  </data>
+  <data name="UpOrDown" xml:space="preserve">
+    <value>Up or down (the top or bottom goes away)</value>
+  </data>
+  <data name="Brightness" xml:space="preserve">
+    <value>Brightness</value>
+  </data>
+  <data name="Contrast" xml:space="preserve">
+    <value>Contrast</value>
+  </data>
+  <data name="Amount" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="SavedWatermarks" xml:space="preserve">
+    <value>Saved watermarks</value>
+  </data>
+  <data name="APicture" xml:space="preserve">
+    <value>A picture</value>
+  </data>
+  <data name="Picture" xml:space="preserve">
+    <value>Picture</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="FromTheEdges" xml:space="preserve">
+    <value>From the edges</value>
+  </data>
+  <data name="WatermarkTurned" xml:space="preserve">
+    <value>Turned</value>
+    <comment>a watermark's rotation</comment>
+  </data>
+  <data name="RepeatOverImage" xml:space="preserve">
+    <value>Repeat it over the whole image</value>
+  </data>
+  <data name="GapBetween" xml:space="preserve">
+    <value>Gap between them</value>
+  </data>
+  <data name="LightShadow" xml:space="preserve">
+    <value>A light shadow (readable on any background)</value>
+  </data>
+  <data name="SaveWatermark" xml:space="preserve">
+    <value>Save the watermark</value>
+  </data>
+  <data name="MyWatermark" xml:space="preserve">
+    <value>My watermark</value>
+    <comment>suggested name for a saved watermark</comment>
+  </data>
+  <data name="TopLeft" xml:space="preserve">
+    <value>Top left</value>
+  </data>
+  <data name="TopRight" xml:space="preserve">
+    <value>Top right</value>
+  </data>
+  <data name="Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="Centre" xml:space="preserve">
+    <value>Centre</value>
+  </data>
+  <data name="Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="BottomLeft" xml:space="preserve">
+    <value>Bottom left</value>
+  </data>
+  <data name="BottomRight" xml:space="preserve">
+    <value>Bottom right</value>
+  </data>
+  <data name="BehindTheArea" xml:space="preserve">
+    <value>Behind the area</value>
+  </data>
+  <data name="SavedEffects" xml:space="preserve">
+    <value>Saved effects</value>
+  </data>
+  <data name="SaveEffects" xml:space="preserve">
+    <value>Save the effects</value>
+  </data>
+  <data name="CanvasSize" xml:space="preserve">
+    <value>Canvas size</value>
+  </data>
+  <data name="TheImageGoes" xml:space="preserve">
+    <value>The image goes</value>
+  </data>
+  <data name="AroundIt" xml:space="preserve">
+    <value>Around it</value>
+  </data>
+  <data name="Rotate" xml:space="preserve">
+    <value>Rotate</value>
+  </data>
+  <data name="AngleClockwise" xml:space="preserve">
+    <value>Angle (clockwise)</value>
+  </data>
+  <data name="InTheCorners" xml:space="preserve">
+    <value>In the corners</value>
+  </data>
+</root>

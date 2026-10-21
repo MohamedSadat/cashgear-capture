@@ -16,13 +16,7 @@
     <value>Help improve CashGear Capture</value>
   </data>
   <data name="ConsentMessage" xml:space="preserve">
-    <value>When CashGear Capture crashes, it can send a report so the problem can be found and fixed.
-
-A report has what went wrong and where in the app's code, the versions of the app and of Windows, and what the app did just before (its log, without names or details).
-
-It never has screenshots, recordings, what you type, window titles, file names or passwords. You can change this in Settings › General › Privacy.
-
-Send crash reports?</value>
+    <value>When CashGear Capture crashes, it can send a report so the problem can be found and fixed.&#10;&#10;A report has what went wrong and where in the app's code, the versions of the app and of Windows, and what the app did just before (its log, without names or details).&#10;&#10;It never has screenshots, recordings, what you type, window titles, file names or passwords. You can change this in Settings › General › Privacy.&#10;&#10;Send crash reports?</value>
   </data>
   <data name="SendReports" xml:space="preserve">
     <value>_Send crash reports</value>
@@ -42,5 +36,22 @@ Send crash reports?</value>
   </data>
   <data name="NoCrashReportAddress" xml:space="preserve">
     <value>This copy has no address to send crash reports to, so none are ever sent.</value>
+  </data>
+  <data name="ExportTitle" xml:space="preserve">
+    <value>Export diagnostics</value>
+    <comment>save dialog's title</comment>
+  </data>
+  <data name="ZipFilter" xml:space="preserve">
+    <value>Zip files (*.zip)|*.zip</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>Diagnostics saved</value>
+  </data>
+  <data name="SavedMessage" xml:space="preserve">
+    <value>{0} ({1:0} KB): the logs, the settings without addresses, names or passwords, and facts about this PC. Nothing was sent anywhere.</value>
+    <comment>{0}: file name; {1}: size</comment>
+  </data>
+  <data name="NotSaved" xml:space="preserve">
+    <value>Diagnostics could not be saved</value>
   </data>
 </root>

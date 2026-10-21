@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="PresetMp4Hd" xml:space="preserve">
+    <value>MP4، H.264، 1080p</value>
+  </data>
+  <data name="PresetMp4Small" xml:space="preserve">
+    <value>MP4، H.264، 720p</value>
+  </data>
+  <data name="PresetMp4Project" xml:space="preserve">
+    <value>MP4، H.264، بحجم المشروع</value>
+  </data>
+  <data name="PresetMp4Hevc" xml:space="preserve">
+    <value>MP4، HEVC، بحجم المشروع</value>
+  </data>
+  <data name="PresetWebMVp9" xml:space="preserve">
+    <value>WebM، VP9</value>
+  </data>
+  <data name="PresetWebMAv1" xml:space="preserve">
+    <value>WebM، AV1</value>
+  </data>
+  <data name="PresetM4a" xml:space="preserve">
+    <value>M4A (AAC)، صوت فقط</value>
+  </data>
+  <data name="PresetMp3" xml:space="preserve">
+    <value>MP3، صوت فقط</value>
+  </data>
+  <data name="PresetGif" xml:space="preserve">
+    <value>GIF، متحرك (بلا صوت)</value>
+  </data>
+  <data name="TimelineEmpty" xml:space="preserve">
+    <value>المخطط الزمني فارغ: لا يوجد ما يمكن تصديره.</value>
+  </data>
+  <data name="ExportFailed" xml:space="preserve">
+    <value>فشل التصدير: {0}</value>
+  </data>
+  <data name="NotEnoughMemory" xml:space="preserve">
+    <value>لا توجد ذاكرة كافية لصور بحجم {0} × {1}.</value>
+  </data>
+  <data name="GifEncoder" xml:space="preserve">
+    <value>GIF (palettegen وpaletteuse في FFmpeg)</value>
+  </data>
+  <data name="NoEncoder" xml:space="preserve">
+    <value>لا يعمل أي مرمّز {0} على هذا الكمبيوتر.</value>
+  </data>
+  <data name="NoEncoderForSize" xml:space="preserve">
+    <value>لم يتمكن أي مرمّز {0} من ترميز {1} × {2}. {3}</value>
+  </data>
+  <data name="TrackScreen" xml:space="preserve">
+    <value>الشاشة</value>
+  </data>
+  <data name="TrackVideo" xml:space="preserve">
+    <value>الفيديو</value>
+  </data>
+  <data name="TrackWebcam" xml:space="preserve">
+    <value>كاميرا الويب</value>
+  </data>
+  <data name="TrackSound" xml:space="preserve">
+    <value>الصوت</value>
+  </data>
+  <data name="TrackSoundNumbered" xml:space="preserve">
+    <value>الصوت {0}</value>
+  </data>
+  <data name="TrackEffects" xml:space="preserve">
+    <value>التأثيرات</value>
+  </data>
+  <data name="TrackEffectsNumbered" xml:space="preserve">
+    <value>التأثيرات {0}</value>
+  </data>
+  <data name="TrackAnnotations" xml:space="preserve">
+    <value>التعليقات التوضيحية</value>
+  </data>
+  <data name="TrackAnnotationsNumbered" xml:space="preserve">
+    <value>التعليقات التوضيحية {0}</value>
+  </data>
+  <data name="TrackZoom" xml:space="preserve">
+    <value>التكبير</value>
+  </data>
+  <data name="TrackZoomNumbered" xml:space="preserve">
+    <value>التكبير {0}</value>
+  </data>
+  <data name="TrackCaptions" xml:space="preserve">
+    <value>التسميات التوضيحية</value>
+  </data>
+  <data name="DefaultAnnotationText" xml:space="preserve">
+    <value>نص</value>
+  </data>
+  <data name="MissingMedia" xml:space="preserve">
+    <value>وسائط مفقودة</value>
+  </data>
+  <data name="ClickHighlights" xml:space="preserve">
+    <value>إبراز النقرات</value>
+  </data>
+  <data name="Keystrokes" xml:space="preserve">
+    <value>ضغطات المفاتيح</value>
+  </data>
+  <data name="Pointer" xml:space="preserve">
+    <value>المؤشر</value>
+  </data>
+  <data name="ZoomLabel" xml:space="preserve">
+    <value>تكبير {0:0.##}×</value>
+  </data>
+  <data name="ZoomFollowingLabel" xml:space="preserve">
+    <value>تكبير {0:0.##}×، مع تتبع المؤشر</value>
+  </data>
+  <data name="FreezeLabel" xml:space="preserve">
+    <value>تجميد · {0}</value>
+  </data>
+  <data name="ShapeArrow" xml:space="preserve">
+    <value>سهم</value>
+  </data>
+  <data name="ShapeLine" xml:space="preserve">
+    <value>خط</value>
+  </data>
+  <data name="ShapeRectangle" xml:space="preserve">
+    <value>مستطيل</value>
+  </data>
+  <data name="ShapeEllipse" xml:space="preserve">
+    <value>شكل بيضاوي</value>
+  </data>
+  <data name="ShapeHighlight" xml:space="preserve">
+    <value>تمييز</value>
+  </data>
+  <data name="ShapeBlur" xml:space="preserve">
+    <value>تمويه</value>
+  </data>
+  <data name="ShapePixelate" xml:space="preserve">
+    <value>تقطيع إلى بكسلات</value>
+  </data>
+  <data name="NotAProjectBecause" xml:space="preserve">
+    <value>هذا ليس مشروع فيديو: {0}</value>
+  </data>
+  <data name="NotAProject" xml:space="preserve">
+    <value>هذا ليس مشروع فيديو.</value>
+  </data>
+  <data name="NewerProject" xml:space="preserve">
+    <value>حُفظ هذا المشروع بإصدار أحدث من التطبيق.</value>
+  </data>
+  <data name="FileNotAProject" xml:space="preserve">
+    <value>«{0}» ليس مشروع فيديو.</value>
+  </data>
+  <data name="ProjectEntryMissing" xml:space="preserve">
+    <value>لا يحتوي «{0}» على {1}.</value>
+  </data>
+  <data name="NotSubtitles" xml:space="preserve">
+    <value>هذا ليس ملف SRT أو WebVTT يحتوي على تسميات توضيحية.</value>
+  </data>
+  <data name="UndoMove" xml:space="preserve">
+    <value>النقل</value>
+  </data>
+  <data name="UndoTrimStart" xml:space="preserve">
+    <value>قص البداية</value>
+  </data>
+  <data name="UndoTrimEnd" xml:space="preserve">
+    <value>قص النهاية</value>
+  </data>
+</root>

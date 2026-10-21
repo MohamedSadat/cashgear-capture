@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs.Resources;
 
 namespace CashGear.Capture.Outputs.Apps;
 
@@ -25,7 +26,7 @@ public sealed class OpenWithDestination(ExternalApp app, IProcessLauncher launch
 {
     public string Id => DestinationIds.App(app.Id);
 
-    public string DisplayName => $"Open with {(app.Name.Length > 0 ? app.Name : Path.GetFileNameWithoutExtension(app.Path))}";
+    public string DisplayName => OutputsStrings.OpenWith(app.Name.Length > 0 ? app.Name : Path.GetFileNameWithoutExtension(app.Path));
 
     public bool SupportsVideo => true;
 
@@ -34,7 +35,7 @@ public sealed class OpenWithDestination(ExternalApp app, IProcessLauncher launch
         ArgumentNullException.ThrowIfNull(item);
         if (Resolve(app.Path) is not { } program)
         {
-            return OutputResult.Failed($"{app.Path} isn't there (Settings › Destinations).");
+            return OutputResult.Failed(OutputsStrings.ProgramGoneSettings(app.Path));
         }
 
         var file = await item.GetFileAsync(ct).ConfigureAwait(false);
@@ -53,16 +54,16 @@ public sealed class OpenWithDestination(ExternalApp app, IProcessLauncher launch
         }
         catch (Win32Exception ex)
         {
-            return OutputResult.Failed($"{Path.GetFileName(program)} couldn't be started: {ex.Message}");
+            return OutputResult.Failed(OutputsStrings.ProgramNotStarted(Path.GetFileName(program), ex.Message));
         }
 
-        return OutputResult.Done($"Opened with {Path.GetFileNameWithoutExtension(program)}");
+        return OutputResult.Done(OutputsStrings.OpenedWith(Path.GetFileNameWithoutExtension(program)));
     }
 
     /// <summary>Checks the program is there; nothing is started.</summary>
     public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(Resolve(app.Path) is { } program
-        ? OutputResult.Done($"Found {program}. It will be started as: {Path.GetFileName(program)} {Arguments(app.Arguments, @"C:\…\Capture.png")}")
-        : OutputResult.Failed(app.Path.Length == 0 ? "Choose the program." : $"{app.Path} isn't there."));
+        ? OutputResult.Done(OutputsStrings.ProgramFound(program, Path.GetFileName(program), Arguments(app.Arguments, @"C:\…\Capture.png")))
+        : OutputResult.Failed(app.Path.Length == 0 ? OutputsStrings.ChooseProgram : OutputsStrings.ProgramGone(app.Path)));
 
     /// <summary>
     /// The command line with <c>{file}</c> (and <c>{folder}</c>) put in. A path is put in as it is, so the template

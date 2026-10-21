@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -40,8 +42,8 @@ public static unsafe class Loudness
         var meters = new Dictionary<int, Meter>();
         try
         {
-            FfmpegException.Check(ffmpeg.avformat_open_input(&input, path, null, null), $"Opening {path}");
-            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), "Reading the recording");
+            FfmpegException.Check(ffmpeg.avformat_open_input(&input, path, null, null), MediaStrings.Opening(path));
+            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), MediaStrings.ReadingRecording);
             for (var i = 0; i < input->nb_streams; i++)
             {
                 if (input->streams[i]->codecpar->codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO)
@@ -252,15 +254,15 @@ internal sealed unsafe class AudioDecoder : IDisposable
         var codec = ffmpeg.avcodec_find_decoder(stream->codecpar->codec_id);
         if (codec is null)
         {
-            throw new FfmpegException($"No decoder for the sound track ({ffmpeg.avcodec_get_name(stream->codecpar->codec_id)}).");
+            throw new FfmpegException(MediaStrings.NoSoundTrackDecoder(ffmpeg.avcodec_get_name(stream->codecpar->codec_id)));
         }
 
         _context = ffmpeg.avcodec_alloc_context3(codec);
         _frame = ffmpeg.av_frame_alloc();
-        FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(_context, stream->codecpar), "Setting up the sound decoder");
+        FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(_context, stream->codecpar), MediaStrings.SettingUpSoundDecoder);
         _context->pkt_timebase = stream->time_base;
         TimeBase = stream->time_base;
-        FfmpegException.Check(ffmpeg.avcodec_open2(_context, codec, null), "Opening the sound decoder");
+        FfmpegException.Check(ffmpeg.avcodec_open2(_context, codec, null), MediaStrings.OpeningSoundDecoder);
     }
 
     public delegate void FrameHandler(AVFrame* frame);
@@ -275,7 +277,7 @@ internal sealed unsafe class AudioDecoder : IDisposable
         var sent = ffmpeg.avcodec_send_packet(_context, packet);
         if (sent < 0 && sent != ffmpeg.AVERROR_EOF && sent != ffmpeg.AVERROR_INVALIDDATA)
         {
-            FfmpegException.Check(sent, "Decoding sound");
+            FfmpegException.Check(sent, MediaStrings.DecodingSound);
         }
 
         while (ffmpeg.avcodec_receive_frame(_context, _frame) == 0)
@@ -320,8 +322,8 @@ internal sealed unsafe class AudioFilter : IDisposable
             AVFilterContext* sink = null;
             using (var log = FfmpegLog.Capture())
             {
-                Check(ffmpeg.avfilter_graph_create_filter(&source, ffmpeg.avfilter_get_by_name("abuffer"), "in", args, null, _graph), "Creating the sound filter's input", log);
-                Check(ffmpeg.avfilter_graph_create_filter(&sink, ffmpeg.avfilter_get_by_name("abuffersink"), "out", null, null, _graph), "Creating the sound filter's output", log);
+                Check(ffmpeg.avfilter_graph_create_filter(&source, ffmpeg.avfilter_get_by_name("abuffer"), "in", args, null, _graph), MediaStrings.CreatingSoundFilterInput, log);
+                Check(ffmpeg.avfilter_graph_create_filter(&sink, ffmpeg.avfilter_get_by_name("abuffersink"), "out", null, null, _graph), MediaStrings.CreatingSoundFilterOutput, log);
                 var outputs = ffmpeg.avfilter_inout_alloc();
                 var inputs = ffmpeg.avfilter_inout_alloc();
                 outputs->name = ffmpeg.av_strdup("in");
@@ -331,8 +333,8 @@ internal sealed unsafe class AudioFilter : IDisposable
                 var parsed = ffmpeg.avfilter_graph_parse_ptr(_graph, description, &inputs, &outputs, null);
                 ffmpeg.avfilter_inout_free(&inputs);
                 ffmpeg.avfilter_inout_free(&outputs);
-                Check(parsed, $"Setting up the sound filter ({description})", log);
-                Check(ffmpeg.avfilter_graph_config(_graph, null), "Starting the sound filter", log);
+                Check(parsed, MediaStrings.SettingUpSoundFilter(description), log);
+                Check(ffmpeg.avfilter_graph_config(_graph, null), MediaStrings.StartingSoundFilter, log);
             }
 
             if (frameSize > 0)
@@ -364,7 +366,7 @@ internal sealed unsafe class AudioFilter : IDisposable
             _next += frame->nb_samples;
         }
 
-        FfmpegException.Check(ffmpeg.av_buffersrc_add_frame_flags(_source, frame, (int)AvBuffersrcFlag.AV_BUFFERSRC_FLAG_KEEP_REF), "Filtering sound");
+        FfmpegException.Check(ffmpeg.av_buffersrc_add_frame_flags(_source, frame, (int)AvBuffersrcFlag.AV_BUFFERSRC_FLAG_KEEP_REF), MediaStrings.FilteringSound);
         while (ffmpeg.av_buffersink_get_frame(_sink, _out) >= 0)
         {
             onFrame(_out);
@@ -384,7 +386,7 @@ internal sealed unsafe class AudioFilter : IDisposable
         ffmpeg.av_frame_free(&frame);
     }
 
-    private static void Check(int result, string what, FfmpegLog.Scope log)
+    private static void Check(int result, [Localizable(true)] string what, FfmpegLog.Scope log)
     {
         if (result < 0)
         {

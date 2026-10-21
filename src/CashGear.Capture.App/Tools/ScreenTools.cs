@@ -1,5 +1,6 @@
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Region;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
@@ -123,7 +124,7 @@ public sealed partial class ScreenTools(
         catch (Exception ex) when (ex is CaptureException or InvalidOperationException)
         {
             LogPickFailed(ex);
-            notifier.Notify("Colour Picker", ex.Message, NotificationKind.Error);
+            notifier.Notify(ToolsText.ColorPicker, ex.Message, NotificationKind.Error);
         }
         finally
         {

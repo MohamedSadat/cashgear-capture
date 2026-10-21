@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="RemoteNote" xml:space="preserve">
+    <value>This was recorded in a Remote Desktop session: Windows sends pictures only as often as the connection allows, and the graphics card's encoder may not be available.</value>
+  </data>
+  <data name="RecordingUnavailable" xml:space="preserve">
+    <value>Screen recording isn't available. {0}</value>
+    <comment>{0} is the reason (a sentence)</comment>
+  </data>
+  <data name="NoVideoEncoderDetail" xml:space="preserve">
+    <value>No video encoder works on this PC: {0}</value>
+    <comment>{0} lists each encoder with its problem</comment>
+  </data>
+  <data name="NoVideoEncoder" xml:space="preserve">
+    <value>No video encoder works on this PC.</value>
+  </data>
+  <data name="NoEncoderCouldRecord" xml:space="preserve">
+    <value>No video encoder could record {0}x{1}. {2}</value>
+    <comment>{0}x{1} is a size in pixels, {2} each encoder's problem</comment>
+  </data>
+  <data name="NoEncoderCouldEncode" xml:space="preserve">
+    <value>No video encoder could encode {0}x{1}. {2}</value>
+    <comment>{0}x{1} is a size in pixels, {2} each encoder's problem</comment>
+  </data>
+  <data name="WebcamsUnavailable" xml:space="preserve">
+    <value>Webcams aren't available in this copy of the app.</value>
+  </data>
+  <data name="WebcamSentNoPicture" xml:space="preserve">
+    <value>{0} sent no picture ({1}), so the recording has no webcam.</value>
+    <comment>{0} is the webcam's name, {1} the reason (English, from Windows)</comment>
+  </data>
+  <data name="WebcamTrackStopped" xml:space="preserve">
+    <value>The webcam's own track stopped ({0}); the webcam is still drawn over the recording.</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="AllSystemAudioInstead" xml:space="preserve">
+    <value>{0} All system audio is recorded instead.</value>
+    <comment>{0} is why one app's sound can't be left out (a sentence)</comment>
+  </data>
+  <data name="VideoHasNoSound" xml:space="preserve">
+    <value>{0} The video has no sound.</value>
+    <comment>{0} says why the sound devices can't be used (sentences)</comment>
+  </data>
+  <data name="SoundNoteAt" xml:space="preserve">
+    <value>At {0}: {1}</value>
+    <comment>{0} is a time in the recording (1:05), {1} what happened to a sound device</comment>
+  </data>
+  <data name="VideoEncoderHung" xml:space="preserve">
+    <value>The video encoder stopped responding.</value>
+  </data>
+  <data name="EncoderHung" xml:space="preserve">
+    <value>{0} stopped responding.</value>
+    <comment>{0} is an encoder's name</comment>
+  </data>
+  <data name="NoFramesRecorded" xml:space="preserve">
+    <value>no frames were recorded</value>
+    <comment>the reason in NotSaved</comment>
+  </data>
+  <data name="NotSaved" xml:space="preserve">
+    <value>The recording could not be saved ({0}).</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="NotSavedKept" xml:space="preserve">
+    <value>The recording could not be saved ({0}). It was kept and can be recovered from the tray menu.</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="NotSavedUnreadable" xml:space="preserve">
+    <value>The recording could not be saved: nothing in it could be read.</value>
+  </data>
+  <data name="StoppedEarly" xml:space="preserve">
+    <value>Recording stopped early: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="ThenSeparator" xml:space="preserve">
+    <value>, then </value>
+    <comment>between the names of the encoders a recording used, in order</comment>
+  </data>
+  <data name="InputNotFollowed" xml:space="preserve">
+    <value>Clicks and keys couldn't be followed ({0}).</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="DeviceLostNote" xml:space="preserve">
+    <value>At {0} the graphics card was reset or switched; the picture held still until it was back.</value>
+    <comment>{0} is a time in the recording (1:05)</comment>
+  </data>
+  <data name="DeviceLostWarning" xml:space="preserve">
+    <value>The graphics card stopped responding (it was reset or switched). The recording goes on, and the picture holds still until it is back.</value>
+  </data>
+  <data name="DeviceBack" xml:space="preserve">
+    <value>The graphics card is back after {0:0.#} s; the recording carries on.</value>
+    <comment>{0} is in seconds</comment>
+  </data>
+  <data name="DeviceGaveUp" xml:space="preserve">
+    <value>The graphics card stopped working and wasn't back within {0:0} s, so the recording stopped.</value>
+    <comment>{0} is in seconds</comment>
+  </data>
+  <data name="ResolutionChangedNote" xml:space="preserve">
+    <value>At {0} {1} changed resolution, so from there the recording is {2}x{3}, saved as another file.</value>
+    <comment>{0} is a time in the recording (1:05), {1} a monitor (DISPLAY2), {2}x{3} the new size in pixels</comment>
+  </data>
+  <data name="ResolutionChangedWarning" xml:space="preserve">
+    <value>{0} changed resolution. The recording goes on at {1}x{2} and is saved as another file.</value>
+    <comment>{0} is a monitor (DISPLAY2), {1}x{2} the new size in pixels</comment>
+  </data>
+  <data name="EncoderSwitchedNote" xml:space="preserve">
+    <value>{0} stopped working at {1}; {2} recorded the rest, saved as another file.</value>
+    <comment>{0} and {2} are encoders' names, {1} a time in the recording (1:05)</comment>
+  </data>
+  <data name="EncoderSwitchedWarning" xml:space="preserve">
+    <value>{0} stopped working ({1}). Recording continues with {2}; it will be saved as another file.</value>
+    <comment>{0} and {2} are encoders' names, {1} the reason</comment>
+  </data>
+  <data name="EncoderFailedNoFallback" xml:space="preserve">
+    <value>The video encoder stopped working and no other could take over ({0}).</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="SecureScreenNote" xml:space="preserve">
+    <value>From {0} to {1} Windows showed a secure screen (a UAC prompt or the lock screen), which no app can capture: the video holds the last picture there.</value>
+    <comment>{0} and {1} are times in the recording (1:05)</comment>
+  </data>
+  <data name="MonitorDisconnected" xml:space="preserve">
+    <value>{0} was disconnected, so the recording stopped.</value>
+    <comment>{0} is a monitor (DISPLAY2)</comment>
+  </data>
+  <data name="SleepNote" xml:space="preserve">
+    <value>At {0} the PC went to sleep, so the recording was paused.</value>
+    <comment>{0} is a time in the recording (1:05)</comment>
+  </data>
+  <data name="WokeUp" xml:space="preserve">
+    <value>The PC woke up. The recording was paused at {0} when it went to sleep: resume or stop it from the toolbar.</value>
+    <comment>{0} is a time in the recording (1:05)</comment>
+  </data>
+  <data name="ProbeTimedOut" xml:space="preserve">
+    <value>It didn't answer within {0:0} s.</value>
+    <comment>why an encoder doesn't work; {0} is in seconds</comment>
+  </data>
+  <data name="OverlaysUnavailable" xml:space="preserve">
+    <value>Overlays can't be added: {0}</value>
+    <comment>{0} is the reason (a sentence)</comment>
+  </data>
+  <data name="NoMetadataFile" xml:space="preserve">
+    <value>{0} has no metadata file ({1}), so its clicks and keys aren't known.</value>
+    <comment>{0} is a video's file name, {1} the metadata file's name</comment>
+  </data>
+  <data name="OverlaysAlreadyDrawn" xml:space="preserve">
+    <value>{0} already has its overlays drawn in.</value>
+    <comment>{0} is a video's file name</comment>
+  </data>
+  <data name="OverlaysFailed" xml:space="preserve">
+    <value>Overlays couldn't be added to {0}: {1}</value>
+    <comment>{0} is a video's file name, {1} the reason</comment>
+  </data>
+  <data name="NoPictureFromWindows" xml:space="preserve">
+    <value>Windows sent no picture of {0} within {1:0} s.</value>
+    <comment>{0} is a monitor (DISPLAY2), {1} seconds</comment>
+  </data>
+  <data name="CaptureStopped" xml:space="preserve">
+    <value>Screen capture stopped: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="AreaOffMonitor" xml:space="preserve">
+    <value>{0} is now {1}x{2}, and the recorded area isn't on it any more, so the recording stopped.</value>
+    <comment>{0} is a monitor (DISPLAY2), {1}x{2} its new size in pixels</comment>
+  </data>
+</root>

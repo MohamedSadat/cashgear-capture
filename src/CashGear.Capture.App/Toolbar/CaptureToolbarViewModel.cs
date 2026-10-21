@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
@@ -90,36 +91,41 @@ public sealed partial class CaptureToolbarViewModel : ObservableObject
             step.Enabled,
             on => _ = _settings.UpdateAsync(s => s with { Destinations = s.Destinations.WithStep(step.Destination, on) }),
             command: null)),
-        new AfterStepChoice("Change the workflow…", isCheckable: false, isChecked: false, set: null, Tray.OpenSettingsCommand),
+        new AfterStepChoice(ToolbarText.ChangeWorkflow, isCheckable: false, isChecked: false, set: null, Tray.OpenSettingsCommand),
     ];
 
-    public string RegionTip => Tip("Capture region: drag a rectangle or click a window", Tray.RegionHotkey);
+    public string RegionTip => Tip(ToolbarText.RegionTip, Tray.RegionHotkey);
 
-    public string WindowTip => Tip("Capture window: pick one", Tray.WindowHotkey);
+    public string WindowTip => Tip(ToolbarText.WindowTip, Tray.WindowHotkey);
 
-    public string ActiveWindowTip => "Capture the active window (the one in front)";
+    public string ActiveWindowTip => ToolbarText.ActiveWindowTip;
 
-    public string FullScreenTip => Tip("Capture full screen", Tray.FullScreenHotkey);
+    public string FullScreenTip => Tip(ToolbarText.CaptureFullScreen, Tray.FullScreenHotkey);
 
-    public string ScrollingTip => Tip("Scrolling capture", Tray.ScrollingHotkey);
+    public string ScrollingTip => Tip(ToolbarText.ScrollingCapture, Tray.ScrollingHotkey);
 
-    public string FixedTip => Tip("Capture a fixed-size region (right-click for sizes)", Tray.FixedRegionHotkey);
+    public string FixedTip => Tip(ToolbarText.FixedTip, Tray.FixedRegionHotkey);
 
-    public string FreehandTip => Tip("Capture a freehand region", Tray.FreehandHotkey);
+    public string FreehandTip => Tip(ToolbarText.FreehandTip, Tray.FreehandHotkey);
 
-    public string PolygonTip => Tip("Capture a polygon region", Tray.PolygonHotkey);
+    public string PolygonTip => Tip(ToolbarText.PolygonTip, Tray.PolygonHotkey);
 
-    public string RoundedTip => Tip("Capture a rounded region", Tray.RoundedRegionHotkey);
+    public string RoundedTip => Tip(ToolbarText.RoundedTip, Tray.RoundedRegionHotkey);
 
-    public string ObjectTip => Tip("Capture an object (a part of a window)", Tray.ObjectHotkey);
+    public string ObjectTip => Tip(ToolbarText.ObjectTip, Tray.ObjectHotkey);
 
-    public string MenuTip => Tip("Capture an open menu (open it during the countdown)", Tray.MenuHotkey);
+    public string MenuTip => Tip(ToolbarText.MenuTip, Tray.MenuHotkey);
 
-    public string TextTip => Tip("Capture text (OCR)", Tray.TextHotkey);
+    public string TextTip => Tip(ToolbarText.TextTip, Tray.TextHotkey);
 
-    public string RepeatTip => Tip("Repeat the last capture", Tray.RepeatHotkey);
+    public string RepeatTip => Tip(ToolbarText.RepeatTip, Tray.RepeatHotkey);
 
-    public string RecordTip => Tip(Tray.RecordText.Replace("_", string.Empty, StringComparison.Ordinal).TrimEnd('…'), Tray.RecordHotkey);
+    /// <summary>The tray's Record item as a tooltip: "Record Screen", "Stop Recording" or "Saving the Recording", with the hotkey.</summary>
+    public string RecordTip => Tip(
+        Tray.RecordText == TrayText.StopRecording ? ToolbarText.StopRecordingTip
+            : Tray.RecordText == TrayText.SavingRecording ? ToolbarText.SavingRecordingTip
+            : ToolbarText.RecordScreenTip,
+        Tray.RecordHotkey);
 
     /// <summary>The window in front now: the toolbar never takes the focus, so it is the user's.</summary>
     [RelayCommand]
@@ -144,5 +150,5 @@ public sealed partial class CaptureToolbarViewModel : ObservableObject
         }
     }
 
-    private static string Tip(string what, string hotkey) => hotkey.Length == 0 ? what : $"{what} ({hotkey})";
+    private static string Tip(string what, string hotkey) => hotkey.Length == 0 ? what : ToolbarText.WithHotkey(what, hotkey);
 }

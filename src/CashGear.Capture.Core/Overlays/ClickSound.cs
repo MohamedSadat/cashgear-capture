@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CashGear.Capture.Core.Recording;
 
 namespace CashGear.Capture.Core.Overlays;
@@ -10,6 +11,8 @@ namespace CashGear.Capture.Core.Overlays;
 public static class ClickSound
 {
     /// <summary>The click sounds' track (or source, in the mix).</summary>
+    // Stays English: it is the track's title in the MP4 file, which code matches.
+    [Localizable(false)]
     public const string Title = "Click sounds";
 
     public static readonly TimeSpan Length = TimeSpan.FromMilliseconds(18);

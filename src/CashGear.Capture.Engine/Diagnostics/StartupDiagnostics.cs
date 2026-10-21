@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
@@ -60,6 +61,7 @@ internal sealed partial class StartupDiagnostics(
         }
     }
 
+    [Localizable(false)] // the log's text
     private void LogDisplays()
     {
         var all = monitors.GetMonitors();

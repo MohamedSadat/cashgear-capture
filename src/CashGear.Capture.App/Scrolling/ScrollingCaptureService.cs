@@ -1,4 +1,5 @@
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
@@ -39,7 +40,7 @@ public sealed partial class ScrollingCaptureService(
         var target = await Task.Run(() => finder.Find(window, point), ct).ConfigureAwait(false);
         if (target.Area.Width < ScrollTargetFinder.MinSize || target.Area.Height < ScrollTargetFinder.MinSize)
         {
-            throw new CaptureException($"\"{window.Title}\" has no area large enough to scroll.");
+            throw new CaptureException(CapturingText.NothingToScroll(window.Title));
         }
 
         var monitor = monitors.GetMonitors().FirstOrDefault(m => m.Bounds.Contains(Center(target.Area)))

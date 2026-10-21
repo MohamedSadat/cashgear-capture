@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Audio;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -134,7 +135,7 @@ public sealed partial class MeterReading : ObservableObject
 
     /// <summary>"Peak −12 dB" (the held peak), or "Silent".</summary>
     [ObservableProperty]
-    private string _text = "Silent";
+    private string _text = RecordingText.MeterSilent;
 
     public void Update(AudioLevel level, TimeSpan now)
     {
@@ -154,8 +155,8 @@ public sealed partial class MeterReading : ObservableObject
         Rms = _ballistics.Rms;
         Hold = _ballistics.Hold;
         Clipping = _ballistics.Clipping;
-        Text = Clipping ? "Clipping: too loud"
-            : double.IsNegativeInfinity(_ballistics.HoldDb) ? "Silent"
-            : $"Peak {_ballistics.HoldDb:0} dB";
+        Text = Clipping ? RecordingText.MeterClipping
+            : double.IsNegativeInfinity(_ballistics.HoldDb) ? RecordingText.MeterSilent
+            : RecordingText.MeterPeak(_ballistics.HoldDb);
     }
 }

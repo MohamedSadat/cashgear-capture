@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
@@ -9,6 +10,7 @@ using CashGear.Capture.Engine.Capture.Wgc;
 using CashGear.Capture.Engine.Display;
 using CashGear.Capture.Interop.Com;
 using CashGear.Capture.Overlays.Rendering;
+using CashGear.Capture.Recording.Resources;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Vortice.Direct3D11;
@@ -180,7 +182,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
         catch (TimeoutException)
         {
             stream.Dispose();
-            throw new CaptureException($"Windows sent no picture of {monitor.ShortName} within {FirstFrameTimeout.TotalSeconds:0} s.");
+            throw new CaptureException(RecordingStrings.NoPictureFromWindows(monitor.ShortName, FirstFrameTimeout.TotalSeconds));
         }
         catch
         {
@@ -406,7 +408,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
     {
         if (Volatile.Read(ref _failure) is { } failure)
         {
-            throw failure as CaptureException ?? new CaptureException("Screen capture stopped: " + failure.Message, failure);
+            throw failure as CaptureException ?? new CaptureException(RecordingStrings.CaptureStopped(failure.Message), failure);
         }
     }
 
@@ -772,7 +774,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
         {
             _monitorSize = size;
             var next = ResizedArea.Crop(_crop, size.Width, size.Height, _wholeMonitor)
-                ?? throw new CaptureException($"{_monitor.ShortName} is now {size.Width}x{size.Height}, and the recorded area isn't on it any more, so the recording stopped.");
+                ?? throw new CaptureException(RecordingStrings.AreaOffMonitor(_monitor.ShortName, size.Width, size.Height));
             _pendingCrop = next == _crop ? null : next;
             if (_pendingCrop is not null)
             {
@@ -814,7 +816,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Recording capture started on {Monitor}, area {Crop} (cursor {Cursor}, HDR {Hdr})")]
-    private partial void LogStarted(string monitor, PixelRect crop, bool cursor, string hdr);
+    private partial void LogStarted(string monitor, PixelRect crop, bool cursor, [Localizable(false)] string hdr);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Recording capture failed")]
     private partial void LogFailed(Exception ex);

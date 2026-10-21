@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace CashGear.Capture.Core.Settings;
 
 /// <summary>Well-known folders. Injected so tests can point everything at a temp directory.</summary>
@@ -81,6 +83,7 @@ public sealed record AppPaths(
             : DefaultCaptureDirectory;
     }
 
+    [Localizable(false)] // a folder name: the product's, the same in every language
     private static string DefaultCaptures() =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "CashGear Capture");
 }

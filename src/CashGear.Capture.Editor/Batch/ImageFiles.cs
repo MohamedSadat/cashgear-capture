@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Editor.Imaging;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Batch;
@@ -12,7 +13,7 @@ public static class ImageFiles
     public static IReadOnlyList<string> ReadableExtensions { get; } = [".png", ".jpg", ".jpeg", ".jpe", ".bmp", ".dib", ".gif", ".webp"];
 
     /// <summary>For open-file dialogs: "Pictures|*.png;*.jpg;…".</summary>
-    public static string DialogFilter => "Pictures|" + string.Join(';', ReadableExtensions.Select(e => "*" + e)) + "|All files|*.*";
+    public static string DialogFilter => EditorStrings.PicturesFilter(string.Join(';', ReadableExtensions.Select(e => "*" + e)));
 
     public static bool IsReadable(string path) =>
         ReadableExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
@@ -25,13 +26,13 @@ public static class ImageFiles
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         using var data = SKData.CreateCopy(File.ReadAllBytes(path));
-        using var codec = SKCodec.Create(data) ?? throw new InvalidDataException($"{Path.GetFileName(path)} isn't a picture this app can read.");
+        using var codec = SKCodec.Create(data) ?? throw new InvalidDataException(EditorStrings.NotAPicture(Path.GetFileName(path)));
         var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
         using var bitmap = new SKBitmap(info);
         var result = codec.GetPixels(info, bitmap.GetPixels());
         if (result is not (SKCodecResult.Success or SKCodecResult.IncompleteInput))
         {
-            throw new InvalidDataException($"{Path.GetFileName(path)} could not be read ({result}).");
+            throw new InvalidDataException(EditorStrings.PictureNotRead(Path.GetFileName(path), result));
         }
 
         var decoded = SKImage.FromPixelCopy(info, bitmap.GetPixels(), bitmap.RowBytes);

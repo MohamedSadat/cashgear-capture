@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WholePixelsFormat" xml:space="preserve">
+    <value>{0:0} px</value>
+  </data>
+  <data name="WholePercentFormat" xml:space="preserve">
+    <value>{0:0}%</value>
+  </data>
+  <data name="WholeSecondsFormat" xml:space="preserve">
+    <value>{0:0} s</value>
+  </data>
+  <data name="WholePointsFormat" xml:space="preserve">
+    <value>{0:0} pt</value>
+  </data>
+  <data name="SecondsOneDecimalFormat" xml:space="preserve">
+    <value>{0:0.0} s</value>
+  </data>
+  <data name="OverlaysTab" xml:space="preserve">
+    <value>Overlays</value>
+  </data>
+  <data name="WhileRecording" xml:space="preserve">
+    <value>While recording</value>
+  </data>
+  <data name="BurnIn" xml:space="preserve">
+    <value>Draw the overlays into the video</value>
+  </data>
+  <data name="AddLater" xml:space="preserve">
+    <value>Keep the video clean, and add the overlays later</value>
+  </data>
+  <data name="AddLaterHint" xml:space="preserve">
+    <value>Added later: tray menu › Add overlays to a recording…, which needs the metadata file. The overlays are drawn the same way either way.</value>
+  </data>
+  <data name="WriteMetadata" xml:space="preserve">
+    <value>Save a metadata file next to each recording (name.cgmeta.json)</value>
+  </data>
+  <data name="MetadataHint" xml:space="preserve">
+    <value>The pointer on every frame, the clicks, the keys as the keystroke overlay shows them, and which app was in front, on the video's clock: for adding overlays later and for editing.</value>
+  </data>
+  <data name="ClicksSection" xml:space="preserve">
+    <value>Clicks</value>
+  </data>
+  <data name="ShowClicks" xml:space="preserve">
+    <value>Show clicks with an expanding ring</value>
+  </data>
+  <data name="LeftButton" xml:space="preserve">
+    <value>Left button</value>
+  </data>
+  <data name="LeftButtonColour" xml:space="preserve">
+    <value>Left button colour</value>
+  </data>
+  <data name="RightButton" xml:space="preserve">
+    <value>Right button</value>
+  </data>
+  <data name="RightButtonColour" xml:space="preserve">
+    <value>Right button colour</value>
+  </data>
+  <data name="MiddleButtons" xml:space="preserve">
+    <value>Middle and side buttons</value>
+  </data>
+  <data name="MiddleButtonColour" xml:space="preserve">
+    <value>Middle button colour</value>
+  </data>
+  <data name="RingSize" xml:space="preserve">
+    <value>Ring size</value>
+  </data>
+  <data name="ClickSound" xml:space="preserve">
+    <value>Add a click sound to the recording's sound</value>
+  </data>
+  <data name="ClickSoundHint" xml:space="preserve">
+    <value>A short tick at each press, mixed into the recording (it isn't played aloud); with a track per source it gets a track of its own.</value>
+  </data>
+  <data name="PointerSection" xml:space="preserve">
+    <value>Pointer</value>
+  </data>
+  <data name="Effect" xml:space="preserve">
+    <value>Effect</value>
+  </data>
+  <data name="PointerEffect" xml:space="preserve">
+    <value>Pointer effect</value>
+  </data>
+  <data name="HaloColour" xml:space="preserve">
+    <value>Halo colour</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>Radius</value>
+  </data>
+  <data name="EffectRadius" xml:space="preserve">
+    <value>Effect radius</value>
+  </data>
+  <data name="DimBy" xml:space="preserve">
+    <value>Dim the rest by</value>
+  </data>
+  <data name="SpotlightDimming" xml:space="preserve">
+    <value>Spotlight dimming</value>
+  </data>
+  <data name="PointerSize" xml:space="preserve">
+    <value>Pointer size</value>
+  </data>
+  <data name="HideIdlePointer" xml:space="preserve">
+    <value>Hide the pointer when it stands still for</value>
+  </data>
+  <data name="IdleTime" xml:space="preserve">
+    <value>Idle time</value>
+  </data>
+  <data name="PointerHint" xml:space="preserve">
+    <value>A bigger pointer, or hiding it, means the app draws the pointer itself instead of Windows (a text cursor is drawn black with a white edge). Needs Recording › Show the mouse pointer.</value>
+  </data>
+  <data name="KeystrokesSection" xml:space="preserve">
+    <value>Keystrokes</value>
+  </data>
+  <data name="Show" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="KeystrokesShown" xml:space="preserve">
+    <value>Keystrokes shown</value>
+  </data>
+  <data name="Where" xml:space="preserve">
+    <value>Where</value>
+  </data>
+  <data name="KeystrokePosition" xml:space="preserve">
+    <value>Keystroke position</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>Font</value>
+  </data>
+  <data name="KeystrokeFont" xml:space="preserve">
+    <value>Keystroke font</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="KeystrokeSize" xml:space="preserve">
+    <value>Keystroke size</value>
+  </data>
+  <data name="StayAfterLastKey" xml:space="preserve">
+    <value>Stay after the last key</value>
+  </data>
+  <data name="KeystrokeTime" xml:space="preserve">
+    <value>Keystroke time</value>
+  </data>
+  <data name="KeystrokesHint" xml:space="preserve">
+    <value>Keys typed into a password field are never shown or kept, nor keys typed into the apps below. Keys are only in the recording and its metadata file, nowhere else. The toolbar can hide them for a while during a recording.</value>
+  </data>
+  <data name="ExcludedAppsLabel" xml:space="preserve">
+    <value>Never show keys typed into</value>
+  </data>
+  <data name="ExcludedApps" xml:space="preserve">
+    <value>Apps whose keys are never shown</value>
+  </data>
+  <data name="AppToAdd" xml:space="preserve">
+    <value>App to add</value>
+  </data>
+  <data name="AppToAddTip" xml:space="preserve">
+    <value>A running app, or type a program's file name such as keepass.exe</value>
+  </data>
+  <data name="WebcamSection" xml:space="preserve">
+    <value>Webcam</value>
+  </data>
+  <data name="RecordWebcam" xml:space="preserve">
+    <value>Record the webcam: drawn over the recording, and kept as a video track of its own</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="Picture" xml:space="preserve">
+    <value>Picture</value>
+  </data>
+  <data name="WebcamPictureSize" xml:space="preserve">
+    <value>Webcam picture size</value>
+  </data>
+  <data name="WebcamFrameRate" xml:space="preserve">
+    <value>Webcam frame rate</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>Shape</value>
+  </data>
+  <data name="WebcamShape" xml:space="preserve">
+    <value>Webcam shape</value>
+  </data>
+  <data name="WebcamSizeLabel" xml:space="preserve">
+    <value>Size (share of the height)</value>
+  </data>
+  <data name="WebcamSize" xml:space="preserve">
+    <value>Webcam size</value>
+  </data>
+  <data name="Border" xml:space="preserve">
+    <value>Border</value>
+  </data>
+  <data name="WebcamBorderColour" xml:space="preserve">
+    <value>Webcam border colour</value>
+  </data>
+  <data name="WebcamBorderWidth" xml:space="preserve">
+    <value>Webcam border width</value>
+  </data>
+  <data name="Mirror" xml:space="preserve">
+    <value>Mirror it (its own track stays as the camera sees)</value>
+  </data>
+  <data name="RecordedArea" xml:space="preserve">
+    <value>The recorded area</value>
+  </data>
+  <data name="WebcamPlacement" xml:space="preserve">
+    <value>Webcam placement</value>
+  </data>
+  <data name="WebcamHint" xml:space="preserve">
+    <value>Drag the webcam to where it goes. With a camera, its picture shows here while this page is open.</value>
+  </data>
+  <data name="DrawingSection" xml:space="preserve">
+    <value>Drawing on the screen</value>
+  </data>
+  <data name="PenColour" xml:space="preserve">
+    <value>Pen colour</value>
+  </data>
+  <data name="PenWidth" xml:space="preserve">
+    <value>Pen width</value>
+  </data>
+  <data name="FadeAfter" xml:space="preserve">
+    <value>Drawings fade away after</value>
+  </data>
+  <data name="FadeAfterName" xml:space="preserve">
+    <value>Drawings fade after</value>
+  </data>
+  <data name="DrawingHint" xml:space="preserve">
+    <value>While recording, the Draw on Screen hotkey (Settings › Hotkeys) or the pen on the toolbar lets you draw over the recorded area; the drawing is recorded, the toolbar isn't. Esc ends drawing, Delete clears, Ctrl+Z undoes, 1 to 4 pick pen, highlighter, arrow or rectangle.</value>
+  </data>
+  <data name="PointerHalo" xml:space="preserve">
+    <value>A halo around it</value>
+  </data>
+  <data name="PointerSpotlight" xml:space="preserve">
+    <value>A spotlight on it (the rest dimmed)</value>
+  </data>
+  <data name="KeystrokesOff" xml:space="preserve">
+    <value>Nothing</value>
+  </data>
+  <data name="KeystrokesShortcuts" xml:space="preserve">
+    <value>Shortcuts (Ctrl, Alt or Win + a key, F-keys, Esc)</value>
+  </data>
+  <data name="KeystrokesAll" xml:space="preserve">
+    <value>All keys, including typing</value>
+  </data>
+  <data name="AnchorBottomCenter" xml:space="preserve">
+    <value>Bottom centre</value>
+  </data>
+  <data name="AnchorBottomLeft" xml:space="preserve">
+    <value>Bottom left</value>
+  </data>
+  <data name="AnchorBottomRight" xml:space="preserve">
+    <value>Bottom right</value>
+  </data>
+  <data name="AnchorTopCenter" xml:space="preserve">
+    <value>Top centre</value>
+  </data>
+  <data name="AnchorTopLeft" xml:space="preserve">
+    <value>Top left</value>
+  </data>
+  <data name="AnchorTopRight" xml:space="preserve">
+    <value>Top right</value>
+  </data>
+  <data name="ShapeCircle" xml:space="preserve">
+    <value>Circle</value>
+  </data>
+  <data name="ShapeRoundedRectangle" xml:space="preserve">
+    <value>Rounded rectangle</value>
+  </data>
+  <data name="FirstCamera" xml:space="preserve">
+    <value>The first camera found</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>Never</value>
+  </data>
+  <data name="NoCamera" xml:space="preserve">
+    <value>No camera is connected now.</value>
+  </data>
+  <data name="CameraNotConnected" xml:space="preserve">
+    <value>The camera chosen before (not connected)</value>
+  </data>
+  <data name="ColorYellow" xml:space="preserve">
+    <value>Yellow</value>
+  </data>
+  <data name="ColorOrange" xml:space="preserve">
+    <value>Orange</value>
+  </data>
+  <data name="ColorRed" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="ColorPink" xml:space="preserve">
+    <value>Pink</value>
+  </data>
+  <data name="ColorGreen" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="ColorCyan" xml:space="preserve">
+    <value>Cyan</value>
+  </data>
+  <data name="ColorBlue" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="ColorWhite" xml:space="preserve">
+    <value>White</value>
+  </data>
+  <data name="ColorBlack" xml:space="preserve">
+    <value>Black</value>
+  </data>
+  <data name="ColorCustom" xml:space="preserve">
+    <value>Custom ({0})</value>
+  </data>
+</root>

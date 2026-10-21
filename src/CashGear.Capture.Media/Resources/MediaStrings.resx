@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="OperationFailed" xml:space="preserve">
+    <value>{0} failed: {1} ({2}).</value>
+    <comment>{0} is the operation (one of the strings below), {1} FFmpeg's description of the error (English), {2} its number</comment>
+  </data>
+  <data name="OperationFailedDetail" xml:space="preserve">
+    <value>{0} failed: {1} ({2}). {3}</value>
+    <comment>as OperationFailed; {3} is what FFmpeg logged (English)</comment>
+  </data>
+  <data name="ErrorNumber" xml:space="preserve">
+    <value>error {0}</value>
+    <comment>when FFmpeg has no description of an error; {0} is its number</comment>
+  </data>
+  <data name="FfmpegMissing" xml:space="preserve">
+    <value>FFmpeg is missing: {0} not found in {1}.</value>
+    <comment>{0} is a list of DLL names, {1} a folder</comment>
+  </data>
+  <data name="FfmpegLoadedElsewhere" xml:space="preserve">
+    <value>FFmpeg is already loaded from {0}.</value>
+    <comment>{0} is a folder</comment>
+  </data>
+  <data name="FfmpegWrongVersion" xml:space="preserve">
+    <value>FFmpeg in {0} is the wrong version: {1} {2}, the app needs {3}.</value>
+    <comment>{0} is a folder, {1} a library name (avcodec), {2} and {3} major version numbers</comment>
+  </data>
+  <data name="FfmpegNotLoaded" xml:space="preserve">
+    <value>FFmpeg in {0} could not be loaded: {1}</value>
+    <comment>{0} is a folder, {1} the reason from .NET (English)</comment>
+  </data>
+  <data name="EncoderNotInBuild" xml:space="preserve">
+    <value>{0} isn't in this FFmpeg build.</value>
+    <comment>{0} is an FFmpeg encoder name (h264_mf)</comment>
+  </data>
+  <data name="NamedEncoderNotInBuild" xml:space="preserve">
+    <value>The {0} encoder isn't in this FFmpeg build.</value>
+    <comment>{0} is an FFmpeg encoder name (aac)</comment>
+  </data>
+  <data name="EncoderMadeNoVideo" xml:space="preserve">
+    <value>{0} accepted frames but produced no video.</value>
+    <comment>{0} is an FFmpeg encoder name</comment>
+  </data>
+  <data name="EncoderProducedNoVideo" xml:space="preserve">
+    <value>The encoder produced no video.</value>
+  </data>
+  <data name="UnknownEncoderOptions" xml:space="preserve">
+    <value>{0} doesn't know the option(s) {1}.</value>
+    <comment>{0} is an FFmpeg encoder name, {1} a list of option names</comment>
+  </data>
+  <data name="NoGifEncoder" xml:space="preserve">
+    <value>This FFmpeg build has no GIF encoder.</value>
+  </data>
+  <data name="NoSoundStream" xml:space="preserve">
+    <value>{0} has no sound stream {1}.</value>
+    <comment>{0} is a file name, {1} a stream number</comment>
+  </data>
+  <data name="NoVideoStream" xml:space="preserve">
+    <value>{0} has no video stream {1}.</value>
+    <comment>{0} is a file name, {1} a stream number</comment>
+  </data>
+  <data name="NoVideo" xml:space="preserve">
+    <value>{0} has no video.</value>
+    <comment>{0} is a file name</comment>
+  </data>
+  <data name="NoSoundDecoder" xml:space="preserve">
+    <value>No decoder for the sound ({0}).</value>
+    <comment>{0} is a codec name</comment>
+  </data>
+  <data name="NoSoundTrackDecoder" xml:space="preserve">
+    <value>No decoder for the sound track ({0}).</value>
+    <comment>{0} is a codec name</comment>
+  </data>
+  <data name="NoDecoder" xml:space="preserve">
+    <value>No decoder for {0}.</value>
+    <comment>{0} is a codec name</comment>
+  </data>
+  <data name="CantConvertToBgra" xml:space="preserve">
+    <value>swscale can't convert {0} to BGRA.</value>
+    <comment>{0} is a pixel format</comment>
+  </data>
+  <data name="CantConvertFromBgra" xml:space="preserve">
+    <value>swscale can't convert BGRA to {0} at {1}x{2}.</value>
+    <comment>{0} is a pixel format, {1}x{2} a size in pixels</comment>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>Opening {0}</value>
+    <comment>an operation; {0} is a file or an encoder name</comment>
+  </data>
+  <data name="Reading" xml:space="preserve">
+    <value>Reading {0}</value>
+    <comment>an operation; {0} is a file</comment>
+  </data>
+  <data name="Creating" xml:space="preserve">
+    <value>Creating {0}</value>
+    <comment>an operation; {0} is a file</comment>
+  </data>
+  <data name="OpeningNamedEncoder" xml:space="preserve">
+    <value>Opening the {0} encoder</value>
+    <comment>an operation; {0} is an FFmpeg encoder name</comment>
+  </data>
+  <data name="EncodingWith" xml:space="preserve">
+    <value>Encoding with {0}</value>
+    <comment>an operation; {0} is an FFmpeg encoder name</comment>
+  </data>
+  <data name="Rewinding" xml:space="preserve">
+    <value>Rewinding</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="Decoding" xml:space="preserve">
+    <value>Decoding</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingUpSoundFrame" xml:space="preserve">
+    <value>Setting up a sound frame</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="AllocatingSoundFrame" xml:space="preserve">
+    <value>Allocating a sound frame</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="PreparingSoundFrame" xml:space="preserve">
+    <value>Preparing a sound frame</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="EncodingSound" xml:space="preserve">
+    <value>Encoding sound</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingUpSoundDecoder" xml:space="preserve">
+    <value>Setting up the sound decoder</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="OpeningSoundDecoder" xml:space="preserve">
+    <value>Opening the sound decoder</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SeekingInSound" xml:space="preserve">
+    <value>Seeking in the sound</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="DecodingTheSound" xml:space="preserve">
+    <value>Decoding the sound</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="DecodingSound" xml:space="preserve">
+    <value>Decoding sound</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingUpSoundResampler" xml:space="preserve">
+    <value>Setting up the sound resampler</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="StartingSoundResampler" xml:space="preserve">
+    <value>Starting the sound resampler</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="ResamplingSound" xml:space="preserve">
+    <value>Resampling the sound</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingExport" xml:space="preserve">
+    <value>Creating the export</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="StartingExport" xml:space="preserve">
+    <value>Starting the export</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="WritingExport" xml:space="preserve">
+    <value>Writing the export</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="FinishingExport" xml:space="preserve">
+    <value>Finishing the export</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CopyingCodecSettings" xml:space="preserve">
+    <value>Copying codec settings</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingBt709Conversion" xml:space="preserve">
+    <value>Setting BT.709 conversion</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="ConvertingFrame" xml:space="preserve">
+    <value>Converting a frame</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="ChoosingGifColours" xml:space="preserve">
+    <value>Choosing the GIF's colours</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="GivingGifColours" xml:space="preserve">
+    <value>Giving the GIF its colours</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingGifInput" xml:space="preserve">
+    <value>Creating the GIF's input</value>
+    <comment>an operation (a filter's input)</comment>
+  </data>
+  <data name="CreatingGifOutput" xml:space="preserve">
+    <value>Creating the GIF's output</value>
+    <comment>an operation (a filter's output)</comment>
+  </data>
+  <data name="CreatingGifPaletteInput" xml:space="preserve">
+    <value>Creating the GIF's palette input</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingUpGifFilters" xml:space="preserve">
+    <value>Setting up the GIF's filters ({0})</value>
+    <comment>an operation; {0} is FFmpeg's filter description</comment>
+  </data>
+  <data name="StartingGifFilters" xml:space="preserve">
+    <value>Starting the GIF's filters</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="OpeningGifEncoder" xml:space="preserve">
+    <value>Opening the GIF encoder</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingGif" xml:space="preserve">
+    <value>Creating the GIF</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CopyingGifSettings" xml:space="preserve">
+    <value>Copying the GIF's settings</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingGifFile" xml:space="preserve">
+    <value>Creating the GIF file</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="StartingGif" xml:space="preserve">
+    <value>Starting the GIF</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="EncodingGif" xml:space="preserve">
+    <value>Encoding the GIF</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="WritingGif" xml:space="preserve">
+    <value>Writing the GIF</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="FinishingGif" xml:space="preserve">
+    <value>Finishing the GIF</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="ReadingRecording" xml:space="preserve">
+    <value>Reading the recording</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingSoundFilterInput" xml:space="preserve">
+    <value>Creating the sound filter's input</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingSoundFilterOutput" xml:space="preserve">
+    <value>Creating the sound filter's output</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingUpSoundFilter" xml:space="preserve">
+    <value>Setting up the sound filter ({0})</value>
+    <comment>an operation; {0} is FFmpeg's filter description</comment>
+  </data>
+  <data name="StartingSoundFilter" xml:space="preserve">
+    <value>Starting the sound filter</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="FilteringSound" xml:space="preserve">
+    <value>Filtering sound</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingUpDecoder" xml:space="preserve">
+    <value>Setting up the decoder</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="OpeningDecoder" xml:space="preserve">
+    <value>Opening the decoder</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingRecordingFile" xml:space="preserve">
+    <value>Creating the recording file</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="StartingRecordingFile" xml:space="preserve">
+    <value>Starting the recording file</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="WritingRecording" xml:space="preserve">
+    <value>Writing the recording</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="FinishingRecordingFile" xml:space="preserve">
+    <value>Finishing the recording file</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingMp4" xml:space="preserve">
+    <value>Creating the MP4</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="StartingMp4" xml:space="preserve">
+    <value>Starting the MP4</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="WritingMp4" xml:space="preserve">
+    <value>Writing the MP4</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="FinishingMp4" xml:space="preserve">
+    <value>Finishing the MP4</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingUpEvenedOutSound" xml:space="preserve">
+    <value>Setting up the evened-out sound</value>
+    <comment>an operation (sound whose loudness was evened out)</comment>
+  </data>
+  <data name="CopyingWebcamCodecSettings" xml:space="preserve">
+    <value>Copying the webcam's codec settings</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="WritingWebcamTrack" xml:space="preserve">
+    <value>Writing the webcam's track</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingTempoFilterInput" xml:space="preserve">
+    <value>Creating the tempo filter's input</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingTempoFilterOutput" xml:space="preserve">
+    <value>Creating the tempo filter's output</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingUpTempoFilter" xml:space="preserve">
+    <value>Setting up the tempo filter ({0})</value>
+    <comment>an operation; {0} is FFmpeg's filter description</comment>
+  </data>
+  <data name="StartingTempoFilter" xml:space="preserve">
+    <value>Starting the tempo filter</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="AllocatingTempoSound" xml:space="preserve">
+    <value>Allocating sound for the tempo filter</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="ChangingTempo" xml:space="preserve">
+    <value>Changing the sound's tempo</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="AllocatingVideoFrame" xml:space="preserve">
+    <value>Allocating a video frame</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="PreparingVideoFrame" xml:space="preserve">
+    <value>Preparing a video frame</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SettingUpVideoDecoder" xml:space="preserve">
+    <value>Setting up the video decoder</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="OpeningVideoDecoder" xml:space="preserve">
+    <value>Opening the video decoder</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="SeekingInVideo" xml:space="preserve">
+    <value>Seeking in the video</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CreatingD3D11Device" xml:space="preserve">
+    <value>Creating a Direct3D 11 video device</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="DecodingVideo" xml:space="preserve">
+    <value>Decoding the video</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="CopyingFromGraphicsCard" xml:space="preserve">
+    <value>Copying a picture from the graphics card</value>
+    <comment>an operation</comment>
+  </data>
+  <data name="ConvertingPicture" xml:space="preserve">
+    <value>Converting a picture</value>
+    <comment>an operation</comment>
+  </data>
+</root>

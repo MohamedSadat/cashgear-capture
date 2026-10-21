@@ -1,5 +1,6 @@
 using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Model;
+using CashGear.Capture.VideoEditor.Resources;
 
 namespace CashGear.Capture.VideoEditor.Timeline;
 
@@ -160,7 +161,7 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
                 var edge = _drag == Drag.TrimStart ? ItemEdge.Start : ItemEdge.End;
                 var linked = TimelineEdits.Linked(_base, _item.Id).ToHashSet();
                 var target = alt ? time : View.Snap(_base, time, Playhead, linked);
-                History.Apply(_drag == Drag.TrimStart ? "trim start" : "trim end", TimelineEdits.Trim(_base, _item.Id, edge, target), $"drag {_drags}");
+                History.Apply(_drag == Drag.TrimStart ? VideoEditorStrings.UndoTrimStart : VideoEditorStrings.UndoTrimEnd, TimelineEdits.Trim(_base, _item.Id, edge, target), $"drag {_drags}");
                 break;
         }
     }
@@ -185,7 +186,7 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
             start = Math.Abs(byStart - start) <= Math.Abs(byEnd - start) ? byStart : byEnd;
         }
 
-        History.Apply("move", TimelineEdits.Move(_base!, item.Id, Math.Max(0, start), withLinked: !alt), $"drag {_drags}");
+        History.Apply(VideoEditorStrings.UndoMove, TimelineEdits.Move(_base!, item.Id, Math.Max(0, start), withLinked: !alt), $"drag {_drags}");
     }
 
     private void Scrub(double time)

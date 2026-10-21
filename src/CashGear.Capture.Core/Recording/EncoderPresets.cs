@@ -1,4 +1,5 @@
 using System.Globalization;
+using CashGear.Capture.Core.Resources;
 
 namespace CashGear.Capture.Core.Recording;
 
@@ -47,15 +48,15 @@ public static class EncoderPresets
     /// <summary>Setting value: a software encoder only.</summary>
     public const string Software = "software";
 
-    public static EncoderCandidate NvencH264 { get; } = new("h264_nvenc", "h264_nvenc", VideoCodec.H264, true, "NVIDIA NVENC (H.264)");
-    public static EncoderCandidate NvencHevc { get; } = new("hevc_nvenc", "hevc_nvenc", VideoCodec.Hevc, true, "NVIDIA NVENC (HEVC)");
-    public static EncoderCandidate NvencAv1 { get; } = new("av1_nvenc", "av1_nvenc", VideoCodec.Av1, true, "NVIDIA NVENC (AV1)");
-    public static EncoderCandidate QuickSyncH264 { get; } = new("h264_qsv", "h264_qsv", VideoCodec.H264, true, "Intel Quick Sync (H.264)");
-    public static EncoderCandidate AmfH264 { get; } = new("h264_amf", "h264_amf", VideoCodec.H264, true, "AMD AMF (H.264)");
-    public static EncoderCandidate MediaFoundationH264 { get; } = new("h264_mf_hw", "h264_mf", VideoCodec.H264, true, "Windows hardware encoder (H.264)");
-    public static EncoderCandidate MediaFoundationHevc { get; } = new("hevc_mf_hw", "hevc_mf", VideoCodec.Hevc, true, "Windows hardware encoder (HEVC)");
-    public static EncoderCandidate WindowsSoftwareH264 { get; } = new("h264_mf", "h264_mf", VideoCodec.H264, false, "Windows software encoder (H.264)");
-    public static EncoderCandidate OpenH264 { get; } = new("libopenh264", "libopenh264", VideoCodec.H264, false, "OpenH264 (software)");
+    public static EncoderCandidate NvencH264 { get; } = new("h264_nvenc", "h264_nvenc", VideoCodec.H264, true, CoreStrings.EncoderNvencH264);
+    public static EncoderCandidate NvencHevc { get; } = new("hevc_nvenc", "hevc_nvenc", VideoCodec.Hevc, true, CoreStrings.EncoderNvencHevc);
+    public static EncoderCandidate NvencAv1 { get; } = new("av1_nvenc", "av1_nvenc", VideoCodec.Av1, true, CoreStrings.EncoderNvencAv1);
+    public static EncoderCandidate QuickSyncH264 { get; } = new("h264_qsv", "h264_qsv", VideoCodec.H264, true, CoreStrings.EncoderQuickSyncH264);
+    public static EncoderCandidate AmfH264 { get; } = new("h264_amf", "h264_amf", VideoCodec.H264, true, CoreStrings.EncoderAmfH264);
+    public static EncoderCandidate MediaFoundationH264 { get; } = new("h264_mf_hw", "h264_mf", VideoCodec.H264, true, CoreStrings.EncoderWindowsHardwareH264);
+    public static EncoderCandidate MediaFoundationHevc { get; } = new("hevc_mf_hw", "hevc_mf", VideoCodec.Hevc, true, CoreStrings.EncoderWindowsHardwareHevc);
+    public static EncoderCandidate WindowsSoftwareH264 { get; } = new("h264_mf", "h264_mf", VideoCodec.H264, false, CoreStrings.EncoderWindowsSoftwareH264);
+    public static EncoderCandidate OpenH264 { get; } = new("libopenh264", "libopenh264", VideoCodec.H264, false, CoreStrings.EncoderOpenH264);
 
     /// <summary>Every candidate, in the order Automatic tries the H.264 ones.</summary>
     public static IReadOnlyList<EncoderCandidate> All { get; } =
@@ -67,13 +68,13 @@ public static class EncoderPresets
     public static IReadOnlyList<EncoderCandidate> SoftwareFallbacks { get; } = [WindowsSoftwareH264, OpenH264];
 
     /// <summary>VP9 in software (libvpx), for WebM exports.</summary>
-    public static EncoderCandidate Vp9 { get; } = new("libvpx-vp9", "libvpx-vp9", VideoCodec.Vp9, false, "VP9 (software)");
+    public static EncoderCandidate Vp9 { get; } = new("libvpx-vp9", "libvpx-vp9", VideoCodec.Vp9, false, CoreStrings.EncoderVp9);
 
     /// <summary>AV1 in software (SVT-AV1), for exports when no graphics card encodes AV1.</summary>
-    public static EncoderCandidate SvtAv1 { get; } = new("libsvtav1", "libsvtav1", VideoCodec.Av1, false, "SVT-AV1 (software)");
+    public static EncoderCandidate SvtAv1 { get; } = new("libsvtav1", "libsvtav1", VideoCodec.Av1, false, CoreStrings.EncoderSvtAv1);
 
     /// <summary>HEVC in software (Kvazaar), for exports when no graphics card encodes HEVC.</summary>
-    public static EncoderCandidate Kvazaar { get; } = new("libkvazaar", "libkvazaar", VideoCodec.Hevc, false, "Kvazaar (software HEVC)");
+    public static EncoderCandidate Kvazaar { get; } = new("libkvazaar", "libkvazaar", VideoCodec.Hevc, false, CoreStrings.EncoderKvazaar);
 
     /// <summary>
     /// Software encoders only exports use. They aren't in <see cref="All"/>, so recording's detection (and its cached

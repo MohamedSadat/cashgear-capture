@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="OpenInEditor" xml:space="preserve">
+    <value>فتح في المحرر</value>
+  </data>
+  <data name="EditorPicturesOnly" xml:space="preserve">
+    <value>يقبل المحرر الصور فقط.</value>
+  </data>
+  <data name="OpenedInEditor" xml:space="preserve">
+    <value>تم الفتح في المحرر</value>
+  </data>
+  <data name="NothingToSetUp" xml:space="preserve">
+    <value>لا شيء لإعداده.</value>
+  </data>
+  <data name="SaveToFile" xml:space="preserve">
+    <value>حفظ في ملف</value>
+  </data>
+  <data name="RecordingAlreadyIn" xml:space="preserve">
+    <value>التسجيل موجود في {0} بالفعل.</value>
+  </data>
+  <data name="FileAndMore_zero" xml:space="preserve">
+    <value>{1}</value>
+  </data>
+  <data name="FileAndMore_one" xml:space="preserve">
+    <value>{1} وملف آخر</value>
+  </data>
+  <data name="FileAndMore_two" xml:space="preserve">
+    <value>{1} وملفان آخران</value>
+  </data>
+  <data name="FileAndMore_few" xml:space="preserve">
+    <value>{1} و{0} ملفات أخرى</value>
+  </data>
+  <data name="FileAndMore_many" xml:space="preserve">
+    <value>{1} و{0} ملفًا آخر</value>
+  </data>
+  <data name="FileAndMore_other" xml:space="preserve">
+    <value>{1} و{0} ملف آخر</value>
+  </data>
+  <data name="CapturesSavedIn" xml:space="preserve">
+    <value>تُحفظ اللقطات في {0}.</value>
+  </data>
+  <data name="CantWriteTo" xml:space="preserve">
+    <value>تتعذر الكتابة في {0}: {1}</value>
+  </data>
+  <data name="CopyToClipboard" xml:space="preserve">
+    <value>نسخ إلى الحافظة</value>
+  </data>
+  <data name="CopiedToClipboard" xml:space="preserve">
+    <value>تم النسخ إلى الحافظة.</value>
+  </data>
+  <data name="FileOnClipboard" xml:space="preserve">
+    <value>الملف في الحافظة (الصقه في مجلد أو محادثة أو رسالة بريد إلكتروني).</value>
+  </data>
+  <data name="Print" xml:space="preserve">
+    <value>طباعة</value>
+  </data>
+  <data name="RecordingsCantBePrinted" xml:space="preserve">
+    <value>لا يمكن طباعة التسجيلات.</value>
+  </data>
+  <data name="StepsFailed" xml:space="preserve">
+    <value>فشل: {0} (راجع الإعلام)</value>
+  </data>
+  <data name="SentWithLink" xml:space="preserve">
+    <value>تم الإرسال؛ الرابط في الإعلام</value>
+  </data>
+  <data name="Sent" xml:space="preserve">
+    <value>تم الإرسال</value>
+  </data>
+  <data name="ListSeparator" xml:space="preserve">
+    <value>، </value>
+  </data>
+  <data name="CaptureNotSent" xml:space="preserve">
+    <value>لم تُرسل اللقطة</value>
+  </data>
+  <data name="CapturePartlyDone" xml:space="preserve">
+    <value>اللقطة: لم ينجح كل شيء</value>
+  </data>
+  <data name="CaptureSaved" xml:space="preserve">
+    <value>تم حفظ اللقطة</value>
+  </data>
+  <data name="CaptureUploaded" xml:space="preserve">
+    <value>تم رفع اللقطة</value>
+  </data>
+  <data name="CaptureCopied" xml:space="preserve">
+    <value>تم نسخ اللقطة</value>
+  </data>
+  <data name="CaptureSent" xml:space="preserve">
+    <value>تم إرسال اللقطة</value>
+  </data>
+  <data name="RecordingNotSent" xml:space="preserve">
+    <value>لم يُرسل التسجيل</value>
+  </data>
+  <data name="RecordingPartlyDone" xml:space="preserve">
+    <value>التسجيل: لم ينجح كل شيء</value>
+  </data>
+  <data name="RecordingSaved" xml:space="preserve">
+    <value>تم حفظ التسجيل</value>
+  </data>
+  <data name="RecordingUploaded" xml:space="preserve">
+    <value>تم رفع التسجيل</value>
+  </data>
+  <data name="RecordingCopied" xml:space="preserve">
+    <value>تم نسخ التسجيل</value>
+  </data>
+  <data name="RecordingSent" xml:space="preserve">
+    <value>تم إرسال التسجيل</value>
+  </data>
+  <data name="PrinterNotInstalledSettings" xml:space="preserve">
+    <value>الطابعة «{0}» غير مثبتة (الإعدادات › الوجهات).</value>
+  </data>
+  <data name="PrintingCancelled" xml:space="preserve">
+    <value>تم إلغاء الطباعة.</value>
+  </data>
+  <data name="PrintJobName" xml:space="preserve">
+    <value>CashGear Capture – {0}</value>
+  </data>
+  <data name="PrintedOn" xml:space="preserve">
+    <value>تمت الطباعة على {0}</value>
+  </data>
+  <data name="CouldntPrint" xml:space="preserve">
+    <value>تعذرت الطباعة: {0}</value>
+  </data>
+  <data name="NoDefaultPrinter" xml:space="preserve">
+    <value>لا توجد طابعة افتراضية في Windows.</value>
+  </data>
+  <data name="PrinterNotInstalled" xml:space="preserve">
+    <value>الطابعة «{0}» غير مثبتة.</value>
+  </data>
+  <data name="FitFillPage" xml:space="preserve">
+    <value>تملأ الصفحة</value>
+  </data>
+  <data name="FitActualSize" xml:space="preserve">
+    <value>بالحجم الذي كانت عليه على الشاشة</value>
+  </data>
+  <data name="FitLargest" xml:space="preserve">
+    <value>بأكبر حجم يتسع لها</value>
+  </data>
+  <data name="PrintsOn" xml:space="preserve">
+    <value>الطباعة على {0}، لقطة واحدة في كل صفحة {1}، بهوامش {2:0.#} mm.</value>
+  </data>
+  <data name="PrintsOnWithDialog" xml:space="preserve">
+    <value>الطباعة على {0}، لقطة واحدة في كل صفحة {1}، بهوامش {2:0.#} mm؛ ويتيح لك مربع حوار الطباعة تغيير ذلك في كل مرة.</value>
+  </data>
+  <data name="PrintersCantBeRead" xml:space="preserve">
+    <value>تتعذر قراءة الطابعات: {0}</value>
+  </data>
+  <data name="InFolderClickToShow" xml:space="preserve">
+    <value>في {0} (انقر للإظهار)</value>
+  </data>
+</root>

@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Outputs.Credentials;
+using CashGear.Capture.Outputs.Resources;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 
@@ -43,7 +44,7 @@ public sealed class SftpDestination(ServerDestination server, ICredentialStore c
             }
 
             client.Disconnect();
-            return new OutputResult(true, $"Uploaded to {DisplayName} as {name}") { Link = RemoteFiles.Link(server, name) };
+            return new OutputResult(true, OutputsStrings.UploadedAs(DisplayName, name)) { Link = RemoteFiles.Link(server, name) };
         }
         catch (Exception ex) when (Failure(ex, hostKey) is { } failure)
         {
@@ -73,8 +74,8 @@ public sealed class SftpDestination(ServerDestination server, ICredentialStore c
 
             await client.DeleteFileAsync(probe, ct).ConfigureAwait(false);
             client.Disconnect();
-            var folder = RemoteFiles.Folder(server.RemoteFolder) is { Length: > 0 } shown ? shown : "the login folder";
-            return OutputResult.Done($"Connected to {server.Host} as {server.UserName} (server key {hostKey.Fingerprint}); a test file was written to {folder} and deleted.");
+            var folder = RemoteFiles.Folder(server.RemoteFolder) is { Length: > 0 } shown ? shown : OutputsStrings.LoginFolder;
+            return OutputResult.Done(OutputsStrings.SftpTest(server.Host, server.UserName, hostKey.Fingerprint, folder));
         }
         catch (Exception ex) when (Failure(ex, hostKey) is { } failure)
         {
@@ -87,7 +88,7 @@ public sealed class SftpDestination(ServerDestination server, ICredentialStore c
         problem = null;
         if (server.UserName is not { } user)
         {
-            problem = OutputResult.Failed("SFTP needs a user name.");
+            problem = OutputResult.Failed(OutputsStrings.SftpNeedsUserName);
             return null;
         }
 
@@ -103,8 +104,10 @@ public sealed class SftpDestination(ServerDestination server, ICredentialStore c
             {
                 // The key parsers report a missing or wrong passphrase in several ways (BouncyCastle's "pad block corrupted" among them).
                 problem = OutputResult.Failed(passphrase is null && (ex is SshPassPhraseNullOrEmptyException || IsEncrypted(keyFile))
-                    ? $"The key {Path.GetFileName(keyFile)} is protected by a passphrase; enter it in Settings › Destinations."
-                    : $"The key file {Path.GetFileName(keyFile)} can't be used{(passphrase is null ? string.Empty : " (is the passphrase right?)")}: {ex.Message}");
+                    ? OutputsStrings.KeyNeedsPassphrase(Path.GetFileName(keyFile))
+                    : passphrase is null
+                        ? OutputsStrings.KeyFileUnusable(Path.GetFileName(keyFile), ex.Message)
+                        : OutputsStrings.KeyFileUnusablePassphrase(Path.GetFileName(keyFile), ex.Message));
                 return null;
             }
         }
@@ -116,7 +119,7 @@ public sealed class SftpDestination(ServerDestination server, ICredentialStore c
 
         if (methods.Count == 0)
         {
-            problem = OutputResult.Failed("Enter a password or choose a key file for this server.");
+            problem = OutputResult.Failed(OutputsStrings.NoPasswordOrKey);
             return null;
         }
 
@@ -182,18 +185,18 @@ public sealed class SftpDestination(ServerDestination server, ICredentialStore c
         if (hostKey is { Trusted: false, Fingerprint: { } fingerprint })
         {
             return OutputResult.Failed(server.TrustedFingerprint is null
-                ? $"{server.Host}'s key isn't trusted yet. Its fingerprint is {fingerprint}; trust it only if it is the one the server's owner gives."
-                : $"{server.Host}'s key has changed: it is now {fingerprint}, not the one you trusted. Someone may be in between; check with the server's owner.")
+                ? OutputsStrings.HostKeyNotTrusted(server.Host, fingerprint)
+                : OutputsStrings.HostKeyChanged(server.Host, fingerprint))
                 with { Fingerprint = fingerprint };
         }
 
         return ex switch
         {
-            SshAuthenticationException => OutputResult.Failed($"{server.Host} refused the user name, password or key ({ex.Message.Trim()})."),
-            SftpPermissionDeniedException => OutputResult.Failed($"{server.Host} didn't allow it: {ex.Message.Trim()}"),
-            SftpPathNotFoundException => OutputResult.Failed($"{server.Host} has no such folder: {ex.Message.Trim()}"),
+            SshAuthenticationException => OutputResult.Failed(OutputsStrings.SftpLoginRefused(server.Host, ex.Message.Trim())),
+            SftpPermissionDeniedException => OutputResult.Failed(OutputsStrings.NotAllowed(server.Host, ex.Message.Trim())),
+            SftpPathNotFoundException => OutputResult.Failed(OutputsStrings.NoSuchFolder(server.Host, ex.Message.Trim())),
             SocketException or SshOperationTimeoutException or SshConnectionException or SshException or IOException or TimeoutException
-                => OutputResult.Failed($"Couldn't reach {server.Host}:{server.EffectivePort}: {ex.Message.Trim()}"),
+                => OutputResult.Failed(OutputsStrings.CouldNotReachPort(server.Host, server.EffectivePort, ex.Message.Trim())),
             _ => null,
         };
     }

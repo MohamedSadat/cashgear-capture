@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="KindArrow" xml:space="preserve">
+    <value>سهم</value>
+  </data>
+  <data name="KindLine" xml:space="preserve">
+    <value>خط</value>
+  </data>
+  <data name="KindRectangle" xml:space="preserve">
+    <value>مستطيل</value>
+  </data>
+  <data name="KindEllipse" xml:space="preserve">
+    <value>شكل بيضاوي</value>
+  </data>
+  <data name="KindDrawing" xml:space="preserve">
+    <value>رسم حر</value>
+  </data>
+  <data name="KindHighlight" xml:space="preserve">
+    <value>تمييز</value>
+  </data>
+  <data name="KindText" xml:space="preserve">
+    <value>نص</value>
+  </data>
+  <data name="KindStepNumber" xml:space="preserve">
+    <value>رقم خطوة</value>
+  </data>
+  <data name="KindBlur" xml:space="preserve">
+    <value>تمويه</value>
+  </data>
+  <data name="KindPixelation" xml:space="preserve">
+    <value>تقطيع إلى بكسلات</value>
+  </data>
+  <data name="KindSpotlight" xml:space="preserve">
+    <value>تسليط ضوء</value>
+  </data>
+  <data name="KindMagnifier" xml:space="preserve">
+    <value>مكبّر</value>
+  </data>
+  <data name="UndoAdd" xml:space="preserve">
+    <value>إضافة {0}</value>
+  </data>
+  <data name="UndoDelete" xml:space="preserve">
+    <value>حذف {0}</value>
+  </data>
+  <data name="UndoMove" xml:space="preserve">
+    <value>نقل {0}</value>
+  </data>
+  <data name="UndoResize" xml:space="preserve">
+    <value>تغيير حجم {0}</value>
+  </data>
+  <data name="UndoChange" xml:space="preserve">
+    <value>تعديل {0}</value>
+  </data>
+  <data name="UndoBringToFront" xml:space="preserve">
+    <value>إحضار {0} إلى الأمام</value>
+  </data>
+  <data name="UndoSendToBack" xml:space="preserve">
+    <value>إرسال {0} إلى الخلف</value>
+  </data>
+  <data name="UndoEditText" xml:space="preserve">
+    <value>تحرير النص</value>
+  </data>
+  <data name="UndoCrop" xml:space="preserve">
+    <value>اقتصاص</value>
+  </data>
+  <data name="UndoRotateRight" xml:space="preserve">
+    <value>تدوير لليمين</value>
+  </data>
+  <data name="UndoRotateLeft" xml:space="preserve">
+    <value>تدوير لليسار</value>
+  </data>
+  <data name="UndoResizeImage" xml:space="preserve">
+    <value>تغيير حجم الصورة</value>
+  </data>
+  <data name="UndoFlipHorizontally" xml:space="preserve">
+    <value>قلب أفقي</value>
+  </data>
+  <data name="UndoFlipVertically" xml:space="preserve">
+    <value>قلب عمودي</value>
+  </data>
+  <data name="UndoRotate" xml:space="preserve">
+    <value>تدوير</value>
+  </data>
+  <data name="UndoCanvasSize" xml:space="preserve">
+    <value>تغيير حجم لوحة الرسم</value>
+  </data>
+  <data name="UndoTrimBorders" xml:space="preserve">
+    <value>اقتصاص الحواف</value>
+  </data>
+  <data name="UndoEffects" xml:space="preserve">
+    <value>التأثيرات</value>
+  </data>
+  <data name="EffectDropShadow" xml:space="preserve">
+    <value>الظل المسقط</value>
+  </data>
+  <data name="EffectBorder" xml:space="preserve">
+    <value>الإطار</value>
+  </data>
+  <data name="EffectRoundedCorners" xml:space="preserve">
+    <value>الزوايا المستديرة</value>
+  </data>
+  <data name="EffectTornEdge" xml:space="preserve">
+    <value>الحافة الممزقة</value>
+  </data>
+  <data name="EffectFadedEdges" xml:space="preserve">
+    <value>الحواف الباهتة</value>
+  </data>
+  <data name="EffectPerspective" xml:space="preserve">
+    <value>المنظور</value>
+  </data>
+  <data name="EffectBrightnessContrast" xml:space="preserve">
+    <value>السطوع والتباين</value>
+  </data>
+  <data name="EffectGrayscale" xml:space="preserve">
+    <value>التدرج الرمادي</value>
+  </data>
+  <data name="EffectSharpen" xml:space="preserve">
+    <value>زيادة الحدة</value>
+  </data>
+  <data name="EffectWatermark" xml:space="preserve">
+    <value>العلامة المائية</value>
+  </data>
+  <data name="DefaultWatermarkText" xml:space="preserve">
+    <value>© CashGear Capture</value>
+  </data>
+  <data name="ConfidentialWatermarkText" xml:space="preserve">
+    <value>سري</value>
+  </data>
+  <data name="PresetShadow" xml:space="preserve">
+    <value>ظل</value>
+  </data>
+  <data name="PresetTornBottomShadow" xml:space="preserve">
+    <value>حافة سفلية ممزقة مع ظل</value>
+  </data>
+  <data name="PresetRoundedShadow" xml:space="preserve">
+    <value>زوايا مستديرة مع ظل</value>
+  </data>
+  <data name="PresetThinBorderShadow" xml:space="preserve">
+    <value>إطار رفيع وظل</value>
+  </data>
+  <data name="PresetConfidential" xml:space="preserve">
+    <value>سري، على الصورة كلها</value>
+  </data>
+  <data name="WatermarkNoPicture" xml:space="preserve">
+    <value>لم تُختر صورة للعلامة المائية.</value>
+  </data>
+  <data name="WatermarkPictureUnreadableBecause" xml:space="preserve">
+    <value>تتعذّر قراءة صورة العلامة المائية «{0}»: {1}</value>
+  </data>
+  <data name="WatermarkPictureGone" xml:space="preserve">
+    <value>صورة العلامة المائية «{0}» لم تعد موجودة.</value>
+  </data>
+  <data name="WatermarkPictureUnreadable" xml:space="preserve">
+    <value>تتعذّر قراءة صورة العلامة المائية «{0}».</value>
+  </data>
+  <data name="WatermarkNotAPicture" xml:space="preserve">
+    <value>الملف «{0}» ليس صورة يستطيع هذا التطبيق قراءتها (PNG أو JPEG أو BMP أو GIF أو WebP).</value>
+  </data>
+  <data name="NotAPicture" xml:space="preserve">
+    <value>الملف «{0}» ليس صورة يستطيع هذا التطبيق قراءتها.</value>
+  </data>
+  <data name="PictureNotRead" xml:space="preserve">
+    <value>تعذّرت قراءة «{0}» ({1}).</value>
+  </data>
+  <data name="PictureName" xml:space="preserve">
+    <value>صورة</value>
+  </data>
+  <data name="PicturesFilter" xml:space="preserve">
+    <value>الصور|{0}|كل الملفات|*.*</value>
+  </data>
+  <data name="CombinedTooLarge" xml:space="preserve">
+    <value>ستكون الصورة المدمجة {0} × {1} بكسل؛ والحد الأقصى {2} في كل اتجاه.</value>
+  </data>
+  <data name="TurnedImageTooLarge" xml:space="preserve">
+    <value>ستكون الصورة بعد التدوير كبيرة جدًا.</value>
+  </data>
+  <data name="PdfNotStarted" xml:space="preserve">
+    <value>تعذّر بدء ملف PDF.</value>
+  </data>
+  <data name="TokenName" xml:space="preserve">
+    <value>الاسم الأصلي بدون امتداده</value>
+  </data>
+  <data name="TokenCounter" xml:space="preserve">
+    <value>1، 2، 3… بترتيب القائمة (001 عندما تكون بالمئات)</value>
+  </data>
+  <data name="TokenDate" xml:space="preserve">
+    <value>سنة الملف (وتاريخه ووقته: {{MM}} {{dd}} {{HH}} {{mm}} {{ss}})</value>
+  </data>
+  <data name="TokenWidth" xml:space="preserve">
+    <value>العرض الجديد بالبكسل</value>
+  </data>
+  <data name="TokenHeight" xml:space="preserve">
+    <value>الارتفاع الجديد بالبكسل</value>
+  </data>
+  <data name="NameTemplateEmpty" xml:space="preserve">
+    <value>قالب الاسم فارغ.</value>
+  </data>
+  <data name="NameTemplateUnexpectedBrace" xml:space="preserve">
+    <value>الرمز '}}' غير متوقع في الموضع {0}.</value>
+  </data>
+  <data name="NameTemplateUnclosed" xml:space="preserve">
+    <value>الرمز '{{' في الموضع {0} لا يُغلق أبدًا.</value>
+  </data>
+  <data name="NameTemplateUnknownToken" xml:space="preserve">
+    <value>{{{0}}} ليس جزءًا من الاسم يعرفه هذا التطبيق.</value>
+  </data>
+</root>

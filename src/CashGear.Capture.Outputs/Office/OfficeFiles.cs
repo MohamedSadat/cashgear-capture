@@ -1,5 +1,6 @@
 using System.IO.Packaging;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs.Resources;
 using DocumentFormat.OpenXml.Packaging;
 
 namespace CashGear.Capture.Outputs.Office;
@@ -54,12 +55,12 @@ internal static class OfficeFiles
     {
         if (path is null)
         {
-            return OutputResult.Failed($"Choose the {app} file to add captures to (Settings › Destinations).");
+            return OutputResult.Failed(OutputsStrings.ChooseOfficeFile(app));
         }
 
         if (!File.Exists(path))
         {
-            return OutputResult.Failed($"{Path.GetFileName(path)} isn't there any more ({Path.GetDirectoryName(path)}).");
+            return OutputResult.Failed(OutputsStrings.FileGone(Path.GetFileName(path), Path.GetDirectoryName(path)));
         }
 
         try
@@ -86,11 +87,11 @@ internal static class OfficeFiles
             var probe = Path.Combine(folder, $".cashgear-test-{Guid.NewGuid():N}.tmp");
             File.WriteAllBytes(probe, []);
             File.Delete(probe);
-            return OutputResult.Done($"A new file is made for each capture in {folder}.");
+            return OutputResult.Done(OutputsStrings.NewFileEachCapture(folder));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return OutputResult.Failed($"Can't write to {folder}: {ex.Message}");
+            return OutputResult.Failed(OutputsStrings.CantWriteTo(folder, ex.Message));
         }
     }
 
@@ -102,9 +103,9 @@ internal static class OfficeFiles
         var name = Path.GetFileName(path);
         return ex switch
         {
-            IOException io when io.HResult is SharingViolation or LockViolation => OutputResult.Failed($"{name} is open in {app} (or another app); close it there first."),
-            UnauthorizedAccessException => OutputResult.Failed($"{name} can't be changed (it is read-only, or not yours)."),
-            OpenXmlPackageException or FileFormatException or InvalidDataException => OutputResult.Failed($"{name} isn't a {app} file that can be added to ({ex.Message})."),
+            IOException io when io.HResult is SharingViolation or LockViolation => OutputResult.Failed(OutputsStrings.FileOpenInApp(name, app)),
+            UnauthorizedAccessException => OutputResult.Failed(OutputsStrings.FileReadOnly(name)),
+            OpenXmlPackageException or FileFormatException or InvalidDataException => OutputResult.Failed(OutputsStrings.NotAppendable(name, app, ex.Message)),
             IOException => OutputResult.Failed($"{name}: {ex.Message}"),
             _ => null,
         };

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ColorPicker" xml:space="preserve">
+    <value>Colour Picker</value>
+    <comment>window title; notification title</comment>
+  </data>
+  <data name="TheColor" xml:space="preserve">
+    <value>The colour</value>
+  </data>
+  <data name="PickFromScreen" xml:space="preserve">
+    <value>Pick from the screen</value>
+  </data>
+  <data name="PickFromScreenTip" xml:space="preserve">
+    <value>Click any pixel on any monitor (Esc cancels); the colour is copied straight away</value>
+  </data>
+  <data name="CopyWhenPickedAs" xml:space="preserve">
+    <value>Copy when picked as</value>
+  </data>
+  <data name="PickedBefore" xml:space="preserve">
+    <value>Picked before</value>
+  </data>
+  <data name="Copied" xml:space="preserve">
+    <value>Copied {0}</value>
+    <comment>{0}: the colour as text, e.g. #1E90FF</comment>
+  </data>
+  <data name="FormatHex" xml:space="preserve">
+    <value>HEX</value>
+    <comment>colour format names stay Latin</comment>
+  </data>
+  <data name="FormatRgb" xml:space="preserve">
+    <value>RGB</value>
+  </data>
+  <data name="FormatHsl" xml:space="preserve">
+    <value>HSL</value>
+  </data>
+  <data name="FormatCSharp" xml:space="preserve">
+    <value>C#</value>
+  </data>
+  <data name="CrosshairWindowTitle" xml:space="preserve">
+    <value>CashGear Capture - crosshair</value>
+  </data>
+  <data name="MagnifierWindowTitle" xml:space="preserve">
+    <value>CashGear Capture - magnifier</value>
+  </data>
+  <data name="RulerWindowTitle" xml:space="preserve">
+    <value>CashGear Capture - ruler</value>
+  </data>
+  <data name="RulerAcross" xml:space="preserve">
+    <value>_Across</value>
+    <comment>screen ruler's menu: its direction</comment>
+  </data>
+  <data name="RulerDown" xml:space="preserve">
+    <value>_Down</value>
+  </data>
+  <data name="RulerPixels" xml:space="preserve">
+    <value>_Pixels</value>
+  </data>
+  <data name="RulerInches" xml:space="preserve">
+    <value>_Inches</value>
+  </data>
+  <data name="RulerCentimetres" xml:space="preserve">
+    <value>_Centimetres</value>
+  </data>
+  <data name="RulerClose" xml:space="preserve">
+    <value>C_lose</value>
+  </data>
+  <data name="UnitAtDpi" xml:space="preserve">
+    <value>{0} at {1} dpi</value>
+    <comment>drawn on the screen ruler: in at 96 dpi</comment>
+  </data>
+</root>

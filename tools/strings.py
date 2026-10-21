@@ -62,7 +62,10 @@ def write(path, entries):
     lines = [HEADER]
     for key, value, comment in entries:
         lines.append('  <data name="%s" xml:space="preserve">\n' % escape(key, {'"': '&quot;'}))
-        lines.append('    <value>%s</value>\n' % escape(value))
+        # Line breaks inside a value are written as character references: as raw text they would follow the file's
+        # line endings (CRLF here, or after a git checkout), and the string would change with them.
+        text = escape(value).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '&#10;')
+        lines.append('    <value>%s</value>\n' % text)
         if comment:
             lines.append('    <comment>%s</comment>\n' % escape(comment))
         lines.append('  </data>\n')
@@ -126,6 +129,16 @@ if __name__ == '__main__':
     if len(sys.argv) >= 3 and sys.argv[1] == 'add':
         for spec in sys.argv[2:]:
             add(spec)
+    elif len(sys.argv) >= 2 and sys.argv[1] == 'normalize':
+        # Rewrites resx files (the given ones, or every one under src), so line breaks in values become &#10;.
+        targets = sys.argv[2:] or [os.path.relpath(os.path.join(d, f), ROOT)
+                                   for d, _, files in os.walk(os.path.join(ROOT, 'src'))
+                                   if os.sep + 'bin' not in d and os.sep + 'obj' not in d
+                                   for f in files if f.endswith('.resx')]
+        for target in targets:
+            path = os.path.join(ROOT, target)
+            write(path, read(path))
+            print('normalized ' + path)
     elif len(sys.argv) == 3 and sys.argv[1] == 'list':
         show(sys.argv[2])
     else:

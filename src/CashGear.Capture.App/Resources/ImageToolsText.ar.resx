@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AddFiles" xml:space="preserve">
+    <value>إضافة ملفات…</value>
+  </data>
+  <data name="AddFolder" xml:space="preserve">
+    <value>إضافة مجلد…</value>
+  </data>
+  <data name="Earlier" xml:space="preserve">
+    <value>تقديم</value>
+  </data>
+  <data name="Later" xml:space="preserve">
+    <value>تأخير</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>نقل لأعلى</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>نقل لأسفل</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>مسح</value>
+  </data>
+  <data name="WithSubfolders" xml:space="preserve">
+    <value>مع المجلدات الفرعية</value>
+  </data>
+  <data name="Pictures" xml:space="preserve">
+    <value>الصور</value>
+  </data>
+  <data name="NoPicturesYet" xml:space="preserve">
+    <value>لا توجد صور بعد: أضف ملفات أو مجلدًا، أو اسحبها إلى هنا.</value>
+  </data>
+  <data name="PictureCount_zero" xml:space="preserve">
+    <value>لا توجد صور</value>
+  </data>
+  <data name="PictureCount_one" xml:space="preserve">
+    <value>صورة واحدة</value>
+  </data>
+  <data name="PictureCount_two" xml:space="preserve">
+    <value>صورتان</value>
+  </data>
+  <data name="PictureCount_few" xml:space="preserve">
+    <value>{0} صور</value>
+  </data>
+  <data name="PictureCount_many" xml:space="preserve">
+    <value>{0} صورة</value>
+  </data>
+  <data name="PictureCount_other" xml:space="preserve">
+    <value>{0} صورة</value>
+  </data>
+  <data name="AddPictures" xml:space="preserve">
+    <value>إضافة صور</value>
+  </data>
+  <data name="AddFolderPictures" xml:space="preserve">
+    <value>إضافة الصور الموجودة في مجلد</value>
+  </data>
+  <data name="BatchTitle" xml:space="preserve">
+    <value>معالجة دفعية – CashGear Capture</value>
+  </data>
+  <data name="NoPreset" xml:space="preserve">
+    <value>(بلا)</value>
+  </data>
+  <data name="ResizeKeep" xml:space="preserve">
+    <value>الإبقاء على الحجم</value>
+  </data>
+  <data name="ResizePercent" xml:space="preserve">
+    <value>إلى نسبة مئوية</value>
+  </data>
+  <data name="ResizeFit" xml:space="preserve">
+    <value>لتلائم مربعًا (بالتناسب)</value>
+  </data>
+  <data name="ResizeWidth" xml:space="preserve">
+    <value>إلى عرض محدد (بالتناسب)</value>
+  </data>
+  <data name="ResizeHeight" xml:space="preserve">
+    <value>إلى ارتفاع محدد (بالتناسب)</value>
+  </data>
+  <data name="FormatKeep" xml:space="preserve">
+    <value>الإبقاء على تنسيق كل ملف</value>
+  </data>
+  <data name="ExistingNumber" xml:space="preserve">
+    <value>إضافة رقم: الاسم (2)</value>
+  </data>
+  <data name="ExistingReplace" xml:space="preserve">
+    <value>استبداله</value>
+  </data>
+  <data name="ExistingSkip" xml:space="preserve">
+    <value>تخطي تلك الصورة</value>
+  </data>
+  <data name="WhereResultsGo" xml:space="preserve">
+    <value>مكان حفظ النتائج</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>جارٍ البدء…</value>
+  </data>
+  <data name="ProgressCount" xml:space="preserve">
+    <value>{0} من {1}</value>
+  </data>
+  <data name="SavedCount_zero" xml:space="preserve">
+    <value>لم تُحفظ أي صورة</value>
+  </data>
+  <data name="SavedCount_one" xml:space="preserve">
+    <value>حُفظت صورة واحدة</value>
+  </data>
+  <data name="SavedCount_two" xml:space="preserve">
+    <value>حُفظت صورتان</value>
+  </data>
+  <data name="SavedCount_few" xml:space="preserve">
+    <value>حُفظت {0} صور</value>
+  </data>
+  <data name="SavedCount_many" xml:space="preserve">
+    <value>حُفظت {0} صورة</value>
+  </data>
+  <data name="SavedCount_other" xml:space="preserve">
+    <value>حُفظت {0} صورة</value>
+  </data>
+  <data name="SkippedCount_zero" xml:space="preserve">
+    <value>لم تُتخطَّ أي صورة</value>
+  </data>
+  <data name="SkippedCount_one" xml:space="preserve">
+    <value>تُخطيت صورة واحدة</value>
+  </data>
+  <data name="SkippedCount_two" xml:space="preserve">
+    <value>تُخطيت صورتان</value>
+  </data>
+  <data name="SkippedCount_few" xml:space="preserve">
+    <value>تُخطيت {0} صور</value>
+  </data>
+  <data name="SkippedCount_many" xml:space="preserve">
+    <value>تُخطيت {0} صورة</value>
+  </data>
+  <data name="SkippedCount_other" xml:space="preserve">
+    <value>تُخطيت {0} صورة</value>
+  </data>
+  <data name="FailedCount_zero" xml:space="preserve">
+    <value>لم تفشل أي صورة</value>
+  </data>
+  <data name="FailedCount_one" xml:space="preserve">
+    <value>فشلت صورة واحدة</value>
+  </data>
+  <data name="FailedCount_two" xml:space="preserve">
+    <value>فشلت صورتان</value>
+  </data>
+  <data name="FailedCount_few" xml:space="preserve">
+    <value>فشلت {0} صور</value>
+  </data>
+  <data name="FailedCount_many" xml:space="preserve">
+    <value>فشلت {0} صورة</value>
+  </data>
+  <data name="FailedCount_other" xml:space="preserve">
+    <value>فشلت {0} صورة</value>
+  </data>
+  <data name="ListSeparator" xml:space="preserve">
+    <value>، </value>
+  </data>
+  <data name="DoneIn" xml:space="preserve">
+    <value>اكتمل في {0:0.#} ث: {1}.</value>
+  </data>
+  <data name="BatchCancelled" xml:space="preserve">
+    <value>أُلغي: {0}.</value>
+  </data>
+  <data name="CouldNotStart" xml:space="preserve">
+    <value>تعذّر البدء: {0}</value>
+  </data>
+  <data name="ShowResults" xml:space="preserve">
+    <value>إظهار النتائج</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>بدء</value>
+  </data>
+  <data name="SectionSize" xml:space="preserve">
+    <value>1. الحجم</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>الحجم</value>
+  </data>
+  <data name="Percent" xml:space="preserve">
+    <value>النسبة المئوية</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>العرض</value>
+  </data>
+  <data name="Height" xml:space="preserve">
+    <value>الارتفاع</value>
+  </data>
+  <data name="NeverLarger" xml:space="preserve">
+    <value>عدم تكبير أي صورة أبدًا</value>
+  </data>
+  <data name="SectionEffects" xml:space="preserve">
+    <value>2. التأثيرات (المحفوظة في نافذة «التأثيرات» في المحرر)</value>
+  </data>
+  <data name="EffectsPreset" xml:space="preserve">
+    <value>الإعداد المسبق للتأثيرات</value>
+  </data>
+  <data name="SectionWatermark" xml:space="preserve">
+    <value>3. العلامة المائية (المحفوظة في نافذة «التأثيرات» في المحرر)</value>
+  </data>
+  <data name="WatermarkPreset" xml:space="preserve">
+    <value>الإعداد المسبق للعلامة المائية</value>
+  </data>
+  <data name="SectionFormat" xml:space="preserve">
+    <value>4. التنسيق</value>
+  </data>
+  <data name="FileFormat" xml:space="preserve">
+    <value>التنسيق</value>
+  </data>
+  <data name="JpegQuality" xml:space="preserve">
+    <value>جودة JPEG</value>
+  </data>
+  <data name="SectionNames" xml:space="preserve">
+    <value>5. الأسماء</value>
+  </data>
+  <data name="NameTemplate" xml:space="preserve">
+    <value>قالب الاسم</value>
+  </data>
+  <data name="ForExample" xml:space="preserve">
+    <value>مثال:</value>
+  </data>
+  <data name="TokensHelp" xml:space="preserve">
+    <value>{{name}} الاسم الأصلي · {{counter}} 1، 2، 3… · {{yyyy}} {{MM}} {{dd}} {{HH}} {{mm}} {{ss}} تاريخ الملف · {{width}} {{height}} الحجم الجديد</value>
+  </data>
+  <data name="SectionOutput" xml:space="preserve">
+    <value>6. مكان حفظ النتائج</value>
+  </data>
+  <data name="OutputFolder" xml:space="preserve">
+    <value>مجلد الإخراج</value>
+  </data>
+  <data name="WhenNameTaken" xml:space="preserve">
+    <value>عندما يكون الاسم مستخدمًا</value>
+  </data>
+  <data name="CombineTitle" xml:space="preserve">
+    <value>دمج الصور – CashGear Capture</value>
+  </data>
+  <data name="OpenInEditor" xml:space="preserve">
+    <value>فتح في المحرر</value>
+  </data>
+  <data name="Layout" xml:space="preserve">
+    <value>التخطيط</value>
+  </data>
+  <data name="Columns" xml:space="preserve">
+    <value>الأعمدة</value>
+  </data>
+  <data name="Aligned" xml:space="preserve">
+    <value>المحاذاة</value>
+  </data>
+  <data name="SpaceBetweenFormat" xml:space="preserve">
+    <value>المسافة بينها: {0} px</value>
+  </data>
+  <data name="SpaceBetween" xml:space="preserve">
+    <value>المسافة بينها</value>
+  </data>
+  <data name="BorderAroundFormat" xml:space="preserve">
+    <value>الحافة المحيطة: {0} px</value>
+  </data>
+  <data name="BorderAround" xml:space="preserve">
+    <value>الحافة المحيطة</value>
+  </data>
+  <data name="Background" xml:space="preserve">
+    <value>الخلفية</value>
+  </data>
+  <data name="SideBySide" xml:space="preserve">
+    <value>جنبًا إلى جنب</value>
+  </data>
+  <data name="OneUnderAnother" xml:space="preserve">
+    <value>واحدة تحت الأخرى</value>
+  </data>
+  <data name="InAGrid" xml:space="preserve">
+    <value>في شبكة</value>
+  </data>
+  <data name="TopOrLeft" xml:space="preserve">
+    <value>الأعلى أو اليسار</value>
+  </data>
+  <data name="Centred" xml:space="preserve">
+    <value>في الوسط</value>
+  </data>
+  <data name="BottomOrRight" xml:space="preserve">
+    <value>الأسفل أو اليمين</value>
+  </data>
+  <data name="SaveCombinedTitle" xml:space="preserve">
+    <value>حفظ الصورة المدمجة</value>
+  </data>
+  <data name="CombinedFileName" xml:space="preserve">
+    <value>صورة مدمجة</value>
+  </data>
+  <data name="CombinedPicturesTitle" xml:space="preserve">
+    <value>صور مدمجة</value>
+  </data>
+  <data name="SavedFile" xml:space="preserve">
+    <value>تم حفظ «{0}»</value>
+  </data>
+  <data name="PixelSize" xml:space="preserve">
+    <value>{0} × {1} بكسل</value>
+  </data>
+  <data name="PdfTitle" xml:space="preserve">
+    <value>الصور إلى PDF – CashGear Capture</value>
+  </data>
+  <data name="OpenPdf" xml:space="preserve">
+    <value>فتح ملف PDF</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>إظهار في المجلد</value>
+  </data>
+  <data name="MakePdf" xml:space="preserve">
+    <value>إنشاء ملف PDF…</value>
+  </data>
+  <data name="Paper" xml:space="preserve">
+    <value>الورق</value>
+  </data>
+  <data name="Orientation" xml:space="preserve">
+    <value>الاتجاه</value>
+  </data>
+  <data name="SizeOnPage" xml:space="preserve">
+    <value>الحجم على الصفحة</value>
+  </data>
+  <data name="MarginsFormat" xml:space="preserve">
+    <value>الهوامش: {0} mm</value>
+  </data>
+  <data name="MarginsInMm" xml:space="preserve">
+    <value>الهوامش بالمليمتر</value>
+  </data>
+  <data name="Across" xml:space="preserve">
+    <value>أفقيًا</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>عموديًا</value>
+  </data>
+  <data name="PicturesAcross" xml:space="preserve">
+    <value>عدد الصور أفقيًا</value>
+  </data>
+  <data name="PicturesDown" xml:space="preserve">
+    <value>عدد الصور عموديًا</value>
+  </data>
+  <data name="SpaceBetweenPicturesFormat" xml:space="preserve">
+    <value>المسافة بين الصور: {0} mm</value>
+  </data>
+  <data name="SpaceBetweenPictures" xml:space="preserve">
+    <value>المسافة بين الصور</value>
+  </data>
+  <data name="SmallerFile" xml:space="preserve">
+    <value>ملف أصغر (تُخزَّن الصور بتنسيق JPEG)</value>
+  </data>
+  <data name="OnePicturePerPage" xml:space="preserve">
+    <value>صورة واحدة في كل صفحة</value>
+  </data>
+  <data name="PicturesPerPage_zero" xml:space="preserve">
+    <value>{0} صورة في كل صفحة ({1} أفقيًا، {2} عموديًا)</value>
+  </data>
+  <data name="PicturesPerPage_one" xml:space="preserve">
+    <value>صورة واحدة في كل صفحة ({1} أفقيًا، {2} عموديًا)</value>
+  </data>
+  <data name="PicturesPerPage_two" xml:space="preserve">
+    <value>صورتان في كل صفحة ({1} أفقيًا، {2} عموديًا)</value>
+  </data>
+  <data name="PicturesPerPage_few" xml:space="preserve">
+    <value>{0} صور في كل صفحة ({1} أفقيًا، {2} عموديًا)</value>
+  </data>
+  <data name="PicturesPerPage_many" xml:space="preserve">
+    <value>{0} صورة في كل صفحة ({1} أفقيًا، {2} عموديًا)</value>
+  </data>
+  <data name="PicturesPerPage_other" xml:space="preserve">
+    <value>{0} صورة في كل صفحة ({1} أفقيًا، {2} عموديًا)</value>
+  </data>
+  <data name="SavePdfTitle" xml:space="preserve">
+    <value>حفظ ملف PDF</value>
+  </data>
+  <data name="PdfFilter" xml:space="preserve">
+    <value>مستند PDF (*.pdf)|*.pdf</value>
+  </data>
+  <data name="PdfFileName" xml:space="preserve">
+    <value>صور</value>
+  </data>
+  <data name="MakingPdf" xml:space="preserve">
+    <value>جارٍ إنشاء ملف PDF…</value>
+  </data>
+  <data name="PdfProgress_zero" xml:space="preserve">
+    <value>{1} من {0} صورة</value>
+  </data>
+  <data name="PdfProgress_one" xml:space="preserve">
+    <value>{1} من صورة واحدة</value>
+  </data>
+  <data name="PdfProgress_two" xml:space="preserve">
+    <value>{1} من صورتين</value>
+  </data>
+  <data name="PdfProgress_few" xml:space="preserve">
+    <value>{1} من {0} صور</value>
+  </data>
+  <data name="PdfProgress_many" xml:space="preserve">
+    <value>{1} من {0} صورة</value>
+  </data>
+  <data name="PdfProgress_other" xml:space="preserve">
+    <value>{1} من {0} صورة</value>
+  </data>
+  <data name="PdfSaved_zero" xml:space="preserve">
+    <value>تم حفظ «{1}» ({0} صورة).</value>
+  </data>
+  <data name="PdfSaved_one" xml:space="preserve">
+    <value>تم حفظ «{1}» (صورة واحدة).</value>
+  </data>
+  <data name="PdfSaved_two" xml:space="preserve">
+    <value>تم حفظ «{1}» (صورتان).</value>
+  </data>
+  <data name="PdfSaved_few" xml:space="preserve">
+    <value>تم حفظ «{1}» ({0} صور).</value>
+  </data>
+  <data name="PdfSaved_many" xml:space="preserve">
+    <value>تم حفظ «{1}» ({0} صورة).</value>
+  </data>
+  <data name="PdfSaved_other" xml:space="preserve">
+    <value>تم حفظ «{1}» ({0} صورة).</value>
+  </data>
+  <data name="PdfCancelled" xml:space="preserve">
+    <value>أُلغي؛ لم يُحفظ أي ملف PDF.</value>
+  </data>
+  <data name="PdfFailed" xml:space="preserve">
+    <value>تعذّر إنشاء ملف PDF: {0}</value>
+  </data>
+  <data name="FormatPng" xml:space="preserve">
+    <value>PNG</value>
+  </data>
+  <data name="FormatJpeg" xml:space="preserve">
+    <value>JPEG</value>
+  </data>
+  <data name="FormatBmp" xml:space="preserve">
+    <value>BMP</value>
+  </data>
+</root>

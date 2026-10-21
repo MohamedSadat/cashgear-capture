@@ -1,3 +1,4 @@
+using CashGear.Capture.Audio.Resources;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Interop.Native;
 
@@ -24,14 +25,14 @@ public static class RnnoiseLibrary
         {
             if (!Rnnoise.Load(DefaultPath))
             {
-                return $"Noise suppression needs RNNoise ({DefaultPath}), which isn't in this copy of the app.";
+                return AudioStrings.RnnoiseMissing(DefaultPath);
             }
 
-            return Rnnoise.GetFrameSize() == MicrophoneChain.BlockFrames ? null : "This rnnoise.dll uses another frame size.";
+            return Rnnoise.GetFrameSize() == MicrophoneChain.BlockFrames ? null : AudioStrings.RnnoiseFrameSize;
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
         {
-            return $"RNNoise couldn't be loaded ({e.Message}).";
+            return AudioStrings.RnnoiseNotLoaded(e.Message);
         }
     }
 }
@@ -172,7 +173,7 @@ public sealed unsafe class RnnoiseSuppressor : INoiseSuppressor
         _right = Rnnoise.Create(0);
         if (_left == 0 || _right == 0)
         {
-            throw new InvalidOperationException("RNNoise couldn't start.");
+            throw new InvalidOperationException(AudioStrings.RnnoiseNotStarted);
         }
 
         _warmup = Delay / Frame;

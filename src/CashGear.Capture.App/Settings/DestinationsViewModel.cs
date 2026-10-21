@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using CashGear.Capture.App.Output;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Outputs;
@@ -109,7 +110,7 @@ public sealed partial class WorkflowListViewModel : ObservableObject
         foreach (var row in Steps)
         {
             var match = available.FirstOrDefault(d => DestinationIds.Same(d.Id, row.Destination));
-            row.Name = match?.Name ?? $"{row.Destination} (not set up)";
+            row.Name = match?.Name ?? DestinationsText.NotSetUp(row.Destination);
             row.IsMissing = match is null;
         }
 
@@ -205,7 +206,7 @@ public abstract partial class TestableViewModel : ObservableObject
         }
 
         Testing = true;
-        TestStatus = "Testing…";
+        TestStatus = DestinationsText.Testing;
         TestFailed = false;
         try
         {
@@ -257,7 +258,7 @@ public sealed partial class PrinterViewModel : TestableViewModel
     public void Load(PrintSettings settings, IReadOnlyList<string> installed)
     {
         Printers.Clear();
-        Printers.Add(new DeviceChoice(null, "Windows' default printer"));
+        Printers.Add(new DeviceChoice(null, DestinationsText.DefaultPrinter));
         foreach (var name in installed)
         {
             Printers.Add(new DeviceChoice(name, name));
@@ -266,7 +267,7 @@ public sealed partial class PrinterViewModel : TestableViewModel
         Printer = Printers.FirstOrDefault(p => string.Equals(p.Id, settings.Printer, StringComparison.OrdinalIgnoreCase));
         if (Printer is null)
         {
-            Printer = new DeviceChoice(settings.Printer, settings.Printer + " (not installed)");
+            Printer = new DeviceChoice(settings.Printer, DestinationsText.PrinterNotInstalled(settings.Printer));
             Printers.Add(Printer);
         }
 
@@ -340,7 +341,7 @@ public sealed partial class OfficeViewModel(string destination, string app, stri
     [RelayCommand]
     private void Browse()
     {
-        if (picker?.PickFile($"Choose the {app} file to add captures to", filter, AppendPath.Length > 0 ? AppendPath : null) is { } file)
+        if (picker?.PickFile(DestinationsText.ChooseOfficeFile(app), filter, AppendPath.Length > 0 ? AppendPath : null) is { } file)
         {
             AppendPath = file;
             Append = true;
@@ -417,19 +418,19 @@ public sealed partial class ServerViewModel : TestableViewModel
     [NotifyCanExecuteChangedFor(nameof(TrustCommand))]
     private string? _untrustedFingerprint;
 
-    public string Label => $"{(Name.Length > 0 ? Name : Host.Length > 0 ? Host : "New server")} ({Describe(Protocol)})";
+    public string Label => $"{(Name.Length > 0 ? Name : Host.Length > 0 ? Host : DestinationsText.NewServer)} ({Describe(Protocol)})";
 
     public bool IsSftp => Protocol == ServerProtocol.Sftp;
 
     public bool IsFtp => !IsSftp;
 
-    public string PortHint => $"Empty for {ServerDestination.DefaultPort(Protocol)}";
+    public string PortHint => DestinationsText.PortEmptyFor(ServerDestination.DefaultPort(Protocol));
 
     public bool HasTrustedFingerprint => TrustedFingerprint is not null;
 
-    public string PasswordState => _secrets.Get(CredentialKeys.Password(Build())) is null ? "No password saved" : "A password is saved (type to change it)";
+    public string PasswordState => _secrets.Get(CredentialKeys.Password(Build())) is null ? DestinationsText.NoPasswordSaved : DestinationsText.PasswordSaved;
 
-    public string PassphraseState => _secrets.Get(CredentialKeys.Passphrase(Build())) is null ? "No passphrase saved" : "A passphrase is saved";
+    public string PassphraseState => _secrets.Get(CredentialKeys.Passphrase(Build())) is null ? DestinationsText.NoPassphraseSaved : DestinationsText.PassphraseSaved;
 
     public bool CanBrowse => _picker is not null;
 
@@ -484,7 +485,7 @@ public sealed partial class ServerViewModel : TestableViewModel
     [RelayCommand]
     private void BrowseKeyFile()
     {
-        if (_picker?.PickFile("Choose the private key", "Private keys|*.*", KeyFile.Length > 0 ? KeyFile : null) is { } file)
+        if (_picker?.PickFile(DestinationsText.ChoosePrivateKey, DestinationsText.PrivateKeyFilter, KeyFile.Length > 0 ? KeyFile : null) is { } file)
         {
             KeyFile = file;
         }
@@ -510,26 +511,26 @@ public sealed partial class ServerViewModel : TestableViewModel
     {
         if (string.IsNullOrWhiteSpace(Host))
         {
-            yield return $"{Label}: enter the server's address.";
+            yield return DestinationsText.ServerNoAddress(Label);
         }
 
         if (Port.Trim().Length > 0 && (!int.TryParse(Port, NumberStyles.Integer, CultureInfo.CurrentCulture, out var port) || port is < 1 or > 65535))
         {
-            yield return $"{Label}: the port is a number from 1 to 65535 (or empty).";
+            yield return DestinationsText.ServerBadPort(Label);
         }
 
         if (PublicUrl.Trim().Length > 0 && !(Uri.TryCreate(PublicUrl.Replace("{file}", "x", StringComparison.OrdinalIgnoreCase), UriKind.Absolute, out var url) && url.Scheme is "http" or "https"))
         {
-            yield return $"{Label}: the public address starts with https:// (or is empty).";
+            yield return DestinationsText.ServerBadPublicUrl(Label);
         }
     }
 
     private static string Describe(ServerProtocol protocol) => protocol switch
     {
-        ServerProtocol.FtpsExplicit => "FTPS",
-        ServerProtocol.FtpsImplicit => "FTPS, implicit",
-        ServerProtocol.Sftp => "SFTP",
-        _ => "FTP",
+        ServerProtocol.FtpsExplicit => DestinationsText.ProtocolFtps,
+        ServerProtocol.FtpsImplicit => DestinationsText.ProtocolFtpsImplicit,
+        ServerProtocol.Sftp => DestinationsText.ProtocolSftp,
+        _ => DestinationsText.ProtocolFtp,
     };
 }
 
@@ -580,9 +581,9 @@ public sealed partial class UploadViewModel : TestableViewModel
     [ObservableProperty]
     private string _linkPath;
 
-    public string Label => Name.Length > 0 ? Name : Uri.TryCreate(Url, UriKind.Absolute, out var url) ? url.Host : "New upload";
+    public string Label => Name.Length > 0 ? Name : Uri.TryCreate(Url, UriKind.Absolute, out var url) ? url.Host : DestinationsText.NewUpload;
 
-    public string TokenState => _secrets.Get(CredentialKeys.Token(Build())) is null ? "No value saved" : "A value is saved (type to change it)";
+    public string TokenState => _secrets.Get(CredentialKeys.Token(Build())) is null ? DestinationsText.NoValueSaved : DestinationsText.ValueSaved;
 
     /// <summary>The secret header's value typed into the window; an emptied box keeps the saved one (Forget removes it).</summary>
     public void SetToken(string token)
@@ -620,22 +621,22 @@ public sealed partial class UploadViewModel : TestableViewModel
     {
         if (!(Uri.TryCreate(Url.Trim(), UriKind.Absolute, out var url) && url.Scheme is "http" or "https"))
         {
-            yield return $"{Label}: the address starts with https:// (or http://).";
+            yield return DestinationsText.UploadBadUrl(Label);
         }
 
         if (LinkPath.Trim().Length > 0 && !Outputs.Http.LinkPath.TryParse(LinkPath, out _, out var error))
         {
-            yield return $"{Label}: where the link is: {error}";
+            yield return DestinationsText.UploadBadLinkPath(Label, error);
         }
 
         foreach (var line in Lines(HeadersText).Where(l => !l.Contains(':', StringComparison.Ordinal)))
         {
-            yield return $"{Label}: write each header as Name: value (\"{line}\").";
+            yield return DestinationsText.UploadBadHeader(Label, line);
         }
 
         foreach (var line in Lines(FieldsText).Where(l => !l.Contains('=', StringComparison.Ordinal)))
         {
-            yield return $"{Label}: write each form field as name=value (\"{line}\").";
+            yield return DestinationsText.UploadBadField(Label, line);
         }
     }
 
@@ -667,14 +668,14 @@ public sealed partial class ExternalAppViewModel(ExternalApp app, IFilePicker? p
     [ObservableProperty]
     private string _arguments = app.Arguments;
 
-    public string Label => Name.Length > 0 ? Name : Path.Length > 0 ? System.IO.Path.GetFileNameWithoutExtension(Path) : "New app";
+    public string Label => Name.Length > 0 ? Name : Path.Length > 0 ? System.IO.Path.GetFileNameWithoutExtension(Path) : DestinationsText.NewApp;
 
     public bool CanBrowse => picker is not null;
 
     [RelayCommand]
     private void Browse()
     {
-        if (picker?.PickFile("Choose the program", "Programs|*.exe", Path.Length > 0 ? Path : null) is { } file)
+        if (picker?.PickFile(DestinationsText.ChooseProgram, DestinationsText.ProgramFilter, Path.Length > 0 ? Path : null) is { } file)
         {
             Path = file;
             if (Name.Length == 0)
@@ -690,7 +691,7 @@ public sealed partial class ExternalAppViewModel(ExternalApp app, IFilePicker? p
     {
         if (string.IsNullOrWhiteSpace(Path))
         {
-            yield return $"{Label}: choose the program.";
+            yield return DestinationsText.AppNoProgram(Label);
         }
     }
 }
@@ -709,8 +710,8 @@ public sealed partial class DestinationsViewModel : ObservableObject
         Secrets = new PendingCredentials(credentials ?? new NoCredentials());
         _picker = picker;
         _printer = printer;
-        Word = new OfficeViewModel(DestinationIds.Word, "Word", "Word documents|*.docx", picker);
-        PowerPoint = new OfficeViewModel(DestinationIds.PowerPoint, "PowerPoint", "PowerPoint presentations|*.pptx", picker);
+        Word = new OfficeViewModel(DestinationIds.Word, "Word", DestinationsText.WordFilter, picker);
+        PowerPoint = new OfficeViewModel(DestinationIds.PowerPoint, "PowerPoint", DestinationsText.PowerPointFilter, picker);
     }
 
     /// <summary>Raised when a destination is added, removed or renamed (the workflow lists follow).</summary>

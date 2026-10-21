@@ -1,0 +1,603 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ToolSelect" xml:space="preserve">
+    <value>تحديد</value>
+  </data>
+  <data name="ToolSelectTip" xml:space="preserve">
+    <value>تحديد ونقل (V)</value>
+  </data>
+  <data name="ToolArrow" xml:space="preserve">
+    <value>سهم</value>
+  </data>
+  <data name="ToolArrowTip" xml:space="preserve">
+    <value>سهم (A)</value>
+  </data>
+  <data name="ToolLine" xml:space="preserve">
+    <value>خط</value>
+  </data>
+  <data name="ToolLineTip" xml:space="preserve">
+    <value>خط (L)</value>
+  </data>
+  <data name="ToolRectangle" xml:space="preserve">
+    <value>مستطيل</value>
+  </data>
+  <data name="ToolRectangleTip" xml:space="preserve">
+    <value>مستطيل (R)</value>
+  </data>
+  <data name="ToolEllipse" xml:space="preserve">
+    <value>شكل بيضاوي</value>
+  </data>
+  <data name="ToolEllipseTip" xml:space="preserve">
+    <value>شكل بيضاوي (E)</value>
+  </data>
+  <data name="ToolPen" xml:space="preserve">
+    <value>قلم</value>
+  </data>
+  <data name="ToolPenTip" xml:space="preserve">
+    <value>قلم (D)</value>
+  </data>
+  <data name="ToolHighlight" xml:space="preserve">
+    <value>تمييز</value>
+  </data>
+  <data name="ToolHighlightTip" xml:space="preserve">
+    <value>قلم التمييز (H)</value>
+  </data>
+  <data name="ToolText" xml:space="preserve">
+    <value>نص</value>
+  </data>
+  <data name="ToolTextTip" xml:space="preserve">
+    <value>نص (T)</value>
+  </data>
+  <data name="ToolStep" xml:space="preserve">
+    <value>خطوة</value>
+  </data>
+  <data name="ToolStepTip" xml:space="preserve">
+    <value>رقم خطوة (N)</value>
+  </data>
+  <data name="ToolBlur" xml:space="preserve">
+    <value>تمويه</value>
+  </data>
+  <data name="ToolBlurTip" xml:space="preserve">
+    <value>تمويه (B)</value>
+  </data>
+  <data name="ToolPixelate" xml:space="preserve">
+    <value>تقطيع إلى بكسلات</value>
+  </data>
+  <data name="ToolPixelateTip" xml:space="preserve">
+    <value>تقطيع إلى بكسلات (X)</value>
+  </data>
+  <data name="ToolCrop" xml:space="preserve">
+    <value>اقتصاص</value>
+  </data>
+  <data name="ToolCropTip" xml:space="preserve">
+    <value>اقتصاص (C)</value>
+  </data>
+  <data name="ToolArea" xml:space="preserve">
+    <value>منطقة</value>
+  </data>
+  <data name="ToolAreaTip" xml:space="preserve">
+    <value>تحديد منطقة للتأثيرات (M)</value>
+  </data>
+  <data name="ToolSpotlight" xml:space="preserve">
+    <value>تسليط الضوء</value>
+  </data>
+  <data name="ToolSpotlightTip" xml:space="preserve">
+    <value>تسليط الضوء (O)</value>
+  </data>
+  <data name="ToolMagnify" xml:space="preserve">
+    <value>تكبير</value>
+  </data>
+  <data name="ToolMagnifyTip" xml:space="preserve">
+    <value>تكبير (G)</value>
+  </data>
+  <data name="ImageMenu" xml:space="preserve">
+    <value>الصورة ▾</value>
+  </data>
+  <data name="RotateLeft" xml:space="preserve">
+    <value>تدوير لليسار</value>
+  </data>
+  <data name="RotateRight" xml:space="preserve">
+    <value>تدوير لليمين</value>
+  </data>
+  <data name="RotateByAngle" xml:space="preserve">
+    <value>تدوير بزاوية…</value>
+  </data>
+  <data name="FlipHorizontally" xml:space="preserve">
+    <value>قلب أفقي</value>
+  </data>
+  <data name="FlipVertically" xml:space="preserve">
+    <value>قلب عمودي</value>
+  </data>
+  <data name="ResizeMenu" xml:space="preserve">
+    <value>تغيير الحجم…</value>
+  </data>
+  <data name="CanvasSizeMenu" xml:space="preserve">
+    <value>حجم لوحة الرسم…</value>
+  </data>
+  <data name="TrimPlainBorders" xml:space="preserve">
+    <value>اقتصاص الحواف السادة</value>
+  </data>
+  <data name="EffectsMenu" xml:space="preserve">
+    <value>التأثيرات ▾</value>
+  </data>
+  <data name="Effects" xml:space="preserve">
+    <value>التأثيرات</value>
+  </data>
+  <data name="EffectsMenuTip" xml:space="preserve">
+    <value>تغيّر التأثيرات الصورة كلها، أو المنطقة المحددة بأداة «منطقة»</value>
+  </data>
+  <data name="DropShadowMenu" xml:space="preserve">
+    <value>ظل مسقط…</value>
+  </data>
+  <data name="TornEdgeMenu" xml:space="preserve">
+    <value>حافة ممزقة…</value>
+  </data>
+  <data name="FadedEdgesMenu" xml:space="preserve">
+    <value>حواف باهتة…</value>
+  </data>
+  <data name="BorderMenu" xml:space="preserve">
+    <value>إطار…</value>
+  </data>
+  <data name="RoundedCornersMenu" xml:space="preserve">
+    <value>زوايا مستديرة…</value>
+  </data>
+  <data name="PerspectiveMenu" xml:space="preserve">
+    <value>منظور…</value>
+  </data>
+  <data name="BrightnessContrastMenu" xml:space="preserve">
+    <value>السطوع والتباين…</value>
+  </data>
+  <data name="SharpenMenu" xml:space="preserve">
+    <value>زيادة الحدة…</value>
+  </data>
+  <data name="WatermarkMenu" xml:space="preserve">
+    <value>علامة مائية…</value>
+  </data>
+  <data name="Presets" xml:space="preserve">
+    <value>الإعدادات المسبقة</value>
+  </data>
+  <data name="EffectsAndPresets" xml:space="preserve">
+    <value>التأثيرات والإعدادات المسبقة…</value>
+  </data>
+  <data name="CopyTip" xml:space="preserve">
+    <value>نسخ الصورة مع تعليقاتها التوضيحية (Ctrl+C)</value>
+  </data>
+  <data name="SaveTip" xml:space="preserve">
+    <value>حفظ (Ctrl+S)</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>حفظ باسم…</value>
+  </data>
+  <data name="SaveAsTip" xml:space="preserve">
+    <value>حفظ باسم (Ctrl+Shift+S)</value>
+  </data>
+  <data name="SendToMenu" xml:space="preserve">
+    <value>إرسال إلى ▾</value>
+  </data>
+  <data name="SendTo" xml:space="preserve">
+    <value>إرسال إلى</value>
+  </data>
+  <data name="SendToTip" xml:space="preserve">
+    <value>إرسال الصورة مع تعليقاتها التوضيحية إلى طابعة أو Word أو خادم أو تطبيق…</value>
+  </data>
+  <data name="ContinueTip" xml:space="preserve">
+    <value>بقية سير العمل بعد الالتقاط، بالصورة كما هي الآن</value>
+  </data>
+  <data name="ContinueTo" xml:space="preserve">
+    <value>متابعة: {0}</value>
+  </data>
+  <data name="ZoomOutTip" xml:space="preserve">
+    <value>تصغير (Ctrl+−)</value>
+  </data>
+  <data name="ZoomInTip" xml:space="preserve">
+    <value>تكبير (Ctrl++)</value>
+  </data>
+  <data name="Fit" xml:space="preserve">
+    <value>ملاءمة</value>
+  </data>
+  <data name="FitTip" xml:space="preserve">
+    <value>ملاءمة النافذة (Ctrl+0)</value>
+  </data>
+  <data name="ActualSizeTip" xml:space="preserve">
+    <value>الحجم الفعلي (Ctrl+1)</value>
+  </data>
+  <data name="Colour" xml:space="preserve">
+    <value>اللون</value>
+  </data>
+  <data name="ColourHex" xml:space="preserve">
+    <value>اللون (ست عشري)</value>
+  </data>
+  <data name="Fill" xml:space="preserve">
+    <value>التعبئة</value>
+  </data>
+  <data name="CurrentFill" xml:space="preserve">
+    <value>التعبئة الحالية</value>
+  </data>
+  <data name="LineWidthLabel" xml:space="preserve">
+    <value>عرض الخط:</value>
+  </data>
+  <data name="LineWidth" xml:space="preserve">
+    <value>عرض الخط</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>الخط</value>
+  </data>
+  <data name="Bold" xml:space="preserve">
+    <value>غامق</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>الحجم</value>
+  </data>
+  <data name="FontSize" xml:space="preserve">
+    <value>حجم الخط</value>
+  </data>
+  <data name="CellSize" xml:space="preserve">
+    <value>حجم الخلية</value>
+  </data>
+  <data name="Zoom" xml:space="preserve">
+    <value>التكبير</value>
+  </data>
+  <data name="Strength" xml:space="preserve">
+    <value>الشدة</value>
+  </data>
+  <data name="Opacity" xml:space="preserve">
+    <value>العتامة</value>
+  </data>
+  <data name="Dim" xml:space="preserve">
+    <value>التعتيم</value>
+  </data>
+  <data name="Arrange" xml:space="preserve">
+    <value>ترتيب</value>
+  </data>
+  <data name="BringToFront" xml:space="preserve">
+    <value>إحضار إلى الأمام</value>
+  </data>
+  <data name="SendToBack" xml:space="preserve">
+    <value>إرسال إلى الخلف</value>
+  </data>
+  <data name="CropTo" xml:space="preserve">
+    <value>اقتصاص إلى</value>
+  </data>
+  <data name="ApplyCrop" xml:space="preserve">
+    <value>تطبيق الاقتصاص</value>
+  </data>
+  <data name="EnterKey" xml:space="preserve">
+    <value>Enter</value>
+  </data>
+  <data name="EscKey" xml:space="preserve">
+    <value>Esc</value>
+  </data>
+  <data name="AnnotationText" xml:space="preserve">
+    <value>نص التعليق التوضيحي</value>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>{0} – CashGear Capture</value>
+  </data>
+  <data name="CaptureName" xml:space="preserve">
+    <value>لقطة {0:HH.mm.ss}</value>
+  </data>
+  <data name="UndoTip" xml:space="preserve">
+    <value>تراجع عن {0} (Ctrl+Z)</value>
+  </data>
+  <data name="UndoNothingTip" xml:space="preserve">
+    <value>تراجع (Ctrl+Z)</value>
+  </data>
+  <data name="RedoTip" xml:space="preserve">
+    <value>إعادة {0} (Ctrl+Y)</value>
+  </data>
+  <data name="RedoNothingTip" xml:space="preserve">
+    <value>إعادة (Ctrl+Y)</value>
+  </data>
+  <data name="PanelSelected" xml:space="preserve">
+    <value>المحدد: {0}</value>
+  </data>
+  <data name="PanelNew" xml:space="preserve">
+    <value>جديد: {0}</value>
+  </data>
+  <data name="HintSelect" xml:space="preserve">
+    <value>انقر للتحديد واسحب للنقل؛ وتغيّر المقابض الحجم (Shift يحافظ على التناسب). Delete للحذف، ومفاتيح الأسهم للتحريك قليلًا.</value>
+  </data>
+  <data name="HintLine" xml:space="preserve">
+    <value>اسحب للرسم. Shift يثبّت الاتجاه على مضاعفات 45°.</value>
+  </data>
+  <data name="HintFreehand" xml:space="preserve">
+    <value>اسحب للرسم الحر.</value>
+  </data>
+  <data name="HintText" xml:space="preserve">
+    <value>انقر للكتابة. انقر خارج النص أو اضغط Esc للإنهاء.</value>
+  </data>
+  <data name="HintStep" xml:space="preserve">
+    <value>انقر لوضع الرقم التالي؛ واسحب رقمًا لنقله.</value>
+  </data>
+  <data name="HintCrop" xml:space="preserve">
+    <value>اسحب حول المنطقة التي تريد الاحتفاظ بها، واضبطها، ثم اضغط Enter (Esc للإلغاء).</value>
+  </data>
+  <data name="HintArea" xml:space="preserve">
+    <value>اسحب فوق الجزء الذي يجب أن تغيّره قائمة «التأثيرات» (Esc لمسحه).</value>
+  </data>
+  <data name="HintSpotlight" xml:space="preserve">
+    <value>اسحب فوق ما تريد إبرازه؛ ويُعتَّم باقي الصورة.</value>
+  </data>
+  <data name="HintMagnify" xml:space="preserve">
+    <value>اسحب فوق الجزء المراد تكبيره. اسحب الدائرة المكبَّرة لنقلها؛ ومقبضها يضبط التكبير.</value>
+  </data>
+  <data name="HintShape" xml:space="preserve">
+    <value>اسحب للرسم. Shift يرسم مربعًا أو دائرة.</value>
+  </data>
+  <data name="TrimmedTo" xml:space="preserve">
+    <value>اقتُصّت إلى {0} × {1}</value>
+  </data>
+  <data name="NoBordersToTrim" xml:space="preserve">
+    <value>لا توجد حواف سادة لاقتصاصها</value>
+  </data>
+  <data name="ChangeFailed" xml:space="preserve">
+    <value>تعذّر إجراء هذا التغيير: {0}</value>
+  </data>
+  <data name="CopiedToClipboard" xml:space="preserve">
+    <value>نُسخت إلى الحافظة</value>
+  </data>
+  <data name="CopyFailed" xml:space="preserve">
+    <value>تعذّر النسخ إلى الحافظة: {0}</value>
+  </data>
+  <data name="SendFailed" xml:space="preserve">
+    <value>تعذّر إرسال الصورة: {0}</value>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>تعذّر حفظ «{0}»: {1}</value>
+  </data>
+  <data name="SavedFile" xml:space="preserve">
+    <value>تم حفظ «{0}»</value>
+  </data>
+  <data name="SaveCaptureAsTitle" xml:space="preserve">
+    <value>حفظ اللقطة باسم</value>
+  </data>
+  <data name="SaveImageFilter" xml:space="preserve">
+    <value>صورة PNG (*.png)|*.png|صورة JPEG (*.jpg)|*.jpg;*.jpeg|صورة نقطية (*.bmp)|*.bmp</value>
+  </data>
+  <data name="ChooseWatermarkPicture" xml:space="preserve">
+    <value>اختيار صورة العلامة المائية</value>
+  </data>
+  <data name="SaveChangesQuestion" xml:space="preserve">
+    <value>هل تريد حفظ التغييرات في «{0}»؟</value>
+  </data>
+  <data name="ResizeImageTitle" xml:space="preserve">
+    <value>تغيير حجم الصورة</value>
+  </data>
+  <data name="ResizeNowFormat" xml:space="preserve">
+    <value>الحجم الحالي {0} × {1} بكسل. يتغيّر حجم التعليقات التوضيحية مع الصورة.</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>العرض</value>
+  </data>
+  <data name="Height" xml:space="preserve">
+    <value>الارتفاع</value>
+  </data>
+  <data name="KeepProportions" xml:space="preserve">
+    <value>الحفاظ على التناسب</value>
+  </data>
+  <data name="NameTitle" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="NamePrompt" xml:space="preserve">
+    <value>الاسم (الاسم المستخدم من قبل يستبدل ذلك الإعداد المسبق)</value>
+  </data>
+  <data name="PreviewNote" xml:space="preserve">
+    <value>تعرض الصورة النتيجة ما دامت هذه النافذة مفتوحة.</value>
+  </data>
+  <data name="OnlySelectedArea" xml:space="preserve">
+    <value>المنطقة المحددة فقط (أداة «منطقة»)</value>
+  </data>
+  <data name="EffectsNote" xml:space="preserve">
+    <value>تعرض الصورة النتيجة ما دامت هذه النافذة مفتوحة. تُدمج في الصورة التعليقاتُ التوضيحية الواقعة تحت تأثيرات غير الظل والإطار (ويعيدها التراجع).</value>
+  </data>
+  <data name="AppliedInOrder" xml:space="preserve">
+    <value>تُطبَّق بهذا الترتيب</value>
+  </data>
+  <data name="AddMenu" xml:space="preserve">
+    <value>إضافة ▾</value>
+  </data>
+  <data name="AddEffect" xml:space="preserve">
+    <value>إضافة تأثير</value>
+  </data>
+  <data name="Earlier" xml:space="preserve">
+    <value>تقديم</value>
+  </data>
+  <data name="Later" xml:space="preserve">
+    <value>تأخير</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>نقل لأعلى</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>نقل لأسفل</value>
+  </data>
+  <data name="AddEffectToStart" xml:space="preserve">
+    <value>أضف تأثيرًا للبدء.</value>
+  </data>
+  <data name="NoneTransparent" xml:space="preserve">
+    <value>بلا (شفاف)</value>
+  </data>
+  <data name="DropShadow" xml:space="preserve">
+    <value>ظل مسقط</value>
+  </data>
+  <data name="TornEdge" xml:space="preserve">
+    <value>حافة ممزقة</value>
+  </data>
+  <data name="FadedEdges" xml:space="preserve">
+    <value>حواف باهتة</value>
+  </data>
+  <data name="Border" xml:space="preserve">
+    <value>إطار</value>
+  </data>
+  <data name="RoundedCorners" xml:space="preserve">
+    <value>زوايا مستديرة</value>
+  </data>
+  <data name="Perspective" xml:space="preserve">
+    <value>منظور</value>
+  </data>
+  <data name="BrightnessContrast" xml:space="preserve">
+    <value>السطوع والتباين</value>
+  </data>
+  <data name="Grayscale" xml:space="preserve">
+    <value>تدرج رمادي</value>
+  </data>
+  <data name="Sharpen" xml:space="preserve">
+    <value>زيادة الحدة</value>
+  </data>
+  <data name="Watermark" xml:space="preserve">
+    <value>علامة مائية</value>
+  </data>
+  <data name="Softness" xml:space="preserve">
+    <value>النعومة</value>
+  </data>
+  <data name="Across" xml:space="preserve">
+    <value>أفقيًا</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>عموديًا</value>
+  </data>
+  <data name="Darkness" xml:space="preserve">
+    <value>القتامة</value>
+  </data>
+  <data name="Thickness" xml:space="preserve">
+    <value>السُّمك</value>
+  </data>
+  <data name="Top" xml:space="preserve">
+    <value>الأعلى</value>
+  </data>
+  <data name="RightSide" xml:space="preserve">
+    <value>الجانب الأيمن</value>
+  </data>
+  <data name="Bottom" xml:space="preserve">
+    <value>الأسفل</value>
+  </data>
+  <data name="LeftSide" xml:space="preserve">
+    <value>الجانب الأيسر</value>
+  </data>
+  <data name="Depth" xml:space="preserve">
+    <value>العمق</value>
+  </data>
+  <data name="ToothWidth" xml:space="preserve">
+    <value>عرض السن</value>
+  </data>
+  <data name="NewPattern" xml:space="preserve">
+    <value>نمط جديد</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>نصف القطر</value>
+  </data>
+  <data name="Angle" xml:space="preserve">
+    <value>الزاوية</value>
+  </data>
+  <data name="PerspectiveTurned" xml:space="preserve">
+    <value>الإمالة</value>
+  </data>
+  <data name="LeftOrRight" xml:space="preserve">
+    <value>لليسار أو لليمين (يبتعد أحد الجانبين)</value>
+  </data>
+  <data name="UpOrDown" xml:space="preserve">
+    <value>للأعلى أو للأسفل (يبتعد الأعلى أو الأسفل)</value>
+  </data>
+  <data name="Brightness" xml:space="preserve">
+    <value>السطوع</value>
+  </data>
+  <data name="Contrast" xml:space="preserve">
+    <value>التباين</value>
+  </data>
+  <data name="Amount" xml:space="preserve">
+    <value>المقدار</value>
+  </data>
+  <data name="SavedWatermarks" xml:space="preserve">
+    <value>العلامات المائية المحفوظة</value>
+  </data>
+  <data name="APicture" xml:space="preserve">
+    <value>صورة</value>
+  </data>
+  <data name="Picture" xml:space="preserve">
+    <value>الصورة</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>الموضع</value>
+  </data>
+  <data name="FromTheEdges" xml:space="preserve">
+    <value>البعد عن الحواف</value>
+  </data>
+  <data name="WatermarkTurned" xml:space="preserve">
+    <value>الدوران</value>
+  </data>
+  <data name="RepeatOverImage" xml:space="preserve">
+    <value>تكرارها على الصورة كلها</value>
+  </data>
+  <data name="GapBetween" xml:space="preserve">
+    <value>المسافة بينها</value>
+  </data>
+  <data name="LightShadow" xml:space="preserve">
+    <value>ظل خفيف (لتُقرأ على أي خلفية)</value>
+  </data>
+  <data name="SaveWatermark" xml:space="preserve">
+    <value>حفظ العلامة المائية</value>
+  </data>
+  <data name="MyWatermark" xml:space="preserve">
+    <value>علامتي المائية</value>
+  </data>
+  <data name="TopLeft" xml:space="preserve">
+    <value>أعلى اليسار</value>
+  </data>
+  <data name="TopRight" xml:space="preserve">
+    <value>أعلى اليمين</value>
+  </data>
+  <data name="Left" xml:space="preserve">
+    <value>اليسار</value>
+  </data>
+  <data name="Centre" xml:space="preserve">
+    <value>الوسط</value>
+  </data>
+  <data name="Right" xml:space="preserve">
+    <value>اليمين</value>
+  </data>
+  <data name="BottomLeft" xml:space="preserve">
+    <value>أسفل اليسار</value>
+  </data>
+  <data name="BottomRight" xml:space="preserve">
+    <value>أسفل اليمين</value>
+  </data>
+  <data name="BehindTheArea" xml:space="preserve">
+    <value>خلف المنطقة</value>
+  </data>
+  <data name="SavedEffects" xml:space="preserve">
+    <value>التأثيرات المحفوظة</value>
+  </data>
+  <data name="SaveEffects" xml:space="preserve">
+    <value>حفظ التأثيرات</value>
+  </data>
+  <data name="CanvasSize" xml:space="preserve">
+    <value>حجم لوحة الرسم</value>
+  </data>
+  <data name="TheImageGoes" xml:space="preserve">
+    <value>موضع الصورة</value>
+  </data>
+  <data name="AroundIt" xml:space="preserve">
+    <value>حولها</value>
+  </data>
+  <data name="Rotate" xml:space="preserve">
+    <value>تدوير</value>
+  </data>
+  <data name="AngleClockwise" xml:space="preserve">
+    <value>الزاوية (باتجاه عقارب الساعة)</value>
+  </data>
+  <data name="InTheCorners" xml:space="preserve">
+    <value>في الزوايا</value>
+  </data>
+</root>

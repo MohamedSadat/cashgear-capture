@@ -1,0 +1,1158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="VideoEditor" xml:space="preserve">
+    <value>محرر الفيديو</value>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>{0} — محرر الفيديو</value>
+  </data>
+  <data name="WindowTitleUnsaved" xml:space="preserve">
+    <value>• {0} — محرر الفيديو</value>
+  </data>
+  <data name="DialogTitle" xml:space="preserve">
+    <value>CashGear Capture — محرر الفيديو</value>
+  </data>
+  <data name="Untitled" xml:space="preserve">
+    <value>بلا عنوان</value>
+  </data>
+  <data name="DeleteTrack" xml:space="preserve">
+    <value>حذف المسار (_D)</value>
+  </data>
+  <data name="MuteTip" xml:space="preserve">
+    <value>كتم الصوت</value>
+  </data>
+  <data name="SoloTip" xml:space="preserve">
+    <value>منفرد: سماع المسارات المنفردة فقط</value>
+  </data>
+  <data name="ShownTip" xml:space="preserve">
+    <value>ظاهر في الفيديو</value>
+  </data>
+  <data name="LockTip" xml:space="preserve">
+    <value>قفل: لا تغيّر عمليات التحرير هذا المسار</value>
+  </data>
+  <data name="TrackVolume" xml:space="preserve">
+    <value>مستوى صوت المسار</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>ملف (_F)</value>
+  </data>
+  <data name="AddRecordingMenu" xml:space="preserve">
+    <value>إضافة تسجيل… (_A)</value>
+  </data>
+  <data name="AddMusicMenu" xml:space="preserve">
+    <value>إضافة موسيقى… (_M)</value>
+  </data>
+  <data name="AddMusicTip" xml:space="preserve">
+    <value>ملف صوتي على مسار خاص به، أخفض من صوت المتحدث</value>
+  </data>
+  <data name="SaveProjectMenu" xml:space="preserve">
+    <value>حفظ المشروع (_S)</value>
+  </data>
+  <data name="SaveProjectAsMenu" xml:space="preserve">
+    <value>حفظ المشروع باسم… (_A)</value>
+  </data>
+  <data name="SaveWithMediaMenu" xml:space="preserve">
+    <value>حفظ مع الوسائط… (_M)</value>
+  </data>
+  <data name="SaveWithMediaTip" xml:space="preserve">
+    <value>نسخة من المشروع تتضمن تسجيلاته، لنقلها إلى كمبيوتر آخر</value>
+  </data>
+  <data name="ImportCaptionsMenu" xml:space="preserve">
+    <value>استيراد التسميات التوضيحية… (_I)</value>
+  </data>
+  <data name="ImportCaptionsTip" xml:space="preserve">
+    <value>ملف SRT أو WebVTT كمسار للتسميات التوضيحية</value>
+  </data>
+  <data name="SaveCaptionsMenu" xml:space="preserve">
+    <value>حفظ التسميات التوضيحية… (_C)</value>
+  </data>
+  <data name="SaveCaptionsTip" xml:space="preserve">
+    <value>التسميات التوضيحية كملف SRT أو WebVTT</value>
+  </data>
+  <data name="ExportMenu" xml:space="preserve">
+    <value>تصدير… (_E)</value>
+  </data>
+  <data name="CloseMenu" xml:space="preserve">
+    <value>إغلاق (_C)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>تحرير (_E)</value>
+  </data>
+  <data name="SplitMenu" xml:space="preserve">
+    <value>تقسيم عند مؤشر التشغيل (_S)</value>
+  </data>
+  <data name="DeleteMenu" xml:space="preserve">
+    <value>حذف (_D)</value>
+  </data>
+  <data name="DeleteMenuTip" xml:space="preserve">
+    <value>النطاق المحدد (مع سد الفجوة)، أو المقطع المحدد</value>
+  </data>
+  <data name="RippleDeleteMenu" xml:space="preserve">
+    <value>حذف مع الإزاحة (_R)</value>
+  </data>
+  <data name="RippleDeleteTip" xml:space="preserve">
+    <value>المقطع المحدد ووقته، من كل المسارات</value>
+  </data>
+  <data name="FreezeFrameMenu" xml:space="preserve">
+    <value>تجميد الإطار عند مؤشر التشغيل (_F)</value>
+  </data>
+  <data name="FreezeFrameTip" xml:space="preserve">
+    <value>تثبيت الصورة لمدة 2 ث؛ وينتظر الصوت</value>
+  </data>
+  <data name="CrossfadeMenu" xml:space="preserve">
+    <value>تلاشٍ متداخل إلى المقطع التالي (_F)</value>
+  </data>
+  <data name="CrossfadeTip" xml:space="preserve">
+    <value>يمتزج المقطع المحدد بالمقطع الذي يليه خلال 1 ث</value>
+  </data>
+  <data name="MarkInMenu" xml:space="preserve">
+    <value>تعيين نقطة البداية (_I)</value>
+  </data>
+  <data name="MarkOutMenu" xml:space="preserve">
+    <value>تعيين نقطة النهاية (_O)</value>
+  </data>
+  <data name="ClearSelectionMenu" xml:space="preserve">
+    <value>مسح التحديد (_C)</value>
+  </data>
+  <data name="MenuInsert" xml:space="preserve">
+    <value>إدراج (_I)</value>
+  </data>
+  <data name="InsertTextMenu" xml:space="preserve">
+    <value>نص (_T)</value>
+  </data>
+  <data name="InsertArrowMenu" xml:space="preserve">
+    <value>سهم (_A)</value>
+  </data>
+  <data name="InsertLineMenu" xml:space="preserve">
+    <value>خط (_L)</value>
+  </data>
+  <data name="InsertRectangleMenu" xml:space="preserve">
+    <value>مستطيل (_R)</value>
+  </data>
+  <data name="InsertEllipseMenu" xml:space="preserve">
+    <value>شكل بيضاوي (_E)</value>
+  </data>
+  <data name="InsertHighlightMenu" xml:space="preserve">
+    <value>تمييز (_H)</value>
+  </data>
+  <data name="InsertBlurMenu" xml:space="preserve">
+    <value>تمويه منطقة (_B)</value>
+  </data>
+  <data name="InsertPixelateMenu" xml:space="preserve">
+    <value>تقطيع منطقة إلى بكسلات (_P)</value>
+  </data>
+  <data name="InsertClicksMenu" xml:space="preserve">
+    <value>إبراز النقرات (_C)</value>
+  </data>
+  <data name="InsertClicksTip" xml:space="preserve">
+    <value>حلقات عند النقرات، من البيانات الوصفية للتسجيل</value>
+  </data>
+  <data name="InsertKeystrokesMenu" xml:space="preserve">
+    <value>ضغطات المفاتيح (_K)</value>
+  </data>
+  <data name="InsertKeystrokesTip" xml:space="preserve">
+    <value>المفاتيح المضغوطة، من البيانات الوصفية للتسجيل</value>
+  </data>
+  <data name="InsertPointerMenu" xml:space="preserve">
+    <value>تأثيرات المؤشر (_E)</value>
+  </data>
+  <data name="InsertPointerTip" xml:space="preserve">
+    <value>هالة أو بقعة ضوء، ومؤشر أكبر أو أكثر سلاسة، من البيانات الوصفية للتسجيل</value>
+  </data>
+  <data name="InsertZoomMenu" xml:space="preserve">
+    <value>تكبير (_Z)</value>
+  </data>
+  <data name="InsertZoomTip" xml:space="preserve">
+    <value>تكبير الشاشة من مؤشر التشغيل (أو على النطاق المحدد)، مع تتبع المؤشر</value>
+  </data>
+  <data name="AutoZoomMenu" xml:space="preserve">
+    <value>تكبير تلقائي من النقرات والكتابة (_A)</value>
+  </data>
+  <data name="AutoZoomTip" xml:space="preserve">
+    <value>تكبيرات حول النقرات والكتابة في البيانات الوصفية للتسجيل (تُنشأ من جديد في كل مرة)</value>
+  </data>
+  <data name="InsertCaptionMenu" xml:space="preserve">
+    <value>تسمية توضيحية (_P)</value>
+  </data>
+  <data name="InsertCaptionTip" xml:space="preserve">
+    <value>تسمية توضيحية لكتابتها، من مؤشر التشغيل (أو على النطاق المحدد)</value>
+  </data>
+  <data name="TranscribeMenu" xml:space="preserve">
+    <value>تسميات توضيحية من الكلام… (_S)</value>
+  </data>
+  <data name="TranscribeMenuTip" xml:space="preserve">
+    <value>تسميات توضيحية من الكلام في مسار صوتي (الإنجليزية والعربية وغيرهما)، على هذا الكمبيوتر</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>عرض (_V)</value>
+  </data>
+  <data name="ZoomInMenu" xml:space="preserve">
+    <value>تكبير (_I)</value>
+  </data>
+  <data name="ZoomOutMenu" xml:space="preserve">
+    <value>تصغير (_O)</value>
+  </data>
+  <data name="FitTimelineMenu" xml:space="preserve">
+    <value>ملاءمة المخطط الزمني (_F)</value>
+  </data>
+  <data name="NothingSelected" xml:space="preserve">
+    <value>حدد مقطعًا على المخطط الزمني، أو صورة في المعاينة، لتغييره هنا.</value>
+  </data>
+  <data name="TextButton" xml:space="preserve">
+    <value>نص</value>
+  </data>
+  <data name="TextButtonTip" xml:space="preserve">
+    <value>نص فوق الفيديو، من مؤشر التشغيل (أو النطاق المحدد)</value>
+  </data>
+  <data name="ArrowButton" xml:space="preserve">
+    <value>سهم</value>
+  </data>
+  <data name="ArrowButtonTip" xml:space="preserve">
+    <value>سهم، من مؤشر التشغيل (أو النطاق المحدد)</value>
+  </data>
+  <data name="BlurButton" xml:space="preserve">
+    <value>تمويه</value>
+  </data>
+  <data name="BlurButtonTip" xml:space="preserve">
+    <value>إخفاء منطقة، من مؤشر التشغيل (أو النطاق المحدد)</value>
+  </data>
+  <data name="ZoomButton" xml:space="preserve">
+    <value>تكبير</value>
+  </data>
+  <data name="CaptionsButton" xml:space="preserve">
+    <value>تسميات توضيحية…</value>
+  </data>
+  <data name="CaptionsButtonTip" xml:space="preserve">
+    <value>تسميات توضيحية من الكلام في مسار صوتي</value>
+  </data>
+  <data name="SplitButton" xml:space="preserve">
+    <value>تقسيم</value>
+  </data>
+  <data name="SplitButtonTip" xml:space="preserve">
+    <value>قص كل المقاطع عند مؤشر التشغيل (S)</value>
+  </data>
+  <data name="DeleteButtonTip" xml:space="preserve">
+    <value>النطاق المحدد أو المقطع المحدد (Del)</value>
+  </data>
+  <data name="ExportButton" xml:space="preserve">
+    <value>تصدير…</value>
+  </data>
+  <data name="ExportButtonTip" xml:space="preserve">
+    <value>إنشاء ملف فيديو (Ctrl+E)</value>
+  </data>
+  <data name="GoToStartTip" xml:space="preserve">
+    <value>البداية (Home)</value>
+  </data>
+  <data name="StepBackTip" xml:space="preserve">
+    <value>إطار للخلف (←)</value>
+  </data>
+  <data name="PlayPauseTip" xml:space="preserve">
+    <value>تشغيل أو إيقاف مؤقت (Space)</value>
+  </data>
+  <data name="StepForwardTip" xml:space="preserve">
+    <value>إطار للأمام (→)</value>
+  </data>
+  <data name="GoToEndTip" xml:space="preserve">
+    <value>النهاية (End)</value>
+  </data>
+  <data name="KindPicture" xml:space="preserve">
+    <value>صورة</value>
+  </data>
+  <data name="KindWebcam" xml:space="preserve">
+    <value>كاميرا الويب</value>
+  </data>
+  <data name="KindSound" xml:space="preserve">
+    <value>صوت</value>
+  </data>
+  <data name="KindAnnotations" xml:space="preserve">
+    <value>تعليقات توضيحية</value>
+  </data>
+  <data name="KindCaptions" xml:space="preserve">
+    <value>تسميات توضيحية</value>
+  </data>
+  <data name="KindEffects" xml:space="preserve">
+    <value>تأثيرات</value>
+  </data>
+  <data name="StatusLine" xml:space="preserve">
+    <value>{0} × {1}، {2} fps · {3}</value>
+  </data>
+  <data name="StatusLineDecodingOnGpu" xml:space="preserve">
+    <value>{0} × {1}، {2} fps · {3} · فك الترميز على بطاقة الرسومات</value>
+  </data>
+  <data name="PreviewOnGpu" xml:space="preserve">
+    <value>المعاينة على بطاقة الرسومات</value>
+  </data>
+  <data name="PreviewInMemory" xml:space="preserve">
+    <value>المعاينة في الذاكرة</value>
+  </data>
+  <data name="UndoNamed" xml:space="preserve">
+    <value>تراجع عن {0}</value>
+  </data>
+  <data name="RedoNamed" xml:space="preserve">
+    <value>إعادة {0}</value>
+  </data>
+  <data name="SelectionRange" xml:space="preserve">
+    <value>النطاق {0} – {1} ({2:0.00} ث). اقتطعه بمفتاح Delete.</value>
+  </data>
+  <data name="SelectionItem" xml:space="preserve">
+    <value>{0} – {1} ({2:0.00} ث)</value>
+  </data>
+  <data name="SelectionClip" xml:space="preserve">
+    <value>{0}: {1}، المصدر {2} – {3}</value>
+  </data>
+  <data name="MissingMedia" xml:space="preserve">
+    <value>وسائط مفقودة</value>
+  </data>
+  <data name="SpeechUnavailable" xml:space="preserve">
+    <value>التعرف على الكلام غير متوفر في هذه النسخة من التطبيق.</value>
+  </data>
+  <data name="NoSoundForCaptions" xml:space="preserve">
+    <value>لا يوجد صوت على المخطط الزمني لإنشاء تسميات توضيحية منه.</value>
+  </data>
+  <data name="ImportCaptionsTitle" xml:space="preserve">
+    <value>استيراد التسميات التوضيحية</value>
+  </data>
+  <data name="SubtitlesFilter" xml:space="preserve">
+    <value>ملفات الترجمة (*.srt;*.vtt)|*.srt;*.vtt|كل الملفات (*.*)|*.*</value>
+  </data>
+  <data name="CantBeRead" xml:space="preserve">
+    <value>تعذرت قراءة «{0}»: {1}</value>
+  </data>
+  <data name="NoCaptionsToSave" xml:space="preserve">
+    <value>لا توجد تسميات توضيحية لحفظها.</value>
+  </data>
+  <data name="SaveCaptionsTitle" xml:space="preserve">
+    <value>حفظ التسميات التوضيحية</value>
+  </data>
+  <data name="SaveCaptionsFilter" xml:space="preserve">
+    <value>ملفات ترجمة SubRip (*.srt)|*.srt|ملفات ترجمة WebVTT (*.vtt)|*.vtt</value>
+  </data>
+  <data name="CaptionsNotSaved" xml:space="preserve">
+    <value>تعذر حفظ التسميات التوضيحية: {0}</value>
+  </data>
+  <data name="CaptionsInLanguage" xml:space="preserve">
+    <value>التسميات التوضيحية ({0})</value>
+  </data>
+  <data name="DefaultCaptionText" xml:space="preserve">
+    <value>تسمية توضيحية</value>
+  </data>
+  <data name="AddRecordingTitle" xml:space="preserve">
+    <value>إضافة تسجيل</value>
+  </data>
+  <data name="VideosFilter" xml:space="preserve">
+    <value>مقاطع الفيديو (*.mp4;*.mkv;*.mov;*.webm)|*.mp4;*.mkv;*.mov;*.webm|كل الملفات (*.*)|*.*</value>
+  </data>
+  <data name="CantBeOpened" xml:space="preserve">
+    <value>تعذر فتح «{0}»: {1}</value>
+  </data>
+  <data name="AddMusicTitle" xml:space="preserve">
+    <value>إضافة موسيقى</value>
+  </data>
+  <data name="SoundFilter" xml:space="preserve">
+    <value>ملفات الصوت (*.mp3;*.m4a;*.aac;*.wav;*.ogg;*.opus;*.flac;*.wma)|*.mp3;*.m4a;*.aac;*.wav;*.ogg;*.opus;*.flac;*.wma|كل الملفات (*.*)|*.*</value>
+  </data>
+  <data name="HasNoSound" xml:space="preserve">
+    <value>لا يحتوي «{0}» على صوت.</value>
+  </data>
+  <data name="MusicTrack" xml:space="preserve">
+    <value>موسيقى</value>
+  </data>
+  <data name="AutoZoomFoundNothing" xml:space="preserve">
+    <value>لم يجد التكبير التلقائي أي نقرات أو كتابة في البيانات الوصفية للتسجيلات للتكبير عليها.</value>
+  </data>
+  <data name="AutoZoomNeedsMetadata" xml:space="preserve">
+    <value>يحتاج التكبير التلقائي إلى ملف البيانات الوصفية لتسجيل (النقرات والمفاتيح والمؤشر). تحصل التسجيلات على هذا الملف عند تشغيل الإعدادات › التراكبات › حفظ ملف بيانات وصفية.</value>
+  </data>
+  <data name="ProjectNotSaved" xml:space="preserve">
+    <value>تعذر حفظ المشروع: {0}</value>
+  </data>
+  <data name="MediaFilter" xml:space="preserve">
+    <value>التسجيلات والمشاريع (*.mp4;*.mkv;*.mov;*.webm;*.cgcap)|*.mp4;*.mkv;*.mov;*.webm;*.cgcap|المشاريع (*.cgcap)|*.cgcap|كل الملفات (*.*)|*.*</value>
+  </data>
+  <data name="CantStart" xml:space="preserve">
+    <value>تعذر تشغيل محرر الفيديو</value>
+  </data>
+  <data name="NothingToEdit" xml:space="preserve">
+    <value>لا يحتوي «{0}» على ما يمكن تحريره.</value>
+  </data>
+  <data name="CantOpenIt" xml:space="preserve">
+    <value>تعذر على محرر الفيديو فتحه</value>
+  </data>
+  <data name="OpenInVideoEditor" xml:space="preserve">
+    <value>فتح في محرر الفيديو</value>
+  </data>
+  <data name="WhereIs" xml:space="preserve">
+    <value>أين «{0}»؟</value>
+  </data>
+  <data name="LocateFilter" xml:space="preserve">
+    <value>{0}|{0}|الفيديو والصوت (*.mp4;*.mkv;*.mov;*.webm;*.mp3;*.m4a;*.wav;*.ogg)|*.mp4;*.mkv;*.mov;*.webm;*.mp3;*.m4a;*.wav;*.ogg|كل الملفات (*.*)|*.*</value>
+  </data>
+  <data name="SaveProjectTitle" xml:space="preserve">
+    <value>حفظ المشروع</value>
+  </data>
+  <data name="ProjectFilter" xml:space="preserve">
+    <value>مشاريع الفيديو (*.cgcap)|*.cgcap</value>
+  </data>
+  <data name="SaveChangesTo" xml:space="preserve">
+    <value>هل تريد حفظ التغييرات في «{0}»؟</value>
+  </data>
+  <data name="TakesRecordingsOnly" xml:space="preserve">
+    <value>يقبل محرر الفيديو التسجيلات فقط.</value>
+  </data>
+  <data name="OpenedInVideoEditor" xml:space="preserve">
+    <value>فُتح في محرر الفيديو</value>
+  </data>
+  <data name="NothingToSetUp" xml:space="preserve">
+    <value>لا يوجد ما يلزم إعداده.</value>
+  </data>
+  <data name="MakeGif" xml:space="preserve">
+    <value>إنشاء GIF</value>
+  </data>
+  <data name="GifsFromRecordingsOnly" xml:space="preserve">
+    <value>تُنشأ ملفات GIF من التسجيلات فقط.</value>
+  </data>
+  <data name="GifSaved" xml:space="preserve">
+    <value>حُفظ «{0}» ({1})</value>
+  </data>
+  <data name="GifNotMade" xml:space="preserve">
+    <value>تعذر إنشاء ملف GIF: {0}</value>
+  </data>
+  <data name="GifNothingToSetUp" xml:space="preserve">
+    <value>لا يوجد ما يلزم إعداده: تُنشأ ملفات GIF بخيارات GIF في نافذة التصدير.</value>
+  </data>
+  <data name="UndoTrackVolume" xml:space="preserve">
+    <value>مستوى صوت المسار</value>
+  </data>
+  <data name="UndoMute" xml:space="preserve">
+    <value>كتم الصوت</value>
+  </data>
+  <data name="UndoUnmute" xml:space="preserve">
+    <value>إلغاء كتم الصوت</value>
+  </data>
+  <data name="UndoSolo" xml:space="preserve">
+    <value>التشغيل المنفرد</value>
+  </data>
+  <data name="UndoUnsolo" xml:space="preserve">
+    <value>إلغاء التشغيل المنفرد</value>
+  </data>
+  <data name="UndoLockTrack" xml:space="preserve">
+    <value>قفل المسار</value>
+  </data>
+  <data name="UndoUnlockTrack" xml:space="preserve">
+    <value>إلغاء قفل المسار</value>
+  </data>
+  <data name="UndoShowTrack" xml:space="preserve">
+    <value>إظهار المسار</value>
+  </data>
+  <data name="UndoHideTrack" xml:space="preserve">
+    <value>إخفاء المسار</value>
+  </data>
+  <data name="UndoDeleteTrack" xml:space="preserve">
+    <value>حذف المسار</value>
+  </data>
+  <data name="UndoMoveAnnotation" xml:space="preserve">
+    <value>نقل التعليق التوضيحي</value>
+  </data>
+  <data name="UndoResizeAnnotation" xml:space="preserve">
+    <value>تغيير حجم التعليق التوضيحي</value>
+  </data>
+  <data name="UndoMovePicture" xml:space="preserve">
+    <value>نقل الصورة</value>
+  </data>
+  <data name="UndoResizePicture" xml:space="preserve">
+    <value>تغيير حجم الصورة</value>
+  </data>
+  <data name="UndoMoveZoom" xml:space="preserve">
+    <value>نقل التكبير</value>
+  </data>
+  <data name="UndoResizeZoom" xml:space="preserve">
+    <value>تغيير حجم التكبير</value>
+  </data>
+  <data name="UndoSplit" xml:space="preserve">
+    <value>التقسيم</value>
+  </data>
+  <data name="UndoCutOut" xml:space="preserve">
+    <value>الاقتطاع</value>
+  </data>
+  <data name="UndoDelete" xml:space="preserve">
+    <value>الحذف</value>
+  </data>
+  <data name="UndoRippleDelete" xml:space="preserve">
+    <value>الحذف مع الإزاحة</value>
+  </data>
+  <data name="UndoAddCaption" xml:space="preserve">
+    <value>إضافة تسمية توضيحية</value>
+  </data>
+  <data name="UndoImportCaptions" xml:space="preserve">
+    <value>استيراد التسميات التوضيحية</value>
+  </data>
+  <data name="UndoCaptionsFromSpeech" xml:space="preserve">
+    <value>التسميات التوضيحية من الكلام</value>
+  </data>
+  <data name="UndoSplitCaption" xml:space="preserve">
+    <value>تقسيم التسمية التوضيحية</value>
+  </data>
+  <data name="UndoMergeCaptions" xml:space="preserve">
+    <value>دمج التسميات التوضيحية</value>
+  </data>
+  <data name="UndoAddRecording" xml:space="preserve">
+    <value>إضافة تسجيل</value>
+  </data>
+  <data name="UndoAddMusic" xml:space="preserve">
+    <value>إضافة موسيقى</value>
+  </data>
+  <data name="UndoAddText" xml:space="preserve">
+    <value>إضافة نص</value>
+  </data>
+  <data name="UndoAddArrow" xml:space="preserve">
+    <value>إضافة سهم</value>
+  </data>
+  <data name="UndoAddLine" xml:space="preserve">
+    <value>إضافة خط</value>
+  </data>
+  <data name="UndoAddRectangle" xml:space="preserve">
+    <value>إضافة مستطيل</value>
+  </data>
+  <data name="UndoAddEllipse" xml:space="preserve">
+    <value>إضافة شكل بيضاوي</value>
+  </data>
+  <data name="UndoAddHighlight" xml:space="preserve">
+    <value>إضافة تمييز</value>
+  </data>
+  <data name="UndoAddBlurredArea" xml:space="preserve">
+    <value>إضافة منطقة مموهة</value>
+  </data>
+  <data name="UndoAddPixelatedArea" xml:space="preserve">
+    <value>إضافة منطقة مقطعة إلى بكسلات</value>
+  </data>
+  <data name="UndoAddZoom" xml:space="preserve">
+    <value>إضافة تكبير</value>
+  </data>
+  <data name="UndoAutoZoom" xml:space="preserve">
+    <value>التكبير التلقائي</value>
+  </data>
+  <data name="UndoAddClickHighlights" xml:space="preserve">
+    <value>إضافة إبراز النقرات</value>
+  </data>
+  <data name="UndoAddKeystrokes" xml:space="preserve">
+    <value>إضافة ضغطات المفاتيح</value>
+  </data>
+  <data name="UndoAddPointerEffects" xml:space="preserve">
+    <value>إضافة تأثيرات المؤشر</value>
+  </data>
+  <data name="UndoAddKeyframe" xml:space="preserve">
+    <value>إضافة إطار رئيسي</value>
+  </data>
+  <data name="UndoRemoveKeyframe" xml:space="preserve">
+    <value>إزالة الإطار الرئيسي</value>
+  </data>
+  <data name="UndoFreezeFrame" xml:space="preserve">
+    <value>تجميد الإطار</value>
+  </data>
+  <data name="UndoSpeed" xml:space="preserve">
+    <value>السرعة</value>
+  </data>
+  <data name="UndoFreezeLength" xml:space="preserve">
+    <value>مدة التجميد</value>
+  </data>
+  <data name="UndoCrossfade" xml:space="preserve">
+    <value>التلاشي المتداخل</value>
+  </data>
+  <data name="UndoRemoveCrossfade" xml:space="preserve">
+    <value>إزالة التلاشي المتداخل</value>
+  </data>
+  <data name="UndoVolume" xml:space="preserve">
+    <value>مستوى الصوت</value>
+  </data>
+  <data name="UndoFadeIn" xml:space="preserve">
+    <value>الظهور التدريجي</value>
+  </data>
+  <data name="UndoFadeOut" xml:space="preserve">
+    <value>الاختفاء التدريجي</value>
+  </data>
+  <data name="UndoSize" xml:space="preserve">
+    <value>الحجم</value>
+  </data>
+  <data name="UndoPosition" xml:space="preserve">
+    <value>الموضع</value>
+  </data>
+  <data name="UndoShape" xml:space="preserve">
+    <value>الشكل</value>
+  </data>
+  <data name="UndoBorder" xml:space="preserve">
+    <value>الحد</value>
+  </data>
+  <data name="UndoBorderWidth" xml:space="preserve">
+    <value>عرض الحد</value>
+  </data>
+  <data name="UndoMirror" xml:space="preserve">
+    <value>العكس</value>
+  </data>
+  <data name="UndoOpacity" xml:space="preserve">
+    <value>العتامة</value>
+  </data>
+  <data name="UndoEditText" xml:space="preserve">
+    <value>النص</value>
+  </data>
+  <data name="UndoFont" xml:space="preserve">
+    <value>الخط</value>
+  </data>
+  <data name="UndoTextSize" xml:space="preserve">
+    <value>حجم النص</value>
+  </data>
+  <data name="UndoBold" xml:space="preserve">
+    <value>الخط الغامق</value>
+  </data>
+  <data name="UndoColour" xml:space="preserve">
+    <value>اللون</value>
+  </data>
+  <data name="UndoFill" xml:space="preserve">
+    <value>التعبئة</value>
+  </data>
+  <data name="UndoLineWidth" xml:space="preserve">
+    <value>عرض الخط</value>
+  </data>
+  <data name="UndoStrength" xml:space="preserve">
+    <value>الشدة</value>
+  </data>
+  <data name="UndoMovement" xml:space="preserve">
+    <value>الحركة</value>
+  </data>
+  <data name="UndoLeftColour" xml:space="preserve">
+    <value>لون الزر الأيسر</value>
+  </data>
+  <data name="UndoRightColour" xml:space="preserve">
+    <value>لون الزر الأيمن</value>
+  </data>
+  <data name="UndoClickSize" xml:space="preserve">
+    <value>حجم النقرات</value>
+  </data>
+  <data name="UndoKeysPosition" xml:space="preserve">
+    <value>موضع المفاتيح</value>
+  </data>
+  <data name="UndoKeysSize" xml:space="preserve">
+    <value>حجم المفاتيح</value>
+  </data>
+  <data name="UndoKeysTime" xml:space="preserve">
+    <value>مدة ظهور المفاتيح</value>
+  </data>
+  <data name="UndoPointerHighlight" xml:space="preserve">
+    <value>إبراز المؤشر</value>
+  </data>
+  <data name="UndoHaloColour" xml:space="preserve">
+    <value>لون الهالة</value>
+  </data>
+  <data name="UndoPointerRadius" xml:space="preserve">
+    <value>نصف قطر المؤشر</value>
+  </data>
+  <data name="UndoDim" xml:space="preserve">
+    <value>التعتيم</value>
+  </data>
+  <data name="UndoPointerSize" xml:space="preserve">
+    <value>حجم المؤشر</value>
+  </data>
+  <data name="UndoSmoothing" xml:space="preserve">
+    <value>التنعيم</value>
+  </data>
+  <data name="UndoHideWhenIdle" xml:space="preserve">
+    <value>الإخفاء عند التوقف</value>
+  </data>
+  <data name="UndoIdleTime" xml:space="preserve">
+    <value>مدة التوقف</value>
+  </data>
+  <data name="UndoCaptionText" xml:space="preserve">
+    <value>نص التسمية التوضيحية</value>
+  </data>
+  <data name="UndoCaptionFont" xml:space="preserve">
+    <value>خط التسميات التوضيحية</value>
+  </data>
+  <data name="UndoCaptionSize" xml:space="preserve">
+    <value>حجم التسميات التوضيحية</value>
+  </data>
+  <data name="UndoCaptionBold" xml:space="preserve">
+    <value>الخط الغامق للتسميات التوضيحية</value>
+  </data>
+  <data name="UndoCaptionColour" xml:space="preserve">
+    <value>لون التسميات التوضيحية</value>
+  </data>
+  <data name="UndoCaptionBox" xml:space="preserve">
+    <value>مربع التسميات التوضيحية</value>
+  </data>
+  <data name="UndoCaptionPosition" xml:space="preserve">
+    <value>موضع التسميات التوضيحية</value>
+  </data>
+  <data name="UndoCaptionWidth" xml:space="preserve">
+    <value>عرض التسميات التوضيحية</value>
+  </data>
+  <data name="UndoZoom" xml:space="preserve">
+    <value>التكبير</value>
+  </data>
+  <data name="UndoFollowPointer" xml:space="preserve">
+    <value>تتبع المؤشر</value>
+  </data>
+  <data name="UndoZoomAcross" xml:space="preserve">
+    <value>موضع التكبير أفقيًا</value>
+  </data>
+  <data name="UndoZoomDown" xml:space="preserve">
+    <value>موضع التكبير رأسيًا</value>
+  </data>
+  <data name="UndoZoomInTime" xml:space="preserve">
+    <value>مدة التكبير</value>
+  </data>
+  <data name="UndoZoomOutTime" xml:space="preserve">
+    <value>مدة التصغير</value>
+  </data>
+  <data name="ShapeText" xml:space="preserve">
+    <value>نص</value>
+  </data>
+  <data name="ShapeArrow" xml:space="preserve">
+    <value>سهم</value>
+  </data>
+  <data name="ShapeLine" xml:space="preserve">
+    <value>خط</value>
+  </data>
+  <data name="ShapeRectangle" xml:space="preserve">
+    <value>مستطيل</value>
+  </data>
+  <data name="ShapeEllipse" xml:space="preserve">
+    <value>شكل بيضاوي</value>
+  </data>
+  <data name="ShapeHighlight" xml:space="preserve">
+    <value>تمييز</value>
+  </data>
+  <data name="ShapeBlurredArea" xml:space="preserve">
+    <value>منطقة مموهة</value>
+  </data>
+  <data name="ShapePixelatedArea" xml:space="preserve">
+    <value>منطقة مقطعة إلى بكسلات</value>
+  </data>
+  <data name="WebcamClip" xml:space="preserve">
+    <value>مقطع كاميرا الويب</value>
+  </data>
+  <data name="SoundClip" xml:space="preserve">
+    <value>مقطع صوتي</value>
+  </data>
+  <data name="VideoClip" xml:space="preserve">
+    <value>مقطع فيديو</value>
+  </data>
+  <data name="ClickHighlights" xml:space="preserve">
+    <value>إبراز النقرات</value>
+  </data>
+  <data name="Keystrokes" xml:space="preserve">
+    <value>ضغطات المفاتيح</value>
+  </data>
+  <data name="PointerEffects" xml:space="preserve">
+    <value>تأثيرات المؤشر</value>
+  </data>
+  <data name="ZoomTitle" xml:space="preserve">
+    <value>تكبير</value>
+  </data>
+  <data name="CaptionTitle" xml:space="preserve">
+    <value>تسمية توضيحية</value>
+  </data>
+  <data name="ItemTitle" xml:space="preserve">
+    <value>عنصر</value>
+  </data>
+  <data name="SecondsUnit" xml:space="preserve">
+    <value> ث</value>
+  </data>
+  <data name="PercentOfWidthUnit" xml:space="preserve">
+    <value> % من العرض</value>
+  </data>
+  <data name="Volume" xml:space="preserve">
+    <value>مستوى الصوت</value>
+  </data>
+  <data name="HoldFrameFor" xml:space="preserve">
+    <value>تثبيت الإطار لمدة</value>
+  </data>
+  <data name="Speed" xml:space="preserve">
+    <value>السرعة</value>
+  </data>
+  <data name="SpeedRamp" xml:space="preserve">
+    <value>تغيير السرعة على طول المقطع</value>
+  </data>
+  <data name="SpeedAtEnd" xml:space="preserve">
+    <value>السرعة عند النهاية</value>
+  </data>
+  <data name="RemoveCrossfade" xml:space="preserve">
+    <value>إزالة التلاشي المتداخل إلى المقطع التالي</value>
+  </data>
+  <data name="AddCrossfade" xml:space="preserve">
+    <value>تلاشٍ متداخل إلى المقطع التالي (1 ث)</value>
+  </data>
+  <data name="FadeIn" xml:space="preserve">
+    <value>ظهور تدريجي</value>
+  </data>
+  <data name="FadeOut" xml:space="preserve">
+    <value>اختفاء تدريجي</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>الحجم</value>
+  </data>
+  <data name="Across" xml:space="preserve">
+    <value>أفقيًا</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>رأسيًا</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>الشكل</value>
+  </data>
+  <data name="Rectangle" xml:space="preserve">
+    <value>مستطيل</value>
+  </data>
+  <data name="RoundedRectangle" xml:space="preserve">
+    <value>مستطيل بزوايا مستديرة</value>
+  </data>
+  <data name="Circle" xml:space="preserve">
+    <value>دائرة</value>
+  </data>
+  <data name="Border" xml:space="preserve">
+    <value>الحد</value>
+  </data>
+  <data name="BorderWidth" xml:space="preserve">
+    <value>عرض الحد</value>
+  </data>
+  <data name="Mirrored" xml:space="preserve">
+    <value>معكوس</value>
+  </data>
+  <data name="Opacity" xml:space="preserve">
+    <value>العتامة</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>النص</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>الخط</value>
+  </data>
+  <data name="Bold" xml:space="preserve">
+    <value>غامق</value>
+  </data>
+  <data name="TextColour" xml:space="preserve">
+    <value>لون النص</value>
+  </data>
+  <data name="Colour" xml:space="preserve">
+    <value>اللون</value>
+  </data>
+  <data name="Background" xml:space="preserve">
+    <value>الخلفية</value>
+  </data>
+  <data name="Fill" xml:space="preserve">
+    <value>التعبئة</value>
+  </data>
+  <data name="LineWidth" xml:space="preserve">
+    <value>عرض الخط</value>
+  </data>
+  <data name="Blur" xml:space="preserve">
+    <value>التمويه</value>
+  </data>
+  <data name="CellSize" xml:space="preserve">
+    <value>حجم الخلية</value>
+  </data>
+  <data name="Movement" xml:space="preserve">
+    <value>الحركة بين الإطارات الرئيسية</value>
+  </data>
+  <data name="Smooth" xml:space="preserve">
+    <value>سلسة</value>
+  </data>
+  <data name="Even" xml:space="preserve">
+    <value>منتظمة</value>
+  </data>
+  <data name="AddKeyframe" xml:space="preserve">
+    <value>إضافة إطار رئيسي عند مؤشر التشغيل (عددها الآن {0})</value>
+  </data>
+  <data name="RemoveKeyframe" xml:space="preserve">
+    <value>إزالة الإطار الرئيسي عند مؤشر التشغيل</value>
+  </data>
+  <data name="NoMetadataForEffects" xml:space="preserve">
+    <value>لا يوجد ملف بيانات وصفية لأي تسجيل هنا، لذا لا توجد نقرات أو مفاتيح أو مؤشر لإظهارها. تحصل التسجيلات على هذا الملف عند تشغيل الإعدادات › التراكبات › حفظ ملف بيانات وصفية.</value>
+  </data>
+  <data name="LeftButton" xml:space="preserve">
+    <value>الزر الأيسر</value>
+  </data>
+  <data name="RightButton" xml:space="preserve">
+    <value>الزر الأيمن</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>الموضع</value>
+  </data>
+  <data name="BottomCentre" xml:space="preserve">
+    <value>أسفل الوسط</value>
+  </data>
+  <data name="BottomLeft" xml:space="preserve">
+    <value>أسفل اليسار</value>
+  </data>
+  <data name="BottomRight" xml:space="preserve">
+    <value>أسفل اليمين</value>
+  </data>
+  <data name="TopCentre" xml:space="preserve">
+    <value>أعلى الوسط</value>
+  </data>
+  <data name="TopLeft" xml:space="preserve">
+    <value>أعلى اليسار</value>
+  </data>
+  <data name="TopRight" xml:space="preserve">
+    <value>أعلى اليمين</value>
+  </data>
+  <data name="ShownFor" xml:space="preserve">
+    <value>مدة الظهور</value>
+  </data>
+  <data name="AroundPointer" xml:space="preserve">
+    <value>حول المؤشر</value>
+  </data>
+  <data name="PointerNothing" xml:space="preserve">
+    <value>لا شيء</value>
+  </data>
+  <data name="PointerHalo" xml:space="preserve">
+    <value>هالة</value>
+  </data>
+  <data name="PointerSpotlight" xml:space="preserve">
+    <value>بقعة ضوء (مع تعتيم الباقي)</value>
+  </data>
+  <data name="HaloColour" xml:space="preserve">
+    <value>لون الهالة</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>نصف القطر</value>
+  </data>
+  <data name="DimTheRest" xml:space="preserve">
+    <value>تعتيم الباقي</value>
+  </data>
+  <data name="PointerInPictures" xml:space="preserve">
+    <value>المؤشر جزء من صور هذا التسجيل، لذا لا يمكن تكبيره أو تنعيم حركته أو إخفاؤه هنا. التسجيلات التي تُجرى مع خيار الإعدادات › التراكبات › إبقاء الفيديو نظيفًا لا تتضمنه، ليرسمه المحرر.</value>
+  </data>
+  <data name="PointerSize" xml:space="preserve">
+    <value>حجم المؤشر</value>
+  </data>
+  <data name="SmoothMovement" xml:space="preserve">
+    <value>تنعيم حركته</value>
+  </data>
+  <data name="HideWhenStill" xml:space="preserve">
+    <value>إخفاؤه عند توقفه</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>بعد</value>
+  </data>
+  <data name="SplitCaption" xml:space="preserve">
+    <value>تقسيمها عند مؤشر التشغيل</value>
+  </data>
+  <data name="MergeCaption" xml:space="preserve">
+    <value>دمجها مع التسمية التوضيحية التالية</value>
+  </data>
+  <data name="CaptionLookNote" xml:space="preserve">
+    <value>المظهر أدناه لكل التسميات التوضيحية على هذا المسار. يُرسم في مقاطع الفيديو المصدَّرة ما دام المسار ظاهرًا (مربع الاختيار في رأسه)؛ ويمكن للتصدير أيضًا حفظ التسميات التوضيحية كملفات SRT أو VTT.</value>
+  </data>
+  <data name="Box" xml:space="preserve">
+    <value>المربع</value>
+  </data>
+  <data name="AtTheBottom" xml:space="preserve">
+    <value>في الأسفل</value>
+  </data>
+  <data name="AtTheTop" xml:space="preserve">
+    <value>في الأعلى</value>
+  </data>
+  <data name="LinesUpTo" xml:space="preserve">
+    <value>طول الأسطر حتى</value>
+  </data>
+  <data name="Zoom" xml:space="preserve">
+    <value>التكبير</value>
+  </data>
+  <data name="FollowPointer" xml:space="preserve">
+    <value>تتبع المؤشر</value>
+  </data>
+  <data name="NoMetadataForZoom" xml:space="preserve">
+    <value>لا يوجد ملف بيانات وصفية لأي تسجيل هنا، لذا لا يوجد مؤشر لتتبعه: يبقى التكبير على مركزه.</value>
+  </data>
+  <data name="ZoomInOver" xml:space="preserve">
+    <value>مدة التكبير</value>
+  </data>
+  <data name="ZoomOutOver" xml:space="preserve">
+    <value>مدة التصغير</value>
+  </data>
+  <data name="ZoomNote" xml:space="preserve">
+    <value>ما دام التكبير محددًا، تعرض المعاينة الصورة كاملة وإطار التكبير: اسحب الإطار لوضع التكبير (فيبقى هناك بعد ذلك)، أو اسحب زاويته للتكبير أو التصغير.</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>تصدير</value>
+  </data>
+  <data name="Quality" xml:space="preserve">
+    <value>الجودة</value>
+  </data>
+  <data name="FramesASecond" xml:space="preserve">
+    <value>الإطارات في الثانية</value>
+  </data>
+  <data name="WidthPixels" xml:space="preserve">
+    <value>العرض (px)</value>
+  </data>
+  <data name="Dithering" xml:space="preserve">
+    <value>التنقيط</value>
+  </data>
+  <data name="KeepItUnder" xml:space="preserve">
+    <value>إبقاؤه أقل من</value>
+  </data>
+  <data name="PlayOverAndOver" xml:space="preserve">
+    <value>تشغيل متكرر</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>الملف</value>
+  </data>
+  <data name="BurnCaptions" xml:space="preserve">
+    <value>دمج التسميات التوضيحية في الفيديو (مسارات التسميات التوضيحية الظاهرة)</value>
+  </data>
+  <data name="SaveSrt" xml:space="preserve">
+    <value>حفظ التسميات التوضيحية أيضًا كملف SRT بجانبه</value>
+  </data>
+  <data name="SaveVtt" xml:space="preserve">
+    <value>حفظ التسميات التوضيحية أيضًا كملف WebVTT بجانبه</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>إظهار في المجلد</value>
+  </data>
+  <data name="DitherPattern" xml:space="preserve">
+    <value>نمط دقيق (أصغر؛ الأفضل للشاشات)</value>
+  </data>
+  <data name="DitherDiffusion" xml:space="preserve">
+    <value>انتشار (تدرجات وفيديو أكثر سلاسة)</value>
+  </data>
+  <data name="DitherNone" xml:space="preserve">
+    <value>بلا (ألوان مسطحة فقط)</value>
+  </data>
+  <data name="NoLimit" xml:space="preserve">
+    <value>بلا حد</value>
+  </data>
+  <data name="SizeLimit" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="OnlyMarkedRange" xml:space="preserve">
+    <value>النطاق المحدد فقط (من {0} إلى {1})</value>
+  </data>
+  <data name="QualitySmall" xml:space="preserve">
+    <value>ملف صغير</value>
+  </data>
+  <data name="QualityBalanced" xml:space="preserve">
+    <value>متوازنة</value>
+  </data>
+  <data name="QualityHigh" xml:space="preserve">
+    <value>عالية</value>
+  </data>
+  <data name="QualityNearLossless" xml:space="preserve">
+    <value>شبه بلا فقد</value>
+  </data>
+  <data name="SoundOnlySize" xml:space="preserve">
+    <value>صوت فقط، مدته {0}</value>
+  </data>
+  <data name="GifSizeLooping" xml:space="preserve">
+    <value>{0} × {1}، بمعدل {2} إطار في الثانية، مدته {3}، بلا صوت، يتكرر باستمرار</value>
+  </data>
+  <data name="GifSizeOnce" xml:space="preserve">
+    <value>{0} × {1}، بمعدل {2} إطار في الثانية، مدته {3}، بلا صوت، يُشغَّل مرة واحدة</value>
+  </data>
+  <data name="VideoSize" xml:space="preserve">
+    <value>{0} × {1}، {2} fps، مدته {3}</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>جارٍ البدء…</value>
+  </data>
+  <data name="ProgressTimeLeft" xml:space="preserve">
+    <value>{0:P0} · يتبقى {1} تقريبًا</value>
+  </data>
+  <data name="WithCaptionFiles" xml:space="preserve">
+    <value>، مع {0}</value>
+  </data>
+  <data name="AndList" xml:space="preserve">
+    <value>{0} و{1}</value>
+  </data>
+  <data name="GifMadeSmaller" xml:space="preserve">
+    <value> (صُغّر ليناسب الحجم: بعرض {0} px، وبمعدل {1} إطار في الثانية، و{2} لون)</value>
+  </data>
+  <data name="ExportDone" xml:space="preserve">
+    <value>اكتمل خلال {0}: {1}، {2}{3}{4}</value>
+  </data>
+  <data name="ExportCancelled" xml:space="preserve">
+    <value>أُلغي: لم يُنشأ أي ملف.</value>
+  </data>
+  <data name="ExportFileName" xml:space="preserve">
+    <value>تصدير</value>
+  </data>
+  <data name="TranscribeTitle" xml:space="preserve">
+    <value>تسميات توضيحية من الكلام</value>
+  </data>
+  <data name="TranscribeIntro" xml:space="preserve">
+    <value>يتحول الكلام في مسار صوتي إلى تسميات توضيحية على مسار جديد، مع توقيتاتها. يجري كل شيء على هذا الكمبيوتر: لا يُرسَل الصوت إلى أي مكان.</value>
+  </data>
+  <data name="ListenTo" xml:space="preserve">
+    <value>الاستماع إلى</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>اللغة</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>النموذج</value>
+  </data>
+  <data name="UseGpu" xml:space="preserve">
+    <value>استخدام بطاقة الرسومات عند الإمكان (أسرع للتسجيلات الطويلة)</value>
+  </data>
+  <data name="MakeCaptions" xml:space="preserve">
+    <value>إنشاء التسميات التوضيحية</value>
+  </data>
+  <data name="AllSoundTracks" xml:space="preserve">
+    <value>كل المسارات الصوتية</value>
+  </data>
+  <data name="ModelDownloaded" xml:space="preserve">
+    <value>{0}: {1} (تم تنزيله)</value>
+  </data>
+  <data name="ModelToDownload" xml:space="preserve">
+    <value>{0}: {1} ({2} للتنزيل)</value>
+  </data>
+  <data name="FindOutLanguage" xml:space="preserve">
+    <value>اكتشافها من الكلام</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>الإنجليزية</value>
+  </data>
+  <data name="LanguageArabic" xml:space="preserve">
+    <value>العربية</value>
+  </data>
+  <data name="TranscribeRange" xml:space="preserve">
+    <value>النطاق المحدد فقط ({0:0.0} ث)</value>
+  </data>
+  <data name="DownloadingModel" xml:space="preserve">
+    <value>جارٍ تنزيل نموذج «{0}» ({1})، لمرة واحدة…</value>
+  </data>
+  <data name="DownloadingModelProgress" xml:space="preserve">
+    <value>جارٍ تنزيل نموذج «{0}» ({1})، لمرة واحدة… {2:P0}</value>
+  </data>
+  <data name="GettingSound" xml:space="preserve">
+    <value>جارٍ تجهيز الصوت…</value>
+  </data>
+  <data name="Listening" xml:space="preserve">
+    <value>جارٍ الاستماع…</value>
+  </data>
+  <data name="ListeningProgress" xml:space="preserve">
+    <value>جارٍ الاستماع… {0:P0}</value>
+  </data>
+  <data name="NoSpeechHeard" xml:space="preserve">
+    <value>لم يُسمع أي كلام في هذا المسار الصوتي.</value>
+  </data>
+  <data name="TranscribeCancelled" xml:space="preserve">
+    <value>أُلغي.</value>
+  </data>
+  <data name="ModelNotDownloaded" xml:space="preserve">
+    <value>تعذر تنزيل النموذج: {0}</value>
+  </data>
+  <data name="FileFormat" xml:space="preserve">
+    <value>التنسيق</value>
+  </data>
+</root>

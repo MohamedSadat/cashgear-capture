@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Editor.Document;
 using CashGear.Capture.Editor.Effects;
 using CashGear.Capture.Editor.Imaging;
 using CashGear.Capture.Editor.Interaction;
 using CashGear.Capture.Editor.Presets;
+using CashGear.Capture.Editor.Resources;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SkiaSharp;
@@ -166,15 +168,15 @@ public sealed partial class EffectsViewModel : PreviewDialogViewModel
     private bool _loading;
 
     public EffectsViewModel(EditorSession session, EffectEditorContext context, IEnumerable<ImageEffect> effects, string? presetName = null)
-        : base(session, "Effects")
+        : base(session, EditorText.Effects)
     {
         _context = context;
         _presetName = presetName;
         HasArea = session.SelectedArea is not null;
         _toArea = HasArea;
-        Background = new ColorParameter("Behind the area", SKColors.White, allowTransparent: true);
+        Background = new ColorParameter(EditorText.BehindTheArea, SKColors.White, allowTransparent: true);
         Background.PropertyChanged += (_, _) => Invalidate();
-        Presets = new PresetsParameter("Saved effects", LoadPreset, SavePresetAsync, DeletePresetAsync) { IsVisible = context.Presets is not null };
+        Presets = new PresetsParameter(EditorText.SavedEffects, LoadPreset, SavePresetAsync, DeletePresetAsync) { IsVisible = context.Presets is not null };
         foreach (var effect in effects)
         {
             Add(EffectItemViewModel.From(effect, context));
@@ -317,7 +319,7 @@ public sealed partial class EffectsViewModel : PreviewDialogViewModel
     private async Task SavePresetAsync()
     {
         if (_context.Presets is not { } presets || Items.Count == 0
-            || _context.AskName("Save the effects", _presetName ?? Items[0].Name) is not { Length: > 0 } typed)
+            || _context.AskName(EditorText.SaveEffects, _presetName ?? Items[0].Name) is not { Length: > 0 } typed)
         {
             return;
         }
@@ -384,19 +386,19 @@ public sealed class CanvasSizeViewModel : ParameterDialogViewModel
     private readonly ColorParameter _background;
 
     public CanvasSizeViewModel(EditorSession session)
-        : base(session, "Canvas size")
+        : base(session, EditorText.CanvasSize)
     {
         var w = session.Document.Width;
         var h = session.Document.Height;
         var most = Math.Min(ImageOperations.MaxDimension, Math.Max(w, h) * 4);
-        _width = new NumberParameter("Width", 1, most, w, unit: " px");
-        _height = new NumberParameter("Height", 1, most, h, unit: " px");
-        _anchor = new AnchorParameter("The image goes", Anchor.Center);
-        _background = new ColorParameter("Around it", SKColors.White, allowTransparent: true);
+        _width = new NumberParameter(EditorText.Width, 1, most, w, unit: " px");
+        _height = new NumberParameter(EditorText.Height, 1, most, h, unit: " px");
+        _anchor = new AnchorParameter(EditorText.TheImageGoes, Anchor.Center);
+        _background = new ColorParameter(EditorText.AroundIt, SKColors.White, allowTransparent: true);
         Use(_width, _height, _anchor, _background);
     }
 
-    protected override string EditName => "change the canvas size";
+    protected override string EditName => EditorStrings.UndoCanvasSize;
 
     protected override DocumentState Compute(DocumentState state) =>
         _width.IntValue == state.Image.Width && _height.IntValue == state.Image.Height
@@ -411,16 +413,16 @@ public sealed class RotateViewModel : ParameterDialogViewModel
     private readonly ColorParameter _background;
 
     public RotateViewModel(EditorSession session)
-        : base(session, "Rotate")
+        : base(session, EditorText.Rotate)
     {
-        _angle = new NumberParameter("Angle (clockwise)", -180, 180, 0, step: 0.5, unit: "°");
-        _background = new ColorParameter("In the corners", SKColors.Transparent, allowTransparent: true);
+        _angle = new NumberParameter(EditorText.AngleClockwise, -180, 180, 0, step: 0.5, unit: "°");
+        _background = new ColorParameter(EditorText.InTheCorners, SKColors.Transparent, allowTransparent: true);
         Use(_angle, _background);
     }
 
     public NumberParameter Angle => _angle;
 
-    protected override string EditName => "rotate";
+    protected override string EditName => EditorStrings.UndoRotate;
 
     protected override DocumentState Compute(DocumentState state) => ImageOperations.RotateBy(state, _angle.Value, _background.Value.Value);
 }

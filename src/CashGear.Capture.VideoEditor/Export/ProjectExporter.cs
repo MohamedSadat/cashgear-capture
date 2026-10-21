@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using CashGear.Capture.Core.Diagnostics;
 using CashGear.Capture.Core.Recording;
@@ -6,6 +7,7 @@ using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.VideoEditor.Playback;
 using CashGear.Capture.VideoEditor.Rendering;
+using CashGear.Capture.VideoEditor.Resources;
 using Microsoft.Extensions.Logging;
 using SkiaSharp;
 
@@ -18,12 +20,12 @@ public sealed class ExportException : Exception
     {
     }
 
-    public ExportException(string message)
+    public ExportException([Localizable(true)] string message)
         : base(message)
     {
     }
 
-    public ExportException(string message, Exception innerException)
+    public ExportException([Localizable(true)] string message, Exception innerException)
         : base(message, innerException)
     {
     }
@@ -73,6 +75,10 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
 {
     private static readonly TimeSpan ReportEvery = TimeSpan.FromMilliseconds(200);
 
+    /// <summary>The sound stream's title in the file, kept in English like a recording's ("Microphone").</summary>
+    [Localizable(false)]
+    private const string SoundStreamTitle = "Sound";
+
     public Task<ExportResult> ExportAsync(ExportRequest request, IProgress<ExportProgress>? progress = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -89,7 +95,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
 
         if (request.Project.Duration <= 0)
         {
-            throw new ExportException("The timeline is empty: there is nothing to export.");
+            throw new ExportException(VideoEditorStrings.TimelineEmpty);
         }
 
         var project = request.Prepared();
@@ -108,7 +114,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         }
         catch (FfmpegException e)
         {
-            throw new ExportException($"The export failed: {e.Message}", e);
+            throw new ExportException(VideoEditorStrings.ExportFailed(e.Message), e);
         }
         finally
         {
@@ -169,7 +175,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
 
         if (!preset.HasVideo)
         {
-            writer.Add(audio, "Sound");
+            writer.Add(audio, SoundStreamTitle);
             var step = (long)TimelineMixer.SampleRate;
             for (var at = 0L; at < totalSamples; at += step)
             {
@@ -189,11 +195,11 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         var format = new VideoFormat(width, height, fps);
         using var video = OpenEncoder(preset.Codec!.Value, format, request, detected);
         writer.Add(video);
-        writer.Add(audio, "Sound");
+        writer.Add(audio, SoundStreamTitle);
         using var frames = new ExportFrameProvider(VideoDecoding.Hardware);
         using var converter = new FrameConverter(width, height, video.PixelFormat);
         using var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul))
-            ?? throw new ExportException($"Not enough memory for {width} × {height} pictures.");
+            ?? throw new ExportException(VideoEditorStrings.NotEnoughMemory(width, height));
         var compositor = new FrameCompositor(frames);
         var count = (long)Math.Ceiling((duration * fps) - 1e-6);
         for (var n = 0L; n < count; n++)
@@ -249,7 +255,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
             long bytes;
             using (var gif = new GifWriter(partial, width, height, options.Fps, new GifSettings(options.Colors, options.Dither, options.Loop ? 0 : -1)))
             using (var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul))
-                ?? throw new ExportException($"Not enough memory for {width} × {height} pictures."))
+                ?? throw new ExportException(VideoEditorStrings.NotEnoughMemory(width, height)))
             {
                 for (var pass = 0; pass < 2; pass++)
                 {
@@ -302,7 +308,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
             if (options.MaxBytes <= 0 || bytes <= options.MaxBytes || attempt >= 4 || options.Smaller() is not { } smaller)
             {
                 progress?.Report(new ExportProgress(1, watch.Elapsed, TimeSpan.Zero));
-                return new ExportResult(partial, TimeSpan.FromSeconds((double)count / options.Fps), count, bytes, "GIF (FFmpeg palettegen and paletteuse)", watch.Elapsed, Gif: options);
+                return new ExportResult(partial, TimeSpan.FromSeconds((double)count / options.Fps), count, bytes, VideoEditorStrings.GifEncoder, watch.Elapsed, Gif: options);
             }
 
             LogGifTooLarge(bytes, options.MaxBytes, attempt);
@@ -351,8 +357,8 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         }
 
         throw new ExportException(problems.Count == 0
-            ? $"No {codec} encoder works on this PC."
-            : $"No {codec} encoder could encode {format.Width} × {format.Height}. {string.Join(" ", problems)}");
+            ? VideoEditorStrings.NoEncoder(codec)
+            : VideoEditorStrings.NoEncoderForSize(codec, format.Width, format.Height, string.Join(" ", problems)));
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Exporting {Path} ({Preset}, {Quality})")]

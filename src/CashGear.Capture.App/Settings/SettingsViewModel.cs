@@ -41,7 +41,7 @@ public interface IFolderPicker
 public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private static readonly FileNameContext PreviewContext =
-        new(new DateTimeOffset(2026, 3, 7, 14, 30, 5, TimeSpan.Zero), CaptureKind.Region, "DISPLAY1", "Untitled - Notepad");
+        new(new DateTimeOffset(2026, 3, 7, 14, 30, 5, TimeSpan.Zero), CaptureKind.Region, "DISPLAY1", SettingsText.PreviewWindowTitle);
 
     private readonly ISettingsService _settings;
     private readonly AppPaths _paths;
@@ -125,26 +125,26 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _encoders = encoders;
         _recorder = recorder;
         _context = SynchronizationContext.Current;
-        OcrLanguages = [new OcrLanguageChoice(null, "Automatic (your Windows languages)"),
+        OcrLanguages = [new OcrLanguageChoice(null, SettingsText.OcrAutomatic),
             .. (ocr?.AvailableLanguages ?? []).Select(l => new OcrLanguageChoice(l.Tag, $"{l.DisplayName} — {l.NativeName}"))];
-        FfmpegStatus = encoders is null ? "Screen recording isn't available."
-            : encoders.Problem is { } problem ? "Screen recording isn't available. " + problem
-            : $"FFmpeg {encoders.FfmpegVersion}, built into the app (LGPL; see THIRD-PARTY-NOTICES.txt).";
+        FfmpegStatus = encoders is null ? SettingsText.RecordingUnavailable
+            : encoders.Problem is { } problem ? SettingsText.RecordingUnavailableBecause(problem)
+            : SettingsText.FfmpegBuiltIn(encoders.FfmpegVersion);
         IsFfmpegMissing = encoders is null || encoders.Problem is not null;
         Microphones =
         [
-            new DeviceChoice(null, "None"),
-            new DeviceChoice(RecordingSettings.DefaultMicrophone, "Default microphone (Windows setting)"),
+            new DeviceChoice(null, CommonText.None),
+            new DeviceChoice(RecordingSettings.DefaultMicrophone, SettingsText.DefaultMicrophone),
             .. (audio?.Microphones() ?? []).Select(m => new DeviceChoice(m.Id, m.Name)),
         ];
         OutputDevices =
         [
-            new DeviceChoice(null, "Default output device (follows Windows)"),
+            new DeviceChoice(null, SettingsText.DefaultOutputDevice),
             .. (audio?.Outputs() ?? []).Select(d => new DeviceChoice(d.Id, d.Name)),
         ];
         SpeakersStatus = audio?.DefaultOutput() is { } speakers
-            ? $"The default output device is {speakers.Name} now. If another becomes the default during a recording, system audio follows it; a device that is unplugged is recorded again when it is back."
-            : "No sound output device was found; system audio is silent until one is connected.";
+            ? SettingsText.DefaultOutputIs(speakers.Name)
+            : SettingsText.NoOutputDevice;
         _settings = settings;
         _paths = paths;
         _hotkeys = hotkeys;
@@ -222,7 +222,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>What each kind of capture's own delay can be (a value set by hand in settings.json is added).</summary>
     public ObservableCollection<ModeDelayChoice> ModeDelayChoices { get; } =
-        [new(null, "Same as the capture delay"), .. new[] { 0, 1, 2, 3, 5, 10, 15, 30 }.Select(s => new ModeDelayChoice(s, $"{s} s"))];
+        [new(null, SettingsText.SameAsCaptureDelay), .. new[] { 0, 1, 2, 3, 5, 10, 15, 30 }.Select(s => new ModeDelayChoice(s, CommonText.SecondsShort(s)))];
 
     /// <summary>A delay per kind of capture.</summary>
     public IReadOnlyList<ModeDelayRow> ModeDelays { get; } = [.. Enum.GetValues<CaptureMode>().Select(m => new ModeDelayRow(m))];
@@ -235,7 +235,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>How many captures the history keeps (a value set by hand in settings.json is added).</summary>
     public ObservableCollection<CountChoice> HistorySizes { get; } =
-        [new(0, "Off (keep none)"), new(10, "10 captures"), new(20, "20 captures"), new(50, "50 captures"), new(100, "100 captures")];
+        [new(0, SettingsText.HistoryOff), .. new[] { 10, 20, 50, 100 }.Select(n => new CountChoice(n, SettingsText.Captures(n)))];
 
     /// <summary>E.g. "Version 1.0.0".</summary>
     public string VersionText => UpdatesText.Version(BuildInfo.Version);
@@ -307,13 +307,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         selectedId ??= RecordingEncoder?.Id ?? EncoderPresets.Auto;
         var detected = _encoders?.Detected;
         Encoders.Clear();
-        Encoders.Add(new EncoderChoice(EncoderPresets.Auto, "Automatic: the best that works here (recommended)"));
-        Encoders.Add(new EncoderChoice(EncoderPresets.Software, "Software only (uses the CPU)"));
+        Encoders.Add(new EncoderChoice(EncoderPresets.Auto, SettingsText.EncoderAutomatic));
+        Encoders.Add(new EncoderChoice(EncoderPresets.Software, SettingsText.EncoderSoftware));
         foreach (var candidate in EncoderPresets.All)
         {
             var probe = detected?.FirstOrDefault(p => p.Id == candidate.Id);
             var label = probe is null ? candidate.DisplayName
-                : !probe.Works ? candidate.DisplayName + " (not available here)"
+                : !probe.Works ? SettingsText.EncoderNotAvailable(candidate.DisplayName)
                 : candidate.FfmpegName is "h264_mf" or "hevc_mf" && candidate.Hardware && probe.Detail is { } device ? $"{candidate.DisplayName}: {device}"
                 : candidate.DisplayName;
             Encoders.Add(new EncoderChoice(candidate.Id, label));
@@ -323,7 +323,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         if (RecordingEncoder is null)
         {
             // An id set by hand that this version doesn't know stays (and is kept) rather than silently becoming Automatic.
-            RecordingEncoder = new EncoderChoice(selectedId, selectedId + " (unknown)");
+            RecordingEncoder = new EncoderChoice(selectedId, SettingsText.EncoderUnknown(selectedId));
             Encoders.Add(RecordingEncoder);
         }
 
@@ -333,7 +333,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
         else if (detected is null || IsDetectingEncoders)
         {
-            EncoderStatus = "Checking which encoders work on this PC…";
+            EncoderStatus = SettingsText.CheckingEncoders;
             if (detected is null && !IsDetectingEncoders)
             {
                 _ = DetectEncodersAsync(force: false);
@@ -343,8 +343,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             var working = EncoderPresets.All.Where(c => detected.Any(p => p.Id == c.Id && p.Works)).Select(c => c.DisplayName).ToList();
             EncoderStatus = working.Count == 0
-                ? "No encoder works on this PC, so recording is unavailable."
-                : "Works on this PC: " + string.Join(", ", working) + ".";
+                ? SettingsText.NoEncoderWorks
+                : SettingsText.EncodersWorking(string.Join(SettingsText.ListSeparator, working));
         }
     }
 
@@ -358,13 +358,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Apps.Clear();
         foreach (var app in _apps?.List() ?? [])
         {
-            Apps.Add(new AppChoice(app.Exe, app.Name, app.PlayingSound ? $"{app.Name} (playing sound)" : app.Name));
+            Apps.Add(new AppChoice(app.Exe, app.Name, app.PlayingSound ? SettingsText.AppPlayingSound(app.Name) : app.Name));
         }
 
         RecordingApp = exe is null ? null : Apps.FirstOrDefault(a => string.Equals(a.Exe, exe, StringComparison.OrdinalIgnoreCase));
         if (RecordingApp is null && exe is not null)
         {
-            RecordingApp = new AppChoice(exe, name ?? exe, $"{name ?? exe} (not running)");
+            RecordingApp = new AppChoice(exe, name ?? exe, SettingsText.AppNotRunning(name ?? exe));
             Apps.Insert(0, RecordingApp);
         }
     }
@@ -396,7 +396,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private async Task DetectEncodersAsync(bool force)
     {
         IsDetectingEncoders = true;
-        EncoderStatus = "Checking which encoders work on this PC…";
+        EncoderStatus = SettingsText.CheckingEncoders;
         try
         {
             await Task.Run(() => _encoders!.DetectAsync(force)).ConfigureAwait(true);
@@ -451,7 +451,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>The ruler's pixels per inch: automatic (each monitor's) or a number (a value set by hand is added).</summary>
     public ObservableCollection<CountChoice> RulerDpiChoices { get; } =
-        [new(0, "Automatic (each monitor's scale: 96 at 100%)"), new(72, "72"), new(96, "96"), new(120, "120"), new(144, "144"), new(192, "192")];
+        [new(0, SettingsText.RulerDpiAutomatic), new(72, "72"), new(96, "96"), new(120, "120"), new(144, "144"), new(192, "192")];
 
     [ObservableProperty]
     private CountChoice? _rulerDpi;
@@ -547,28 +547,28 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     {
         if (string.IsNullOrWhiteSpace(PushToTalkText))
         {
-            (PushToTalkStatus, PushToTalkHasProblem) = ("Not set: the microphone is always recorded", false);
+            (PushToTalkStatus, PushToTalkHasProblem) = (SettingsText.PushToTalkNotSet, false);
             return null;
         }
 
         if (!HotkeyGesture.TryParse(PushToTalkText, out var key))
         {
-            (PushToTalkStatus, PushToTalkHasProblem) = ("Not a valid key", true);
-            return $"Push to talk: \"{PushToTalkText}\" is not a valid key.";
+            (PushToTalkStatus, PushToTalkHasProblem) = (SettingsText.PushToTalkInvalid, true);
+            return SettingsText.PushToTalkInvalidError(PushToTalkText);
         }
 
         var clash = Hotkeys.FirstOrDefault(r => HotkeyGesture.TryParse(r.SettingText, out var other) && other == key);
         if (clash is not null)
         {
-            (PushToTalkStatus, PushToTalkHasProblem) = ($"Same as {clash.Label}", true);
-            return $"Push to talk: {key} is already the hotkey for {clash.Label}.";
+            (PushToTalkStatus, PushToTalkHasProblem) = (SettingsText.SameAs(clash.Label), true);
+            return SettingsText.PushToTalkClash(key, clash.Label);
         }
 
-        (PushToTalkStatus, PushToTalkHasProblem) = ("Hold it while recording", false);
+        (PushToTalkStatus, PushToTalkHasProblem) = (SettingsText.PushToTalkReady, false);
         return null;
     }
 
-    public string GateThresholdText => $"{GateThresholdDb:0} dB";
+    public string GateThresholdText => SettingsText.Decibels(GateThresholdDb);
 
     public double MinGateThresholdDb => MicrophoneProcessing.MinGateThresholdDb;
 
@@ -591,7 +591,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private string _monitorStatus = string.Empty;
 
     [ObservableProperty]
-    private string _microphoneTestStatus = "Records 5 seconds of the microphone, then plays them back as recorded or as processed.";
+    private string _microphoneTestStatus = SettingsText.MicTestIntro;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(TestMicrophoneCommand), nameof(PlayOriginalCommand), nameof(PlayProcessedCommand))]
@@ -701,15 +701,15 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private async Task TestMicrophoneAsync()
     {
         IsTestingMicrophone = true;
-        MicrophoneTestStatus = "Recording 5 seconds: say something, and let the room be heard too…";
+        MicrophoneTestStatus = SettingsText.MicTestRecording;
         try
         {
             _testRecording = await _monitor!.RecordMicrophoneAsync(RecordingMicrophone!.Id!, TimeSpan.FromSeconds(5)).ConfigureAwait(true);
-            MicrophoneTestStatus = "Recorded. Play it as recorded, or with the processing above; change the processing and play again to compare.";
+            MicrophoneTestStatus = SettingsText.MicTestRecorded;
         }
         catch (Exception ex) when (ex is InvalidOperationException or TimeoutException or System.Runtime.InteropServices.COMException)
         {
-            MicrophoneTestStatus = "The microphone couldn't be recorded: " + ex.Message;
+            MicrophoneTestStatus = SettingsText.MicTestFailed(ex.Message);
         }
         finally
         {
@@ -741,17 +741,17 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             var samples = processed
                 ? await Task.Run(() => _monitor!.Process(recording, CurrentProcessing())).ConfigureAwait(true)
                 : recording;
-            MicrophoneTestStatus = processed ? "Playing with the processing…" : "Playing as recorded…";
+            MicrophoneTestStatus = processed ? SettingsText.MicTestPlayingProcessed : SettingsText.MicTestPlayingOriginal;
             await _monitor!.PlayAsync(samples, playback.Token).ConfigureAwait(true);
-            MicrophoneTestStatus = "Played. Play again, or record a new test.";
+            MicrophoneTestStatus = SettingsText.MicTestPlayed;
         }
         catch (OperationCanceledException)
         {
-            MicrophoneTestStatus = "Stopped.";
+            MicrophoneTestStatus = SettingsText.MicTestStopped;
         }
         catch (System.Runtime.InteropServices.COMException ex)
         {
-            MicrophoneTestStatus = "It couldn't be played: " + ex.Message.Trim();
+            MicrophoneTestStatus = SettingsText.MicTestPlayFailed(ex.Message.Trim());
         }
         finally
         {
@@ -1006,9 +1006,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     {
         var hdr = monitors.Where(m => m.Hdr is not null).ToList();
         var now = hdr.Count == 0
-            ? "No monitor is in HDR mode now."
-            : string.Join(", ", hdr.Select(m => $"{m.ShortName} is in HDR mode (SDR content at {m.Hdr!.SdrWhiteNits:0} nits)")) + ".";
-        return now + " On a monitor in HDR mode, captures, recordings and the magnifier read the screen in 16-bit float and turn it into SDR the way an SDR monitor would show it; HDR highlights brighter than SDR white become white. This uses Windows.Graphics.Capture, so Windows 10 shows its yellow border on that monitor.";
+            ? SettingsText.HdrNoMonitor
+            : SettingsText.HdrMonitorList(string.Join(SettingsText.ListSeparator, hdr.Select(m => SettingsText.HdrMonitor(m.ShortName, m.Hdr!.SdrWhiteNits))));
+        return SettingsText.HdrExplanation(now);
     }
 
     private bool CanSave() => !HasErrors;
@@ -1034,7 +1034,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or System.Security.SecurityException)
             {
                 LogStartupFailed(ex);
-                Errors = "Could not change \"Start with Windows\": " + ex.Message;
+                Errors = SettingsText.StartupFailed(ex.Message);
                 return false;
             }
         }
@@ -1082,7 +1082,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
         {
             LogSecretsFailed(ex);
-            Errors = "Passwords could not be saved: " + ex.Message;
+            Errors = DestinationsText.PasswordsNotSaved(ex.Message);
         }
     }
 
@@ -1101,16 +1101,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>Without the registry (tests): the built-in names, and the configured ones by their labels.</summary>
     private IEnumerable<(string Id, string Name, bool Video)> BuiltInDestinations(AppSettings settings) =>
     [
-        (DestinationIds.Editor, "Open in the editor", false),
-        (DestinationIds.VideoEditor, "Open in the video editor", true),
-        (DestinationIds.Gif, "Make a GIF", true),
-        (DestinationIds.File, "Save to file", true),
-        (DestinationIds.Clipboard, "Copy to clipboard", true),
-        (DestinationIds.Printer, "Print", false),
-        (DestinationIds.Word, "Word document", false),
-        (DestinationIds.PowerPoint, "PowerPoint slide", false),
-        (DestinationIds.Pdf, "PDF", false),
-        (DestinationIds.CopyLink, "Copy the link", true),
+        (DestinationIds.Editor, DestinationsText.OpenInEditor, false),
+        (DestinationIds.VideoEditor, DestinationsText.OpenInVideoEditor, true),
+        (DestinationIds.Gif, DestinationsText.MakeGif, true),
+        (DestinationIds.File, DestinationsText.SaveToFile, true),
+        (DestinationIds.Clipboard, DestinationsText.CopyToClipboard, true),
+        (DestinationIds.Printer, DestinationsText.Print, false),
+        (DestinationIds.Word, DestinationsText.WordDocument, false),
+        (DestinationIds.PowerPoint, DestinationsText.PowerPointSlide, false),
+        (DestinationIds.Pdf, DestinationsText.PdfSection, false),
+        (DestinationIds.CopyLink, DestinationsText.CopyLink, true),
         .. Destinations.Servers.Select(s => (DestinationIds.Server(s.Id), s.Label, true)),
         .. Destinations.Uploads.Select(u => (DestinationIds.Upload(u.Id), u.Label, true)),
         .. Destinations.Apps.Select(a => (DestinationIds.App(a.Id), a.Label, true)),
@@ -1121,7 +1121,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     {
         if (_registry?.Find(id, EditedDestinations(), Destinations.Secrets) is not { } destination)
         {
-            return OutputResult.Failed("This can't be tested here.");
+            return OutputResult.Failed(DestinationsText.CantTestHere);
         }
 
         try
@@ -1232,14 +1232,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             row.Choice = ModeDelayChoices.FirstOrDefault(c => c.Seconds == seconds);
             if (row.Choice is null)
             {
-                row.Choice = new ModeDelayChoice(seconds, $"{seconds} s");
+                row.Choice = new ModeDelayChoice(seconds, CommonText.SecondsShort(seconds));
                 ModeDelayChoices.Add(row.Choice);
             }
         }
         ScrollSettleMs = s.Capture.ScrollSettleMs;
         // A language set by hand but not installed still shows (and is kept) rather than silently becoming Automatic.
         OcrLanguage = OcrLanguages.FirstOrDefault(l => string.Equals(l.Tag, s.Ocr.Language, StringComparison.OrdinalIgnoreCase))
-            ?? new OcrLanguageChoice(s.Ocr.Language, s.Ocr.Language + " (not installed)");
+            ?? new OcrLanguageChoice(s.Ocr.Language, SettingsText.OcrNotInstalled(s.Ocr.Language));
         RecordingFps = s.Recording.Fps;
         RecordingQuality = s.Recording.Quality;
         RecordingTracks = s.Recording.Tracks;
@@ -1251,7 +1251,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         RecordingMicrophone = Microphones.FirstOrDefault(m => string.Equals(m.Id, s.Recording.Microphone, StringComparison.OrdinalIgnoreCase));
         if (RecordingMicrophone is null)
         {
-            RecordingMicrophone = new DeviceChoice(s.Recording.Microphone, "The microphone chosen before (not connected)");
+            RecordingMicrophone = new DeviceChoice(s.Recording.Microphone, SettingsText.MicrophoneNotConnected);
             Microphones.Add(RecordingMicrophone);
         }
 
@@ -1269,7 +1269,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         RecordingOutput = OutputDevices.FirstOrDefault(d => string.Equals(d.Id, s.Recording.SystemAudioDevice, StringComparison.OrdinalIgnoreCase));
         if (RecordingOutput is null)
         {
-            RecordingOutput = new DeviceChoice(s.Recording.SystemAudioDevice, "The output device chosen before (not connected)");
+            RecordingOutput = new DeviceChoice(s.Recording.SystemAudioDevice, SettingsText.OutputDeviceNotConnected);
             OutputDevices.Add(RecordingOutput);
         }
 
@@ -1285,7 +1285,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         HistorySize = HistorySizes.FirstOrDefault(c => c.Value == s.History.MaxItems);
         if (HistorySize is null)
         {
-            HistorySize = new CountChoice(s.History.MaxItems, $"{s.History.MaxItems} captures");
+            HistorySize = new CountChoice(s.History.MaxItems, SettingsText.Captures(s.History.MaxItems));
             HistorySizes.Add(HistorySize);
         }
 
@@ -1305,7 +1305,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         var errors = new List<string>();
         if (!Templates.TryValidate(FileNameTemplate, out var templateError))
         {
-            errors.Add("File name: " + templateError);
+            errors.Add(SettingsText.FileNameError(templateError));
         }
 
         if (!string.IsNullOrWhiteSpace(OutputFolder))
@@ -1313,25 +1313,25 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             var expanded = Environment.ExpandEnvironmentVariables(OutputFolder.Trim());
             if (expanded.IndexOfAny(Path.GetInvalidPathChars()) >= 0 || !Path.IsPathFullyQualified(expanded))
             {
-                errors.Add("Folder: use a full path such as D:\\Screenshots (or leave it empty for the default).");
+                errors.Add(SettingsText.FolderError);
             }
         }
 
         if (!PixelSize.TryParse(FixedRegionSize, out var fixedSize) || fixedSize.Width > CaptureSettings.MaxFixedRegionSide || fixedSize.Height > CaptureSettings.MaxFixedRegionSide)
         {
-            errors.Add("Fixed-size region: write the size as width × height in pixels, e.g. 800 × 600.");
+            errors.Add(SettingsText.FixedSizeError);
         }
 
         if (!CaptureWorkflow.AnyEnabled)
         {
-            errors.Add("After capture: switch on at least one step, such as \"Open in the editor\" or \"Save to file\".");
+            errors.Add(SettingsText.WorkflowEmptyError);
         }
 
         errors.AddRange(Destinations.Problems());
 
         if (IsAppChoiceEnabled && RecordingApp is null)
         {
-            errors.Add("Sound: choose the app whose sound is recorded (or left out), or record all sound.");
+            errors.Add(SettingsText.AppNotChosenError);
         }
 
         errors.AddRange(ValidateHotkeys());
@@ -1352,28 +1352,28 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             if (row.SettingText is not { } text)
             {
-                row.SetStatus("Not set", problem: false);
+                row.SetStatus(SettingsText.HotkeyNotSet, problem: false);
                 continue;
             }
 
             if (!HotkeyGesture.TryParse(text, out var gesture))
             {
-                row.SetStatus("Not a valid hotkey", problem: true);
-                yield return $"{row.Label}: \"{text}\" is not a valid hotkey.";
+                row.SetStatus(SettingsText.HotkeyInvalid, problem: true);
+                yield return SettingsText.HotkeyInvalidError(row.Label, text);
                 continue;
             }
 
             if (!gesture.IsSafeAsGlobalHotkey)
             {
-                row.SetStatus("Add Ctrl, Alt, Shift or Win", problem: true);
-                yield return $"{row.Label}: {gesture} on its own would block that key in every app; add Ctrl, Alt, Shift or Win.";
+                row.SetStatus(SettingsText.HotkeyNeedsModifier, problem: true);
+                yield return SettingsText.HotkeyAloneError(row.Label, gesture);
                 continue;
             }
 
             if (seen.TryGetValue(gesture, out var other))
             {
-                row.SetStatus($"Same as {other.Label}", problem: true);
-                yield return $"{row.Label}: {gesture} is already used for {other.Label}.";
+                row.SetStatus(SettingsText.SameAs(other.Label), problem: true);
+                yield return SettingsText.HotkeyClashError(row.Label, gesture, other.Label);
                 continue;
             }
 
@@ -1387,15 +1387,15 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     {
         if (!IsApplied(action, gesture))
         {
-            return "Applies when you save";
+            return SettingsText.HotkeyAppliesOnSave;
         }
 
         if (HotkeyRegistrar.IsRecordingOnly(action) && !_hotkeys.Active.ContainsKey(action) && !_hotkeys.Problems.ContainsKey(action))
         {
-            return "Works while recording";
+            return SettingsText.HotkeyWhileRecording;
         }
 
-        return _hotkeys.Problems.TryGetValue(action, out var problem) ? problem : "Active";
+        return _hotkeys.Problems.TryGetValue(action, out var problem) ? problem : SettingsText.HotkeyActive;
     }
 
     private bool IsApplied(HotkeyAction action, HotkeyGesture gesture) =>

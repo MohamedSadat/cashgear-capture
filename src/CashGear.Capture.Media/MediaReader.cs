@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -52,7 +53,7 @@ public sealed unsafe class BgraConverter : IDisposable
                 (int)SwsFlags.SWS_POINT, null, null, null);
             if (_context is null)
             {
-                throw new FfmpegException($"swscale can't convert {(AVPixelFormat)frame->format} to BGRA.");
+                throw new FfmpegException(MediaStrings.CantConvertToBgra((AVPixelFormat)frame->format));
             }
 
             var yuv = *(int4*)ffmpeg.sws_getCoefficients(ffmpeg.SWS_CS_ITU709);
@@ -99,9 +100,9 @@ public sealed unsafe class MediaReader : IDisposable
     public MediaReader(string path)
     {
         AVFormatContext* input = null;
-        FfmpegException.Check(ffmpeg.avformat_open_input(&input, path, null, null), $"Opening {path}");
+        FfmpegException.Check(ffmpeg.avformat_open_input(&input, path, null, null), MediaStrings.Opening(path));
         _input = input;
-        FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), $"Reading {path}");
+        FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), MediaStrings.Reading(path));
         var streams = new List<MediaStreamInfo>();
         for (var i = 0; i < input->nb_streams; i++)
         {
@@ -257,15 +258,15 @@ public sealed unsafe class MediaReader : IDisposable
         var frame = ffmpeg.av_frame_alloc();
         try
         {
-            FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(context, stream->codecpar), "Setting up the decoder");
+            FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(context, stream->codecpar), MediaStrings.SettingUpDecoder);
             context->pkt_timebase = stream->time_base;
-            FfmpegException.Check(ffmpeg.avcodec_open2(context, codec, null), "Opening the decoder");
-            FfmpegException.Check(ffmpeg.av_seek_frame(_input, -1, long.MinValue, ffmpeg.AVSEEK_FLAG_BACKWARD), "Rewinding");
+            FfmpegException.Check(ffmpeg.avcodec_open2(context, codec, null), MediaStrings.OpeningDecoder);
+            FfmpegException.Check(ffmpeg.av_seek_frame(_input, -1, long.MinValue, ffmpeg.AVSEEK_FLAG_BACKWARD), MediaStrings.Rewinding);
             while (ffmpeg.av_read_frame(_input, packet) >= 0)
             {
                 if (packet->stream_index == streamIndex)
                 {
-                    FfmpegException.Check(ffmpeg.avcodec_send_packet(context, packet), "Decoding");
+                    FfmpegException.Check(ffmpeg.avcodec_send_packet(context, packet), MediaStrings.Decoding);
                     Drain(context, frame, onFrame);
                 }
 

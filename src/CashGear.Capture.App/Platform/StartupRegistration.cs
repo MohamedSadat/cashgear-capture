@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 
@@ -19,6 +20,7 @@ public interface IStartupRegistration
 public sealed partial class RegistryStartupRegistration : IStartupRegistration
 {
     public const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    [Localizable(false)] // the registry value's name
     public const string DefaultValueName = "CashGear Capture";
 
     private readonly string _keyPath;
@@ -69,7 +71,7 @@ public sealed partial class RegistryStartupRegistration : IStartupRegistration
     /// Removes the start-with-Windows entry if it starts <paramref name="exePath"/>. The uninstaller uses this: an
     /// entry made by another copy of the app (e.g. a development build) is left alone. Returns whether one was removed.
     /// </summary>
-    public static bool RemoveIfRegisteredFor(string? exePath, string keyPath = RunKeyPath, string valueName = DefaultValueName)
+    public static bool RemoveIfRegisteredFor(string? exePath, string keyPath = RunKeyPath, [Localizable(false)] string valueName = DefaultValueName)
     {
         if (string.IsNullOrEmpty(exePath))
         {

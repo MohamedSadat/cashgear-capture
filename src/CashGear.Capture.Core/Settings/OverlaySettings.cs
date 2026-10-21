@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Text.Json.Serialization;
 
@@ -206,11 +207,12 @@ public sealed record PointerOverlaySettings(
 public sealed record KeystrokeOverlaySettings(
     KeystrokeMode Mode = KeystrokeMode.Off,
     OverlayAnchor Position = OverlayAnchor.BottomCenter,
-    string FontFamily = KeystrokeOverlaySettings.DefaultFontFamily,
+    [Localizable(false)] string FontFamily = KeystrokeOverlaySettings.DefaultFontFamily, // a font's name
     int FontSize = KeystrokeOverlaySettings.DefaultFontSize,
     double FadeSeconds = KeystrokeOverlaySettings.DefaultFadeSeconds,
     IReadOnlyList<string>? ExcludedApps = null)
 {
+    [Localizable(false)] // a font's name
     public const string DefaultFontFamily = "Segoe UI";
     public const int DefaultFontSize = 22;
     public const double DefaultFadeSeconds = 1.5;

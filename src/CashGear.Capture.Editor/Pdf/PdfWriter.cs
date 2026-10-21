@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Pdf;
@@ -54,7 +56,7 @@ public sealed class PdfPicture
     /// <summary>Its pixels per device-independent unit (1.5 for a capture at 150%); files count as 1.</summary>
     public double Scale { get; }
 
-    public string Name => _path is null ? "picture" : Path.GetFileName(_path);
+    public string Name => _path is null ? EditorStrings.PictureName : Path.GetFileName(_path);
 
     public static PdfPicture FromFile(string path)
     {
@@ -81,7 +83,7 @@ public sealed class PdfPicture
         }
 
         using var data = SKData.CreateCopy(File.ReadAllBytes(_path!));
-        var image = SKImage.FromEncodedData(data) ?? throw new InvalidDataException($"{Name} isn't a picture this app can read.");
+        var image = SKImage.FromEncodedData(data) ?? throw new InvalidDataException(EditorStrings.NotAPicture(Name));
         return (image, true);
     }
 }
@@ -89,6 +91,10 @@ public sealed class PdfPicture
 /// <summary>Writes pictures into a PDF with Skia's PDF backend, one page at a time (each picture is read, drawn and freed).</summary>
 public static class PdfWriter
 {
+    /// <summary>The PDF's Creator and Producer: the product's name, which is never translated.</summary>
+    [Localizable(false)]
+    private const string Product = "CashGear Capture";
+
     /// <summary>Writes the PDF to <paramref name="path"/> (through a temporary file, so a cancelled or failed run leaves nothing).</summary>
     public static async Task WriteAsync(string path, IReadOnlyList<PdfPicture> pictures, PdfOptions options, string? title = null, IProgress<int>? progress = null, CancellationToken ct = default)
     {
@@ -130,15 +136,15 @@ public static class PdfWriter
         var metadata = new SKDocumentPdfMetadata
         {
             Title = title ?? string.Empty,
-            Creator = "CashGear Capture",
-            Producer = "CashGear Capture",
+            Creator = Product,
+            Producer = Product,
             Creation = now,
             Modified = now,
             EncodingQuality = options.SmallerFile ? 85 : 101,
             RasterDpi = SKDocument.DefaultRasterDpi,
         };
 
-        using var document = SKDocument.CreatePdf(output, metadata) ?? throw new InvalidOperationException("Could not start the PDF.");
+        using var document = SKDocument.CreatePdf(output, metadata) ?? throw new InvalidOperationException(EditorStrings.PdfNotStarted);
         var done = 0;
         foreach (var page in pictures.Chunk(options.PerPage))
         {

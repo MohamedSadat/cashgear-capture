@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.ImageTools"
         xmlns:settings="clr-namespace:CashGear.Capture.App.Settings"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PdfToolViewModel}"
-        Title="Images to PDF – CashGear Capture" Width="780" Height="580" MinWidth="640" MinHeight="440"
+        Title="{x:Static r:ImageToolsText.PdfTitle}" Width="780" Height="580" MinWidth="640" MinHeight="440"
         WindowStartupLocation="CenterScreen">
   <Window.Resources>
     <ResourceDictionary>
@@ -26,10 +27,10 @@
       <ProgressBar Height="6" Maximum="100" Value="{Binding Progress}" />
       <TextBlock Text="{Binding Status}" Margin="0,6,0,0" TextWrapping="Wrap" />
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-        <Button Content="Open the PDF" Command="{Binding OpenCommand}" Margin="0,0,8,0" />
-        <Button Content="Show in folder" Command="{Binding ShowInFolderCommand}" Margin="0,0,8,0" />
-        <Button Content="Cancel" Command="{Binding CancelCommand}" MinWidth="90" Margin="0,0,8,0" />
-        <Button Content="Make the PDF…" Command="{Binding MakeCommand}" IsDefault="True" FontWeight="SemiBold" />
+        <Button Content="{x:Static r:ImageToolsText.OpenPdf}" Command="{Binding OpenCommand}" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:ImageToolsText.ShowInFolder}" Command="{Binding ShowInFolderCommand}" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelCommand}" MinWidth="90" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:ImageToolsText.MakePdf}" Command="{Binding MakeCommand}" IsDefault="True" FontWeight="SemiBold" />
       </StackPanel>
     </StackPanel>
 
@@ -44,24 +45,24 @@
 
       <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
         <StackPanel Margin="0,0,8,0">
-          <TextBlock Text="Paper" />
-          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Paper" />
-          <TextBlock Text="Orientation" />
-          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding Orientations}" SelectedItem="{Binding Orientation}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Orientation" />
-          <TextBlock Text="Size on the page" />
-          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding Fits}" SelectedItem="{Binding Fit}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Size on the page" />
-          <TextBlock><Run Text="Margins: " /><Run Text="{Binding MarginMm, Mode=OneWay}" /><Run Text=" mm" /></TextBlock>
-          <Slider Minimum="0" Maximum="50" Value="{Binding MarginMm}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,2,0,8" AutomationProperties.Name="Margins in millimetres" />
+          <TextBlock Text="{x:Static r:ImageToolsText.Paper}" />
+          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:ImageToolsText.Paper}" />
+          <TextBlock Text="{x:Static r:ImageToolsText.Orientation}" />
+          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding Orientations}" SelectedItem="{Binding Orientation}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:ImageToolsText.Orientation}" />
+          <TextBlock Text="{x:Static r:ImageToolsText.SizeOnPage}" />
+          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding Fits}" SelectedItem="{Binding Fit}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:ImageToolsText.SizeOnPage}" />
+          <TextBlock Text="{Binding MarginMm, Mode=OneWay, StringFormat={x:Static r:ImageToolsText.MarginsFormat}}" />
+          <Slider Minimum="0" Maximum="50" Value="{Binding MarginMm}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,2,0,8" AutomationProperties.Name="{x:Static r:ImageToolsText.MarginsInMm}" />
           <TextBlock Text="{Binding PerPageText}" />
           <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
-            <TextBlock Text="Across" VerticalAlignment="Center" Margin="0,0,6,0" />
-            <TextBox Text="{Binding Columns}" Width="50" AutomationProperties.Name="Pictures across" />
-            <TextBlock Text="Down" VerticalAlignment="Center" Margin="16,0,6,0" />
-            <TextBox Text="{Binding Rows}" Width="50" AutomationProperties.Name="Pictures down" />
+            <TextBlock Text="{x:Static r:ImageToolsText.Across}" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <TextBox Text="{Binding Columns}" Width="50" AutomationProperties.Name="{x:Static r:ImageToolsText.PicturesAcross}" />
+            <TextBlock Text="{x:Static r:ImageToolsText.Down}" VerticalAlignment="Center" Margin="16,0,6,0" />
+            <TextBox Text="{Binding Rows}" Width="50" AutomationProperties.Name="{x:Static r:ImageToolsText.PicturesDown}" />
           </StackPanel>
-          <TextBlock><Run Text="Space between pictures: " /><Run Text="{Binding SpacingMm, Mode=OneWay}" /><Run Text=" mm" /></TextBlock>
-          <Slider Minimum="0" Maximum="30" Value="{Binding SpacingMm}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,2,0,8" AutomationProperties.Name="Space between pictures" />
-          <CheckBox Content="Smaller file (pictures stored as JPEG)" IsChecked="{Binding SmallerFile}" />
+          <TextBlock Text="{Binding SpacingMm, Mode=OneWay, StringFormat={x:Static r:ImageToolsText.SpaceBetweenPicturesFormat}}" />
+          <Slider Minimum="0" Maximum="30" Value="{Binding SpacingMm}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,2,0,8" AutomationProperties.Name="{x:Static r:ImageToolsText.SpaceBetweenPictures}" />
+          <CheckBox Content="{x:Static r:ImageToolsText.SmallerFile}" IsChecked="{Binding SmallerFile}" />
         </StackPanel>
       </ScrollViewer>
     </Grid>

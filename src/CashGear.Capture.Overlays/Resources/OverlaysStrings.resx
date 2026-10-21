@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NoWebcam" xml:space="preserve">
+    <value>No webcam is connected, so the recording has none.</value>
+  </data>
+  <data name="ChosenWebcamMissing" xml:space="preserve">
+    <value>The webcam chosen in Settings isn't connected, so the recording has none.</value>
+  </data>
+  <data name="WebcamNoColour" xml:space="preserve">
+    <value>{0} gives no colour pictures, so the recording has no webcam.</value>
+    <comment>{0}: the webcam's name</comment>
+  </data>
+  <data name="CameraNotAllowed" xml:space="preserve">
+    <value>Windows doesn't let apps use the camera (Settings › Privacy › Camera), so the recording has no webcam.</value>
+    <comment>the path is the one of Windows' Settings app</comment>
+  </data>
+  <data name="WebcamNotOpened" xml:space="preserve">
+    <value>{0} couldn't be opened ({1}), so the recording has no webcam.</value>
+    <comment>{0}: the webcam's name; {1}: Windows' error message</comment>
+  </data>
+  <data name="WebcamNotStarted" xml:space="preserve">
+    <value>{0} didn't start ({1}).</value>
+    <comment>{0}: the webcam's name; {1}: Windows' status (English)</comment>
+  </data>
+  <data name="InputHooksRefused" xml:space="preserve">
+    <value>Windows refused the input hooks: {0}</value>
+    <comment>clicks and keys can't be followed; {0}: Windows' error message</comment>
+  </data>
+</root>

@@ -1,8 +1,10 @@
+using System.ComponentModel;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs.Resources;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Outputs.Credentials;
@@ -43,6 +45,7 @@ public static class CredentialKeys
 /// </summary>
 public sealed partial class DpapiCredentialStore : ICredentialStore
 {
+    [Localizable(false)] // DPAPI's entropy: changing it would make every saved secret unreadable
     private static readonly byte[] Purpose = Encoding.UTF8.GetBytes("CashGear Capture secrets v1\n");
 
     private readonly string _path;

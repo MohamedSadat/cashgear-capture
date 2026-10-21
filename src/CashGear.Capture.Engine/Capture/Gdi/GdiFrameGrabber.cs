@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Engine.Resources;
 using CashGear.Capture.Interop.Native;
 using Microsoft.Extensions.Logging;
 
@@ -136,7 +137,7 @@ internal sealed unsafe partial class GdiFrameGrabber(ArrayPool<byte> pool, TimeP
     private static CaptureException Win32Failure(string api)
     {
         var error = new Win32Exception(Marshal.GetLastPInvokeError());
-        return new($"The screen couldn't be read ({api}: {error.Message}). If Windows was showing a secure screen (a UAC prompt or the lock screen), try again once it's gone.", error);
+        return new(EngineStrings.ScreenUnreadable(api, error.Message), error);
     }
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Drawing the cursor failed (Win32 error {Error})")]

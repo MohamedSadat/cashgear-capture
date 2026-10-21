@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs.Resources;
 
 namespace CashGear.Capture.Outputs;
 
@@ -52,11 +54,11 @@ public sealed record OutputResult(bool Succeeded, string Message)
     /// <summary>The step didn't apply (nothing to do), which is neither a success nor a failure worth a warning.</summary>
     public bool Skipped { get; init; }
 
-    public static OutputResult Done(string message) => new(true, message);
+    public static OutputResult Done([Localizable(true)] string message) => new(true, message);
 
-    public static OutputResult Failed(string message) => new(false, message);
+    public static OutputResult Failed([Localizable(true)] string message) => new(false, message);
 
-    public static OutputResult Skip(string message) => new(true, message) { Skipped = true };
+    public static OutputResult Skip([Localizable(true)] string message) => new(true, message) { Skipped = true };
 }
 
 /// <summary>

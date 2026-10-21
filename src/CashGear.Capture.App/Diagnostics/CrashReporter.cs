@@ -203,10 +203,15 @@ public sealed partial class CrashReporter : IDisposable
         LogStopped();
     }
 
-    /// <summary>Takes out the user and the PC's name, and shows the user folder as <c>%USERPROFILE%</c>.</summary>
-    internal static SentryEvent Scrub(SentryEvent report)
+    /// <summary>
+    /// Takes out the user and the PC's name, and shows the user folder as <c>%USERPROFILE%</c> wherever a path is:
+    /// messages, stack frames of the exception and of the threads, and the list of loaded modules (an installed copy
+    /// runs from <c>%LocalAppData%</c>, inside the user folder, so its paths name the Windows user).
+    /// </summary>
+    internal static SentryEvent Scrub(SentryEvent report) => Scrub(report, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+
+    internal static SentryEvent Scrub(SentryEvent report, string profile)
     {
-        var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         report.User = new SentryUser();
         report.ServerName = null;
         report.Contexts.Device.Name = null;
@@ -220,14 +225,32 @@ public sealed partial class CrashReporter : IDisposable
         foreach (var exception in report.SentryExceptions ?? [])
         {
             exception.Value = Clean(exception.Value, profile);
-            foreach (var frame in exception.Stacktrace?.Frames ?? [])
-            {
-                frame.FileName = Clean(frame.FileName, profile);
-                frame.AbsolutePath = Clean(frame.AbsolutePath, profile);
-            }
+            CleanFrames(exception.Stacktrace?.Frames, profile);
+        }
+
+        foreach (var thread in report.SentryThreads ?? [])
+        {
+            CleanFrames(thread.Stacktrace?.Frames, profile);
+        }
+
+        foreach (var image in report.DebugImages ?? [])
+        {
+            image.CodeFile = Clean(image.CodeFile, profile);
+            image.DebugFile = Clean(image.DebugFile, profile);
         }
 
         return report;
+    }
+
+    private static void CleanFrames(IEnumerable<SentryStackFrame>? frames, string profile)
+    {
+        foreach (var frame in frames ?? [])
+        {
+            frame.FileName = Clean(frame.FileName, profile);
+            frame.AbsolutePath = Clean(frame.AbsolutePath, profile);
+            frame.Module = Clean(frame.Module, profile);
+            frame.Package = Clean(frame.Package, profile);
+        }
     }
 
     private static string? Clean(string? text, string profile) =>

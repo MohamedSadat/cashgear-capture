@@ -4,6 +4,7 @@ using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Display;
@@ -98,11 +99,11 @@ public sealed partial class RecordingController
         _time = time;
         _logger = logger;
         _recorder.StateChanged += (_, _) => StateChanged?.Invoke(this, EventArgs.Empty);
-        _recorder.Warning += (_, message) => _notifier.Notify("Recording", message, NotificationKind.Warning);
-        _recorder.Notice += (_, message) => _notifier.Notify("Recording", message, NotificationKind.Info);
+        _recorder.Warning += (_, message) => _notifier.Notify(RecordingText.Recording, message, NotificationKind.Warning);
+        _recorder.Notice += (_, message) => _notifier.Notify(RecordingText.Recording, message, NotificationKind.Info);
         _recorder.Failed += (_, message) =>
         {
-            _notifier.Notify("Recording stopped", message + " What was recorded is being saved.", NotificationKind.Error);
+            _notifier.Notify(RecordingText.RecordingStopped, RecordingText.StoppedSaving(message), NotificationKind.Error);
             _ = StopAsync();
         };
     }
@@ -149,13 +150,13 @@ public sealed partial class RecordingController
 
         if (_recorder.IsSaving)
         {
-            _notifier.Notify("Recording", "The last recording is still being saved. Try again in a moment.", NotificationKind.Info);
+            _notifier.Notify(RecordingText.Recording, RecordingText.StillSaving, NotificationKind.Info);
             return;
         }
 
         if (_encoders.Problem is { } problem)
         {
-            _notifier.Notify("Recording is not available", problem, NotificationKind.Error);
+            _notifier.Notify(RecordingText.NotAvailable, problem, NotificationKind.Error);
             return;
         }
 
@@ -170,7 +171,7 @@ public sealed partial class RecordingController
             var (monitor, area, title) = target;
             if (area.Width < MinSize || area.Height < MinSize)
             {
-                _notifier.Notify("Recording", $"That area is too small to record ({area.Width}x{area.Height}).", NotificationKind.Warning);
+                _notifier.Notify(RecordingText.Recording, RecordingText.TooSmall(area.Width, area.Height), NotificationKind.Warning);
                 return;
             }
 
@@ -212,7 +213,7 @@ public sealed partial class RecordingController
         catch (Exception ex) when (ex is CaptureException or IOException or InvalidOperationException or UnauthorizedAccessException or ArgumentException)
         {
             LogStartFailed(ex);
-            _notifier.Notify("Recording could not start", ex.Message, NotificationKind.Error);
+            _notifier.Notify(RecordingText.CouldNotStart, ex.Message, NotificationKind.Error);
         }
     }
 
@@ -226,7 +227,7 @@ public sealed partial class RecordingController
             .ToList();
         if (hiding.Count > 0)
         {
-            _notifier.Notify("Recording", CaptureMessages.Protected(string.Join("\", \"", hiding), "recording"), NotificationKind.Warning);
+            _notifier.Notify(RecordingText.Recording, CaptureMessages.Protected(string.Join(CapturingText.WindowNamesSeparator, hiding), "recording"), NotificationKind.Warning);
         }
     }
 
@@ -248,7 +249,7 @@ public sealed partial class RecordingController
             await RememberGainsAsync(gains.System, gains.Microphone).ConfigureAwait(false);
             await RememberNoiseSuppressionAsync(noise).ConfigureAwait(false);
             _notifier.Notify(
-                "Recording saved",
+                RecordingText.Saved,
                 Summary(result),
                 result.DropRate > DropWarning || result.SoundNote is not null || result.Note is not null ? NotificationKind.Warning : NotificationKind.Info,
                 onClick: () => _shell.ShowInFolder(result.Path));
@@ -270,7 +271,7 @@ public sealed partial class RecordingController
         catch (Exception ex) when (ex is CaptureException or IOException or InvalidOperationException)
         {
             LogStopFailed(ex);
-            _notifier.Notify("Recording failed", ex.Message, NotificationKind.Error);
+            _notifier.Notify(RecordingText.Failed, ex.Message, NotificationKind.Error);
         }
         finally
         {
@@ -317,9 +318,9 @@ public sealed partial class RecordingController
     /// <summary>"1:05 · 12.3 MB · Windows hardware encoder (H.264) · system sound in D:\Videos" (plus notes about missing sound, a second part or dropped frames).</summary>
     public static string Summary(RecordingResult result)
     {
-        var sound = result.Sound == RecordingSound.None ? string.Empty : " · " + SoundText(result.Sound);
-        var name = result.AllParts.Count > 1 ? $"{Path.GetFileName(result.Path)} (+{result.AllParts.Count - 1} more)" : Path.GetFileName(result.Path);
-        var text = $"{name}\n{Duration(result.Duration)} · {result.FileBytes / 1048576.0:0.0} MB · {result.EncoderName}{sound}\nin {Path.GetDirectoryName(result.Path)}";
+        var details = result.Sound == RecordingSound.None ? result.EncoderName : RecordingText.EncoderAndSound(result.EncoderName, SoundText(result.Sound));
+        var name = result.AllParts.Count > 1 ? RecordingText.NameAndMoreParts(result.AllParts.Count - 1, Path.GetFileName(result.Path)) : Path.GetFileName(result.Path);
+        var text = $"{name}\n{Duration(result.Duration)} · {CommonText.Megabytes(result.FileBytes / 1048576.0)} · {details}\n{RecordingText.InFolder(Path.GetDirectoryName(result.Path))}";
         if (result.SoundNote is { } soundNote)
         {
             text += "\n" + soundNote;
@@ -331,17 +332,17 @@ public sealed partial class RecordingController
         }
 
         return result.DropRate > DropWarning
-            ? text + $"\n{result.DropRate:P0} of the frames were skipped because encoding couldn't keep up. A lower frame rate or a smaller area helps."
+            ? text + "\n" + RecordingText.FramesSkipped(result.DropRate)
             : text;
     }
 
     /// <summary>"system sound", "microphone", "system sound + microphone" or "no sound".</summary>
     public static string SoundText(RecordingSound sound) => sound switch
     {
-        RecordingSound.System => "system sound",
-        RecordingSound.Microphone => "microphone",
-        RecordingSound.System | RecordingSound.Microphone => "system sound + microphone",
-        _ => "no sound",
+        RecordingSound.System => RecordingText.SoundSystem,
+        RecordingSound.Microphone => RecordingText.SoundMicrophone,
+        RecordingSound.System | RecordingSound.Microphone => RecordingText.SoundSystemAndMicrophone,
+        _ => RecordingText.SoundNone,
     };
 
     public static string Duration(TimeSpan duration) =>

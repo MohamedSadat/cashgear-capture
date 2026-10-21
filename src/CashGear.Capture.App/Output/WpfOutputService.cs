@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -65,9 +66,13 @@ internal sealed partial class WpfOutputService(IUiDispatcher ui, ILogger<WpfOutp
         var files = new System.Collections.Specialized.StringCollection();
         files.AddRange([.. paths.Select(Path.GetFullPath)]);
         data.SetFileDropList(files);
-        data.SetData("Preferred DropEffect", new MemoryStream(BitConverter.GetBytes(DropEffectCopy)), autoConvert: false);
+        data.SetData(PreferredDropEffect, new MemoryStream(BitConverter.GetBytes(DropEffectCopy)), autoConvert: false);
         return data;
     }
+
+    /// <summary>The clipboard format Explorer reads to copy or move dropped files: a name, not text.</summary>
+    [Localizable(false)]
+    private const string PreferredDropEffect = "Preferred DropEffect";
 
     private const int DropEffectCopy = 1;
 

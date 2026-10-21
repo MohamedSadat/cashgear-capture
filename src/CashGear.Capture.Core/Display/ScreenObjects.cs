@@ -1,4 +1,5 @@
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Resources;
 
 namespace CashGear.Capture.Core.Display;
 
@@ -13,9 +14,9 @@ public sealed record ScreenObject(PixelRect Bounds, string Name, string Kind)
     {
         get
         {
-            var kind = Kind.Length > 0 ? Kind : "object";
+            var kind = Kind.Length > 0 ? Kind : CoreStrings.ObjectKindUnknown;
             var name = Name.Length > 40 ? string.Concat(Name.AsSpan(0, 39), "…") : Name;
-            return name.Length > 0 ? $"{kind} \"{name}\"" : kind;
+            return name.Length > 0 ? CoreStrings.ObjectDescription(kind, name) : kind;
         }
     }
 }

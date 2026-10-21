@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Overlays.Webcam;
@@ -46,7 +48,7 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
     /// <summary>Lets the window show the chosen camera in the placement preview.</summary>
     public IWebcams? Webcams => _webcams;
 
-    public ObservableCollection<CameraChoice> Cameras { get; } = [new CameraChoice(null, "The first camera found")];
+    public ObservableCollection<CameraChoice> Cameras { get; } = [new CameraChoice(null, OverlaysText.FirstCamera)];
 
     public IReadOnlyList<SizeChoice> WebcamSizes { get; } = [new(640, 360), new(640, 480), new(1280, 720), new(1920, 1080)];
 
@@ -101,7 +103,7 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(PenFadeText))]
     private double _penFade;
 
-    public string PenFadeText => PenFade <= 0 ? "Never" : $"{PenFade:0} s";
+    public string PenFadeText => PenFade <= 0 ? OverlaysText.Never : string.Format(CultureInfo.CurrentCulture, OverlaysText.WholeSecondsFormat, PenFade);
 
     /// <summary>What the camera list or preview found (no camera, privacy settings), shown under the list.</summary>
     [ObservableProperty]
@@ -126,7 +128,7 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
         }
 
         Camera = CameraFor(chosen);
-        WebcamStatus = found.Count == 0 ? "No camera is connected now." : string.Empty;
+        WebcamStatus = found.Count == 0 ? OverlaysText.NoCamera : string.Empty;
     }
 
     /// <summary>Moves the webcam's centre to a point of the preview (shares of the recorded area, 0 to 1).</summary>
@@ -146,7 +148,7 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
         var known = Cameras.FirstOrDefault(c => c.Id == id);
         if (known is null)
         {
-            known = new CameraChoice(id, "The camera chosen before (not connected)");
+            known = new CameraChoice(id, OverlaysText.CameraNotConnected);
             Cameras.Add(known);
         }
 
@@ -156,15 +158,15 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
     /// <summary>The colours offered (a colour set by hand in the settings file is added when loaded).</summary>
     public ObservableCollection<ColorChoice> Colors { get; } =
     [
-        new("#FFC800", "Yellow"),
-        new("#FF8C00", "Orange"),
-        new("#FF4040", "Red"),
-        new("#FF4FA3", "Pink"),
-        new("#30C060", "Green"),
-        new("#00C8E0", "Cyan"),
-        new("#2F80FF", "Blue"),
-        new("#FFFFFF", "White"),
-        new("#000000", "Black"),
+        new("#FFC800", OverlaysText.ColorYellow),
+        new("#FF8C00", OverlaysText.ColorOrange),
+        new("#FF4040", OverlaysText.ColorRed),
+        new("#FF4FA3", OverlaysText.ColorPink),
+        new("#30C060", OverlaysText.ColorGreen),
+        new("#00C8E0", OverlaysText.ColorCyan),
+        new("#2F80FF", OverlaysText.ColorBlue),
+        new("#FFFFFF", OverlaysText.ColorWhite),
+        new("#000000", OverlaysText.ColorBlack),
     ];
 
     public IReadOnlyList<PointerEffect> PointerEffects { get; } = Enum.GetValues<PointerEffect>();
@@ -438,7 +440,7 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
             return found;
         }
 
-        var custom = new ColorChoice(value, $"Custom ({value})");
+        var custom = new ColorChoice(value, OverlaysText.ColorCustom(value));
         Colors.Add(custom);
         return custom;
     }

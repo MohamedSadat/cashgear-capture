@@ -1,10 +1,12 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Media;
 using CashGear.Capture.Overlays.Rendering;
 using CashGear.Capture.Overlays.Webcam;
+using CashGear.Capture.Recording.Resources;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Recording;
@@ -42,7 +44,13 @@ internal sealed class WebcamFrame(int width, int height)
 internal sealed partial class WebcamFeed : IDisposable
 {
     public const string FileName = "webcam.mp4";
+
+    [Localizable(false)] // the webcam track's title in the MP4 and the metadata, in English: the video editor matches it
     public const string TrackTitle = "Webcam";
+
+    [Localizable(false)] // a thread's name, for debuggers and dumps
+    private const string ThreadName = "Recording webcam";
+
     private const int Kept = 6;
     private static readonly TimeSpan FirstPictureTimeout = TimeSpan.FromSeconds(5);
 
@@ -97,7 +105,7 @@ internal sealed partial class WebcamFeed : IDisposable
     /// <summary>Starts encoding the webcam's track (once the recording clock runs).</summary>
     public void StartTrack()
     {
-        _thread = new Thread(WriteTrack) { IsBackground = true, Name = "Recording webcam", Priority = ThreadPriority.AboveNormal };
+        _thread = new Thread(WriteTrack) { IsBackground = true, Name = ThreadName, Priority = ThreadPriority.AboveNormal };
         _thread.Start();
     }
 
@@ -217,7 +225,7 @@ internal sealed partial class WebcamFeed : IDisposable
         catch (Exception e) when (e is FfmpegException or InvalidOperationException or IOException)
         {
             LogFailed(e);
-            _warn($"The webcam's own track stopped ({e.Message}); the webcam is still drawn over the recording.");
+            _warn(RecordingStrings.WebcamTrackStopped(e.Message));
         }
         finally
         {

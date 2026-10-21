@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Transcription;
 using CashGear.Capture.VideoEditor.Editing;
@@ -46,11 +48,12 @@ public sealed partial class TranscribeViewModel : ObservableObject
         _state = state;
         _logger = logger;
         _done = done;
-        var sounds = project.Tracks.Where(t => t.HasSound).OrderBy(t => t.Name.Contains("Microphone", StringComparison.OrdinalIgnoreCase) ? 0 : 1).ToList();
-        Sounds = [.. sounds.Select(t => new SoundChoice(t.Id, t.Name)), .. sounds.Count > 1 ? [new SoundChoice(null, "All sound tracks")] : Array.Empty<SoundChoice>()];
+        // The microphone's track first: tracks are named after a recording's sound streams, whose titles stay English.
+        var sounds = project.Tracks.Where(t => t.HasSound).OrderBy(t => t.Name.Contains(MicrophoneTitle, StringComparison.OrdinalIgnoreCase) ? 0 : 1).ToList();
+        Sounds = [.. sounds.Select(t => new SoundChoice(t.Id, t.Name)), .. sounds.Count > 1 ? [new SoundChoice(null, VideoEditorText.AllSoundTracks)] : Array.Empty<SoundChoice>()];
         _sound = Sounds.FirstOrDefault();
         var remembered = state.Current.VideoEditor ?? new VideoEditorState();
-        Models = [.. WhisperModels.All.Select(m => new ModelChoice(m, $"{m.Name}: {m.About} ({(models.Has(m) ? "downloaded" : $"{m.SizeText} to download")})"))];
+        Models = [.. WhisperModels.All.Select(m => new ModelChoice(m, models.Has(m) ? VideoEditorText.ModelDownloaded(m.Name, m.About) : VideoEditorText.ModelToDownload(m.Name, m.About, m.SizeText)))];
         _model = Models.FirstOrDefault(m => m.Model.Id == remembered.TranscriptionModel) ?? Models.First(m => m.Model == WhisperModels.Small);
         _language = Languages.FirstOrDefault(l => l.Code == remembered.TranscriptionLanguage) ?? Languages[0];
         _useGpu = remembered.TranscriptionGpu;
@@ -61,14 +64,14 @@ public sealed partial class TranscribeViewModel : ObservableObject
 
     public IReadOnlyList<ModelChoice> Models { get; }
 
-    public IReadOnlyList<LanguageChoice> Languages { get; } = [new(null, "Find out from the speech"), new("en", "English"), new("ar", "Arabic")];
+    public IReadOnlyList<LanguageChoice> Languages { get; } = [new(null, VideoEditorText.FindOutLanguage), new("en", VideoEditorText.LanguageEnglish), new("ar", VideoEditorText.LanguageArabic)];
 
     public bool HasSound => Sounds.Count > 0;
 
     public bool HasRange => _range is not null;
 
     public string RangeText => _range is { } range
-        ? string.Create(CultureInfo.CurrentCulture, $"Only the marked range ({range.Length:0.0} s)")
+        ? VideoEditorText.TranscribeRange(range.Length)
         : "";
 
     [ObservableProperty]
@@ -129,27 +132,27 @@ public sealed partial class TranscribeViewModel : ObservableObject
             }, ct);
 
             // A tenth of the bar for the sound, the rest for listening; a download first has a bar of its own.
-            Status = _models.Has(model) ? "" : $"Downloading the {model.Name} model ({model.SizeText}), once…";
+            Status = _models.Has(model) ? "" : VideoEditorText.DownloadingModel(model.Name, model.SizeText);
             var path = await _models.EnsureAsync(model, new Progress<double>(p =>
             {
                 Progress = p;
-                Status = string.Create(CultureInfo.CurrentCulture, $"Downloading the {model.Name} model ({model.SizeText}), once… {p:P0}");
+                Status = VideoEditorText.DownloadingModelProgress(model.Name, model.SizeText, p);
             }), ct);
             Progress = 0;
-            Status = "Getting the sound…";
+            Status = VideoEditorText.GettingSound;
             var project = range is { } r ? ProjectRange.Extract(_project, r) : _project;
             var samples = await Task.Run(() => TranscriptAudio.Render(project, tracks, new Progress<double>(p => Progress = p * 0.1), ct), ct);
-            Status = "Listening…";
+            Status = VideoEditorText.Listening;
             var result = await _transcriber.TranscribeAsync(samples, new TranscriptionOptions(path, language, gpu), new Progress<double>(p =>
             {
                 Progress = 0.1 + (p * 0.9);
-                Status = string.Create(CultureInfo.CurrentCulture, $"Listening… {p:P0}");
+                Status = VideoEditorText.ListeningProgress(p);
             }), ct);
             var captions = CaptionEdits.FromTranscript(result.Segments, range?.From ?? 0);
             LogDone(captions.Count, result.Language, result.Runtime);
             if (captions.Count == 0)
             {
-                Error = "No speech was heard in that sound track.";
+                Error = VideoEditorText.NoSpeechHeard;
                 Status = "";
                 return;
             }
@@ -159,14 +162,14 @@ public sealed partial class TranscribeViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
-            Status = "Cancelled.";
+            Status = VideoEditorText.TranscribeCancelled;
             Progress = 0;
         }
         catch (Exception e)
         {
             // Downloads, files, and whisper.cpp's own errors (a model it can't load, no runtime): said, never a crash.
             LogFailed(e);
-            Error = e is System.Net.Http.HttpRequestException ? $"The model couldn't be downloaded: {e.Message}" : e.Message;
+            Error = e is System.Net.Http.HttpRequestException ? VideoEditorText.ModelNotDownloaded(e.Message) : e.Message;
             Status = "";
             Progress = 0;
         }
@@ -194,14 +197,24 @@ public sealed partial class TranscribeViewModel : ObservableObject
     /// <summary>Stops a running transcription (the window is closing).</summary>
     public void Stop() => _cancel?.Cancel();
 
-    /// <summary>A language's name for a track ("Captions (Arabic)").</summary>
+    /// <summary>
+    /// A language's name for a track ("Captions (Arabic)"), in the UI language for the languages offered; another
+    /// language Whisper heard is named in English in the English UI, else in its own language (.NET's localized names
+    /// follow Windows' language, not the app's).
+    /// </summary>
     public static string LanguageName(string? code) => code switch
     {
-        "en" => "English",
-        "ar" => "Arabic",
+        "en" => VideoEditorText.LanguageEnglish,
+        "ar" => VideoEditorText.LanguageArabic,
         null or "" => "",
-        _ => CultureInfo.GetCultures(CultureTypes.NeutralCultures).FirstOrDefault(c => c.TwoLetterISOLanguageName == code)?.EnglishName ?? code,
+        _ => CultureInfo.GetCultures(CultureTypes.NeutralCultures).FirstOrDefault(c => c.TwoLetterISOLanguageName == code) is { } culture
+            ? (CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? culture.EnglishName : culture.NativeName)
+            : code,
     };
+
+    /// <summary>The microphone's sound stream title in recordings, matched as stored (never translated).</summary>
+    [Localizable(false)]
+    private const string MicrophoneTitle = "Microphone";
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Captions from speech: {Count} captions ({Language}, {Runtime})")]
     private partial void LogDone(int count, string language, string runtime);

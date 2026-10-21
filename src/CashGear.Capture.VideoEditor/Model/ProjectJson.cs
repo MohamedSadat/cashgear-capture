@@ -1,6 +1,7 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using CashGear.Capture.VideoEditor.Resources;
 
 namespace CashGear.Capture.VideoEditor.Model;
 
@@ -46,17 +47,17 @@ public static class ProjectJson
         }
         catch (JsonException e)
         {
-            throw new InvalidDataException($"This isn't a video project: {e.Message}", e);
+            throw new InvalidDataException(VideoEditorStrings.NotAProjectBecause(e.Message), e);
         }
 
         if (project?.Canvas is null || project.Assets is null || project.Tracks is null)
         {
-            throw new InvalidDataException("This isn't a video project.");
+            throw new InvalidDataException(VideoEditorStrings.NotAProject);
         }
 
         if (project.Version > VideoProject.CurrentVersion)
         {
-            throw new InvalidDataException("This project was saved by a newer version of the app.");
+            throw new InvalidDataException(VideoEditorStrings.NewerProject);
         }
 
         return project;

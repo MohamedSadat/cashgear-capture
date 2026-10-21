@@ -5,6 +5,7 @@ using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
+using CashGear.Capture.Core.Resources;
 using CashGear.Capture.Core.Settings;
 using Microsoft.Extensions.Logging;
 
@@ -29,14 +30,14 @@ public sealed record CaptureHistoryEntry(
         {
             var kind = Kind switch
             {
-                CaptureKind.AllMonitors => "Full screen",
-                CaptureKind.Monitor => "Monitor",
-                CaptureKind.Window => "Window",
-                CaptureKind.Scrolling => "Scrolling",
-                CaptureKind.Recording => "Recording",
-                CaptureKind.Object => "Object",
-                CaptureKind.Menu => "Menu",
-                _ => "Region",
+                CaptureKind.AllMonitors => CoreStrings.KindFullScreen,
+                CaptureKind.Monitor => CoreStrings.KindMonitor,
+                CaptureKind.Window => CoreStrings.KindWindow,
+                CaptureKind.Scrolling => CoreStrings.KindScrolling,
+                CaptureKind.Recording => CoreStrings.KindRecording,
+                CaptureKind.Object => CoreStrings.KindObject,
+                CaptureKind.Menu => CoreStrings.KindMenu,
+                _ => CoreStrings.KindRegion,
             };
             var size = $"{Width} × {Height}";
             return Title is { Length: > 0 } title ? $"{kind} · {Shorten(title, 40)} · {size}" : $"{kind} · {size}";

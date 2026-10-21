@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.Editor"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:EffectsViewModel}"
-        Title="Effects" Width="620" Height="600" MinWidth="520" MinHeight="420"
+        Title="{x:Static r:EditorText.Effects}" Width="620" Height="600" MinWidth="520" MinHeight="420"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
   <Window.Resources>
     <ResourceDictionary>
@@ -24,15 +25,15 @@
     <!-- OK / Cancel, the area, and what went wrong -->
     <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
       <StackPanel Visibility="{Binding HasArea, Converter={StaticResource Visible}}">
-        <CheckBox Content="Only the selected area (Area tool)" IsChecked="{Binding ToArea}" />
+        <CheckBox Content="{x:Static r:EditorText.OnlySelectedArea}" IsChecked="{Binding ToArea}" />
         <ContentControl Content="{Binding Background}" Focusable="False" Visibility="{Binding ToArea, Converter={StaticResource Visible}}" />
       </StackPanel>
       <TextBlock Text="{Binding Error}" Foreground="#C42B1C" TextWrapping="Wrap" Margin="0,6,0,0" />
-      <TextBlock Text="The image shows the result while this window is open. Annotations under effects other than a shadow or a border are merged into the image (Undo brings them back)."
+      <TextBlock Text="{x:Static r:EditorText.EffectsNote}"
                  TextWrapping="Wrap" Opacity="0.75" Margin="0,6,0,0" />
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-        <Button x:Name="ApplyButton" Content="Apply" IsDefault="True" MinWidth="90" Margin="0,0,8,0" Click="OnApply" />
-        <Button Content="Cancel" IsCancel="True" MinWidth="90" />
+        <Button x:Name="ApplyButton" Content="{x:Static r:CommonText.Apply}" IsDefault="True" MinWidth="90" Margin="0,0,8,0" Click="OnApply" />
+        <Button Content="{x:Static r:CommonText.Cancel}" IsCancel="True" MinWidth="90" />
       </StackPanel>
     </StackPanel>
 
@@ -45,10 +46,10 @@
 
       <!-- The effects, applied top to bottom -->
       <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="Applied in this order" Margin="0,0,0,4" />
+        <TextBlock DockPanel.Dock="Top" Text="{x:Static r:EditorText.AppliedInOrder}" Margin="0,0,0,4" />
         <WrapPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
           <Menu Background="Transparent" Margin="0,0,4,4">
-            <MenuItem Header="Add ▾" ItemsSource="{Binding Kinds}" AutomationProperties.Name="Add an effect">
+            <MenuItem Header="{x:Static r:EditorText.AddMenu}" ItemsSource="{Binding Kinds}" AutomationProperties.Name="{x:Static r:EditorText.AddEffect}">
               <MenuItem.ItemContainerStyle>
                 <Style TargetType="MenuItem">
                   <Setter Property="Header" Value="{Binding Name}" />
@@ -58,13 +59,13 @@
               </MenuItem.ItemContainerStyle>
             </MenuItem>
           </Menu>
-          <Button Content="Remove" Command="{Binding RemoveCommand}" Margin="0,0,4,4" />
-          <Button Content="↑" Command="{Binding MoveUpCommand}" ToolTip="Earlier" AutomationProperties.Name="Move up" Margin="0,0,4,4" MinWidth="32" />
-          <Button Content="↓" Command="{Binding MoveDownCommand}" ToolTip="Later" AutomationProperties.Name="Move down" Margin="0,0,4,4" MinWidth="32" />
+          <Button Content="{x:Static r:CommonText.Remove}" Command="{Binding RemoveCommand}" Margin="0,0,4,4" />
+          <Button Content="↑" Command="{Binding MoveUpCommand}" ToolTip="{x:Static r:EditorText.Earlier}" AutomationProperties.Name="{x:Static r:EditorText.MoveUp}" Margin="0,0,4,4" MinWidth="32" />
+          <Button Content="↓" Command="{Binding MoveDownCommand}" ToolTip="{x:Static r:EditorText.Later}" AutomationProperties.Name="{x:Static r:EditorText.MoveDown}" Margin="0,0,4,4" MinWidth="32" />
         </WrapPanel>
-        <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" DisplayMemberPath="Name" AutomationProperties.Name="Effects" />
+        <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" DisplayMemberPath="Name" AutomationProperties.Name="{x:Static r:EditorText.Effects}" />
       </DockPanel>
-      <TextBlock Text="Add an effect to start." Opacity="0.6" Margin="8,30,0,0" IsHitTestVisible="False"
+      <TextBlock Text="{x:Static r:EditorText.AddEffectToStart}" Opacity="0.6" Margin="8,30,0,0" IsHitTestVisible="False"
                  Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}" />
 
       <!-- The selected effect's settings -->

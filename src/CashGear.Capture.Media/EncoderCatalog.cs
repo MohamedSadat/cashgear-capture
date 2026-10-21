@@ -1,4 +1,5 @@
 using CashGear.Capture.Core.Recording;
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -25,7 +26,7 @@ public sealed partial class EncoderCatalog(FfmpegRuntime runtime, ILogger<Encode
         {
             if (!IsInBuild(candidate.FfmpegName))
             {
-                throw new FfmpegException($"{candidate.FfmpegName} isn't in this FFmpeg build.");
+                throw new FfmpegException(MediaStrings.EncoderNotInBuild(candidate.FfmpegName));
             }
 
             var (_, detail) = TestEncode(candidate, QualityPreset.Balanced, qualityMode: true);
@@ -66,7 +67,7 @@ public sealed partial class EncoderCatalog(FfmpegRuntime runtime, ILogger<Encode
             encoder.Flush(packets);
             if (packets.Count == 0)
             {
-                throw new FfmpegException($"{candidate.FfmpegName} accepted frames but produced no video.");
+                throw new FfmpegException(MediaStrings.EncoderMadeNoVideo(candidate.FfmpegName));
             }
 
             return (packets.Sum(p => (long)p.Size), encoder.Detail);

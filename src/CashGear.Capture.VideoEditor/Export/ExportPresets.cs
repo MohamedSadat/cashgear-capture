@@ -1,5 +1,6 @@
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Media;
+using CashGear.Capture.VideoEditor.Resources;
 
 namespace CashGear.Capture.VideoEditor.Export;
 
@@ -40,23 +41,23 @@ public sealed record ExportPreset(string Id, string Name, ExportContainer Contai
 
 public static class ExportPresets
 {
-    public static ExportPreset Mp4H264Hd { get; } = new("mp4-1080", "MP4, H.264, 1080p", ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 1080, ".mp4");
+    public static ExportPreset Mp4H264Hd { get; } = new("mp4-1080", VideoEditorStrings.PresetMp4Hd, ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 1080, ".mp4");
 
-    public static ExportPreset Mp4H264Small { get; } = new("mp4-720", "MP4, H.264, 720p", ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 720, ".mp4");
+    public static ExportPreset Mp4H264Small { get; } = new("mp4-720", VideoEditorStrings.PresetMp4Small, ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 720, ".mp4");
 
-    public static ExportPreset Mp4H264Project { get; } = new("mp4", "MP4, H.264, the project's size", ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 0, ".mp4");
+    public static ExportPreset Mp4H264Project { get; } = new("mp4", VideoEditorStrings.PresetMp4Project, ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 0, ".mp4");
 
-    public static ExportPreset Mp4Hevc { get; } = new("mp4-hevc", "MP4, HEVC, the project's size", ExportContainer.Mp4, VideoCodec.Hevc, AudioEncoder.Aac, 0, ".mp4");
+    public static ExportPreset Mp4Hevc { get; } = new("mp4-hevc", VideoEditorStrings.PresetMp4Hevc, ExportContainer.Mp4, VideoCodec.Hevc, AudioEncoder.Aac, 0, ".mp4");
 
-    public static ExportPreset WebMVp9 { get; } = new("webm-vp9", "WebM, VP9", ExportContainer.WebM, VideoCodec.Vp9, AudioEncoder.Opus, 0, ".webm");
+    public static ExportPreset WebMVp9 { get; } = new("webm-vp9", VideoEditorStrings.PresetWebMVp9, ExportContainer.WebM, VideoCodec.Vp9, AudioEncoder.Opus, 0, ".webm");
 
-    public static ExportPreset WebMAv1 { get; } = new("webm-av1", "WebM, AV1", ExportContainer.WebM, VideoCodec.Av1, AudioEncoder.Opus, 0, ".webm");
+    public static ExportPreset WebMAv1 { get; } = new("webm-av1", VideoEditorStrings.PresetWebMAv1, ExportContainer.WebM, VideoCodec.Av1, AudioEncoder.Opus, 0, ".webm");
 
-    public static ExportPreset M4a { get; } = new("m4a", "M4A (AAC), sound only", ExportContainer.M4a, null, AudioEncoder.Aac, 0, ".m4a");
+    public static ExportPreset M4a { get; } = new("m4a", VideoEditorStrings.PresetM4a, ExportContainer.M4a, null, AudioEncoder.Aac, 0, ".m4a");
 
-    public static ExportPreset Mp3 { get; } = new("mp3", "MP3, sound only", ExportContainer.Mp3, null, AudioEncoder.Mp3, 0, ".mp3");
+    public static ExportPreset Mp3 { get; } = new("mp3", VideoEditorStrings.PresetMp3, ExportContainer.Mp3, null, AudioEncoder.Mp3, 0, ".mp3");
 
-    public static ExportPreset Gif { get; } = new("gif", "GIF, animated (no sound)", ExportContainer.Gif, null, "", 0, ".gif");
+    public static ExportPreset Gif { get; } = new("gif", VideoEditorStrings.PresetGif, ExportContainer.Gif, null, "", 0, ".gif");
 
     public static IReadOnlyList<ExportPreset> All { get; } = [Mp4H264Hd, Mp4H264Small, Mp4H264Project, Mp4Hevc, WebMVp9, WebMAv1, Gif, M4a, Mp3];
 

@@ -4,6 +4,7 @@ using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Engine.Display;
+using CashGear.Capture.Engine.Resources;
 using CashGear.Capture.Interop.Native;
 using Microsoft.Extensions.Logging;
 using Vortice.Direct3D11;
@@ -51,6 +52,7 @@ internal sealed partial class WgcFrameGrabber(
         return GrabAsync(
             () => interop.CreateItemForMonitor(request.Monitor.Handle),
             request.Monitor.ShortName,
+            EngineStrings.WgcNoPictureOfMonitor(request.Monitor.ShortName),
             request.IncludeCursor,
             request.FrameTimeout,
             content =>
@@ -60,7 +62,7 @@ internal sealed partial class WgcFrameGrabber(
                 if (!new PixelRect(0, 0, content.Width, content.Height).Contains(crop))
                 {
                     // Typically a resolution change between enumeration and capture.
-                    throw new CaptureException($"WGC frame {content.Width}x{content.Height} does not cover {request.Area} on {request.Monitor.ShortName}.");
+                    throw new CaptureException(EngineStrings.WgcFrameTooSmall(content.Width, content.Height, request.Area, request.Monitor.ShortName));
                 }
 
                 return (crop, request.ToMetadata(Backend, time));
@@ -76,6 +78,7 @@ internal sealed partial class WgcFrameGrabber(
         return GrabAsync(
             () => interop.CreateItemForWindow(window.Handle),
             $"window \"{window.Title}\"",
+            EngineStrings.WgcNoPictureOfWindow(window.Title),
             request.IncludeCursor,
             request.FrameTimeout,
             content =>
@@ -131,6 +134,7 @@ internal sealed partial class WgcFrameGrabber(
     private async Task<CapturedImage> GrabAsync(
         Func<GraphicsCaptureItem> createItem,
         string target,
+        string noPicture,
         bool includeCursor,
         TimeSpan frameTimeout,
         Func<PixelSize, (PixelRect Crop, CaptureMetadata Metadata)> describe,
@@ -149,7 +153,7 @@ internal sealed partial class WgcFrameGrabber(
                 if (item.Size.Width <= 0 || item.Size.Height <= 0)
                 {
                     // Windows 10 gives a window off every monitor no picture (0x0).
-                    throw new CaptureException($"Windows.Graphics.Capture has no picture of the {target}.");
+                    throw new CaptureException(noPicture);
                 }
 
                 using var framePool = Direct3D11CaptureFramePool.CreateFreeThreaded(
@@ -229,7 +233,7 @@ internal sealed partial class WgcFrameGrabber(
         var (crop, metadata) = describe(content);
         if (crop.IsEmpty || !new PixelRect(0, 0, content.Width, content.Height).Contains(crop))
         {
-            throw new CaptureException($"Nothing to copy: {crop} is not inside the {content.Width}x{content.Height} frame.");
+            throw new CaptureException(EngineStrings.NothingToCopy(crop, content.Width, content.Height));
         }
 
         // An HDR frame is tone-mapped into an 8-bit texture of the crop's size first; an SDR one is copied whole.

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Security.Cryptography;
 using System.Text;
 using CashGear.Capture.Media;
@@ -77,6 +78,10 @@ public sealed partial class MediaPreviews : IDisposable
     private const int MaxThumbnails = 400;
     private const int FormatVersion = 1;
 
+    /// <summary>The thread's name, for debuggers.</summary>
+    [Localizable(false)]
+    private const string ThreadName = "Video editor thumbnails";
+
     private readonly string _folder;
     private readonly ILogger _logger;
     private readonly ConcurrentDictionary<string, ThumbnailStrip> _thumbnails = new();
@@ -90,7 +95,7 @@ public sealed partial class MediaPreviews : IDisposable
     {
         _folder = folder;
         _logger = logger;
-        _thread = new Thread(Run) { IsBackground = true, Name = "Video editor thumbnails", Priority = ThreadPriority.BelowNormal };
+        _thread = new Thread(Run) { IsBackground = true, Name = ThreadName, Priority = ThreadPriority.BelowNormal };
         _thread.Start();
     }
 

@@ -3,6 +3,7 @@ using CashGear.Capture.Editor.Document;
 using CashGear.Capture.Editor.Imaging;
 using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Editor.Rendering;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Effects;
@@ -55,7 +56,7 @@ public static class EffectRunner
     }
 
     /// <summary>"drop shadow" for one effect, "effects" for several (the undo step's name).</summary>
-    public static string NameOf(IReadOnlyList<ImageEffect> effects) => effects is [var only] ? only.Name : "effects";
+    public static string NameOf(IReadOnlyList<ImageEffect> effects) => effects is [var only] ? only.Name : EditorStrings.UndoEffects;
 
     private static DocumentState ApplyToImage(DocumentState state, IReadOnlyList<ImageEffect> effects)
     {

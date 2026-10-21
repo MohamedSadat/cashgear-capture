@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="OperationFailed" xml:space="preserve">
+    <value>فشل {0}: {1} ({2}).</value>
+  </data>
+  <data name="OperationFailedDetail" xml:space="preserve">
+    <value>فشل {0}: {1} ({2}). {3}</value>
+  </data>
+  <data name="ErrorNumber" xml:space="preserve">
+    <value>الخطأ {0}</value>
+  </data>
+  <data name="FfmpegMissing" xml:space="preserve">
+    <value>FFmpeg غير موجود: لم يُعثر على {0} في {1}.</value>
+  </data>
+  <data name="FfmpegLoadedElsewhere" xml:space="preserve">
+    <value>تم تحميل FFmpeg بالفعل من {0}.</value>
+  </data>
+  <data name="FfmpegWrongVersion" xml:space="preserve">
+    <value>إصدار FFmpeg في {0} غير مناسب: {1} {2}، ويحتاج التطبيق إلى {3}.</value>
+  </data>
+  <data name="FfmpegNotLoaded" xml:space="preserve">
+    <value>تعذّر تحميل FFmpeg من {0}: {1}</value>
+  </data>
+  <data name="EncoderNotInBuild" xml:space="preserve">
+    <value>{0} غير موجود في إصدار FFmpeg هذا.</value>
+  </data>
+  <data name="NamedEncoderNotInBuild" xml:space="preserve">
+    <value>المرمّز {0} غير موجود في إصدار FFmpeg هذا.</value>
+  </data>
+  <data name="EncoderMadeNoVideo" xml:space="preserve">
+    <value>قبِل {0} الإطارات لكنه لم يُنتج أي فيديو.</value>
+  </data>
+  <data name="EncoderProducedNoVideo" xml:space="preserve">
+    <value>لم يُنتج المرمّز أي فيديو.</value>
+  </data>
+  <data name="UnknownEncoderOptions" xml:space="preserve">
+    <value>لا يتعرّف {0} على الخيارات التالية: {1}.</value>
+  </data>
+  <data name="NoGifEncoder" xml:space="preserve">
+    <value>لا يتضمّن إصدار FFmpeg هذا مرمّز GIF.</value>
+  </data>
+  <data name="NoSoundStream" xml:space="preserve">
+    <value>لا يحتوي {0} على دفق الصوت {1}.</value>
+  </data>
+  <data name="NoVideoStream" xml:space="preserve">
+    <value>لا يحتوي {0} على دفق الفيديو {1}.</value>
+  </data>
+  <data name="NoVideo" xml:space="preserve">
+    <value>لا يحتوي {0} على فيديو.</value>
+  </data>
+  <data name="NoSoundDecoder" xml:space="preserve">
+    <value>لا يوجد مفكّك ترميز للصوت ({0}).</value>
+  </data>
+  <data name="NoSoundTrackDecoder" xml:space="preserve">
+    <value>لا يوجد مفكّك ترميز لمسار الصوت ({0}).</value>
+  </data>
+  <data name="NoDecoder" xml:space="preserve">
+    <value>لا يوجد مفكّك ترميز لـ {0}.</value>
+  </data>
+  <data name="CantConvertToBgra" xml:space="preserve">
+    <value>يتعذّر على swscale تحويل {0} إلى BGRA.</value>
+  </data>
+  <data name="CantConvertFromBgra" xml:space="preserve">
+    <value>يتعذّر على swscale تحويل BGRA إلى {0} بحجم {1}x{2}.</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>فتح {0}</value>
+  </data>
+  <data name="Reading" xml:space="preserve">
+    <value>قراءة {0}</value>
+  </data>
+  <data name="Creating" xml:space="preserve">
+    <value>إنشاء {0}</value>
+  </data>
+  <data name="OpeningNamedEncoder" xml:space="preserve">
+    <value>فتح المرمّز {0}</value>
+  </data>
+  <data name="EncodingWith" xml:space="preserve">
+    <value>الترميز باستخدام {0}</value>
+  </data>
+  <data name="Rewinding" xml:space="preserve">
+    <value>الرجوع إلى البداية</value>
+  </data>
+  <data name="Decoding" xml:space="preserve">
+    <value>فك الترميز</value>
+  </data>
+  <data name="SettingUpSoundFrame" xml:space="preserve">
+    <value>إعداد إطار صوت</value>
+  </data>
+  <data name="AllocatingSoundFrame" xml:space="preserve">
+    <value>تخصيص إطار صوت</value>
+  </data>
+  <data name="PreparingSoundFrame" xml:space="preserve">
+    <value>تجهيز إطار صوت</value>
+  </data>
+  <data name="EncodingSound" xml:space="preserve">
+    <value>ترميز الصوت</value>
+  </data>
+  <data name="SettingUpSoundDecoder" xml:space="preserve">
+    <value>إعداد مفكّك ترميز الصوت</value>
+  </data>
+  <data name="OpeningSoundDecoder" xml:space="preserve">
+    <value>فتح مفكّك ترميز الصوت</value>
+  </data>
+  <data name="SeekingInSound" xml:space="preserve">
+    <value>الانتقال داخل الصوت</value>
+  </data>
+  <data name="DecodingTheSound" xml:space="preserve">
+    <value>فك ترميز الصوت</value>
+  </data>
+  <data name="DecodingSound" xml:space="preserve">
+    <value>فك ترميز الصوت</value>
+  </data>
+  <data name="SettingUpSoundResampler" xml:space="preserve">
+    <value>إعداد إعادة أخذ عينات الصوت</value>
+  </data>
+  <data name="StartingSoundResampler" xml:space="preserve">
+    <value>بدء إعادة أخذ عينات الصوت</value>
+  </data>
+  <data name="ResamplingSound" xml:space="preserve">
+    <value>إعادة أخذ عينات الصوت</value>
+  </data>
+  <data name="CreatingExport" xml:space="preserve">
+    <value>إنشاء الملف المُصدَّر</value>
+  </data>
+  <data name="StartingExport" xml:space="preserve">
+    <value>بدء الملف المُصدَّر</value>
+  </data>
+  <data name="WritingExport" xml:space="preserve">
+    <value>كتابة الملف المُصدَّر</value>
+  </data>
+  <data name="FinishingExport" xml:space="preserve">
+    <value>إنهاء الملف المُصدَّر</value>
+  </data>
+  <data name="CopyingCodecSettings" xml:space="preserve">
+    <value>نسخ إعدادات برنامج الترميز</value>
+  </data>
+  <data name="SettingBt709Conversion" xml:space="preserve">
+    <value>ضبط التحويل إلى BT.709</value>
+  </data>
+  <data name="ConvertingFrame" xml:space="preserve">
+    <value>تحويل إطار</value>
+  </data>
+  <data name="ChoosingGifColours" xml:space="preserve">
+    <value>اختيار ألوان GIF</value>
+  </data>
+  <data name="GivingGifColours" xml:space="preserve">
+    <value>تطبيق الألوان على GIF</value>
+  </data>
+  <data name="CreatingGifInput" xml:space="preserve">
+    <value>إنشاء مدخل GIF</value>
+  </data>
+  <data name="CreatingGifOutput" xml:space="preserve">
+    <value>إنشاء مخرج GIF</value>
+  </data>
+  <data name="CreatingGifPaletteInput" xml:space="preserve">
+    <value>إنشاء مدخل لوحة ألوان GIF</value>
+  </data>
+  <data name="SettingUpGifFilters" xml:space="preserve">
+    <value>إعداد عوامل تصفية GIF ({0})</value>
+  </data>
+  <data name="StartingGifFilters" xml:space="preserve">
+    <value>بدء عوامل تصفية GIF</value>
+  </data>
+  <data name="OpeningGifEncoder" xml:space="preserve">
+    <value>فتح مرمّز GIF</value>
+  </data>
+  <data name="CreatingGif" xml:space="preserve">
+    <value>إنشاء GIF</value>
+  </data>
+  <data name="CopyingGifSettings" xml:space="preserve">
+    <value>نسخ إعدادات GIF</value>
+  </data>
+  <data name="CreatingGifFile" xml:space="preserve">
+    <value>إنشاء ملف GIF</value>
+  </data>
+  <data name="StartingGif" xml:space="preserve">
+    <value>بدء ملف GIF</value>
+  </data>
+  <data name="EncodingGif" xml:space="preserve">
+    <value>ترميز GIF</value>
+  </data>
+  <data name="WritingGif" xml:space="preserve">
+    <value>كتابة ملف GIF</value>
+  </data>
+  <data name="FinishingGif" xml:space="preserve">
+    <value>إنهاء ملف GIF</value>
+  </data>
+  <data name="ReadingRecording" xml:space="preserve">
+    <value>قراءة التسجيل</value>
+  </data>
+  <data name="CreatingSoundFilterInput" xml:space="preserve">
+    <value>إنشاء مدخل عامل تصفية الصوت</value>
+  </data>
+  <data name="CreatingSoundFilterOutput" xml:space="preserve">
+    <value>إنشاء مخرج عامل تصفية الصوت</value>
+  </data>
+  <data name="SettingUpSoundFilter" xml:space="preserve">
+    <value>إعداد عامل تصفية الصوت ({0})</value>
+  </data>
+  <data name="StartingSoundFilter" xml:space="preserve">
+    <value>بدء عامل تصفية الصوت</value>
+  </data>
+  <data name="FilteringSound" xml:space="preserve">
+    <value>تصفية الصوت</value>
+  </data>
+  <data name="SettingUpDecoder" xml:space="preserve">
+    <value>إعداد مفكّك الترميز</value>
+  </data>
+  <data name="OpeningDecoder" xml:space="preserve">
+    <value>فتح مفكّك الترميز</value>
+  </data>
+  <data name="CreatingRecordingFile" xml:space="preserve">
+    <value>إنشاء ملف التسجيل</value>
+  </data>
+  <data name="StartingRecordingFile" xml:space="preserve">
+    <value>بدء ملف التسجيل</value>
+  </data>
+  <data name="WritingRecording" xml:space="preserve">
+    <value>كتابة التسجيل</value>
+  </data>
+  <data name="FinishingRecordingFile" xml:space="preserve">
+    <value>إنهاء ملف التسجيل</value>
+  </data>
+  <data name="CreatingMp4" xml:space="preserve">
+    <value>إنشاء ملف MP4</value>
+  </data>
+  <data name="StartingMp4" xml:space="preserve">
+    <value>بدء ملف MP4</value>
+  </data>
+  <data name="WritingMp4" xml:space="preserve">
+    <value>كتابة ملف MP4</value>
+  </data>
+  <data name="FinishingMp4" xml:space="preserve">
+    <value>إنهاء ملف MP4</value>
+  </data>
+  <data name="SettingUpEvenedOutSound" xml:space="preserve">
+    <value>إعداد الصوت بعد موازنة مستواه</value>
+  </data>
+  <data name="CopyingWebcamCodecSettings" xml:space="preserve">
+    <value>نسخ إعدادات ترميز كاميرا الويب</value>
+  </data>
+  <data name="WritingWebcamTrack" xml:space="preserve">
+    <value>كتابة مسار كاميرا الويب</value>
+  </data>
+  <data name="CreatingTempoFilterInput" xml:space="preserve">
+    <value>إنشاء مدخل عامل تصفية السرعة</value>
+  </data>
+  <data name="CreatingTempoFilterOutput" xml:space="preserve">
+    <value>إنشاء مخرج عامل تصفية السرعة</value>
+  </data>
+  <data name="SettingUpTempoFilter" xml:space="preserve">
+    <value>إعداد عامل تصفية السرعة ({0})</value>
+  </data>
+  <data name="StartingTempoFilter" xml:space="preserve">
+    <value>بدء عامل تصفية السرعة</value>
+  </data>
+  <data name="AllocatingTempoSound" xml:space="preserve">
+    <value>تخصيص صوت لعامل تصفية السرعة</value>
+  </data>
+  <data name="ChangingTempo" xml:space="preserve">
+    <value>تغيير سرعة الصوت</value>
+  </data>
+  <data name="AllocatingVideoFrame" xml:space="preserve">
+    <value>تخصيص إطار فيديو</value>
+  </data>
+  <data name="PreparingVideoFrame" xml:space="preserve">
+    <value>تجهيز إطار فيديو</value>
+  </data>
+  <data name="SettingUpVideoDecoder" xml:space="preserve">
+    <value>إعداد مفكّك ترميز الفيديو</value>
+  </data>
+  <data name="OpeningVideoDecoder" xml:space="preserve">
+    <value>فتح مفكّك ترميز الفيديو</value>
+  </data>
+  <data name="SeekingInVideo" xml:space="preserve">
+    <value>الانتقال داخل الفيديو</value>
+  </data>
+  <data name="CreatingD3D11Device" xml:space="preserve">
+    <value>إنشاء جهاز فيديو Direct3D 11</value>
+  </data>
+  <data name="DecodingVideo" xml:space="preserve">
+    <value>فك ترميز الفيديو</value>
+  </data>
+  <data name="CopyingFromGraphicsCard" xml:space="preserve">
+    <value>نسخ صورة من بطاقة الرسومات</value>
+  </data>
+  <data name="ConvertingPicture" xml:space="preserve">
+    <value>تحويل صورة</value>
+  </data>
+</root>

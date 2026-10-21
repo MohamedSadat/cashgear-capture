@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Model;
@@ -40,6 +41,7 @@ public sealed record AnnotationStyle
     public const float MaxFontSize = 200;
     public const float MinStrength = 2;
     public const float MaxStrength = 60;
+    [Localizable(false)] // a font's name
     public const string DefaultFontFamily = "Segoe UI";
 
     /// <summary>Line, outline and text colour; the highlighter colour; the fill of a step number.</summary>

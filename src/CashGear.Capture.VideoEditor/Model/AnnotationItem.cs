@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace CashGear.Capture.VideoEditor.Model;
 
 public enum AnnotationShape
@@ -35,10 +37,15 @@ public sealed record AnnotationLook(
     double StrokeWidth = 6,
     string? Fill = null,
     double Opacity = 1,
-    string FontFamily = "Segoe UI",
+    [Localizable(false)] string FontFamily = AnnotationLook.DefaultFontFamily,
     double FontSize = 48,
     bool Bold = false,
-    double Strength = 14);
+    double Strength = 14)
+{
+    /// <summary>The font of new text (a font's name, not text).</summary>
+    [Localizable(false)]
+    public const string DefaultFontFamily = "Segoe UI";
+}
 
 /// <summary>
 /// Text, an arrow, a shape or a hidden area shown for <see cref="Length"/> seconds, fading in and out, at the place

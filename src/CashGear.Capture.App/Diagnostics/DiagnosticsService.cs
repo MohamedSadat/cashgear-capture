@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using System.IO;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
@@ -9,6 +11,10 @@ namespace CashGear.Capture.App.Diagnostics;
 /// <summary>Settings › General › Export diagnostics… and the tray's item: asks where, writes the zip, says where it went.</summary>
 public sealed partial class DiagnosticsService(DiagnosticsExporter exporter, ITrayNotifier notifier, IShell shell, ILogger<DiagnosticsService> logger)
 {
+    /// <summary>The zip's file extension.</summary>
+    [Localizable(false)]
+    private const string ZipExtension = ".zip";
+
     private int _busy;
 
     /// <summary>Shows the save dialog (call on the UI thread), then exports in the background.</summary>
@@ -23,10 +29,10 @@ public sealed partial class DiagnosticsService(DiagnosticsExporter exporter, ITr
         {
             var dialog = new SaveFileDialog
             {
-                Title = "Export diagnostics",
+                Title = DiagnosticsText.ExportTitle,
                 FileName = DiagnosticsExporter.DefaultFileName(DateTimeOffset.Now),
-                Filter = "Zip files (*.zip)|*.zip",
-                DefaultExt = ".zip",
+                Filter = DiagnosticsText.ZipFilter,
+                DefaultExt = ZipExtension,
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
                 OverwritePrompt = true,
             };
@@ -37,15 +43,15 @@ public sealed partial class DiagnosticsService(DiagnosticsExporter exporter, ITr
 
             var result = await exporter.ExportAsync(dialog.FileName).ConfigureAwait(true);
             notifier.Notify(
-                "Diagnostics saved",
-                $"{Path.GetFileName(result.Path)} ({result.Bytes / 1024.0:0} KB): the logs, the settings without addresses, names or passwords, and facts about this PC. Nothing was sent anywhere.",
+                DiagnosticsText.Saved,
+                DiagnosticsText.SavedMessage(Path.GetFileName(result.Path), result.Bytes / 1024.0),
                 NotificationKind.Info,
                 () => shell.ShowInFolder(result.Path));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             LogFailed(e);
-            notifier.Notify("Diagnostics could not be saved", e.Message, NotificationKind.Error);
+            notifier.Notify(DiagnosticsText.NotSaved, e.Message, NotificationKind.Error);
         }
         finally
         {

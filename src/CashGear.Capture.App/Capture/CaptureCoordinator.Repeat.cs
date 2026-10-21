@@ -1,3 +1,4 @@
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
@@ -23,7 +24,7 @@ public sealed partial class CaptureCoordinator
     {
         if (LastCapture is not { } last)
         {
-            _notifier.Notify("Repeat Last Capture", "Nothing has been captured yet. Take a capture first; this repeats it.");
+            _notifier.Notify(CapturingText.RepeatLastCapture, CapturingText.NothingCapturedYet);
             return Task.CompletedTask;
         }
 
@@ -71,8 +72,8 @@ public sealed partial class CaptureCoordinator
         if (!last.IsSameWindow(window))
         {
             _notifier.Notify(
-                "Repeat Last Capture",
-                $"The window of the last capture ({last.WindowTitle}) isn't open any more. Capture another window first.",
+                CapturingText.RepeatLastCapture,
+                CapturingText.LastWindowClosed(last.WindowTitle),
                 NotificationKind.Warning);
             return;
         }
@@ -97,8 +98,8 @@ public sealed partial class CaptureCoordinator
         }
 
         _notifier.Notify(
-            "Repeat Last Capture",
-            "The area of the last capture isn't on any monitor now (the display layout changed). Take a new capture.",
+            CapturingText.RepeatLastCapture,
+            CapturingText.LastAreaOffScreen,
             NotificationKind.Warning);
         return false;
     }

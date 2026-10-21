@@ -1,0 +1,1330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="VideoEditor" xml:space="preserve">
+    <value>The video editor</value>
+    <comment>notification title</comment>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>{0} — Video Editor</value>
+    <comment>{0}: the project's name</comment>
+  </data>
+  <data name="WindowTitleUnsaved" xml:space="preserve">
+    <value>• {0} — Video Editor</value>
+    <comment>{0}: the project's name, with unsaved changes</comment>
+  </data>
+  <data name="DialogTitle" xml:space="preserve">
+    <value>CashGear Capture — Video Editor</value>
+    <comment>title of the editor's message boxes</comment>
+  </data>
+  <data name="Untitled" xml:space="preserve">
+    <value>Untitled</value>
+    <comment>a project with no file yet</comment>
+  </data>
+  <data name="DeleteTrack" xml:space="preserve">
+    <value>_Delete the Track</value>
+    <comment>track header menu</comment>
+  </data>
+  <data name="MuteTip" xml:space="preserve">
+    <value>Mute</value>
+    <comment>track header's M button</comment>
+  </data>
+  <data name="SoloTip" xml:space="preserve">
+    <value>Solo: hear only the solo tracks</value>
+    <comment>track header's S button</comment>
+  </data>
+  <data name="ShownTip" xml:space="preserve">
+    <value>Shown in the video</value>
+    <comment>track header's check box</comment>
+  </data>
+  <data name="LockTip" xml:space="preserve">
+    <value>Lock: edits leave this track alone</value>
+    <comment>track header's L button</comment>
+  </data>
+  <data name="TrackVolume" xml:space="preserve">
+    <value>Track volume</value>
+    <comment>track header's slider</comment>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>_File</value>
+  </data>
+  <data name="AddRecordingMenu" xml:space="preserve">
+    <value>_Add a Recording…</value>
+  </data>
+  <data name="AddMusicMenu" xml:space="preserve">
+    <value>Add _Music…</value>
+  </data>
+  <data name="AddMusicTip" xml:space="preserve">
+    <value>A sound file on a track of its own, under the voice</value>
+  </data>
+  <data name="SaveProjectMenu" xml:space="preserve">
+    <value>_Save Project</value>
+  </data>
+  <data name="SaveProjectAsMenu" xml:space="preserve">
+    <value>Save Project _As…</value>
+  </data>
+  <data name="SaveWithMediaMenu" xml:space="preserve">
+    <value>Save with _Media…</value>
+  </data>
+  <data name="SaveWithMediaTip" xml:space="preserve">
+    <value>A copy of the project with its recordings inside, to take to another PC</value>
+  </data>
+  <data name="ImportCaptionsMenu" xml:space="preserve">
+    <value>_Import Captions…</value>
+  </data>
+  <data name="ImportCaptionsTip" xml:space="preserve">
+    <value>An SRT or WebVTT file as a caption track</value>
+  </data>
+  <data name="SaveCaptionsMenu" xml:space="preserve">
+    <value>Save _Captions…</value>
+  </data>
+  <data name="SaveCaptionsTip" xml:space="preserve">
+    <value>The captions as an SRT or WebVTT file</value>
+  </data>
+  <data name="ExportMenu" xml:space="preserve">
+    <value>_Export…</value>
+  </data>
+  <data name="CloseMenu" xml:space="preserve">
+    <value>_Close</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>_Edit</value>
+  </data>
+  <data name="SplitMenu" xml:space="preserve">
+    <value>_Split at the Playhead</value>
+  </data>
+  <data name="DeleteMenu" xml:space="preserve">
+    <value>_Delete</value>
+  </data>
+  <data name="DeleteMenuTip" xml:space="preserve">
+    <value>The marked range (closing the gap), or the selected clip</value>
+  </data>
+  <data name="RippleDeleteMenu" xml:space="preserve">
+    <value>_Ripple Delete</value>
+  </data>
+  <data name="RippleDeleteTip" xml:space="preserve">
+    <value>The selected clip and its time, from every track</value>
+  </data>
+  <data name="FreezeFrameMenu" xml:space="preserve">
+    <value>_Freeze the Frame at the Playhead</value>
+  </data>
+  <data name="FreezeFrameTip" xml:space="preserve">
+    <value>Hold the picture for 2 s; the sound waits</value>
+  </data>
+  <data name="CrossfadeMenu" xml:space="preserve">
+    <value>Cross_fade into the Next Clip</value>
+  </data>
+  <data name="CrossfadeTip" xml:space="preserve">
+    <value>The selected clip blends into the one after it over 1 s</value>
+  </data>
+  <data name="MarkInMenu" xml:space="preserve">
+    <value>Mark _In</value>
+  </data>
+  <data name="MarkOutMenu" xml:space="preserve">
+    <value>Mark _Out</value>
+  </data>
+  <data name="ClearSelectionMenu" xml:space="preserve">
+    <value>_Clear the Selection</value>
+  </data>
+  <data name="MenuInsert" xml:space="preserve">
+    <value>_Insert</value>
+  </data>
+  <data name="InsertTextMenu" xml:space="preserve">
+    <value>_Text</value>
+  </data>
+  <data name="InsertArrowMenu" xml:space="preserve">
+    <value>_Arrow</value>
+  </data>
+  <data name="InsertLineMenu" xml:space="preserve">
+    <value>_Line</value>
+  </data>
+  <data name="InsertRectangleMenu" xml:space="preserve">
+    <value>_Rectangle</value>
+  </data>
+  <data name="InsertEllipseMenu" xml:space="preserve">
+    <value>_Ellipse</value>
+  </data>
+  <data name="InsertHighlightMenu" xml:space="preserve">
+    <value>_Highlight</value>
+  </data>
+  <data name="InsertBlurMenu" xml:space="preserve">
+    <value>_Blur an Area</value>
+  </data>
+  <data name="InsertPixelateMenu" xml:space="preserve">
+    <value>_Pixelate an Area</value>
+  </data>
+  <data name="InsertClicksMenu" xml:space="preserve">
+    <value>_Click Highlights</value>
+  </data>
+  <data name="InsertClicksTip" xml:space="preserve">
+    <value>Rings at the clicks, from the recording's metadata</value>
+  </data>
+  <data name="InsertKeystrokesMenu" xml:space="preserve">
+    <value>_Keystrokes</value>
+  </data>
+  <data name="InsertKeystrokesTip" xml:space="preserve">
+    <value>The keys pressed, from the recording's metadata</value>
+  </data>
+  <data name="InsertPointerMenu" xml:space="preserve">
+    <value>Pointer _Effects</value>
+  </data>
+  <data name="InsertPointerTip" xml:space="preserve">
+    <value>A halo or spotlight, a bigger or smoother pointer, from the recording's metadata</value>
+  </data>
+  <data name="InsertZoomMenu" xml:space="preserve">
+    <value>_Zoom</value>
+  </data>
+  <data name="InsertZoomTip" xml:space="preserve">
+    <value>Zoom into the screen from the playhead (or over the marked range), following the pointer</value>
+  </data>
+  <data name="AutoZoomMenu" xml:space="preserve">
+    <value>_Auto-Zoom from Clicks and Typing</value>
+  </data>
+  <data name="AutoZoomTip" xml:space="preserve">
+    <value>Zooms around the clicks and typing in the recording's metadata (made again each time)</value>
+  </data>
+  <data name="InsertCaptionMenu" xml:space="preserve">
+    <value>Ca_ption</value>
+  </data>
+  <data name="InsertCaptionTip" xml:space="preserve">
+    <value>A caption to type, from the playhead (or over the marked range)</value>
+  </data>
+  <data name="TranscribeMenu" xml:space="preserve">
+    <value>Captions from _Speech…</value>
+  </data>
+  <data name="TranscribeMenuTip" xml:space="preserve">
+    <value>Captions made from a sound track's speech (English, Arabic and more), on this PC</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>_View</value>
+  </data>
+  <data name="ZoomInMenu" xml:space="preserve">
+    <value>Zoom _In</value>
+    <comment>the timeline</comment>
+  </data>
+  <data name="ZoomOutMenu" xml:space="preserve">
+    <value>Zoom _Out</value>
+    <comment>the timeline</comment>
+  </data>
+  <data name="FitTimelineMenu" xml:space="preserve">
+    <value>_Fit the Timeline</value>
+  </data>
+  <data name="NothingSelected" xml:space="preserve">
+    <value>Select a clip on the timeline, or a picture on the preview, to change it here.</value>
+  </data>
+  <data name="TextButton" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="TextButtonTip" xml:space="preserve">
+    <value>Text over the video, from the playhead (or the marked range)</value>
+  </data>
+  <data name="ArrowButton" xml:space="preserve">
+    <value>Arrow</value>
+  </data>
+  <data name="ArrowButtonTip" xml:space="preserve">
+    <value>An arrow, from the playhead (or the marked range)</value>
+  </data>
+  <data name="BlurButton" xml:space="preserve">
+    <value>Blur</value>
+  </data>
+  <data name="BlurButtonTip" xml:space="preserve">
+    <value>Hide an area, from the playhead (or the marked range)</value>
+  </data>
+  <data name="ZoomButton" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="CaptionsButton" xml:space="preserve">
+    <value>Captions…</value>
+  </data>
+  <data name="CaptionsButtonTip" xml:space="preserve">
+    <value>Captions from the speech in a sound track</value>
+  </data>
+  <data name="SplitButton" xml:space="preserve">
+    <value>Split</value>
+  </data>
+  <data name="SplitButtonTip" xml:space="preserve">
+    <value>Cut every clip at the playhead (S)</value>
+  </data>
+  <data name="DeleteButtonTip" xml:space="preserve">
+    <value>The marked range or the selected clip (Del)</value>
+  </data>
+  <data name="ExportButton" xml:space="preserve">
+    <value>Export…</value>
+  </data>
+  <data name="ExportButtonTip" xml:space="preserve">
+    <value>Make a video file (Ctrl+E)</value>
+  </data>
+  <data name="GoToStartTip" xml:space="preserve">
+    <value>Start (Home)</value>
+  </data>
+  <data name="StepBackTip" xml:space="preserve">
+    <value>A frame back (←)</value>
+  </data>
+  <data name="PlayPauseTip" xml:space="preserve">
+    <value>Play or pause (Space)</value>
+  </data>
+  <data name="StepForwardTip" xml:space="preserve">
+    <value>A frame on (→)</value>
+  </data>
+  <data name="GoToEndTip" xml:space="preserve">
+    <value>End (End)</value>
+  </data>
+  <data name="KindPicture" xml:space="preserve">
+    <value>Picture</value>
+    <comment>what a track holds, under its name</comment>
+  </data>
+  <data name="KindWebcam" xml:space="preserve">
+    <value>Webcam</value>
+    <comment>what a track holds</comment>
+  </data>
+  <data name="KindSound" xml:space="preserve">
+    <value>Sound</value>
+    <comment>what a track holds</comment>
+  </data>
+  <data name="KindAnnotations" xml:space="preserve">
+    <value>Annotations</value>
+    <comment>what a track holds</comment>
+  </data>
+  <data name="KindCaptions" xml:space="preserve">
+    <value>Captions</value>
+    <comment>what a track holds</comment>
+  </data>
+  <data name="KindEffects" xml:space="preserve">
+    <value>Effects</value>
+    <comment>what a track holds</comment>
+  </data>
+  <data name="StatusLine" xml:space="preserve">
+    <value>{0} × {1}, {2} fps · {3}</value>
+    <comment>status bar: width × height, frame rate, where the preview draws</comment>
+  </data>
+  <data name="StatusLineDecodingOnGpu" xml:space="preserve">
+    <value>{0} × {1}, {2} fps · {3} · decoding on the graphics card</value>
+    <comment>status bar</comment>
+  </data>
+  <data name="PreviewOnGpu" xml:space="preserve">
+    <value>preview on the graphics card</value>
+    <comment>status bar, {3} above</comment>
+  </data>
+  <data name="PreviewInMemory" xml:space="preserve">
+    <value>preview in memory</value>
+    <comment>status bar, {3} above</comment>
+  </data>
+  <data name="UndoNamed" xml:space="preserve">
+    <value>Undo {0}</value>
+    <comment>{0}: an undo step (split, add text…)</comment>
+  </data>
+  <data name="RedoNamed" xml:space="preserve">
+    <value>Redo {0}</value>
+    <comment>{0}: an undo step (split, add text…)</comment>
+  </data>
+  <data name="SelectionRange" xml:space="preserve">
+    <value>Range {0} – {1} ({2:0.00} s). Cut it out with Delete.</value>
+    <comment>status bar: times</comment>
+  </data>
+  <data name="SelectionItem" xml:space="preserve">
+    <value>{0} – {1} ({2:0.00} s)</value>
+    <comment>status bar: the selected item's times</comment>
+  </data>
+  <data name="SelectionClip" xml:space="preserve">
+    <value>{0}: {1}, source {2} – {3}</value>
+    <comment>status bar: file name, the times above, then the part of the file used</comment>
+  </data>
+  <data name="MissingMedia" xml:space="preserve">
+    <value>Missing media</value>
+    <comment>a clip whose file is gone</comment>
+  </data>
+  <data name="SpeechUnavailable" xml:space="preserve">
+    <value>Speech recognition isn't available in this copy of the app.</value>
+  </data>
+  <data name="NoSoundForCaptions" xml:space="preserve">
+    <value>There is no sound on the timeline to make captions from.</value>
+  </data>
+  <data name="ImportCaptionsTitle" xml:space="preserve">
+    <value>Import captions</value>
+  </data>
+  <data name="SubtitlesFilter" xml:space="preserve">
+    <value>Subtitles (*.srt;*.vtt)|*.srt;*.vtt|All files (*.*)|*.*</value>
+  </data>
+  <data name="CantBeRead" xml:space="preserve">
+    <value>{0} can't be read: {1}</value>
+    <comment>{0}: a file name; {1}: why</comment>
+  </data>
+  <data name="NoCaptionsToSave" xml:space="preserve">
+    <value>There are no captions to save.</value>
+  </data>
+  <data name="SaveCaptionsTitle" xml:space="preserve">
+    <value>Save the captions</value>
+  </data>
+  <data name="SaveCaptionsFilter" xml:space="preserve">
+    <value>SubRip subtitles (*.srt)|*.srt|WebVTT subtitles (*.vtt)|*.vtt</value>
+  </data>
+  <data name="CaptionsNotSaved" xml:space="preserve">
+    <value>The captions couldn't be saved: {0}</value>
+  </data>
+  <data name="CaptionsInLanguage" xml:space="preserve">
+    <value>Captions ({0})</value>
+    <comment>track name; {0}: a language (Arabic)</comment>
+  </data>
+  <data name="DefaultCaptionText" xml:space="preserve">
+    <value>Caption</value>
+    <comment>a new caption's text, drawn into the video</comment>
+  </data>
+  <data name="AddRecordingTitle" xml:space="preserve">
+    <value>Add a recording</value>
+  </data>
+  <data name="VideosFilter" xml:space="preserve">
+    <value>Videos (*.mp4;*.mkv;*.mov;*.webm)|*.mp4;*.mkv;*.mov;*.webm|All files (*.*)|*.*</value>
+  </data>
+  <data name="CantBeOpened" xml:space="preserve">
+    <value>{0} can't be opened: {1}</value>
+    <comment>{0}: a file name; {1}: why</comment>
+  </data>
+  <data name="AddMusicTitle" xml:space="preserve">
+    <value>Add music</value>
+  </data>
+  <data name="SoundFilter" xml:space="preserve">
+    <value>Sound (*.mp3;*.m4a;*.aac;*.wav;*.ogg;*.opus;*.flac;*.wma)|*.mp3;*.m4a;*.aac;*.wav;*.ogg;*.opus;*.flac;*.wma|All files (*.*)|*.*</value>
+  </data>
+  <data name="HasNoSound" xml:space="preserve">
+    <value>{0} has no sound.</value>
+    <comment>{0}: a file name</comment>
+  </data>
+  <data name="MusicTrack" xml:space="preserve">
+    <value>Music</value>
+    <comment>track name</comment>
+  </data>
+  <data name="AutoZoomFoundNothing" xml:space="preserve">
+    <value>Auto-Zoom found no clicks or typing in the recordings' metadata to zoom to.</value>
+  </data>
+  <data name="AutoZoomNeedsMetadata" xml:space="preserve">
+    <value>Auto-Zoom needs a recording's metadata file (clicks, keys and the pointer). Recordings get one when Settings › Overlays › Save a metadata file is on.</value>
+  </data>
+  <data name="ProjectNotSaved" xml:space="preserve">
+    <value>The project couldn't be saved: {0}</value>
+  </data>
+  <data name="MediaFilter" xml:space="preserve">
+    <value>Recordings and projects (*.mp4;*.mkv;*.mov;*.webm;*.cgcap)|*.mp4;*.mkv;*.mov;*.webm;*.cgcap|Projects (*.cgcap)|*.cgcap|All files (*.*)|*.*</value>
+  </data>
+  <data name="CantStart" xml:space="preserve">
+    <value>The video editor can't start</value>
+    <comment>notification title</comment>
+  </data>
+  <data name="NothingToEdit" xml:space="preserve">
+    <value>{0} has nothing to edit.</value>
+    <comment>{0}: a file name</comment>
+  </data>
+  <data name="CantOpenIt" xml:space="preserve">
+    <value>The video editor can't open it</value>
+    <comment>notification title</comment>
+  </data>
+  <data name="OpenInVideoEditor" xml:space="preserve">
+    <value>Open in the video editor</value>
+    <comment>an open dialog's title, and a workflow step</comment>
+  </data>
+  <data name="WhereIs" xml:space="preserve">
+    <value>Where is {0}?</value>
+    <comment>a dialog to find a missing file; {0}: its name</comment>
+  </data>
+  <data name="LocateFilter" xml:space="preserve">
+    <value>{0}|{0}|Videos and sound (*.mp4;*.mkv;*.mov;*.webm;*.mp3;*.m4a;*.wav;*.ogg)|*.mp4;*.mkv;*.mov;*.webm;*.mp3;*.m4a;*.wav;*.ogg|All files (*.*)|*.*</value>
+    <comment>{0}: the missing file's name</comment>
+  </data>
+  <data name="SaveProjectTitle" xml:space="preserve">
+    <value>Save the project</value>
+  </data>
+  <data name="ProjectFilter" xml:space="preserve">
+    <value>Video projects (*.cgcap)|*.cgcap</value>
+  </data>
+  <data name="SaveChangesTo" xml:space="preserve">
+    <value>Save the changes to {0}?</value>
+    <comment>{0}: the project's name</comment>
+  </data>
+  <data name="TakesRecordingsOnly" xml:space="preserve">
+    <value>The video editor takes recordings only.</value>
+  </data>
+  <data name="OpenedInVideoEditor" xml:space="preserve">
+    <value>Opened in the video editor</value>
+  </data>
+  <data name="NothingToSetUp" xml:space="preserve">
+    <value>Nothing to set up.</value>
+  </data>
+  <data name="MakeGif" xml:space="preserve">
+    <value>Make a GIF</value>
+    <comment>a workflow step</comment>
+  </data>
+  <data name="GifsFromRecordingsOnly" xml:space="preserve">
+    <value>GIFs are made from recordings only.</value>
+  </data>
+  <data name="GifSaved" xml:space="preserve">
+    <value>Saved {0} ({1})</value>
+    <comment>{0}: a file name; {1}: its size (2.5 MB)</comment>
+  </data>
+  <data name="GifNotMade" xml:space="preserve">
+    <value>The GIF couldn't be made: {0}</value>
+  </data>
+  <data name="GifNothingToSetUp" xml:space="preserve">
+    <value>Nothing to set up: GIFs are made with the export window's GIF choices.</value>
+  </data>
+  <data name="UndoTrackVolume" xml:space="preserve">
+    <value>track volume</value>
+    <comment>undo step, after Undo/Redo</comment>
+  </data>
+  <data name="UndoMute" xml:space="preserve">
+    <value>mute</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoUnmute" xml:space="preserve">
+    <value>unmute</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoSolo" xml:space="preserve">
+    <value>solo</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoUnsolo" xml:space="preserve">
+    <value>unsolo</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoLockTrack" xml:space="preserve">
+    <value>lock track</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoUnlockTrack" xml:space="preserve">
+    <value>unlock track</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoShowTrack" xml:space="preserve">
+    <value>show track</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoHideTrack" xml:space="preserve">
+    <value>hide track</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoDeleteTrack" xml:space="preserve">
+    <value>delete track</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoMoveAnnotation" xml:space="preserve">
+    <value>move annotation</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoResizeAnnotation" xml:space="preserve">
+    <value>resize annotation</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoMovePicture" xml:space="preserve">
+    <value>move picture</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoResizePicture" xml:space="preserve">
+    <value>resize picture</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoMoveZoom" xml:space="preserve">
+    <value>move zoom</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoResizeZoom" xml:space="preserve">
+    <value>resize zoom</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoSplit" xml:space="preserve">
+    <value>split</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCutOut" xml:space="preserve">
+    <value>cut out</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoDelete" xml:space="preserve">
+    <value>delete</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoRippleDelete" xml:space="preserve">
+    <value>ripple delete</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddCaption" xml:space="preserve">
+    <value>add caption</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoImportCaptions" xml:space="preserve">
+    <value>import captions</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCaptionsFromSpeech" xml:space="preserve">
+    <value>captions from speech</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoSplitCaption" xml:space="preserve">
+    <value>split caption</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoMergeCaptions" xml:space="preserve">
+    <value>merge captions</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddRecording" xml:space="preserve">
+    <value>add recording</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddMusic" xml:space="preserve">
+    <value>add music</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddText" xml:space="preserve">
+    <value>add text</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddArrow" xml:space="preserve">
+    <value>add arrow</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddLine" xml:space="preserve">
+    <value>add line</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddRectangle" xml:space="preserve">
+    <value>add rectangle</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddEllipse" xml:space="preserve">
+    <value>add ellipse</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddHighlight" xml:space="preserve">
+    <value>add highlight</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddBlurredArea" xml:space="preserve">
+    <value>add blurred area</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddPixelatedArea" xml:space="preserve">
+    <value>add pixelated area</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddZoom" xml:space="preserve">
+    <value>add zoom</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAutoZoom" xml:space="preserve">
+    <value>auto-zoom</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddClickHighlights" xml:space="preserve">
+    <value>add click highlights</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddKeystrokes" xml:space="preserve">
+    <value>add keystrokes</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddPointerEffects" xml:space="preserve">
+    <value>add pointer effects</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddKeyframe" xml:space="preserve">
+    <value>add keyframe</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoRemoveKeyframe" xml:space="preserve">
+    <value>remove keyframe</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoFreezeFrame" xml:space="preserve">
+    <value>freeze frame</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoSpeed" xml:space="preserve">
+    <value>speed</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoFreezeLength" xml:space="preserve">
+    <value>freeze length</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCrossfade" xml:space="preserve">
+    <value>crossfade</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoRemoveCrossfade" xml:space="preserve">
+    <value>remove crossfade</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoVolume" xml:space="preserve">
+    <value>volume</value>
+    <comment>undo step of a setting in the properties panel</comment>
+  </data>
+  <data name="UndoFadeIn" xml:space="preserve">
+    <value>fade in</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoFadeOut" xml:space="preserve">
+    <value>fade out</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoSize" xml:space="preserve">
+    <value>size</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoPosition" xml:space="preserve">
+    <value>position</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoShape" xml:space="preserve">
+    <value>shape</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoBorder" xml:space="preserve">
+    <value>border</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoBorderWidth" xml:space="preserve">
+    <value>border width</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoMirror" xml:space="preserve">
+    <value>mirror</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoOpacity" xml:space="preserve">
+    <value>opacity</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoEditText" xml:space="preserve">
+    <value>text</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoFont" xml:space="preserve">
+    <value>font</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoTextSize" xml:space="preserve">
+    <value>text size</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoBold" xml:space="preserve">
+    <value>bold</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoColour" xml:space="preserve">
+    <value>colour</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoFill" xml:space="preserve">
+    <value>fill</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoLineWidth" xml:space="preserve">
+    <value>line width</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoStrength" xml:space="preserve">
+    <value>strength</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoMovement" xml:space="preserve">
+    <value>movement</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoLeftColour" xml:space="preserve">
+    <value>left colour</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoRightColour" xml:space="preserve">
+    <value>right colour</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoClickSize" xml:space="preserve">
+    <value>click size</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoKeysPosition" xml:space="preserve">
+    <value>keys position</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoKeysSize" xml:space="preserve">
+    <value>keys size</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoKeysTime" xml:space="preserve">
+    <value>keys time</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoPointerHighlight" xml:space="preserve">
+    <value>pointer highlight</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoHaloColour" xml:space="preserve">
+    <value>halo colour</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoPointerRadius" xml:space="preserve">
+    <value>pointer radius</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoDim" xml:space="preserve">
+    <value>dim</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoPointerSize" xml:space="preserve">
+    <value>pointer size</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoSmoothing" xml:space="preserve">
+    <value>smoothing</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoHideWhenIdle" xml:space="preserve">
+    <value>hide when idle</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoIdleTime" xml:space="preserve">
+    <value>idle time</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCaptionText" xml:space="preserve">
+    <value>caption text</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCaptionFont" xml:space="preserve">
+    <value>caption font</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCaptionSize" xml:space="preserve">
+    <value>caption size</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCaptionBold" xml:space="preserve">
+    <value>caption bold</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCaptionColour" xml:space="preserve">
+    <value>caption colour</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCaptionBox" xml:space="preserve">
+    <value>caption box</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCaptionPosition" xml:space="preserve">
+    <value>caption position</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCaptionWidth" xml:space="preserve">
+    <value>caption width</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoZoom" xml:space="preserve">
+    <value>zoom</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoFollowPointer" xml:space="preserve">
+    <value>follow the pointer</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoZoomAcross" xml:space="preserve">
+    <value>zoom across</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoZoomDown" xml:space="preserve">
+    <value>zoom down</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoZoomInTime" xml:space="preserve">
+    <value>zoom in time</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoZoomOutTime" xml:space="preserve">
+    <value>zoom out time</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="ShapeText" xml:space="preserve">
+    <value>Text</value>
+    <comment>an annotation's kind: the properties panel's title</comment>
+  </data>
+  <data name="ShapeArrow" xml:space="preserve">
+    <value>Arrow</value>
+  </data>
+  <data name="ShapeLine" xml:space="preserve">
+    <value>Line</value>
+  </data>
+  <data name="ShapeRectangle" xml:space="preserve">
+    <value>Rectangle</value>
+  </data>
+  <data name="ShapeEllipse" xml:space="preserve">
+    <value>Ellipse</value>
+  </data>
+  <data name="ShapeHighlight" xml:space="preserve">
+    <value>Highlight</value>
+  </data>
+  <data name="ShapeBlurredArea" xml:space="preserve">
+    <value>Blurred area</value>
+  </data>
+  <data name="ShapePixelatedArea" xml:space="preserve">
+    <value>Pixelated area</value>
+  </data>
+  <data name="WebcamClip" xml:space="preserve">
+    <value>Webcam clip</value>
+    <comment>the properties panel's title</comment>
+  </data>
+  <data name="SoundClip" xml:space="preserve">
+    <value>Sound clip</value>
+    <comment>the properties panel's title</comment>
+  </data>
+  <data name="VideoClip" xml:space="preserve">
+    <value>Video clip</value>
+    <comment>the properties panel's title</comment>
+  </data>
+  <data name="ClickHighlights" xml:space="preserve">
+    <value>Click highlights</value>
+    <comment>the properties panel's title</comment>
+  </data>
+  <data name="Keystrokes" xml:space="preserve">
+    <value>Keystrokes</value>
+    <comment>the properties panel's title</comment>
+  </data>
+  <data name="PointerEffects" xml:space="preserve">
+    <value>Pointer effects</value>
+    <comment>the properties panel's title</comment>
+  </data>
+  <data name="ZoomTitle" xml:space="preserve">
+    <value>Zoom</value>
+    <comment>the properties panel's title</comment>
+  </data>
+  <data name="CaptionTitle" xml:space="preserve">
+    <value>Caption</value>
+    <comment>the properties panel's title</comment>
+  </data>
+  <data name="ItemTitle" xml:space="preserve">
+    <value>Item</value>
+    <comment>the properties panel's title</comment>
+  </data>
+  <data name="SecondsUnit" xml:space="preserve">
+    <value> s</value>
+    <comment>after a slider's value: seconds (with the space before it)</comment>
+  </data>
+  <data name="PercentOfWidthUnit" xml:space="preserve">
+    <value> % of the width</value>
+    <comment>after a slider's value (with the space before it)</comment>
+  </data>
+  <data name="Volume" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="HoldFrameFor" xml:space="preserve">
+    <value>Hold the frame for</value>
+  </data>
+  <data name="Speed" xml:space="preserve">
+    <value>Speed</value>
+  </data>
+  <data name="SpeedRamp" xml:space="preserve">
+    <value>Change the speed along the clip</value>
+  </data>
+  <data name="SpeedAtEnd" xml:space="preserve">
+    <value>Speed at the end</value>
+  </data>
+  <data name="RemoveCrossfade" xml:space="preserve">
+    <value>Remove the crossfade into the next clip</value>
+  </data>
+  <data name="AddCrossfade" xml:space="preserve">
+    <value>Crossfade into the next clip (1 s)</value>
+  </data>
+  <data name="FadeIn" xml:space="preserve">
+    <value>Fade in</value>
+  </data>
+  <data name="FadeOut" xml:space="preserve">
+    <value>Fade out</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Across" xml:space="preserve">
+    <value>Across</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>Shape</value>
+  </data>
+  <data name="Rectangle" xml:space="preserve">
+    <value>Rectangle</value>
+  </data>
+  <data name="RoundedRectangle" xml:space="preserve">
+    <value>Rounded rectangle</value>
+  </data>
+  <data name="Circle" xml:space="preserve">
+    <value>Circle</value>
+  </data>
+  <data name="Border" xml:space="preserve">
+    <value>Border</value>
+  </data>
+  <data name="BorderWidth" xml:space="preserve">
+    <value>Border width</value>
+  </data>
+  <data name="Mirrored" xml:space="preserve">
+    <value>Mirrored</value>
+  </data>
+  <data name="Opacity" xml:space="preserve">
+    <value>Opacity</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>Font</value>
+  </data>
+  <data name="Bold" xml:space="preserve">
+    <value>Bold</value>
+  </data>
+  <data name="TextColour" xml:space="preserve">
+    <value>Text colour</value>
+  </data>
+  <data name="Colour" xml:space="preserve">
+    <value>Colour</value>
+  </data>
+  <data name="Background" xml:space="preserve">
+    <value>Background</value>
+  </data>
+  <data name="Fill" xml:space="preserve">
+    <value>Fill</value>
+  </data>
+  <data name="LineWidth" xml:space="preserve">
+    <value>Line width</value>
+  </data>
+  <data name="Blur" xml:space="preserve">
+    <value>Blur</value>
+  </data>
+  <data name="CellSize" xml:space="preserve">
+    <value>Cell size</value>
+  </data>
+  <data name="Movement" xml:space="preserve">
+    <value>Movement between keyframes</value>
+  </data>
+  <data name="Smooth" xml:space="preserve">
+    <value>Smooth</value>
+  </data>
+  <data name="Even" xml:space="preserve">
+    <value>Even</value>
+  </data>
+  <data name="AddKeyframe" xml:space="preserve">
+    <value>Add a keyframe at the playhead ({0} now)</value>
+    <comment>{0}: how many keyframes the annotation has</comment>
+  </data>
+  <data name="RemoveKeyframe" xml:space="preserve">
+    <value>Remove the keyframe at the playhead</value>
+  </data>
+  <data name="NoMetadataForEffects" xml:space="preserve">
+    <value>No recording here has a metadata file, so there are no clicks, keys or pointer to show. Recordings get one when Settings › Overlays › Save a metadata file is on.</value>
+  </data>
+  <data name="LeftButton" xml:space="preserve">
+    <value>Left button</value>
+  </data>
+  <data name="RightButton" xml:space="preserve">
+    <value>Right button</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="BottomCentre" xml:space="preserve">
+    <value>Bottom centre</value>
+  </data>
+  <data name="BottomLeft" xml:space="preserve">
+    <value>Bottom left</value>
+  </data>
+  <data name="BottomRight" xml:space="preserve">
+    <value>Bottom right</value>
+  </data>
+  <data name="TopCentre" xml:space="preserve">
+    <value>Top centre</value>
+  </data>
+  <data name="TopLeft" xml:space="preserve">
+    <value>Top left</value>
+  </data>
+  <data name="TopRight" xml:space="preserve">
+    <value>Top right</value>
+  </data>
+  <data name="ShownFor" xml:space="preserve">
+    <value>Shown for</value>
+  </data>
+  <data name="AroundPointer" xml:space="preserve">
+    <value>Around the pointer</value>
+  </data>
+  <data name="PointerNothing" xml:space="preserve">
+    <value>Nothing</value>
+  </data>
+  <data name="PointerHalo" xml:space="preserve">
+    <value>A halo</value>
+  </data>
+  <data name="PointerSpotlight" xml:space="preserve">
+    <value>A spotlight (the rest dimmed)</value>
+  </data>
+  <data name="HaloColour" xml:space="preserve">
+    <value>Halo colour</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>Radius</value>
+  </data>
+  <data name="DimTheRest" xml:space="preserve">
+    <value>Dim the rest</value>
+  </data>
+  <data name="PointerInPictures" xml:space="preserve">
+    <value>The pointer is in this recording's pictures, so it can't be made bigger, smoother or hidden here. Recordings made with Settings › Overlays › Keep the video clean leave it out for the editor to draw.</value>
+  </data>
+  <data name="PointerSize" xml:space="preserve">
+    <value>Pointer size</value>
+  </data>
+  <data name="SmoothMovement" xml:space="preserve">
+    <value>Smooth its movement</value>
+  </data>
+  <data name="HideWhenStill" xml:space="preserve">
+    <value>Hide it when it stands still</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>After</value>
+  </data>
+  <data name="SplitCaption" xml:space="preserve">
+    <value>Split it at the playhead</value>
+  </data>
+  <data name="MergeCaption" xml:space="preserve">
+    <value>Merge it with the next caption</value>
+  </data>
+  <data name="CaptionLookNote" xml:space="preserve">
+    <value>The look below is for every caption on this track. It is drawn into exported videos while the track is shown (the eye in its header); the export can also save the captions as SRT or VTT files.</value>
+  </data>
+  <data name="Box" xml:space="preserve">
+    <value>Box</value>
+  </data>
+  <data name="AtTheBottom" xml:space="preserve">
+    <value>At the bottom</value>
+  </data>
+  <data name="AtTheTop" xml:space="preserve">
+    <value>At the top</value>
+  </data>
+  <data name="LinesUpTo" xml:space="preserve">
+    <value>Lines up to</value>
+  </data>
+  <data name="Zoom" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="FollowPointer" xml:space="preserve">
+    <value>Follow the pointer</value>
+  </data>
+  <data name="NoMetadataForZoom" xml:space="preserve">
+    <value>No recording here has a metadata file, so there is no pointer to follow: the zoom stays on its centre.</value>
+  </data>
+  <data name="ZoomInOver" xml:space="preserve">
+    <value>Zoom in over</value>
+  </data>
+  <data name="ZoomOutOver" xml:space="preserve">
+    <value>Zoom out over</value>
+  </data>
+  <data name="ZoomNote" xml:space="preserve">
+    <value>While it is selected, the preview shows the whole picture and the zoom's frame: drag the frame to place the zoom (it then stays there), or its corner to zoom in or out.</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Export</value>
+    <comment>the export window's title and button</comment>
+  </data>
+  <data name="Quality" xml:space="preserve">
+    <value>Quality</value>
+  </data>
+  <data name="FramesASecond" xml:space="preserve">
+    <value>Frames a second</value>
+  </data>
+  <data name="WidthPixels" xml:space="preserve">
+    <value>Width (px)</value>
+  </data>
+  <data name="Dithering" xml:space="preserve">
+    <value>Dithering</value>
+  </data>
+  <data name="KeepItUnder" xml:space="preserve">
+    <value>Keep it under</value>
+  </data>
+  <data name="PlayOverAndOver" xml:space="preserve">
+    <value>Play over and over</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="BurnCaptions" xml:space="preserve">
+    <value>Burn the captions into the video (the caption tracks that are shown)</value>
+  </data>
+  <data name="SaveSrt" xml:space="preserve">
+    <value>Also save the captions as an SRT file beside it</value>
+  </data>
+  <data name="SaveVtt" xml:space="preserve">
+    <value>Also save the captions as a WebVTT file beside it</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>Show in folder</value>
+  </data>
+  <data name="DitherPattern" xml:space="preserve">
+    <value>A fine pattern (smaller; best for screens)</value>
+  </data>
+  <data name="DitherDiffusion" xml:space="preserve">
+    <value>Diffusion (smoother gradients and video)</value>
+  </data>
+  <data name="DitherNone" xml:space="preserve">
+    <value>None (flat colours only)</value>
+  </data>
+  <data name="NoLimit" xml:space="preserve">
+    <value>No limit</value>
+  </data>
+  <data name="SizeLimit" xml:space="preserve">
+    <value>{0} MB</value>
+    <comment>a GIF's largest size</comment>
+  </data>
+  <data name="OnlyMarkedRange" xml:space="preserve">
+    <value>Only the marked range ({0} to {1})</value>
+    <comment>times</comment>
+  </data>
+  <data name="QualitySmall" xml:space="preserve">
+    <value>Small file</value>
+  </data>
+  <data name="QualityBalanced" xml:space="preserve">
+    <value>Balanced</value>
+  </data>
+  <data name="QualityHigh" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="QualityNearLossless" xml:space="preserve">
+    <value>Near lossless</value>
+  </data>
+  <data name="SoundOnlySize" xml:space="preserve">
+    <value>Sound only, {0} long</value>
+    <comment>{0}: a time (1:05)</comment>
+  </data>
+  <data name="GifSizeLooping" xml:space="preserve">
+    <value>{0} × {1}, {2} frames a second, {3} long, no sound, plays over and over</value>
+    <comment>width × height, frame rate, a time</comment>
+  </data>
+  <data name="GifSizeOnce" xml:space="preserve">
+    <value>{0} × {1}, {2} frames a second, {3} long, no sound, plays once</value>
+    <comment>width × height, frame rate, a time</comment>
+  </data>
+  <data name="VideoSize" xml:space="preserve">
+    <value>{0} × {1}, {2} fps, {3} long</value>
+    <comment>width × height, frame rate, a time</comment>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>Starting…</value>
+  </data>
+  <data name="ProgressTimeLeft" xml:space="preserve">
+    <value>{0:P0} · about {1} left</value>
+    <comment>{0}: the part done; {1}: a time</comment>
+  </data>
+  <data name="WithCaptionFiles" xml:space="preserve">
+    <value>, with {0}</value>
+    <comment>after ExportDone: the subtitle files written beside it</comment>
+  </data>
+  <data name="AndList" xml:space="preserve">
+    <value>{0} and {1}</value>
+    <comment>two file names</comment>
+  </data>
+  <data name="GifMadeSmaller" xml:space="preserve">
+    <value> (made smaller to fit: {0} px wide, {1} frames a second, {2} colours)</value>
+    <comment>after ExportDone</comment>
+  </data>
+  <data name="ExportDone" xml:space="preserve">
+    <value>Done in {0}: {1}, {2}{3}{4}</value>
+    <comment>{0}: a time; {1}: the file's name; {2}: its size (2.5 MB); {3}: the encoder in brackets, or nothing; {4}: WithCaptionFiles and GifMadeSmaller, or nothing</comment>
+  </data>
+  <data name="ExportCancelled" xml:space="preserve">
+    <value>Cancelled: no file was made.</value>
+  </data>
+  <data name="ExportFileName" xml:space="preserve">
+    <value>Export</value>
+    <comment>a file name, when the project's name can't be one</comment>
+  </data>
+  <data name="TranscribeTitle" xml:space="preserve">
+    <value>Captions from Speech</value>
+    <comment>window title</comment>
+  </data>
+  <data name="TranscribeIntro" xml:space="preserve">
+    <value>The speech in a sound track becomes captions on a new caption track, with their times. Everything happens on this PC: the sound isn't sent anywhere.</value>
+  </data>
+  <data name="ListenTo" xml:space="preserve">
+    <value>Listen to</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Model</value>
+    <comment>a speech model</comment>
+  </data>
+  <data name="UseGpu" xml:space="preserve">
+    <value>Use the graphics card when it can (faster for long recordings)</value>
+  </data>
+  <data name="MakeCaptions" xml:space="preserve">
+    <value>Make Captions</value>
+  </data>
+  <data name="AllSoundTracks" xml:space="preserve">
+    <value>All sound tracks</value>
+  </data>
+  <data name="ModelDownloaded" xml:space="preserve">
+    <value>{0}: {1} (downloaded)</value>
+    <comment>a model's name and what it is good for</comment>
+  </data>
+  <data name="ModelToDownload" xml:space="preserve">
+    <value>{0}: {1} ({2} to download)</value>
+    <comment>a model's name, what it is good for, its size</comment>
+  </data>
+  <data name="FindOutLanguage" xml:space="preserve">
+    <value>Find out from the speech</value>
+    <comment>the language to listen for</comment>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageArabic" xml:space="preserve">
+    <value>Arabic</value>
+  </data>
+  <data name="TranscribeRange" xml:space="preserve">
+    <value>Only the marked range ({0:0.0} s)</value>
+  </data>
+  <data name="DownloadingModel" xml:space="preserve">
+    <value>Downloading the {0} model ({1}), once…</value>
+    <comment>{0}: a model's name; {1}: its size</comment>
+  </data>
+  <data name="DownloadingModelProgress" xml:space="preserve">
+    <value>Downloading the {0} model ({1}), once… {2:P0}</value>
+    <comment>{2}: the part done</comment>
+  </data>
+  <data name="GettingSound" xml:space="preserve">
+    <value>Getting the sound…</value>
+  </data>
+  <data name="Listening" xml:space="preserve">
+    <value>Listening…</value>
+  </data>
+  <data name="ListeningProgress" xml:space="preserve">
+    <value>Listening… {0:P0}</value>
+  </data>
+  <data name="NoSpeechHeard" xml:space="preserve">
+    <value>No speech was heard in that sound track.</value>
+  </data>
+  <data name="TranscribeCancelled" xml:space="preserve">
+    <value>Cancelled.</value>
+  </data>
+  <data name="ModelNotDownloaded" xml:space="preserve">
+    <value>The model couldn't be downloaded: {0}</value>
+  </data>
+  <data name="FileFormat" xml:space="preserve">
+    <value>Format</value>
+    <comment>the kind of file to export</comment>
+  </data>
+</root>

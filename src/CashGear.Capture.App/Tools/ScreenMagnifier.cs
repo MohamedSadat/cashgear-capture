@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -7,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
@@ -226,12 +228,13 @@ public sealed unsafe class ScreenMagnifier
         private readonly Rectangle _marker = new() { Stroke = Brushes.White, StrokeThickness = 1 };
         private readonly Rectangle _markerShadow = new() { Stroke = Brushes.Black, StrokeThickness = 1 };
         private readonly Border _frame = new() { BorderBrush = new SolidColorBrush(Color.FromRgb(0x1E, 0x90, 0xFF)), BorderThickness = new Thickness(2) };
+        [Localizable(false)] // a font's name
         private readonly TextBlock _info = new() { Foreground = Brushes.White, Padding = new Thickness(6, 2, 6, 3), FontFamily = new FontFamily("Segoe UI"), FontSize = 12 };
 
         public LensWindow(ScreenMagnifier owner)
         {
             _owner = owner;
-            Title = "CashGear Capture - magnifier";
+            Title = ToolsText.MagnifierWindowTitle;
             WindowStyle = WindowStyle.None;
             ResizeMode = ResizeMode.NoResize;
             Background = Brushes.Black;

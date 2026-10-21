@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.History;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -32,16 +32,15 @@ public sealed class HistoryItem
     /// <summary>For the tray menu: when and what.</summary>
     public string Label => $"{When} — {Description}";
 
+    /// <remarks>The date and time are in the current culture's formats, the words in the UI language.</remarks>
     public static string FormatWhen(DateTimeOffset at, DateTimeOffset now)
     {
-        var culture = CultureInfo.CurrentCulture;
-        var time = at.ToString("t", culture);
         var days = (now.Date - at.Date).Days;
         return days switch
         {
-            0 => "Today " + time,
-            1 => "Yesterday " + time,
-            _ => at.ToString("d MMM", culture) + " " + time,
+            0 => HistoryText.TodayAt(at),
+            1 => HistoryText.YesterdayAt(at),
+            _ => HistoryText.DayAt(at),
         };
     }
 
@@ -101,9 +100,8 @@ public sealed partial class HistoryViewModel : ObservableObject, IDisposable
 
     public string Summary => Items.Count switch
     {
-        0 => "No captures yet. Captures appear here as you take them.",
-        1 => "1 capture. Double-click it to open it in the editor.",
-        _ => $"{Items.Count} captures, newest first. Double-click one to open it in the editor.",
+        0 => HistoryText.NoCaptures,
+        _ => HistoryText.CaptureCount(Items.Count),
     };
 
     [ObservableProperty]

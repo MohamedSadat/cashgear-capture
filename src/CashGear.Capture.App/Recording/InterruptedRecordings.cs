@@ -1,5 +1,6 @@
 using System.IO;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Media;
@@ -40,9 +41,8 @@ public sealed partial class InterruptedRecordings(
 
         LogFound(found.Count);
         notifier.Notify(
-            found.Count == 1 ? "Interrupted recording found" : $"{found.Count} interrupted recordings found",
-            (found.Count == 1 ? "A recording wasn't saved" : "Recordings weren't saved") +
-            " because CashGear Capture closed while recording. Click here (or use the tray menu) to save what was recorded.",
+            RecordingText.InterruptedFound(found.Count),
+            RecordingText.InterruptedMessage(found.Count),
             NotificationKind.Warning,
             onClick: () => _ = RecoverAllAsync());
     }
@@ -78,22 +78,22 @@ public sealed partial class InterruptedRecordings(
             var saved = await recovery.RecoverAsync(recording).ConfigureAwait(false);
             if (saved.Files.Count == 0)
             {
-                notifier.Notify("Nothing to save", $"The recording started {started} stopped before anything could be written. It was removed.", NotificationKind.Warning);
+                notifier.Notify(RecordingText.NothingToSave, RecordingText.NothingWritten(started), NotificationKind.Warning);
                 return;
             }
 
-            var names = string.Join(", ", saved.Files.Select(Path.GetFileName));
+            var names = string.Join(RecordingText.ListSeparator, saved.Files.Select(Path.GetFileName));
             notifier.Notify(
-                "Recording recovered",
-                $"{names}\n{RecordingController.Duration(saved.Duration)} · started {started}\nin {Path.GetDirectoryName(saved.Files[0])}" +
-                (saved.Truncated ? "\nThe last second or so before the interruption is missing." : string.Empty),
+                RecordingText.Recovered,
+                $"{names}\n{RecordingText.StartedAt(RecordingController.Duration(saved.Duration), started)}\n{RecordingText.InFolder(Path.GetDirectoryName(saved.Files[0]))}" +
+                (saved.Truncated ? "\n" + RecordingText.LastSecondMissing : string.Empty),
                 NotificationKind.Info,
                 onClick: () => shell.ShowInFolder(saved.Files[0]));
         }
         catch (Exception e) when (e is FfmpegException or CaptureException or IOException or UnauthorizedAccessException)
         {
             LogFailed(e, recording.Directory);
-            notifier.Notify("The recording could not be recovered", $"{e.Message} It is kept; try again from the tray menu.", NotificationKind.Error);
+            notifier.Notify(RecordingText.NotRecovered, RecordingText.KeptTryAgain(e.Message), NotificationKind.Error);
         }
     }
 

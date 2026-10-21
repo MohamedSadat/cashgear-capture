@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Hotkeys;
@@ -435,7 +436,7 @@ public sealed record HotkeySettings(
     string? CaptureFullScreen = HotkeySettings.DefaultCaptureFullScreen,
     string? CaptureScrolling = HotkeySettings.DefaultCaptureScrolling,
     string? Record = HotkeySettings.DefaultRecord,
-    string? CaptureText = HotkeySettings.DefaultCaptureText,
+    [Localizable(false)] string? CaptureText = HotkeySettings.DefaultCaptureText, // a hotkey: key names stay English
     string? ToggleDrawing = HotkeySettings.DefaultToggleDrawing,
     string? RepeatLastCapture = HotkeySettings.DefaultRepeatLastCapture,
     string? CaptureWindow = null,
@@ -458,6 +459,7 @@ public sealed record HotkeySettings(
     public const string DefaultCaptureFullScreen = "Ctrl+PrintScreen";
     public const string DefaultCaptureScrolling = "Ctrl+Shift+PrintScreen";
     public const string DefaultRecord = "Shift+PrintScreen";
+    [Localizable(false)] // a hotkey (for Capture Text): key names stay English
     public const string DefaultCaptureText = "Ctrl+Alt+PrintScreen";
 
     /// <summary>Registered only while a recording runs, so the key isn't taken from other apps otherwise.</summary>

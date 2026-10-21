@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
+using CashGear.Capture.VideoEditor.Resources;
 
 namespace CashGear.Capture.VideoEditor.Model;
 
@@ -107,12 +108,12 @@ public static class ProjectFile
         }
         catch (InvalidDataException e)
         {
-            throw new InvalidDataException($"{Path.GetFileName(path)} isn't a video project.", e);
+            throw new InvalidDataException(VideoEditorStrings.FileNotAProject(Path.GetFileName(path)), e);
         }
 
         using (zip)
         {
-            var entry = zip.GetEntry(ProjectEntry) ?? throw new InvalidDataException($"{Path.GetFileName(path)} has no {ProjectEntry}.");
+            var entry = zip.GetEntry(ProjectEntry) ?? throw new InvalidDataException(VideoEditorStrings.ProjectEntryMissing(Path.GetFileName(path), ProjectEntry));
             VideoProject project;
             using (var stream = entry.Open())
             using (var bytes = new MemoryStream())

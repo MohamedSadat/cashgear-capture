@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NoMonitors" xml:space="preserve">
+    <value>No monitors found.</value>
+  </data>
+  <data name="WindowGone" xml:space="preserve">
+    <value>That window no longer exists.</value>
+  </data>
+  <data name="WindowMinimized" xml:space="preserve">
+    <value>"{0}" is minimized. Restore it, then capture again.</value>
+    <comment>{0}: the window's title</comment>
+  </data>
+  <data name="WindowCloaked" xml:space="preserve">
+    <value>"{0}" is hidden by Windows (on another desktop, or an app that is suspended). Switch to it, then capture again.</value>
+    <comment>{0}: the window's title</comment>
+  </data>
+  <data name="WindowOffScreen" xml:space="preserve">
+    <value>"{0}" is off every screen, perhaps on a monitor that is no longer connected. Bring it back first: click it on the taskbar, then press Windows+Shift+Left or Right to move it onto a monitor.</value>
+    <comment>{0}: the window's title; key names stay English</comment>
+  </data>
+  <data name="CaptureIsBlack" xml:space="preserve">
+    <value>The capture of "{0}" is black. Video that is protected from copying (DRM), and apps that hide themselves from captures, are always black in screenshots and recordings.</value>
+    <comment>{0}: the window's title</comment>
+  </data>
+  <data name="AreaOffMonitors" xml:space="preserve">
+    <value>{0} is not on any monitor.</value>
+    <comment>{0}: a rectangle of the screen</comment>
+  </data>
+  <data name="ScreenUnreadable" xml:space="preserve">
+    <value>The screen couldn't be read ({0}: {1}). If Windows was showing a secure screen (a UAC prompt or the lock screen), try again once it's gone.</value>
+    <comment>{0}: the Windows function that failed; {1}: Windows' error message</comment>
+  </data>
+  <data name="WgcFrameTooSmall" xml:space="preserve">
+    <value>WGC frame {0}x{1} does not cover {2} on {3}.</value>
+    <comment>WGC: Windows.Graphics.Capture. {0}x{1}: the frame's size; {2}: the area wanted; {3}: the monitor</comment>
+  </data>
+  <data name="WgcNoPictureOfMonitor" xml:space="preserve">
+    <value>Windows.Graphics.Capture has no picture of the {0}.</value>
+    <comment>{0}: the monitor's name (DISPLAY1)</comment>
+  </data>
+  <data name="WgcNoPictureOfWindow" xml:space="preserve">
+    <value>Windows.Graphics.Capture has no picture of the window "{0}".</value>
+    <comment>{0}: the window's title</comment>
+  </data>
+  <data name="NothingToCopy" xml:space="preserve">
+    <value>Nothing to copy: {0} is not inside the {1}x{2} frame.</value>
+    <comment>{0}: the area wanted; {1}x{2}: the frame's size</comment>
+  </data>
+  <data name="OcrNoLanguage" xml:space="preserve">
+    <value>Windows has no text recognition (OCR) language installed.</value>
+  </data>
+  <data name="OcrLanguageMissing" xml:space="preserve">
+    <value>Text recognition for "{0}" isn't installed. Add it in Windows Settings › Time &amp; language › Language (Optical character recognition).</value>
+    <comment>{0}: a language tag (ar-SA); the path is the one of Windows' Settings app</comment>
+  </data>
+  <data name="OcrCouldNotStart" xml:space="preserve">
+    <value>Windows could not start text recognition for {0}.</value>
+    <comment>{0}: a language tag (ar-SA)</comment>
+  </data>
+</root>

@@ -90,4 +90,664 @@
   <data name="TransferFailed" xml:space="preserve">
     <value>لم ينجح ذلك: {0}</value>
   </data>
+  <data name="DefaultFolderFormat" xml:space="preserve">
+    <value>الترك فارغًا يعني المجلد الافتراضي: {0}</value>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>إعدادات CashGear Capture</value>
+  </data>
+  <data name="StepMissingTip" xml:space="preserve">
+    <value>حُذفت وجهتها في علامة التبويب «الوجهات»، لذا تُتخطى هذه الخطوة.</value>
+  </data>
+  <data name="StepEarlier" xml:space="preserve">
+    <value>تنفيذها أبكر</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>نقل لأعلى</value>
+  </data>
+  <data name="StepLater" xml:space="preserve">
+    <value>تنفيذها لاحقًا</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>نقل لأسفل</value>
+  </data>
+  <data name="RemoveStep" xml:space="preserve">
+    <value>إزالة هذه الخطوة</value>
+  </data>
+  <data name="StepToAdd" xml:space="preserve">
+    <value>الخطوة المراد إضافتها</value>
+  </data>
+  <data name="AddStep" xml:space="preserve">
+    <value>إضافة خطوة</value>
+  </data>
+  <data name="ResetToDefaults" xml:space="preserve">
+    <value>استعادة الإعدادات الافتراضية</value>
+  </data>
+  <data name="OutputTab" xml:space="preserve">
+    <value>الإخراج</value>
+  </data>
+  <data name="AfterCaptureSection" xml:space="preserve">
+    <value>بعد الالتقاط، بهذا الترتيب</value>
+  </data>
+  <data name="AfterCaptureHint" xml:space="preserve">
+    <value>تنتظر الخطوات التي تلي «فتح في المحرر» الضغط على زر «متابعة» فيه، فتحصل على الصورة بعد تحريرها. تُعَدّ الخوادم وعمليات الرفع وWord وغيرها في علامة التبويب «الوجهات».</value>
+  </data>
+  <data name="AfterRecordingSection" xml:space="preserve">
+    <value>بعد حفظ تسجيل</value>
+  </data>
+  <data name="AfterRecordingHint" xml:space="preserve">
+    <value>يُحفظ التسجيل دائمًا في المجلد أدناه أولًا، ثم ترسله هذه الخطوات إلى وجهاتها.</value>
+  </data>
+  <data name="FolderSection" xml:space="preserve">
+    <value>المجلد</value>
+  </data>
+  <data name="CaptureFolder" xml:space="preserve">
+    <value>مجلد اللقطات</value>
+  </data>
+  <data name="FormatSection" xml:space="preserve">
+    <value>التنسيق</value>
+  </data>
+  <data name="ImageFormat" xml:space="preserve">
+    <value>تنسيق الصورة</value>
+  </data>
+  <data name="JpegQuality" xml:space="preserve">
+    <value>جودة JPEG</value>
+  </data>
+  <data name="FileNameSection" xml:space="preserve">
+    <value>اسم الملف</value>
+  </data>
+  <data name="FileNameTemplate" xml:space="preserve">
+    <value>قالب اسم الملف</value>
+  </data>
+  <data name="FileNameExample" xml:space="preserve">
+    <value>مثال:</value>
+  </data>
+  <data name="CaptureTab" xml:space="preserve">
+    <value>الالتقاط</value>
+  </data>
+  <data name="TimingSection" xml:space="preserve">
+    <value>التوقيت</value>
+  </data>
+  <data name="CaptureDelay" xml:space="preserve">
+    <value>تأخير الالتقاط</value>
+  </data>
+  <data name="WaitForWindowsToHide" xml:space="preserve">
+    <value>انتظار اختفاء نوافذ التطبيق</value>
+  </data>
+  <data name="HideDelay" xml:space="preserve">
+    <value>تأخير الإخفاء</value>
+  </data>
+  <data name="CaptureDelayHint" xml:space="preserve">
+    <value>يمنحك تأخير الالتقاط وقتًا لفتح قائمة أو إظهار تلميح بالمؤشر قبل التقاط الشاشة.</value>
+  </data>
+  <data name="DelayPerKind" xml:space="preserve">
+    <value>التأخير لكل نوع من الالتقاط</value>
+  </data>
+  <data name="DelayPerKindHint" xml:space="preserve">
+    <value>ينتظر «تكرار آخر التقاط» المدة نفسها التي ينتظرها نوع الالتقاط الذي يكرره. تُلتقط القائمة المفتوحة بعد 3 ثوانٍ من طلبك ما لم يُضبط غير ذلك، ليكون لديك وقت لفتحها.</value>
+  </data>
+  <data name="ContentSection" xml:space="preserve">
+    <value>المحتوى</value>
+  </data>
+  <data name="IncludeCursor" xml:space="preserve">
+    <value>تضمين مؤشر الماوس</value>
+  </data>
+  <data name="IncludeWindowShadow" xml:space="preserve">
+    <value>إضافة ظل إلى لقطات النوافذ</value>
+  </data>
+  <data name="CaptureToolbarSection" xml:space="preserve">
+    <value>شريط أدوات الالتقاط</value>
+  </data>
+  <data name="ShowToolbarAtStartup" xml:space="preserve">
+    <value>إظهار شريط أدوات الالتقاط عند بدء التطبيق</value>
+  </data>
+  <data name="CaptureToolbarHint" xml:space="preserve">
+    <value>شريط صغير فيه زر لكل نوع من الالتقاط، يبقى دائمًا في المقدمة ولا يظهر أبدًا في اللقطات. يُظهره الآن الأمر «شريط أدوات الالتقاط» في قائمة منطقة الإعلامات؛ اسحبه من مقبضه، وأفلته عند حافة شاشة لإرسائه هناك.</value>
+  </data>
+  <data name="ShapesSection" xml:space="preserve">
+    <value>الأشكال</value>
+  </data>
+  <data name="FixedSizeRegion" xml:space="preserve">
+    <value>منطقة بحجم ثابت</value>
+  </data>
+  <data name="RoundedCorners" xml:space="preserve">
+    <value>زوايا المنطقة المستديرة</value>
+  </data>
+  <data name="CornerRadius" xml:space="preserve">
+    <value>نصف قطر الزاوية</value>
+  </data>
+  <data name="ShapesHint" xml:space="preserve">
+    <value>يمكن كتابة أي حجم (العرض × الارتفاع). على الشاشة، يبدّل المفتاح Tab بين الأحجام وتغيّر عجلة الماوس نصف قطر الزاوية، ويُحتفظ بآخر القيم المستخدمة. لقطات المنطقة الحرة والمضلعة والمستديرة والقوائم شفافة خارج شكلها، لذا تُحفظ بتنسيق PNG أيًا كان التنسيق المحدد في علامة التبويب «الإخراج».</value>
+  </data>
+  <data name="FullScreenSection" xml:space="preserve">
+    <value>الشاشة كاملة</value>
+  </data>
+  <data name="FullScreenOutput" xml:space="preserve">
+    <value>ناتج التقاط الشاشة كاملة</value>
+  </data>
+  <data name="ScrollingSection" xml:space="preserve">
+    <value>التقاط مع التمرير</value>
+  </data>
+  <data name="WaitAfterScroll" xml:space="preserve">
+    <value>الانتظار بعد كل تمرير</value>
+  </data>
+  <data name="StopAtHeight" xml:space="preserve">
+    <value>التوقف عند ارتفاع</value>
+  </data>
+  <data name="PixelsN0Format" xml:space="preserve">
+    <value>{0:N0} px</value>
+  </data>
+  <data name="MaximumHeight" xml:space="preserve">
+    <value>الارتفاع الأقصى</value>
+  </data>
+  <data name="ScrollingHint" xml:space="preserve">
+    <value>اختر نافذة، ثم انقر حيث يجري التمرير فيها. تُمرَّر من موضعها الحالي حتى النهاية، ويلغي المفتاح Esc العملية. امنح وقتًا أطول للصفحات التي يُحمَّل محتواها أثناء التمرير.</value>
+  </data>
+  <data name="CaptureMethod" xml:space="preserve">
+    <value>طريقة الالتقاط</value>
+  </data>
+  <data name="CaptureMethodHint" xml:space="preserve">
+    <value>يتجنب الخيار التلقائي إطار الالتقاط الأصفر في Windows 10 ويلتقط النوافذ المغطاة بشكل صحيح مع ذلك.</value>
+  </data>
+  <data name="HdrSection" xml:space="preserve">
+    <value>شاشات HDR</value>
+  </data>
+  <data name="RecordingTab" xml:space="preserve">
+    <value>التسجيل</value>
+  </data>
+  <data name="VideoSection" xml:space="preserve">
+    <value>الفيديو</value>
+  </data>
+  <data name="FramesPerSecond" xml:space="preserve">
+    <value>إطارات في الثانية</value>
+  </data>
+  <data name="Quality" xml:space="preserve">
+    <value>الجودة</value>
+  </data>
+  <data name="Encoder" xml:space="preserve">
+    <value>المرمّز</value>
+  </data>
+  <data name="CheckAgain" xml:space="preserve">
+    <value>إعادة الفحص</value>
+  </data>
+  <data name="CheckAgainTip" xml:space="preserve">
+    <value>اختبار كل المرمّزات من جديد (بعد تحديث برنامج تشغيل أو تركيب بطاقة رسومات جديدة)</value>
+  </data>
+  <data name="EncoderHint" xml:space="preserve">
+    <value>يستخدم الخيار التلقائي مرمّز بطاقة الرسومات إذا كان يعمل هنا، فيبقى المعالج متفرغًا، وإلا فالمرمّز المضمَّن في Windows. إذا توقف مرمّز عن العمل أثناء التسجيل، تولّى آخر المهمة وحُفظ الباقي في ملف ثانٍ.</value>
+  </data>
+  <data name="MouseSection" xml:space="preserve">
+    <value>الماوس</value>
+  </data>
+  <data name="ShowMousePointer" xml:space="preserve">
+    <value>إظهار مؤشر الماوس</value>
+  </data>
+  <data name="MouseHint" xml:space="preserve">
+    <value>النقرات وتأثيرات المؤشر وضغطات المفاتيح وكاميرا الويب في علامة التبويب «التراكبات».</value>
+  </data>
+  <data name="SoundSection" xml:space="preserve">
+    <value>الصوت</value>
+  </data>
+  <data name="RecordSystemAudio" xml:space="preserve">
+    <value>تسجيل صوت النظام (ما تسمعه)</value>
+  </data>
+  <data name="SystemAudio" xml:space="preserve">
+    <value>صوت النظام</value>
+  </data>
+  <data name="WhichSystemAudio" xml:space="preserve">
+    <value>صوت النظام المسجَّل</value>
+  </data>
+  <data name="App" xml:space="preserve">
+    <value>التطبيق</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>تحديث</value>
+  </data>
+  <data name="RefreshAppsTip" xml:space="preserve">
+    <value>عرض التطبيقات العاملة الآن (شغّل التطبيق أولًا إن لم يكن في القائمة)</value>
+  </data>
+  <data name="SystemAudioFrom" xml:space="preserve">
+    <value>مصدر صوت النظام</value>
+  </data>
+  <data name="Microphone" xml:space="preserve">
+    <value>الميكروفون</value>
+  </data>
+  <data name="MicrophoneProcessing" xml:space="preserve">
+    <value>معالجة صوت الميكروفون</value>
+  </data>
+  <data name="NoiseSuppression" xml:space="preserve">
+    <value>منع الضوضاء (RNNoise): إزالة صوت المراوح والطنين والكتابة، بقوة</value>
+  </data>
+  <data name="NoiseSuppressionStrength" xml:space="preserve">
+    <value>قوة منع الضوضاء</value>
+  </data>
+  <data name="NoiseGate" xml:space="preserve">
+    <value>بوابة الضوضاء: كتم الميكروفون بين الكلمات، تحت</value>
+  </data>
+  <data name="NoiseGateThreshold" xml:space="preserve">
+    <value>عتبة بوابة الضوضاء</value>
+  </data>
+  <data name="Compressor" xml:space="preserve">
+    <value>الضاغط: موازنة الكلام المرتفع والهادئ</value>
+  </data>
+  <data name="Limiter" xml:space="preserve">
+    <value>المحدِّد: منع الميكروفون من تجاوز −1 dB أبدًا (بلا تشوّه)</value>
+  </data>
+  <data name="ProcessingHint" xml:space="preserve">
+    <value>تُطبَّق على الميكروفون أثناء التسجيل، بهذا الترتيب. عتبة البوابة مستوى ذروة: اضبطها بين ضوضاء الغرفة وأهدأ كلمة تنطقها. يتأخر الميكروفون 2 ms (و10 ms إضافية مع منع الضوضاء)، ويعوّض التسجيل ذلك فيبقى متزامنًا.</value>
+  </data>
+  <data name="LevelsSection" xml:space="preserve">
+    <value>المستويات</value>
+  </data>
+  <data name="MicrophoneProcessed" xml:space="preserve">
+    <value>الميكروفون (بعد المعالجة)</value>
+  </data>
+  <data name="MicrophoneLevel" xml:space="preserve">
+    <value>مستوى الميكروفون</value>
+  </data>
+  <data name="SystemAudioLevel" xml:space="preserve">
+    <value>مستوى صوت النظام</value>
+  </data>
+  <data name="LevelsHint" xml:space="preserve">
+    <value>تستمع المقاييس ما دامت هذه الصفحة مفتوحة إلى ما سيسجّله التسجيل بالخيارات أعلاه. الكلام الذي تبلغ ذروته نحو −12 dB مناسب، وتتحول العلامة في نهاية المقياس إلى الأحمر عند تشوّه الصوت.</value>
+  </data>
+  <data name="MicrophoneTestSection" xml:space="preserve">
+    <value>اختبار الميكروفون</value>
+  </data>
+  <data name="Record5Seconds" xml:space="preserve">
+    <value>تسجيل 5 ثوانٍ</value>
+  </data>
+  <data name="PlayAsRecorded" xml:space="preserve">
+    <value>تشغيل كما سُجّل</value>
+  </data>
+  <data name="PlayWithProcessing" xml:space="preserve">
+    <value>تشغيل مع المعالجة</value>
+  </data>
+  <data name="LoudnessSection" xml:space="preserve">
+    <value>علوّ الصوت</value>
+  </data>
+  <data name="NormalizeLoudness" xml:space="preserve">
+    <value>ضبط علوّ الصوت على −16 LUFS عند حفظ تسجيل</value>
+  </data>
+  <data name="LoudnessHint" xml:space="preserve">
+    <value>عندها يُشغَّل كل تسجيل بعلوّ الصوت نفسه، وهو المستوى المعتاد للكلام على الإنترنت، مهما كان علوّ الميكروفون أو الصوت. يُقاس كل مسار صوتي ثم يُرمَّز من جديد (EBU R128، باستخدام loudnorm من FFmpeg على مرحلتين)، ويُنسخ الفيديو كما هو. تبقى الذروات تحت −1.5 dB، ويُترك المسار الصامت كما هو. يستغرق الحفظ بضع ثوانٍ إضافية لكل 10 دقائق.</value>
+  </data>
+  <data name="AppAudioHint" xml:space="preserve">
+    <value>يسجّل الخيار «تطبيق واحد فقط» صوت ذلك التطبيق (والبرامج التي يشغّلها) على أي جهاز يُشغَّل عليه، ولا شيء غيره: لا إعلامات ولا تطبيقات أخرى. أما «كل الأصوات عدا تطبيق واحد» فيستبعد مثلًا مكالمة أو موسيقى لا تريدها في الفيديو. يُعثر على التطبيق من برنامجه عند بدء التسجيل، ويُتابَع إذا بدأ أو أُعيد تشغيله لاحقًا.</value>
+  </data>
+  <data name="WithBoth" xml:space="preserve">
+    <value>مع كليهما</value>
+  </data>
+  <data name="SoundTracks" xml:space="preserve">
+    <value>المسارات الصوتية</value>
+  </data>
+  <data name="TracksHint" xml:space="preserve">
+    <value>يُحفظ الصوت في ملف MP4 بتنسيق AAC. تشغّل المشغلات المسار الأول فقط، لذا فإن مسارًا لكل مصدر مخصص لمحررات الفيديو. مستوى الصوت وكتمه لكل مصدر في شريط أدوات التسجيل، والإيقاف المؤقت يوقف الصوت أيضًا. من دون جهاز صوت يُسجَّل الفيديو بلا صوت، ويذكر الإعلام ذلك.</value>
+  </data>
+  <data name="FfmpegSection" xml:space="preserve">
+    <value>FFmpeg</value>
+  </data>
+  <data name="RecordingHint" xml:space="preserve">
+    <value>ابدأ التسجيل وأوقفه من منطقة الإعلامات أو بمفتاح اختصار التسجيل. تُحفظ التسجيلات بتنسيق MP4 في مجلد اللقطات. أثناء التسجيل يُكتب الفيديو في ملف مؤقت، فإذا توقف التطبيق أو الكمبيوتر أمكن حفظ التسجيل لاحقًا من قائمة منطقة الإعلامات.</value>
+  </data>
+  <data name="HotkeysTab" xml:space="preserve">
+    <value>مفاتيح الاختصار</value>
+  </data>
+  <data name="HotkeysHint" xml:space="preserve">
+    <value>انقر مربعًا واضغط المفاتيح، ويمسحه المفتاح Backspace. تتوقف مفاتيح الاختصار مؤقتًا ما دام مربع محددًا، حتى يمكن تسجيل المفتاح PrintScreen.</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>مسح</value>
+  </data>
+  <data name="PushToTalk" xml:space="preserve">
+    <value>الضغط للتحدث</value>
+  </data>
+  <data name="HoldToTalk" xml:space="preserve">
+    <value>الضغط باستمرار للتحدث أثناء التسجيل</value>
+  </data>
+  <data name="PushToTalkHint" xml:space="preserve">
+    <value>عند تعيين مفتاح يكون الميكروفون صامتًا في التسجيلات إلا أثناء الضغط على المفتاح (وربع ثانية بعده، حتى لا تنقطع الكلمات). لا يُحجز المفتاح عن التطبيقات الأخرى، لذا فأفضل مفتاح هو ما لا يفعل شيئًا فيها: من F13 إلى F24، أو Scroll Lock، أو Pause، أو زر ماوس معيَّن لأحدها. لا بأس هنا بمفتاح وحده.</value>
+  </data>
+  <data name="GeneralTab" xml:space="preserve">
+    <value>عام</value>
+  </data>
+  <data name="StartupSection" xml:space="preserve">
+    <value>بدء التشغيل</value>
+  </data>
+  <data name="StartWithWindows" xml:space="preserve">
+    <value>بدء تشغيل CashGear Capture عند تسجيل دخولي إلى Windows</value>
+  </data>
+  <data name="OcrSection" xml:space="preserve">
+    <value>التقاط النص (OCR)</value>
+  </data>
+  <data name="OcrLanguage" xml:space="preserve">
+    <value>لغة التعرّف على النص</value>
+  </data>
+  <data name="OcrHint" xml:space="preserve">
+    <value>يقرأ الخيار التلقائي المنطقة بكل لغة من لغات Windows لديك، ويأخذ كل سطر من اللغة التي تطابق كتابته، فتعمل العربية والإنجليزية معًا في منطقة واحدة. لمزيد من اللغات: إعدادات Windows › الوقت واللغة › اللغة › (اللغة) › خيارات › التعرّف الضوئي على الحروف.</value>
+  </data>
+  <data name="ScreenToolsSection" xml:space="preserve">
+    <value>أدوات الشاشة</value>
+  </data>
+  <data name="RulerDpi" xml:space="preserve">
+    <value>المسطرة: بكسل لكل بوصة</value>
+  </data>
+  <data name="RulerDpiName" xml:space="preserve">
+    <value>بكسلات المسطرة لكل بوصة</value>
+  </data>
+  <data name="ColorCopyFormat" xml:space="preserve">
+    <value>تنسيق النسخ في منتقي الألوان</value>
+  </data>
+  <data name="ScreenToolsHint" xml:space="preserve">
+    <value>تتبع البوصات والسنتيمترات على المسطرة مقياسَ Windows للشاشة التي عليها. لقياس بوصات حقيقية على الزجاج، اضبط عدد بكسلات شاشتك لكل بوصة (عرضها بالبكسل مقسومًا على عرضها بالبوصة). الأدوات في قائمة منطقة الإعلامات › الأدوات وعلى شريط أدوات الالتقاط، ويمكنك تعيين مفاتيح اختصار لها في علامة التبويب «مفاتيح الاختصار».</value>
+  </data>
+  <data name="AppearanceSection" xml:space="preserve">
+    <value>المظهر</value>
+  </data>
+  <data name="HistorySection" xml:space="preserve">
+    <value>سجل اللقطات</value>
+  </data>
+  <data name="HistorySize" xml:space="preserve">
+    <value>اللقطات المحفوظة في السجل</value>
+  </data>
+  <data name="HistoryHint" xml:space="preserve">
+    <value>يُحتفظ باللقطات الأخيرة (مع صور مصغّرة) لـ«اللقطات الأخيرة» و«سجل اللقطات» في قائمة منطقة الإعلامات، حتى التي لم تحفظها. يؤدي خفض العدد إلى إزالة الأقدم فورًا.</value>
+  </data>
+  <data name="UpdatesSection" xml:space="preserve">
+    <value>التحديثات</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>البحث عن تحديثات تلقائيًا (مرة في اليوم) وتنزيلها في الخلفية</value>
+  </data>
+  <data name="CheckNow" xml:space="preserve">
+    <value>البحث الآن</value>
+  </data>
+  <data name="AdvancedSection" xml:space="preserve">
+    <value>خيارات متقدمة</value>
+  </data>
+  <data name="OpenSettingsFile" xml:space="preserve">
+    <value>فتح ملف الإعدادات</value>
+  </data>
+  <data name="OpenSettingsFileHint" xml:space="preserve">
+    <value>تُطبَّق التعديلات المحفوظة في الملف فورًا.</value>
+  </data>
+  <data name="ExportDiagnostics" xml:space="preserve">
+    <value>تصدير معلومات التشخيص…</value>
+  </data>
+  <data name="DiagnosticsHint" xml:space="preserve">
+    <value>يحفظ ملف zip لتقرير خطأ: سجلات الأسبوع الأخير، والإعدادات دون عناوين الخوادم أو أسماء المستخدمين أو كلمات المرور، ومعلومات عن هذا الكمبيوتر (Windows، وبطاقات الرسومات، والشاشات، وأجهزة الصوت). لا يُرسل أي شيء إلى أي مكان.</value>
+  </data>
+  <data name="ListSeparator" xml:space="preserve">
+    <value>، </value>
+  </data>
+  <data name="OcrAutomatic" xml:space="preserve">
+    <value>تلقائي (لغات Windows لديك)</value>
+  </data>
+  <data name="RecordingUnavailable" xml:space="preserve">
+    <value>تسجيل الشاشة غير متاح.</value>
+  </data>
+  <data name="RecordingUnavailableBecause" xml:space="preserve">
+    <value>تسجيل الشاشة غير متاح. {0}</value>
+  </data>
+  <data name="FfmpegBuiltIn" xml:space="preserve">
+    <value>FFmpeg {0}، مضمَّن في التطبيق (LGPL؛ راجع THIRD-PARTY-NOTICES.txt).</value>
+  </data>
+  <data name="DefaultMicrophone" xml:space="preserve">
+    <value>الميكروفون الافتراضي (إعداد Windows)</value>
+  </data>
+  <data name="DefaultOutputDevice" xml:space="preserve">
+    <value>جهاز الإخراج الافتراضي (يتبع Windows)</value>
+  </data>
+  <data name="DefaultOutputIs" xml:space="preserve">
+    <value>جهاز الإخراج الافتراضي الآن هو {0}. إذا أصبح جهاز آخر هو الافتراضي أثناء التسجيل، يتبعه صوت النظام، ويُسجَّل الجهاز المفصول من جديد عند عودته.</value>
+  </data>
+  <data name="NoOutputDevice" xml:space="preserve">
+    <value>لم يُعثر على جهاز لإخراج الصوت، ويبقى صوت النظام صامتًا حتى يُوصَل جهاز.</value>
+  </data>
+  <data name="SameAsCaptureDelay" xml:space="preserve">
+    <value>مثل تأخير الالتقاط</value>
+  </data>
+  <data name="HistoryOff" xml:space="preserve">
+    <value>إيقاف (عدم الاحتفاظ بأي لقطة)</value>
+  </data>
+  <data name="Captures_zero" xml:space="preserve">
+    <value>{0} لقطة</value>
+  </data>
+  <data name="Captures_one" xml:space="preserve">
+    <value>لقطة واحدة</value>
+  </data>
+  <data name="Captures_two" xml:space="preserve">
+    <value>لقطتان</value>
+  </data>
+  <data name="Captures_few" xml:space="preserve">
+    <value>{0} لقطات</value>
+  </data>
+  <data name="Captures_many" xml:space="preserve">
+    <value>{0} لقطة</value>
+  </data>
+  <data name="Captures_other" xml:space="preserve">
+    <value>{0} لقطة</value>
+  </data>
+  <data name="EncoderAutomatic" xml:space="preserve">
+    <value>تلقائي: أفضل ما يعمل هنا (مستحسن)</value>
+  </data>
+  <data name="EncoderSoftware" xml:space="preserve">
+    <value>برمجي فقط (يستخدم المعالج)</value>
+  </data>
+  <data name="EncoderNotAvailable" xml:space="preserve">
+    <value>{0} (غير متاح هنا)</value>
+  </data>
+  <data name="EncoderUnknown" xml:space="preserve">
+    <value>{0} (غير معروف)</value>
+  </data>
+  <data name="CheckingEncoders" xml:space="preserve">
+    <value>جارٍ التحقق من المرمّزات التي تعمل على هذا الكمبيوتر…</value>
+  </data>
+  <data name="NoEncoderWorks" xml:space="preserve">
+    <value>لا يعمل أي مرمّز على هذا الكمبيوتر، لذا التسجيل غير متاح.</value>
+  </data>
+  <data name="EncodersWorking" xml:space="preserve">
+    <value>يعمل على هذا الكمبيوتر: {0}.</value>
+  </data>
+  <data name="AppPlayingSound" xml:space="preserve">
+    <value>{0} (يشغّل صوتًا)</value>
+  </data>
+  <data name="AppNotRunning" xml:space="preserve">
+    <value>{0} (لا يعمل)</value>
+  </data>
+  <data name="PushToTalkNotSet" xml:space="preserve">
+    <value>غير معيَّن: يُسجَّل الميكروفون دائمًا</value>
+  </data>
+  <data name="PushToTalkInvalid" xml:space="preserve">
+    <value>ليس مفتاحًا صالحًا</value>
+  </data>
+  <data name="PushToTalkInvalidError" xml:space="preserve">
+    <value>الضغط للتحدث: «{0}» ليس مفتاحًا صالحًا.</value>
+  </data>
+  <data name="SameAs" xml:space="preserve">
+    <value>نفس مفتاح «{0}»</value>
+  </data>
+  <data name="PushToTalkClash" xml:space="preserve">
+    <value>الضغط للتحدث: {0} هو بالفعل مفتاح الاختصار لـ«{1}».</value>
+  </data>
+  <data name="PushToTalkReady" xml:space="preserve">
+    <value>اضغط عليه باستمرار أثناء التسجيل</value>
+  </data>
+  <data name="Decibels" xml:space="preserve">
+    <value>{0:0} dB</value>
+  </data>
+  <data name="MicTestIntro" xml:space="preserve">
+    <value>يسجّل 5 ثوانٍ من الميكروفون، ثم يشغّلها كما سُجّلت أو بعد المعالجة.</value>
+  </data>
+  <data name="MicTestRecording" xml:space="preserve">
+    <value>جارٍ تسجيل 5 ثوانٍ: قل شيئًا، ودع صوت الغرفة يُسمع أيضًا…</value>
+  </data>
+  <data name="MicTestRecorded" xml:space="preserve">
+    <value>تم التسجيل. شغّله كما سُجّل أو مع المعالجة أعلاه، وغيّر المعالجة وشغّله من جديد للمقارنة.</value>
+  </data>
+  <data name="MicTestFailed" xml:space="preserve">
+    <value>تعذّر التسجيل من الميكروفون: {0}</value>
+  </data>
+  <data name="MicTestPlayingProcessed" xml:space="preserve">
+    <value>جارٍ التشغيل مع المعالجة…</value>
+  </data>
+  <data name="MicTestPlayingOriginal" xml:space="preserve">
+    <value>جارٍ التشغيل كما سُجّل…</value>
+  </data>
+  <data name="MicTestPlayed" xml:space="preserve">
+    <value>تم التشغيل. شغّله من جديد أو سجّل اختبارًا جديدًا.</value>
+  </data>
+  <data name="MicTestStopped" xml:space="preserve">
+    <value>توقف.</value>
+  </data>
+  <data name="MicTestPlayFailed" xml:space="preserve">
+    <value>تعذّر تشغيله: {0}</value>
+  </data>
+  <data name="RulerDpiAutomatic" xml:space="preserve">
+    <value>تلقائي (مقياس كل شاشة: 96 عند 100%)</value>
+  </data>
+  <data name="HdrNoMonitor" xml:space="preserve">
+    <value>لا توجد شاشة في وضع HDR الآن.</value>
+  </data>
+  <data name="HdrMonitor" xml:space="preserve">
+    <value>{0} في وضع HDR (محتوى SDR عند {1:0} nits)</value>
+  </data>
+  <data name="HdrMonitorList" xml:space="preserve">
+    <value>{0}.</value>
+  </data>
+  <data name="HdrExplanation" xml:space="preserve">
+    <value>{0} على الشاشة التي في وضع HDR، تقرأ اللقطات والتسجيلات والمكبّر الشاشة بأعداد عشرية من 16 بت وتحوّلها إلى SDR كما كانت ستعرضها شاشة SDR، فتصبح المناطق الساطعة في HDR التي تتجاوز أبيض SDR بيضاء. يستخدم ذلك Windows.Graphics.Capture، لذا يُظهر Windows 10 إطاره الأصفر على تلك الشاشة.</value>
+  </data>
+  <data name="StartupFailed" xml:space="preserve">
+    <value>تعذّر تغيير «البدء مع Windows»: {0}</value>
+  </data>
+  <data name="OcrNotInstalled" xml:space="preserve">
+    <value>{0} (غير مثبّتة)</value>
+  </data>
+  <data name="MicrophoneNotConnected" xml:space="preserve">
+    <value>الميكروفون المختار سابقًا (غير موصول)</value>
+  </data>
+  <data name="OutputDeviceNotConnected" xml:space="preserve">
+    <value>جهاز الإخراج المختار سابقًا (غير موصول)</value>
+  </data>
+  <data name="FileNameError" xml:space="preserve">
+    <value>اسم الملف: {0}</value>
+  </data>
+  <data name="FolderError" xml:space="preserve">
+    <value>المجلد: استخدم مسارًا كاملًا مثل D:\Screenshots (أو اتركه فارغًا لاستخدام المجلد الافتراضي).</value>
+  </data>
+  <data name="FixedSizeError" xml:space="preserve">
+    <value>المنطقة بحجم ثابت: اكتب الحجم بالشكل العرض × الارتفاع بالبكسل، مثل 800 × 600.</value>
+  </data>
+  <data name="WorkflowEmptyError" xml:space="preserve">
+    <value>بعد الالتقاط: شغّل خطوة واحدة على الأقل، مثل «فتح في المحرر» أو «حفظ في ملف».</value>
+  </data>
+  <data name="AppNotChosenError" xml:space="preserve">
+    <value>الصوت: اختر التطبيق الذي يُسجَّل صوته (أو يُستبعد)، أو سجّل كل الأصوات.</value>
+  </data>
+  <data name="HotkeyNotSet" xml:space="preserve">
+    <value>غير معيَّن</value>
+  </data>
+  <data name="HotkeyInvalid" xml:space="preserve">
+    <value>ليس مفتاح اختصار صالحًا</value>
+  </data>
+  <data name="HotkeyInvalidError" xml:space="preserve">
+    <value>{0}: «{1}» ليس مفتاح اختصار صالحًا.</value>
+  </data>
+  <data name="HotkeyNeedsModifier" xml:space="preserve">
+    <value>أضف Ctrl أو Alt أو Shift أو Win</value>
+  </data>
+  <data name="HotkeyAloneError" xml:space="preserve">
+    <value>{0}: المفتاح {1} وحده سيحجب ذلك المفتاح في كل التطبيقات، فأضف Ctrl أو Alt أو Shift أو Win.</value>
+  </data>
+  <data name="HotkeyClashError" xml:space="preserve">
+    <value>{0}: {1} مستخدَم بالفعل لـ«{2}».</value>
+  </data>
+  <data name="HotkeyAppliesOnSave" xml:space="preserve">
+    <value>يُطبَّق عند الحفظ</value>
+  </data>
+  <data name="HotkeyWhileRecording" xml:space="preserve">
+    <value>يعمل أثناء التسجيل</value>
+  </data>
+  <data name="HotkeyActive" xml:space="preserve">
+    <value>نشط</value>
+  </data>
+  <data name="ChooseCaptureFolder" xml:space="preserve">
+    <value>اختر مكان حفظ اللقطات</value>
+  </data>
+  <data name="FormatPng" xml:space="preserve">
+    <value>PNG (بلا فقدان)</value>
+  </data>
+  <data name="QualitySmall" xml:space="preserve">
+    <value>ملفات صغيرة</value>
+  </data>
+  <data name="QualityBalanced" xml:space="preserve">
+    <value>متوازنة (مستحسن)</value>
+  </data>
+  <data name="QualityHigh" xml:space="preserve">
+    <value>جودة عالية</value>
+  </data>
+  <data name="QualityLossless" xml:space="preserve">
+    <value>شبه بلا فقدان (ملفات كبيرة جدًا)</value>
+  </data>
+  <data name="TracksMixed" xml:space="preserve">
+    <value>مسار واحد يجمع كل شيء (يعمل في كل مكان)</value>
+  </data>
+  <data name="TracksSeparate" xml:space="preserve">
+    <value>مسار لكل مصدر (للتحرير)</value>
+  </data>
+  <data name="TracksBoth" xml:space="preserve">
+    <value>المزيج، ثم مسار لكل مصدر</value>
+  </data>
+  <data name="AudioAll" xml:space="preserve">
+    <value>كل الأصوات</value>
+  </data>
+  <data name="AudioOnlyApp" xml:space="preserve">
+    <value>تطبيق واحد فقط</value>
+  </data>
+  <data name="AudioAllExceptApp" xml:space="preserve">
+    <value>كل الأصوات عدا تطبيق واحد</value>
+  </data>
+  <data name="BackendAuto" xml:space="preserve">
+    <value>تلقائي (مستحسن)</value>
+  </data>
+  <data name="BackendGdi" xml:space="preserve">
+    <value>GDI (الطريقة التقليدية)</value>
+  </data>
+  <data name="HdrAuto" xml:space="preserve">
+    <value>تحويل إلى SDR كما يظهر على الشاشة (مستحسن)</value>
+  </data>
+  <data name="HdrOff" xml:space="preserve">
+    <value>كما يقدّمه Windows للتطبيقات الأقدم (8 بت)</value>
+  </data>
+  <data name="FullScreenAll" xml:space="preserve">
+    <value>صورة واحدة لكل الشاشات</value>
+  </data>
+  <data name="FullScreenEach" xml:space="preserve">
+    <value>صورة لكل شاشة</value>
+  </data>
+  <data name="FullScreenBoth" xml:space="preserve">
+    <value>كلاهما</value>
+  </data>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>استخدام إعداد Windows</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>فاتح</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>داكن</value>
+  </data>
+  <data name="RulerPixels" xml:space="preserve">
+    <value>بكسل</value>
+  </data>
+  <data name="RulerInches" xml:space="preserve">
+    <value>بوصة</value>
+  </data>
+  <data name="RulerCentimetres" xml:space="preserve">
+    <value>سنتيمتر</value>
+  </data>
+  <data name="PreviewWindowTitle" xml:space="preserve">
+    <value>بلا عنوان - المفكرة</value>
+  </data>
 </root>

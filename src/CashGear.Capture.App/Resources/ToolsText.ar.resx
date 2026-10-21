@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ColorPicker" xml:space="preserve">
+    <value>منتقي الألوان</value>
+  </data>
+  <data name="TheColor" xml:space="preserve">
+    <value>اللون</value>
+  </data>
+  <data name="PickFromScreen" xml:space="preserve">
+    <value>اختيار من الشاشة</value>
+  </data>
+  <data name="PickFromScreenTip" xml:space="preserve">
+    <value>انقر أي بكسل على أي شاشة (يلغي Esc ذلك)؛ ويُنسخ اللون فورًا</value>
+  </data>
+  <data name="CopyWhenPickedAs" xml:space="preserve">
+    <value>النسخ عند الاختيار بتنسيق</value>
+  </data>
+  <data name="PickedBefore" xml:space="preserve">
+    <value>ألوان اختيرت سابقًا</value>
+  </data>
+  <data name="Copied" xml:space="preserve">
+    <value>تم نسخ {0}</value>
+  </data>
+  <data name="FormatHex" xml:space="preserve">
+    <value>HEX</value>
+  </data>
+  <data name="FormatRgb" xml:space="preserve">
+    <value>RGB</value>
+  </data>
+  <data name="FormatHsl" xml:space="preserve">
+    <value>HSL</value>
+  </data>
+  <data name="FormatCSharp" xml:space="preserve">
+    <value>C#</value>
+  </data>
+  <data name="CrosshairWindowTitle" xml:space="preserve">
+    <value>CashGear Capture - خطّا التقاطع</value>
+  </data>
+  <data name="MagnifierWindowTitle" xml:space="preserve">
+    <value>CashGear Capture - المكبّر</value>
+  </data>
+  <data name="RulerWindowTitle" xml:space="preserve">
+    <value>CashGear Capture - مسطرة الشاشة</value>
+  </data>
+  <data name="RulerAcross" xml:space="preserve">
+    <value>أفقية (_A)</value>
+  </data>
+  <data name="RulerDown" xml:space="preserve">
+    <value>عمودية (_D)</value>
+  </data>
+  <data name="RulerPixels" xml:space="preserve">
+    <value>بكسل (_P)</value>
+  </data>
+  <data name="RulerInches" xml:space="preserve">
+    <value>بوصة (_I)</value>
+  </data>
+  <data name="RulerCentimetres" xml:space="preserve">
+    <value>سنتيمتر (_C)</value>
+  </data>
+  <data name="RulerClose" xml:space="preserve">
+    <value>إغلاق (_L)</value>
+  </data>
+  <data name="UnitAtDpi" xml:space="preserve">
+    <value>{0} عند {1} dpi</value>
+  </data>
+</root>

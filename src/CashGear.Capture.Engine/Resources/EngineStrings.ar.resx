@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NoMonitors" xml:space="preserve">
+    <value>لم يُعثر على أي شاشة.</value>
+  </data>
+  <data name="WindowGone" xml:space="preserve">
+    <value>لم تعد تلك النافذة موجودة.</value>
+  </data>
+  <data name="WindowMinimized" xml:space="preserve">
+    <value>النافذة «{0}» مصغّرة. استعِدها ثم أعد الالتقاط.</value>
+  </data>
+  <data name="WindowCloaked" xml:space="preserve">
+    <value>يُخفي Windows النافذة «{0}» (على سطح مكتب آخر، أو لأنها تطبيق معلّق). انتقل إليها ثم أعد الالتقاط.</value>
+  </data>
+  <data name="WindowOffScreen" xml:space="preserve">
+    <value>النافذة «{0}» خارج كل الشاشات، ربما على شاشة لم تعد متصلة. أعِدها أولًا: انقر عليها في شريط المهام، ثم اضغط Windows+Shift+Left أو Right لنقلها إلى شاشة.</value>
+  </data>
+  <data name="CaptureIsBlack" xml:space="preserve">
+    <value>لقطة النافذة «{0}» سوداء. يظهر الفيديو المحمي من النسخ (DRM) والتطبيقات التي تُخفي نفسها من الالتقاط باللون الأسود دائمًا في لقطات الشاشة والتسجيلات.</value>
+  </data>
+  <data name="AreaOffMonitors" xml:space="preserve">
+    <value>المنطقة {0} ليست على أي شاشة.</value>
+  </data>
+  <data name="ScreenUnreadable" xml:space="preserve">
+    <value>تعذرت قراءة الشاشة ({0}: {1}). إذا كان Windows يعرض شاشة آمنة (مطالبة UAC أو شاشة القفل)، فأعد المحاولة بعد أن تختفي.</value>
+  </data>
+  <data name="WgcFrameTooSmall" xml:space="preserve">
+    <value>إطار WGC بحجم {0}x{1} لا يغطي {2} على {3}.</value>
+  </data>
+  <data name="WgcNoPictureOfMonitor" xml:space="preserve">
+    <value>لا يوفّر Windows.Graphics.Capture أي صورة للشاشة {0}.</value>
+  </data>
+  <data name="WgcNoPictureOfWindow" xml:space="preserve">
+    <value>لا يوفّر Windows.Graphics.Capture أي صورة للنافذة «{0}».</value>
+  </data>
+  <data name="NothingToCopy" xml:space="preserve">
+    <value>لا شيء للنسخ: {0} ليست داخل الإطار {1}x{2}.</value>
+  </data>
+  <data name="OcrNoLanguage" xml:space="preserve">
+    <value>لا توجد في Windows أي لغة مثبتة للتعرف على النص (OCR).</value>
+  </data>
+  <data name="OcrLanguageMissing" xml:space="preserve">
+    <value>التعرف على النص للغة «{0}» غير مثبت. أضِفه في إعدادات Windows › الوقت واللغة › اللغة (التعرف الضوئي على الحروف).</value>
+  </data>
+  <data name="OcrCouldNotStart" xml:space="preserve">
+    <value>تعذر على Windows بدء التعرف على النص للغة {0}.</value>
+  </data>
+</root>

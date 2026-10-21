@@ -1,4 +1,5 @@
 using CashGear.Capture.Editor.Model;
+using CashGear.Capture.Editor.Resources;
 
 namespace CashGear.Capture.Editor.Document;
 
@@ -7,7 +8,7 @@ public sealed class AddAnnotationCommand(Annotation annotation) : IEditorCommand
 {
     public Annotation Annotation { get; } = annotation;
 
-    public string Name => "add " + Annotation.Kind.DisplayName();
+    public string Name => EditorStrings.UndoAdd(Annotation.Kind.DisplayName());
 
     public void Do(EditorDocument document) => document.Insert(document.Annotations.Count, Annotation);
 
@@ -19,7 +20,7 @@ public sealed class RemoveAnnotationCommand(Annotation annotation) : IEditorComm
 {
     private int _index;
 
-    public string Name => "delete " + annotation.Kind.DisplayName();
+    public string Name => EditorStrings.UndoDelete(annotation.Kind.DisplayName());
 
     public void Do(EditorDocument document) => _index = document.Remove(annotation.Id);
 

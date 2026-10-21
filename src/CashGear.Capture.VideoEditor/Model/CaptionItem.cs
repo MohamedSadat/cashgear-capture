@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace CashGear.Capture.VideoEditor.Model;
 
 public enum CaptionPosition
@@ -12,7 +14,7 @@ public enum CaptionPosition
 /// (<see cref="Margin"/> from the edge and <see cref="MaxWidth"/> as parts of the canvas).
 /// </summary>
 public sealed record CaptionStyle(
-    string FontFamily = "Segoe UI",
+    [Localizable(false)] string FontFamily = CaptionStyle.DefaultFontFamily,
     double FontSize = 0,
     string Color = "#FFFFFF",
     string? Box = CaptionStyle.DefaultBox,
@@ -22,6 +24,10 @@ public sealed record CaptionStyle(
     double MaxWidth = 0.8)
 {
     public const string DefaultBox = "#B4141414";
+
+    /// <summary>The captions' font when none was chosen (a font's name, not text).</summary>
+    [Localizable(false)]
+    public const string DefaultFontFamily = "Segoe UI";
 
     /// <summary>The font size used on a canvas <paramref name="canvasHeight"/> pixels high.</summary>
     public double SizeFor(int canvasHeight) => FontSize > 0 ? FontSize : Math.Max(12, Math.Round(canvasHeight / 18.0));

@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
+using CashGear.Capture.Audio.Resources;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using Microsoft.Extensions.Logging;
@@ -15,22 +17,22 @@ internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watche
     private readonly ILogger _logger = loggers.CreateLogger<WasapiAudioSourceFactory>();
 
     public AudioOpenResult OpenSystemAudio(string? device) =>
-        Open(RecordingSound.System, DataFlow.Render, string.IsNullOrEmpty(device) ? null : device, "System audio");
+        Open(RecordingSound.System, DataFlow.Render, string.IsNullOrEmpty(device) ? null : device, AudioStrings.SystemAudio);
 
     public AudioOpenResult OpenMicrophone(string id) =>
-        Open(RecordingSound.Microphone, DataFlow.Capture, id == RecordingSettings.DefaultMicrophone ? null : id, "Microphone");
+        Open(RecordingSound.Microphone, DataFlow.Capture, id == RecordingSettings.DefaultMicrophone ? null : id, AudioStrings.Microphone);
 
     public AudioOpenResult OpenAppAudio(string exe, string appName, bool exclude)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(exe);
         if (!apps.IsSupported)
         {
-            return AudioOpenResult.Failed($"Recording {(exclude ? "all sound except one app" : "one app's sound")} needs Windows 10 version 2004 or later.");
+            return AudioOpenResult.Failed(exclude ? AudioStrings.ExcludeAppNeedsNewerWindows : AudioStrings.OneAppNeedsNewerWindows);
         }
 
         var root = apps.FindRoot(exe);
         var target = root ?? (exclude ? Environment.ProcessId : 0);
-        var first = target == 0 ? new EndpointOpened(null, null, Missing: "not running") : OpenProcess(target, exclude, appName);
+        var first = target == 0 ? new EndpointOpened(null, null, Missing: AudioStrings.NotRunning) : OpenProcess(target, exclude, appName);
         if (first.Problem is { } problem)
         {
             return AudioOpenResult.Failed(problem);
@@ -40,15 +42,15 @@ internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watche
             exe, appName, exclude, (process, leaveOut) => OpenProcess(process, leaveOut, appName), apps.FindRoot, watcher, first, target,
             loggers.CreateLogger<AppAudioSource>());
         var note = root is not null ? null
-            : exclude ? $"{appName} isn't running, so all sound is recorded; once it starts, its sound is left out."
-            : $"{appName} isn't running, so its sound is silent until it starts.";
+            : exclude ? AudioStrings.ExcludedAppNotRunning(appName)
+            : AudioStrings.RecordedAppNotRunning(appName);
         return new AudioOpenResult(source, note);
     }
 
     /// <summary>Process loopback for <paramref name="process"/>'s tree (or everything else).</summary>
     internal EndpointOpened OpenProcess(int process, bool exclude, string appName)
     {
-        var name = exclude ? $"system audio except {appName}" : $"{appName}'s sound";
+        var name = exclude ? AudioStrings.SystemAudioExcept(appName) : AudioStrings.AppSound(appName);
         try
         {
             return new EndpointOpened(WasapiAudioSource.OpenProcessLoopback(process, exclude, name, _logger), process.ToString(System.Globalization.CultureInfo.InvariantCulture));
@@ -56,7 +58,7 @@ internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watche
         catch (Exception ex) when (ex is COMException or PlatformNotSupportedException or InvalidOperationException or ArgumentException)
         {
             LogOpenFailed(ex, name);
-            return new EndpointOpened(null, null, Problem: $"{name} couldn't be recorded ({ex.Message.Trim()}).");
+            return new EndpointOpened(null, null, Problem: AudioStrings.CouldNotRecord(name, ex.Message.Trim()));
         }
     }
 
@@ -73,8 +75,8 @@ internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watche
                 if (!devices.TryGetDefaultAudioEndpoint(flow, render ? Role.Multimedia : Role.Console, out device))
                 {
                     return new EndpointOpened(null, null, render
-                        ? "No sound output device is connected, so system audio is silent until one is."
-                        : "No microphone is connected, so the microphone is silent until one is.");
+                        ? AudioStrings.NoOutputDevice
+                        : AudioStrings.NoMicrophone);
                 }
             }
             else
@@ -92,8 +94,8 @@ internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watche
                 {
                     device?.Dispose();
                     return new EndpointOpened(null, null, render
-                        ? "The output device chosen in Settings isn't connected, so system audio is silent until it is."
-                        : "The microphone chosen in Settings isn't connected, so it is silent until it is.");
+                        ? AudioStrings.ChosenOutputDeviceMissing
+                        : AudioStrings.ChosenMicrophoneMissing);
                 }
             }
         }
@@ -101,10 +103,10 @@ internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watche
         {
             device?.Dispose();
             LogOpenFailed(ex, render ? "the output devices" : "the microphones");
-            return new EndpointOpened(null, null, Problem: $"Windows' sound devices couldn't be listed ({ex.Message.Trim()}).");
+            return new EndpointOpened(null, null, Problem: AudioStrings.DevicesNotListed(ex.Message.Trim()));
         }
 
-        var name = render ? $"system audio ({device.FriendlyName})" : device.FriendlyName;
+        var name = render ? AudioStrings.SystemAudioDevice(device.FriendlyName) : device.FriendlyName;
         var deviceId = device.ID;
         try
         {
@@ -114,13 +116,13 @@ internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watche
         {
             device.Dispose();
             LogOpenFailed(ex, name);
-            return new EndpointOpened(null, deviceId, Problem: $"Windows doesn't let apps use {name} (Settings › Privacy › Microphone › Allow desktop apps to access your microphone), so it isn't recorded.");
+            return new EndpointOpened(null, deviceId, Problem: AudioStrings.DeviceNotAllowed(name));
         }
         catch (COMException ex)
         {
             device.Dispose();
             LogOpenFailed(ex, name);
-            return new EndpointOpened(null, deviceId, Problem: $"{name} couldn't be used ({ex.Message.Trim()}), so it isn't recorded.");
+            return new EndpointOpened(null, deviceId, Problem: AudioStrings.DeviceUnusable(name, ex.Message.Trim()));
         }
     }
 
@@ -138,7 +140,7 @@ internal sealed partial class WasapiAudioSourceFactory(AudioDeviceWatcher watche
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not open {Name} for recording")]
-    private partial void LogOpenFailed(Exception ex, string name);
+    private partial void LogOpenFailed(Exception ex, [Localizable(false)] string name); // for the log
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Sound device {Id} not found")]
     private partial void LogNotFound(Exception ex, string id);

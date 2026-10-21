@@ -1,5 +1,6 @@
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Resources;
 
 namespace CashGear.Capture.Core.Selection;
 
@@ -156,8 +157,8 @@ public sealed class RegionSelectionModel : ISelectionModel
             {
                 Lit = lit,
                 LitShape = rounded && !lit.IsEmpty && CornerRadius > 0 ? CaptureShape.RoundedRectangle(lit, CornerRadius) : null,
-                Label = lit.IsEmpty ? null : $"{lit.Width} × {lit.Height}{(rounded ? $"   radius {CornerRadius}" : string.Empty)}{title}",
-                Hint = rounded ? "Mouse wheel: corner radius" : null,
+                Label = lit.IsEmpty ? null : $"{lit.Width} × {lit.Height}{(rounded ? "   " + CoreStrings.CornerRadius(CornerRadius) : string.Empty)}{title}",
+                Hint = rounded ? CoreStrings.RoundedRegionHint : null,
                 Tracking = Phase is SelectionPhase.Hovering or SelectionPhase.Dragging,
             };
         }

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -28,6 +29,7 @@ public sealed record DiagnosticsResult(string Path, IReadOnlyList<string> Entrie
 /// <c>%USERPROFILE%</c> in every file. The passwords' file (<c>secrets.json</c>) is never read. Nothing is sent
 /// anywhere: the user decides what to do with the zip.
 /// </summary>
+[Localizable(false)] // the zip (its name, README and system.json) stays in English, for whoever reads the bug report
 public sealed partial class DiagnosticsExporter(
     AppPaths paths,
     IMonitorService monitors,

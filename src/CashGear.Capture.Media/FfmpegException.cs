@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -10,18 +12,21 @@ public sealed class FfmpegException : Exception
     {
     }
 
-    public FfmpegException(string message)
+    public FfmpegException([Localizable(true)] string message)
         : base(message)
     {
     }
 
-    public FfmpegException(string message, Exception innerException)
+    public FfmpegException([Localizable(true)] string message, Exception innerException)
         : base(message, innerException)
     {
     }
 
-    public FfmpegException(string operation, int errorCode, string? detail = null)
-        : base($"{operation} failed: {ErrorText(errorCode)} ({errorCode}).{(string.IsNullOrEmpty(detail) ? "" : " " + detail)}")
+    /// <param name="operation">What failed, in the user's words ("Encoding sound"); FFmpeg's error text and <paramref name="detail"/> (its log) stay as FFmpeg wrote them.</param>
+    public FfmpegException([Localizable(true)] string operation, int errorCode, string? detail = null)
+        : base(string.IsNullOrEmpty(detail)
+            ? MediaStrings.OperationFailed(operation, ErrorText(errorCode), errorCode)
+            : MediaStrings.OperationFailedDetail(operation, ErrorText(errorCode), errorCode, detail))
     {
         Operation = operation;
         ErrorCode = errorCode;
@@ -32,7 +37,7 @@ public sealed class FfmpegException : Exception
     public int ErrorCode { get; }
 
     /// <summary>Returns <paramref name="result"/> when it isn't an error, so <c>var n = Check(call(), "call")</c> reads naturally.</summary>
-    public static int Check(int result, string operation) =>
+    public static int Check(int result, [Localizable(true)] string operation) =>
         result < 0 ? throw new FfmpegException(operation, result) : result;
 
     /// <summary>FFmpeg's description of an AVERROR (av_strerror), e.g. "End of file".</summary>
@@ -41,7 +46,7 @@ public sealed class FfmpegException : Exception
         const int size = 256;
         var buffer = stackalloc byte[size];
         return ffmpeg.av_strerror(errorCode, buffer, size) == 0
-            ? Marshal.PtrToStringUTF8((nint)buffer) ?? $"error {errorCode}"
-            : $"error {errorCode}";
+            ? Marshal.PtrToStringUTF8((nint)buffer) ?? MediaStrings.ErrorNumber(errorCode)
+            : MediaStrings.ErrorNumber(errorCode);
     }
 }

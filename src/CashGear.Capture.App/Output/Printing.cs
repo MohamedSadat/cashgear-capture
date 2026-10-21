@@ -6,6 +6,7 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
@@ -67,26 +68,26 @@ internal sealed partial class WpfPrinter(IUiDispatcher ui, ILogger<WpfPrinter> l
                     }
                     else if (!settings.ShowDialog)
                     {
-                        return OutputResult.Failed($"The printer \"{name}\" isn't installed (Settings › Destinations).");
+                        return OutputResult.Failed(OutputText.PrinterNotInstalledSettings(name));
                     }
                 }
 
                 dialog.PrintTicket.PageOrientation = PrintLayout.IsLandscape(settings.Orientation, size) ? System.Printing.PageOrientation.Landscape : System.Printing.PageOrientation.Portrait;
                 if (settings.ShowDialog && dialog.ShowDialog() != true)
                 {
-                    return OutputResult.Skip("Printing was cancelled.");
+                    return OutputResult.Skip(OutputText.PrintingCancelled);
                 }
 
                 var page = new Size(dialog.PrintableAreaWidth, dialog.PrintableAreaHeight);
                 var placement = PrintLayout.Place(page.Width, page.Height, settings.MarginMm, size, scale, settings.Fit);
-                dialog.PrintDocument(PrintPage.Build(picture, page, placement).DocumentPaginator, "CashGear Capture – " + title);
+                dialog.PrintDocument(PrintPage.Build(picture, page, placement).DocumentPaginator, OutputText.PrintJobName(title));
                 LogPrinted(dialog.PrintQueue.FullName);
-                return OutputResult.Done($"Printed on {dialog.PrintQueue.FullName}");
+                return OutputResult.Done(OutputText.PrintedOn(dialog.PrintQueue.FullName));
             }
             catch (Exception ex) when (ex is PrintSystemException or InvalidOperationException or System.ComponentModel.Win32Exception)
             {
                 LogPrintFailed(ex);
-                return OutputResult.Failed("Couldn't print: " + ex.Message);
+                return OutputResult.Failed(OutputText.CouldntPrint(ex.Message));
             }
         }).ConfigureAwait(false);
     }
@@ -100,21 +101,22 @@ internal sealed partial class WpfPrinter(IUiDispatcher ui, ILogger<WpfPrinter> l
             var queue = settings.Printer is { } name ? Find(name) : server.DefaultPrintQueue;
             if (queue is null)
             {
-                return OutputResult.Failed(settings.Printer is null ? "Windows has no default printer." : $"The printer \"{settings.Printer}\" isn't installed.");
+                return OutputResult.Failed(settings.Printer is null ? OutputText.NoDefaultPrinter : OutputText.PrinterNotInstalled(settings.Printer));
             }
 
             var how = settings.Fit switch
             {
-                PrintFit.FillPage => "filling the page",
-                PrintFit.ActualSize => "at the size it was on the screen",
-                _ => "as large as fits",
+                PrintFit.FillPage => OutputText.FitFillPage,
+                PrintFit.ActualSize => OutputText.FitActualSize,
+                _ => OutputText.FitLargest,
             };
-            var dialog = settings.ShowDialog ? "; the print dialog lets you change it each time" : string.Empty;
-            return OutputResult.Done($"Prints on {queue.FullName}, one capture per page {how}, {settings.MarginMm:0.#} mm margins{dialog}.");
+            return OutputResult.Done(settings.ShowDialog
+                ? OutputText.PrintsOnWithDialog(queue.FullName, how, settings.MarginMm)
+                : OutputText.PrintsOn(queue.FullName, how, settings.MarginMm));
         }
         catch (Exception ex) when (ex is PrintSystemException or InvalidOperationException)
         {
-            return OutputResult.Failed("The printers can't be read: " + ex.Message);
+            return OutputResult.Failed(OutputText.PrintersCantBeRead(ex.Message));
         }
     });
 

@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using CashGear.Capture.Core.Recording;
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -31,13 +32,13 @@ public sealed unsafe partial class VideoEncoder : IDisposable
         _frame->color_primaries = context->color_primaries;
         _frame->color_trc = context->color_trc;
         _frame->color_range = context->color_range;
-        FfmpegException.Check(ffmpeg.av_frame_get_buffer(_frame, 0), "Allocating a video frame");
+        FfmpegException.Check(ffmpeg.av_frame_get_buffer(_frame, 0), MediaStrings.AllocatingVideoFrame);
     }
 
     public EncoderCandidate Candidate { get; }
 
     /// <summary>"Encoding with h264_mf": made once, as the error's wording is passed on every packet.</summary>
-    private string Encoding => field ??= $"Encoding with {Candidate.FfmpegName}";
+    private string Encoding => field ??= MediaStrings.EncodingWith(Candidate.FfmpegName);
 
     public VideoFormat Format { get; }
 
@@ -65,7 +66,7 @@ public sealed unsafe partial class VideoEncoder : IDisposable
         var codec = ffmpeg.avcodec_find_encoder_by_name(candidate.FfmpegName);
         if (codec is null)
         {
-            throw new FfmpegException($"{candidate.FfmpegName} isn't in this FFmpeg build.");
+            throw new FfmpegException(MediaStrings.EncoderNotInBuild(candidate.FfmpegName));
         }
 
         var context = ffmpeg.avcodec_alloc_context3(codec);
@@ -95,13 +96,13 @@ public sealed unsafe partial class VideoEncoder : IDisposable
         if (result < 0)
         {
             ffmpeg.avcodec_free_context(&context);
-            throw new FfmpegException($"Opening {candidate.FfmpegName}", result, log.Summary());
+            throw new FfmpegException(MediaStrings.Opening(candidate.FfmpegName), result, log.Summary());
         }
 
         if (unused.Count > 0)
         {
             ffmpeg.avcodec_free_context(&context);
-            throw new FfmpegException($"{candidate.FfmpegName} doesn't know the option(s) {string.Join(", ", unused)}.");
+            throw new FfmpegException(MediaStrings.UnknownEncoderOptions(candidate.FfmpegName, string.Join(", ", unused)));
         }
 
         var detail = log.Messages.Select(m => MftName().Match(m)).FirstOrDefault(m => m.Success)?.Groups[1].Value;
@@ -122,7 +123,7 @@ public sealed unsafe partial class VideoEncoder : IDisposable
     /// </summary>
     public AVFrame* NextFrame()
     {
-        FfmpegException.Check(ffmpeg.av_frame_make_writable(_frame), "Preparing a video frame");
+        FfmpegException.Check(ffmpeg.av_frame_make_writable(_frame), MediaStrings.PreparingVideoFrame);
         return _frame;
     }
 

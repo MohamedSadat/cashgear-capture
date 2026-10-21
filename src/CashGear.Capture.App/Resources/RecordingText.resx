@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Recording" xml:space="preserve">
+    <value>Recording</value>
+    <comment>recording toolbar's window title; title of recording notifications</comment>
+  </data>
+  <data name="DragToMove" xml:space="preserve">
+    <value>Drag to move</value>
+  </data>
+  <data name="SystemAudioLevel" xml:space="preserve">
+    <value>System audio level</value>
+    <comment>level meter</comment>
+  </data>
+  <data name="MicrophoneLevel" xml:space="preserve">
+    <value>Microphone level</value>
+    <comment>level meter</comment>
+  </data>
+  <data name="MuteMicTip" xml:space="preserve">
+    <value>Silence the microphone in the recording (system audio keeps recording)</value>
+  </data>
+  <data name="PushToTalkTip" xml:space="preserve">
+    <value>Push to talk: the microphone is only recorded while this key is held (set in Settings › Hotkeys)</value>
+  </data>
+  <data name="ShowKeystrokes" xml:space="preserve">
+    <value>Show keystrokes</value>
+  </data>
+  <data name="SoundSettingsTip" xml:space="preserve">
+    <value>Volume and mute for each sound source</value>
+  </data>
+  <data name="SoundSettings" xml:space="preserve">
+    <value>Sound settings</value>
+  </data>
+  <data name="DrawOnScreen" xml:space="preserve">
+    <value>Draw on the screen</value>
+  </data>
+  <data name="DrawOnScreenTip" xml:space="preserve">
+    <value>Draw on the screen (the drawing is recorded); Esc or Done ends it</value>
+  </data>
+  <data name="StopTip" xml:space="preserve">
+    <value>Stop and save (or press the recording hotkey)</value>
+  </data>
+  <data name="Pen" xml:space="preserve">
+    <value>Pen</value>
+  </data>
+  <data name="PenTip" xml:space="preserve">
+    <value>Pen (1)</value>
+  </data>
+  <data name="Highlighter" xml:space="preserve">
+    <value>Highlighter</value>
+  </data>
+  <data name="HighlighterTip" xml:space="preserve">
+    <value>Highlighter (2)</value>
+  </data>
+  <data name="Arrow" xml:space="preserve">
+    <value>Arrow</value>
+  </data>
+  <data name="ArrowTip" xml:space="preserve">
+    <value>Arrow (3)</value>
+  </data>
+  <data name="Rectangle" xml:space="preserve">
+    <value>Rectangle</value>
+  </data>
+  <data name="RectangleTip" xml:space="preserve">
+    <value>Rectangle (4)</value>
+  </data>
+  <data name="PenWidth" xml:space="preserve">
+    <value>Pen width</value>
+  </data>
+  <data name="UndoStrokeTip" xml:space="preserve">
+    <value>Undo the last stroke (Ctrl+Z)</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="ClearTip" xml:space="preserve">
+    <value>Remove every drawing (Delete)</value>
+  </data>
+  <data name="DoneTip" xml:space="preserve">
+    <value>Stop drawing; the drawings stay (Esc)</value>
+  </data>
+  <data name="SystemAudio" xml:space="preserve">
+    <value>System audio</value>
+  </data>
+  <data name="SystemAudioVolume" xml:space="preserve">
+    <value>System audio volume</value>
+  </data>
+  <data name="Mute" xml:space="preserve">
+    <value>Mute</value>
+  </data>
+  <data name="Microphone" xml:space="preserve">
+    <value>Microphone</value>
+  </data>
+  <data name="MicrophoneVolume" xml:space="preserve">
+    <value>Microphone volume</value>
+  </data>
+  <data name="NoiseSuppressionOnMicrophone" xml:space="preserve">
+    <value>Noise suppression on the microphone</value>
+  </data>
+  <data name="NoiseSuppressionTip" xml:space="preserve">
+    <value>RNNoise: removes steady noise such as fans, hum and typing; heard at once</value>
+  </data>
+  <data name="KeystrokesShownTip" xml:space="preserve">
+    <value>Keystrokes are shown. Click to stop showing them for a while (e.g. to type something private).</value>
+  </data>
+  <data name="KeystrokesHiddenTip" xml:space="preserve">
+    <value>Keystrokes are hidden. Click to show them again.</value>
+  </data>
+  <data name="Talking" xml:space="preserve">
+    <value>Talking</value>
+    <comment>push to talk: its key is held</comment>
+  </data>
+  <data name="HoldToTalk" xml:space="preserve">
+    <value>Hold {0} to talk</value>
+    <comment>{0}: a key name such as F13</comment>
+  </data>
+  <data name="MuteMic" xml:space="preserve">
+    <value>Mute mic</value>
+  </data>
+  <data name="UnmuteMic" xml:space="preserve">
+    <value>Unmute mic</value>
+  </data>
+  <data name="RecordingSystemSound" xml:space="preserve">
+    <value>Recording system sound</value>
+  </data>
+  <data name="RecordingMicrophone" xml:space="preserve">
+    <value>Recording microphone</value>
+  </data>
+  <data name="RecordingSystemSoundAndMicrophone" xml:space="preserve">
+    <value>Recording system sound + microphone</value>
+  </data>
+  <data name="SoundWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
+    <comment>{0}: what sound is recorded; {1}: why some is missing</comment>
+  </data>
+  <data name="NoSound" xml:space="preserve">
+    <value>No sound</value>
+  </data>
+  <data name="SoundSystem" xml:space="preserve">
+    <value>system sound</value>
+    <comment>in the saved notification's details</comment>
+  </data>
+  <data name="SoundMicrophone" xml:space="preserve">
+    <value>microphone</value>
+  </data>
+  <data name="SoundSystemAndMicrophone" xml:space="preserve">
+    <value>system sound + microphone</value>
+  </data>
+  <data name="SoundNone" xml:space="preserve">
+    <value>no sound</value>
+  </data>
+  <data name="RecordingStopped" xml:space="preserve">
+    <value>Recording stopped</value>
+  </data>
+  <data name="StoppedSaving" xml:space="preserve">
+    <value>{0} What was recorded is being saved.</value>
+    <comment>{0}: why the recording stopped</comment>
+  </data>
+  <data name="StillSaving" xml:space="preserve">
+    <value>The last recording is still being saved. Try again in a moment.</value>
+  </data>
+  <data name="NotAvailable" xml:space="preserve">
+    <value>Recording is not available</value>
+  </data>
+  <data name="TooSmall" xml:space="preserve">
+    <value>That area is too small to record ({0}x{1}).</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>Recording saved</value>
+  </data>
+  <data name="CouldNotStart" xml:space="preserve">
+    <value>Recording could not start</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Recording failed</value>
+  </data>
+  <data name="NameAndMoreParts_one" xml:space="preserve">
+    <value>{1} (+{0} more)</value>
+    <comment>{0}: how many more parts; {1}: the file name of the first</comment>
+  </data>
+  <data name="NameAndMoreParts_other" xml:space="preserve">
+    <value>{1} (+{0} more)</value>
+    <comment>{0}: how many more parts; {1}: the file name of the first</comment>
+  </data>
+  <data name="EncoderAndSound" xml:space="preserve">
+    <value>{0} · {1}</value>
+    <comment>{0}: encoder; {1}: the sound recorded</comment>
+  </data>
+  <data name="FramesSkipped" xml:space="preserve">
+    <value>{0:P0} of the frames were skipped because encoding couldn't keep up. A lower frame rate or a smaller area helps.</value>
+  </data>
+  <data name="InterruptedFound_one" xml:space="preserve">
+    <value>Interrupted recording found</value>
+  </data>
+  <data name="InterruptedFound_other" xml:space="preserve">
+    <value>{0} interrupted recordings found</value>
+  </data>
+  <data name="InterruptedMessage_one" xml:space="preserve">
+    <value>A recording wasn't saved because CashGear Capture closed while recording. Click here (or use the tray menu) to save what was recorded.</value>
+  </data>
+  <data name="InterruptedMessage_other" xml:space="preserve">
+    <value>Recordings weren't saved because CashGear Capture closed while recording. Click here (or use the tray menu) to save what was recorded.</value>
+  </data>
+  <data name="NothingToSave" xml:space="preserve">
+    <value>Nothing to save</value>
+  </data>
+  <data name="NothingWritten" xml:space="preserve">
+    <value>The recording started {0} stopped before anything could be written. It was removed.</value>
+    <comment>{0}: date and time</comment>
+  </data>
+  <data name="Recovered" xml:space="preserve">
+    <value>Recording recovered</value>
+  </data>
+  <data name="LastSecondMissing" xml:space="preserve">
+    <value>The last second or so before the interruption is missing.</value>
+  </data>
+  <data name="ListSeparator" xml:space="preserve">
+    <value>, </value>
+    <comment>between file names</comment>
+  </data>
+  <data name="NotRecovered" xml:space="preserve">
+    <value>The recording could not be recovered</value>
+  </data>
+  <data name="KeptTryAgain" xml:space="preserve">
+    <value>{0} It is kept; try again from the tray menu.</value>
+    <comment>{0}: the error</comment>
+  </data>
+  <data name="AddOverlaysDialogTitle" xml:space="preserve">
+    <value>Add overlays to a recording</value>
+  </data>
+  <data name="RecordingsFilter" xml:space="preserve">
+    <value>Recordings (*.mp4)|*.mp4</value>
+  </data>
+  <data name="AddingOverlaysTo" xml:space="preserve">
+    <value>Adding overlays to {0}</value>
+    <comment>{0}: file name</comment>
+  </data>
+  <data name="AddOverlays" xml:space="preserve">
+    <value>Add overlays</value>
+  </data>
+  <data name="NoMetadata" xml:space="preserve">
+    <value>{0} has no metadata file, so its clicks and keys aren't known. Recordings get one when Settings › Overlays › Save a metadata file is on.</value>
+  </data>
+  <data name="OverlaysAdded" xml:space="preserve">
+    <value>Overlays added</value>
+  </data>
+  <data name="OverlaysNotAdded" xml:space="preserve">
+    <value>Overlays couldn't be added</value>
+  </data>
+  <data name="OverlaysDrawnNote" xml:space="preserve">
+    <value>The overlays are drawn as Settings › Overlays has them now, into a new file next to the recording; the recording itself isn't changed.</value>
+  </data>
+  <data name="ColorRed" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="ColorYellow" xml:space="preserve">
+    <value>Yellow</value>
+  </data>
+  <data name="ColorGreen" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="ColorBlue" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="ColorWhite" xml:space="preserve">
+    <value>White</value>
+  </data>
+  <data name="ColorBlack" xml:space="preserve">
+    <value>Black</value>
+  </data>
+  <data name="DrawingTitle" xml:space="preserve">
+    <value>Drawing</value>
+    <comment>title of the drawing layer's window</comment>
+  </data>
+  <data name="MeterSilent" xml:space="preserve">
+    <value>Silent</value>
+    <comment>a level meter's tooltip</comment>
+  </data>
+  <data name="MeterClipping" xml:space="preserve">
+    <value>Clipping: too loud</value>
+  </data>
+  <data name="MeterPeak" xml:space="preserve">
+    <value>Peak {0:0} dB</value>
+    <comment>{0}: the held peak level</comment>
+  </data>
+  <data name="InFolder" xml:space="preserve">
+    <value>in {0}</value>
+    <comment>a notification's last line; {0}: folder</comment>
+  </data>
+  <data name="StartedAt" xml:space="preserve">
+    <value>{0} · started {1}</value>
+    <comment>{0}: length; {1}: date and time</comment>
+  </data>
+</root>

@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.History;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Settings;
@@ -26,14 +27,15 @@ public partial class HistoryWindow : Window, IThemedWindow
             captureFolder,
             HistoryActions.SavedFile(entry) is { } saved
                 ? Path.GetFileNameWithoutExtension(saved)
-                : $"Capture_{entry.CapturedAt:yyyy-MM-dd_HH-mm-ss}",
+                : HistoryText.DefaultFileName(entry.CapturedAt),
             ImageFileFormat.Png);
-        viewModel.ConfirmClear = count => MessageBox.Show(
+        viewModel.ConfirmClear = count => AppDialog.Show(
             this,
-            $"Remove all {count} captures from the history? Files you saved are not deleted.",
-            "Capture History",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question) == MessageBoxResult.Yes;
+            HistoryText.ClearConfirm(count),
+            HistoryText.WindowTitle,
+            DialogButtons.YesNo,
+            DialogKind.Question,
+            theme) == DialogAnswer.Yes;
         Loaded += (_, _) =>
         {
             List.Focus();

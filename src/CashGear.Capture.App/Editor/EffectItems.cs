@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Editor.Effects;
 using CashGear.Capture.Editor.Presets;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -31,16 +32,16 @@ public abstract class EffectItemViewModel : ObservableObject
     /// <summary>The kinds, in the order of the Add menu (and the editor's Effects menu).</summary>
     public static IReadOnlyList<EffectKind> Kinds { get; } =
     [
-        new("shadow", "Drop shadow", () => new ShadowEffect()),
-        new("tornEdge", "Torn edge", () => new TornEdgeEffect()),
-        new("fadeEdge", "Faded edges", () => new FadeEdgeEffect()),
-        new("border", "Border", () => new BorderEffect()),
-        new("roundedCorners", "Rounded corners", () => new RoundedCornersEffect()),
-        new("perspective", "Perspective", () => new PerspectiveEffect()),
-        new("adjust", "Brightness and contrast", () => new AdjustEffect()),
-        new("grayscale", "Grayscale", () => new GrayscaleEffect()),
-        new("sharpen", "Sharpen", () => new SharpenEffect()),
-        new("watermark", "Watermark", () => new WatermarkEffect(new Watermark())),
+        new("shadow", EditorText.DropShadow, () => new ShadowEffect()),
+        new("tornEdge", EditorText.TornEdge, () => new TornEdgeEffect()),
+        new("fadeEdge", EditorText.FadedEdges, () => new FadeEdgeEffect()),
+        new("border", EditorText.Border, () => new BorderEffect()),
+        new("roundedCorners", EditorText.RoundedCorners, () => new RoundedCornersEffect()),
+        new("perspective", EditorText.Perspective, () => new PerspectiveEffect()),
+        new("adjust", EditorText.BrightnessContrast, () => new AdjustEffect()),
+        new("grayscale", EditorText.Grayscale, () => new GrayscaleEffect()),
+        new("sharpen", EditorText.Sharpen, () => new SharpenEffect()),
+        new("watermark", EditorText.Watermark, () => new WatermarkEffect(new Watermark())),
     ];
 
     public string Name { get; }
@@ -104,13 +105,13 @@ internal sealed class ShadowItem : EffectItemViewModel
     private readonly ColorParameter _color;
 
     public ShadowItem(ShadowEffect effect)
-        : base("Drop shadow")
+        : base(EditorText.DropShadow)
     {
-        _blur = new NumberParameter("Softness", 0, ShadowEffect.MaxBlur, effect.Blur, unit: " px");
-        _x = new NumberParameter("Across", -ShadowEffect.MaxOffset, ShadowEffect.MaxOffset, effect.OffsetX, unit: " px");
-        _y = new NumberParameter("Down", -ShadowEffect.MaxOffset, ShadowEffect.MaxOffset, effect.OffsetY, unit: " px");
-        _opacity = new NumberParameter("Darkness", 0, 100, effect.Opacity, unit: "%");
-        _color = new ColorParameter("Colour", effect.Color ?? SKColors.Black);
+        _blur = new NumberParameter(EditorText.Softness, 0, ShadowEffect.MaxBlur, effect.Blur, unit: " px");
+        _x = new NumberParameter(EditorText.Across, -ShadowEffect.MaxOffset, ShadowEffect.MaxOffset, effect.OffsetX, unit: " px");
+        _y = new NumberParameter(EditorText.Down, -ShadowEffect.MaxOffset, ShadowEffect.MaxOffset, effect.OffsetY, unit: " px");
+        _opacity = new NumberParameter(EditorText.Darkness, 0, 100, effect.Opacity, unit: "%");
+        _color = new ColorParameter(EditorText.Colour, effect.Color ?? SKColors.Black);
         Use(_blur, _x, _y, _opacity, _color);
     }
 
@@ -123,10 +124,10 @@ internal sealed class BorderItem : EffectItemViewModel
     private readonly ColorParameter _color;
 
     public BorderItem(BorderEffect effect)
-        : base("Border")
+        : base(EditorText.Border)
     {
-        _thickness = new NumberParameter("Thickness", 1, 100, effect.Thickness, unit: " px");
-        _color = new ColorParameter("Colour", effect.BorderColor);
+        _thickness = new NumberParameter(EditorText.Thickness, 1, 100, effect.Thickness, unit: " px");
+        _color = new ColorParameter(EditorText.Colour, effect.BorderColor);
         Use(_thickness, _color);
     }
 
@@ -136,13 +137,13 @@ internal sealed class BorderItem : EffectItemViewModel
 /// <summary>Switches for the four sides.</summary>
 internal sealed class SideSwitches(Edges edges)
 {
-    public SwitchParameter Top { get; } = new("Top", edges.HasFlag(Edges.Top));
+    public SwitchParameter Top { get; } = new(EditorText.Top, edges.HasFlag(Edges.Top));
 
-    public SwitchParameter Right { get; } = new("Right side", edges.HasFlag(Edges.Right));
+    public SwitchParameter Right { get; } = new(EditorText.RightSide, edges.HasFlag(Edges.Right));
 
-    public SwitchParameter Bottom { get; } = new("Bottom", edges.HasFlag(Edges.Bottom));
+    public SwitchParameter Bottom { get; } = new(EditorText.Bottom, edges.HasFlag(Edges.Bottom));
 
-    public SwitchParameter Left { get; } = new("Left side", edges.HasFlag(Edges.Left));
+    public SwitchParameter Left { get; } = new(EditorText.LeftSide, edges.HasFlag(Edges.Left));
 
     public EditParameter[] All => [Top, Right, Bottom, Left];
 
@@ -159,13 +160,13 @@ internal sealed class TornEdgeItem : EffectItemViewModel
     private int _seed;
 
     public TornEdgeItem(TornEdgeEffect effect)
-        : base("Torn edge")
+        : base(EditorText.TornEdge)
     {
         _sides = new SideSwitches(effect.Edges);
-        _depth = new NumberParameter("Depth", 1, TornEdgeEffect.MaxDepth, effect.Depth, unit: " px");
-        _teeth = new NumberParameter("Tooth width", TornEdgeEffect.MinToothWidth, TornEdgeEffect.MaxToothWidth, effect.ToothWidth, unit: " px");
+        _depth = new NumberParameter(EditorText.Depth, 1, TornEdgeEffect.MaxDepth, effect.Depth, unit: " px");
+        _teeth = new NumberParameter(EditorText.ToothWidth, TornEdgeEffect.MinToothWidth, TornEdgeEffect.MaxToothWidth, effect.ToothWidth, unit: " px");
         _seed = effect.Seed;
-        Use([.. _sides.All, _depth, _teeth, new ActionParameter("New pattern", new RelayCommand(NewPattern))]);
+        Use([.. _sides.All, _depth, _teeth, new ActionParameter(EditorText.NewPattern, new RelayCommand(NewPattern))]);
     }
 
     public override ImageEffect ToEffect() => new TornEdgeEffect(_sides.Value, _depth.IntValue, _teeth.IntValue, _seed);
@@ -183,10 +184,10 @@ internal sealed class FadeEdgeItem : EffectItemViewModel
     private readonly NumberParameter _width;
 
     public FadeEdgeItem(FadeEdgeEffect effect)
-        : base("Faded edges")
+        : base(EditorText.FadedEdges)
     {
         _sides = new SideSwitches(effect.Edges);
-        _width = new NumberParameter("Width", 1, 300, effect.Width, unit: " px");
+        _width = new NumberParameter(EditorText.Width, 1, 300, effect.Width, unit: " px");
         Use([.. _sides.All, _width]);
     }
 
@@ -198,9 +199,9 @@ internal sealed class RoundedCornersItem : EffectItemViewModel
     private readonly NumberParameter _radius;
 
     public RoundedCornersItem(RoundedCornersEffect effect)
-        : base("Rounded corners")
+        : base(EditorText.RoundedCorners)
     {
-        _radius = new NumberParameter("Radius", 1, 200, effect.Radius, unit: " px");
+        _radius = new NumberParameter(EditorText.Radius, 1, 200, effect.Radius, unit: " px");
         Use(_radius);
     }
 
@@ -213,12 +214,12 @@ internal sealed class PerspectiveItem : EffectItemViewModel
     private readonly ChoiceParameter _axis;
 
     public PerspectiveItem(PerspectiveEffect effect)
-        : base("Perspective")
+        : base(EditorText.Perspective)
     {
-        _angle = new NumberParameter("Angle", -PerspectiveEffect.MaxAngle, PerspectiveEffect.MaxAngle, effect.Angle, unit: "°");
+        _angle = new NumberParameter(EditorText.Angle, -PerspectiveEffect.MaxAngle, PerspectiveEffect.MaxAngle, effect.Angle, unit: "°");
         _axis = new ChoiceParameter(
-            "Turned",
-            [new(PerspectiveAxis.Horizontal, "Left or right (a side goes away)"), new(PerspectiveAxis.Vertical, "Up or down (the top or bottom goes away)")],
+            EditorText.PerspectiveTurned,
+            [new(PerspectiveAxis.Horizontal, EditorText.LeftOrRight), new(PerspectiveAxis.Vertical, EditorText.UpOrDown)],
             effect.Axis);
         Use(_angle, _axis);
     }
@@ -232,10 +233,10 @@ internal sealed class AdjustItem : EffectItemViewModel
     private readonly NumberParameter _contrast;
 
     public AdjustItem(AdjustEffect effect)
-        : base("Brightness and contrast")
+        : base(EditorText.BrightnessContrast)
     {
-        _brightness = new NumberParameter("Brightness", -100, 100, effect.Brightness);
-        _contrast = new NumberParameter("Contrast", -100, 100, effect.Contrast);
+        _brightness = new NumberParameter(EditorText.Brightness, -100, 100, effect.Brightness);
+        _contrast = new NumberParameter(EditorText.Contrast, -100, 100, effect.Contrast);
         Use(_brightness, _contrast);
     }
 
@@ -245,7 +246,7 @@ internal sealed class AdjustItem : EffectItemViewModel
 internal sealed class GrayscaleItem : EffectItemViewModel
 {
     public GrayscaleItem()
-        : base("Grayscale")
+        : base(EditorText.Grayscale)
     {
     }
 
@@ -257,9 +258,9 @@ internal sealed class SharpenItem : EffectItemViewModel
     private readonly NumberParameter _amount;
 
     public SharpenItem(SharpenEffect effect)
-        : base("Sharpen")
+        : base(EditorText.Sharpen)
     {
-        _amount = new NumberParameter("Amount", 0, SharpenEffect.MaxAmount, effect.Amount, unit: "%");
+        _amount = new NumberParameter(EditorText.Amount, 0, SharpenEffect.MaxAmount, effect.Amount, unit: "%");
         Use(_amount);
     }
 
@@ -289,25 +290,25 @@ internal sealed class WatermarkItem : EffectItemViewModel
     private bool _loading;
 
     public WatermarkItem(Watermark watermark, EffectEditorContext context)
-        : base("Watermark")
+        : base(EditorText.Watermark)
     {
         _context = context;
-        _presets = new PresetsParameter("Saved watermarks", Load, SaveAsync, DeleteAsync) { IsVisible = context.Presets is not null };
-        _kind = new ChoiceParameter("Watermark", [new(WatermarkKind.Text, "Text"), new(WatermarkKind.Image, "A picture")], watermark.Kind);
-        _text = new TextParameter("Text", watermark.Text, multiline: true);
-        _font = new FontParameter("Font", context.FontFamilies, watermark.FontFamily);
-        _size = new NumberParameter("Size", Watermark.MinFontSize, 200, watermark.FontSize, unit: " px");
-        _bold = new SwitchParameter("Bold", watermark.Bold);
-        _color = new ColorParameter("Colour", watermark.TextColor);
-        _picture = new FileParameter("Picture", watermark.ImagePath, context.PickImageFile);
-        _scale = new NumberParameter("Size", 5, 400, watermark.Scale, unit: "%");
-        _position = new AnchorParameter("Position", watermark.Position);
-        _margin = new NumberParameter("From the edges", 0, 300, watermark.Margin, unit: " px");
-        _opacity = new NumberParameter("Opacity", 0, 100, watermark.Opacity, unit: "%");
-        _rotation = new NumberParameter("Turned", -180, 180, watermark.Rotation, unit: "°");
-        _tile = new SwitchParameter("Repeat it over the whole image", watermark.Tile);
-        _spacing = new NumberParameter("Gap between them", 0, 400, watermark.Spacing, unit: " px");
-        _shadow = new SwitchParameter("A light shadow (readable on any background)", watermark.Shadow);
+        _presets = new PresetsParameter(EditorText.SavedWatermarks, Load, SaveAsync, DeleteAsync) { IsVisible = context.Presets is not null };
+        _kind = new ChoiceParameter(EditorText.Watermark, [new(WatermarkKind.Text, EditorText.ToolText), new(WatermarkKind.Image, EditorText.APicture)], watermark.Kind);
+        _text = new TextParameter(EditorText.ToolText, watermark.Text, multiline: true);
+        _font = new FontParameter(EditorText.Font, context.FontFamilies, watermark.FontFamily);
+        _size = new NumberParameter(EditorText.Size, Watermark.MinFontSize, 200, watermark.FontSize, unit: " px");
+        _bold = new SwitchParameter(EditorText.Bold, watermark.Bold);
+        _color = new ColorParameter(EditorText.Colour, watermark.TextColor);
+        _picture = new FileParameter(EditorText.Picture, watermark.ImagePath, context.PickImageFile);
+        _scale = new NumberParameter(EditorText.Size, 5, 400, watermark.Scale, unit: "%");
+        _position = new AnchorParameter(EditorText.Position, watermark.Position);
+        _margin = new NumberParameter(EditorText.FromTheEdges, 0, 300, watermark.Margin, unit: " px");
+        _opacity = new NumberParameter(EditorText.Opacity, 0, 100, watermark.Opacity, unit: "%");
+        _rotation = new NumberParameter(EditorText.WatermarkTurned, -180, 180, watermark.Rotation, unit: "°");
+        _tile = new SwitchParameter(EditorText.RepeatOverImage, watermark.Tile);
+        _spacing = new NumberParameter(EditorText.GapBetween, 0, 400, watermark.Spacing, unit: " px");
+        _shadow = new SwitchParameter(EditorText.LightShadow, watermark.Shadow);
         Use(_presets, _kind, _text, _font, _size, _bold, _color, _picture, _scale, _position, _margin, _opacity, _rotation, _tile, _spacing, _shadow);
         RefreshPresets();
         OnSettingChanged();
@@ -377,7 +378,7 @@ internal sealed class WatermarkItem : EffectItemViewModel
 
     private async Task SaveAsync()
     {
-        if (_context.Presets is not { } presets || _context.AskName("Save the watermark", _presets.Selected ?? "My watermark") is not { Length: > 0 } name)
+        if (_context.Presets is not { } presets || _context.AskName(EditorText.SaveWatermark, _presets.Selected ?? EditorText.MyWatermark) is not { Length: > 0 } name)
         {
             return;
         }

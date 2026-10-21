@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Batch;
@@ -137,13 +138,14 @@ public static class BatchNames
 {
     public const string Default = "{name}";
 
-    public static IReadOnlyList<(string Token, string Description)> Tokens { get; } =
+    /// <summary>The tokens with what they stand for, in the UI language.</summary>
+    public static IReadOnlyList<(string Token, string Description)> Tokens =>
     [
-        ("{name}", "The original name, without its extension"),
-        ("{counter}", "1, 2, 3… in the order of the list (001 when there are hundreds)"),
-        ("{yyyy}", "The file's year (its date and time: {MM} {dd} {HH} {mm} {ss})"),
-        ("{width}", "The new width in pixels"),
-        ("{height}", "The new height in pixels"),
+        ("{name}", EditorStrings.TokenName),
+        ("{counter}", EditorStrings.TokenCounter),
+        ("{yyyy}", EditorStrings.TokenDate),
+        ("{width}", EditorStrings.TokenWidth),
+        ("{height}", EditorStrings.TokenHeight),
     ];
 
     private static readonly HashSet<string> Known = new(
@@ -159,7 +161,7 @@ public static class BatchNames
     {
         if (string.IsNullOrWhiteSpace(template))
         {
-            error = "The name template is empty.";
+            error = EditorStrings.NameTemplateEmpty;
             return false;
         }
 
@@ -168,7 +170,7 @@ public static class BatchNames
         {
             if (template[i] == '}')
             {
-                error = $"Unexpected '}}' at position {i + 1}.";
+                error = EditorStrings.NameTemplateUnexpectedBrace(i + 1);
                 return false;
             }
 
@@ -181,14 +183,14 @@ public static class BatchNames
             var end = template.IndexOf('}', i);
             if (end < 0)
             {
-                error = $"'{{' at position {i + 1} is never closed.";
+                error = EditorStrings.NameTemplateUnclosed(i + 1);
                 return false;
             }
 
             var token = template[(i + 1)..end];
             if (!Known.Contains(token))
             {
-                error = $"{{{token}}} isn't a name part this app knows.";
+                error = EditorStrings.NameTemplateUnknownToken(token);
                 return false;
             }
 

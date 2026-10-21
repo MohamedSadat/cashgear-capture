@@ -1,4 +1,5 @@
 using System.Globalization;
+using CashGear.Capture.Core.Resources;
 
 namespace CashGear.Capture.Core.Geometry;
 
@@ -75,8 +76,8 @@ public static class RulerScale
     public static string Format(double pixels, RulerUnit unit, double dpi) => unit switch
     {
         RulerUnit.Pixels => string.Create(CultureInfo.InvariantCulture, $"{Math.Round(pixels):0} px"),
-        RulerUnit.Inches => string.Create(CultureInfo.InvariantCulture, $"{pixels / dpi:0.00} in"),
-        _ => string.Create(CultureInfo.InvariantCulture, $"{pixels / dpi * CentimetresPerInch:0.00} cm"),
+        RulerUnit.Inches => CoreStrings.RulerInches((pixels / dpi).ToString("0.00", CultureInfo.InvariantCulture)),
+        _ => CoreStrings.RulerCentimetres((pixels / dpi * CentimetresPerInch).ToString("0.00", CultureInfo.InvariantCulture)),
     };
 
     public static double PixelsPerUnit(RulerUnit unit, double dpi) => unit switch

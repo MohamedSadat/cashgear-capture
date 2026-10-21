@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="KindArrow" xml:space="preserve">
+    <value>arrow</value>
+    <comment>annotation kind, lower case, in undo names (add arrow)</comment>
+  </data>
+  <data name="KindLine" xml:space="preserve">
+    <value>line</value>
+    <comment>annotation kind</comment>
+  </data>
+  <data name="KindRectangle" xml:space="preserve">
+    <value>rectangle</value>
+    <comment>annotation kind</comment>
+  </data>
+  <data name="KindEllipse" xml:space="preserve">
+    <value>ellipse</value>
+    <comment>annotation kind</comment>
+  </data>
+  <data name="KindDrawing" xml:space="preserve">
+    <value>drawing</value>
+    <comment>annotation kind: a freehand pen line</comment>
+  </data>
+  <data name="KindHighlight" xml:space="preserve">
+    <value>highlight</value>
+    <comment>annotation kind</comment>
+  </data>
+  <data name="KindText" xml:space="preserve">
+    <value>text</value>
+    <comment>annotation kind</comment>
+  </data>
+  <data name="KindStepNumber" xml:space="preserve">
+    <value>step number</value>
+    <comment>annotation kind</comment>
+  </data>
+  <data name="KindBlur" xml:space="preserve">
+    <value>blur</value>
+    <comment>annotation kind</comment>
+  </data>
+  <data name="KindPixelation" xml:space="preserve">
+    <value>pixelation</value>
+    <comment>annotation kind</comment>
+  </data>
+  <data name="KindSpotlight" xml:space="preserve">
+    <value>spotlight</value>
+    <comment>annotation kind: the rest of the image is dimmed</comment>
+  </data>
+  <data name="KindMagnifier" xml:space="preserve">
+    <value>magnifier</value>
+    <comment>annotation kind: a round magnifying callout</comment>
+  </data>
+  <data name="UndoAdd" xml:space="preserve">
+    <value>add {0}</value>
+    <comment>undo step; {0} is an annotation kind (arrow); shown as Undo add arrow</comment>
+  </data>
+  <data name="UndoDelete" xml:space="preserve">
+    <value>delete {0}</value>
+    <comment>undo step; {0} is an annotation kind</comment>
+  </data>
+  <data name="UndoMove" xml:space="preserve">
+    <value>move {0}</value>
+    <comment>undo step; {0} is an annotation kind</comment>
+  </data>
+  <data name="UndoResize" xml:space="preserve">
+    <value>resize {0}</value>
+    <comment>undo step; {0} is an annotation kind</comment>
+  </data>
+  <data name="UndoChange" xml:space="preserve">
+    <value>change {0}</value>
+    <comment>undo step: a new colour, width… {0} is an annotation kind</comment>
+  </data>
+  <data name="UndoBringToFront" xml:space="preserve">
+    <value>bring to front {0}</value>
+    <comment>undo step; {0} is an annotation kind</comment>
+  </data>
+  <data name="UndoSendToBack" xml:space="preserve">
+    <value>send to back {0}</value>
+    <comment>undo step; {0} is an annotation kind</comment>
+  </data>
+  <data name="UndoEditText" xml:space="preserve">
+    <value>edit text</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCrop" xml:space="preserve">
+    <value>crop</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoRotateRight" xml:space="preserve">
+    <value>rotate right</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoRotateLeft" xml:space="preserve">
+    <value>rotate left</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoResizeImage" xml:space="preserve">
+    <value>resize image</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoFlipHorizontally" xml:space="preserve">
+    <value>flip horizontally</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoFlipVertically" xml:space="preserve">
+    <value>flip vertically</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoRotate" xml:space="preserve">
+    <value>rotate</value>
+    <comment>undo step: rotate by an angle</comment>
+  </data>
+  <data name="UndoCanvasSize" xml:space="preserve">
+    <value>change the canvas size</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoTrimBorders" xml:space="preserve">
+    <value>trim borders</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoEffects" xml:space="preserve">
+    <value>effects</value>
+    <comment>undo step: several effects at once</comment>
+  </data>
+  <data name="EffectDropShadow" xml:space="preserve">
+    <value>drop shadow</value>
+    <comment>effect, lower case, for undo (Undo drop shadow)</comment>
+  </data>
+  <data name="EffectBorder" xml:space="preserve">
+    <value>border</value>
+    <comment>effect</comment>
+  </data>
+  <data name="EffectRoundedCorners" xml:space="preserve">
+    <value>rounded corners</value>
+    <comment>effect</comment>
+  </data>
+  <data name="EffectTornEdge" xml:space="preserve">
+    <value>torn edge</value>
+    <comment>effect</comment>
+  </data>
+  <data name="EffectFadedEdges" xml:space="preserve">
+    <value>faded edges</value>
+    <comment>effect</comment>
+  </data>
+  <data name="EffectPerspective" xml:space="preserve">
+    <value>perspective</value>
+    <comment>effect</comment>
+  </data>
+  <data name="EffectBrightnessContrast" xml:space="preserve">
+    <value>brightness and contrast</value>
+    <comment>effect</comment>
+  </data>
+  <data name="EffectGrayscale" xml:space="preserve">
+    <value>grayscale</value>
+    <comment>effect</comment>
+  </data>
+  <data name="EffectSharpen" xml:space="preserve">
+    <value>sharpen</value>
+    <comment>effect</comment>
+  </data>
+  <data name="EffectWatermark" xml:space="preserve">
+    <value>watermark</value>
+    <comment>effect</comment>
+  </data>
+  <data name="DefaultWatermarkText" xml:space="preserve">
+    <value>© CashGear Capture</value>
+    <comment>a new text watermark's text, drawn into images</comment>
+  </data>
+  <data name="ConfidentialWatermarkText" xml:space="preserve">
+    <value>CONFIDENTIAL</value>
+    <comment>the built-in Confidential watermark's text, drawn into images</comment>
+  </data>
+  <data name="PresetShadow" xml:space="preserve">
+    <value>Shadow</value>
+    <comment>built-in effects preset name</comment>
+  </data>
+  <data name="PresetTornBottomShadow" xml:space="preserve">
+    <value>Torn bottom with a shadow</value>
+    <comment>built-in effects preset name</comment>
+  </data>
+  <data name="PresetRoundedShadow" xml:space="preserve">
+    <value>Rounded with a shadow</value>
+    <comment>built-in effects preset name</comment>
+  </data>
+  <data name="PresetThinBorderShadow" xml:space="preserve">
+    <value>Thin border and a shadow</value>
+    <comment>built-in effects preset name</comment>
+  </data>
+  <data name="PresetConfidential" xml:space="preserve">
+    <value>Confidential, across the image</value>
+    <comment>built-in watermark preset name</comment>
+  </data>
+  <data name="WatermarkNoPicture" xml:space="preserve">
+    <value>No picture is chosen for the watermark.</value>
+  </data>
+  <data name="WatermarkPictureUnreadableBecause" xml:space="preserve">
+    <value>The watermark picture {0} can't be read: {1}</value>
+    <comment>{0} file name, {1} the system's reason</comment>
+  </data>
+  <data name="WatermarkPictureGone" xml:space="preserve">
+    <value>The watermark picture {0} isn't there any more.</value>
+    <comment>{0} full path</comment>
+  </data>
+  <data name="WatermarkPictureUnreadable" xml:space="preserve">
+    <value>The watermark picture {0} can't be read.</value>
+    <comment>{0} file name</comment>
+  </data>
+  <data name="WatermarkNotAPicture" xml:space="preserve">
+    <value>{0} isn't a picture this app can read (PNG, JPEG, BMP, GIF or WebP).</value>
+    <comment>{0} file name</comment>
+  </data>
+  <data name="NotAPicture" xml:space="preserve">
+    <value>{0} isn't a picture this app can read.</value>
+    <comment>{0} file name</comment>
+  </data>
+  <data name="PictureNotRead" xml:space="preserve">
+    <value>{0} could not be read ({1}).</value>
+    <comment>{0} file name, {1} the decoder's result code</comment>
+  </data>
+  <data name="PictureName" xml:space="preserve">
+    <value>picture</value>
+    <comment>a picture for a PDF that isn't a file, in error messages</comment>
+  </data>
+  <data name="PicturesFilter" xml:space="preserve">
+    <value>Pictures|{0}|All files|*.*</value>
+    <comment>open-file dialog filter; {0} is the list of patterns (*.png;*.jpg…)</comment>
+  </data>
+  <data name="CombinedTooLarge" xml:space="preserve">
+    <value>The combined picture would be {0} × {1} pixels; at most {2} each way.</value>
+  </data>
+  <data name="TurnedImageTooLarge" xml:space="preserve">
+    <value>The turned image would be too large.</value>
+  </data>
+  <data name="PdfNotStarted" xml:space="preserve">
+    <value>Could not start the PDF.</value>
+  </data>
+  <data name="TokenName" xml:space="preserve">
+    <value>The original name, without its extension</value>
+    <comment>batch name template token {name}</comment>
+  </data>
+  <data name="TokenCounter" xml:space="preserve">
+    <value>1, 2, 3… in the order of the list (001 when there are hundreds)</value>
+    <comment>batch name template token {counter}</comment>
+  </data>
+  <data name="TokenDate" xml:space="preserve">
+    <value>The file's year (its date and time: {{MM}} {{dd}} {{HH}} {{mm}} {{ss}})</value>
+    <comment>batch name template token {yyyy}; the tokens in braces stay as they are</comment>
+  </data>
+  <data name="TokenWidth" xml:space="preserve">
+    <value>The new width in pixels</value>
+    <comment>batch name template token {width}</comment>
+  </data>
+  <data name="TokenHeight" xml:space="preserve">
+    <value>The new height in pixels</value>
+    <comment>batch name template token {height}</comment>
+  </data>
+  <data name="NameTemplateEmpty" xml:space="preserve">
+    <value>The name template is empty.</value>
+  </data>
+  <data name="NameTemplateUnexpectedBrace" xml:space="preserve">
+    <value>Unexpected '}}' at position {0}.</value>
+  </data>
+  <data name="NameTemplateUnclosed" xml:space="preserve">
+    <value>'{{' at position {0} is never closed.</value>
+  </data>
+  <data name="NameTemplateUnknownToken" xml:space="preserve">
+    <value>{{{0}}} isn't a name part this app knows.</value>
+    <comment>{0} is the unknown token without its braces</comment>
+  </data>
+</root>

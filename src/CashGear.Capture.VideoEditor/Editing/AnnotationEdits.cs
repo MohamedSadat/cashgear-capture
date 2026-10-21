@@ -1,5 +1,6 @@
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.VideoEditor.Rendering;
+using CashGear.Capture.VideoEditor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.VideoEditor.Editing;
@@ -22,7 +23,7 @@ public static class AnnotationEdits
         var line = Math.Max(2, Math.Round(h / 120.0));
         var (keyframe, look, text) = shape switch
         {
-            AnnotationShape.Text => (new AnnotationKeyframe(0, w * 0.38, h * 0.42, 0, 0), new AnnotationLook(Color: "#FFFFFF", Fill: "#B0141414", FontSize: Math.Round(h / 15.0)), "Text"),
+            AnnotationShape.Text => (new AnnotationKeyframe(0, w * 0.38, h * 0.42, 0, 0), new AnnotationLook(Color: "#FFFFFF", Fill: "#B0141414", FontSize: Math.Round(h / 15.0)), VideoEditorStrings.DefaultAnnotationText),
             AnnotationShape.Arrow or AnnotationShape.Line => (new AnnotationKeyframe(0, w * 0.36, h * 0.62, w * 0.14, -h * 0.18), new AnnotationLook(StrokeWidth: line), ""),
             AnnotationShape.Highlight => (new AnnotationKeyframe(0, w * 0.35, h * 0.46, w * 0.3, h * 0.08), new AnnotationLook(Color: "#FFF100"), ""),
             AnnotationShape.Blur or AnnotationShape.Pixelate => (new AnnotationKeyframe(0, w * 0.375, h * 0.425, w * 0.25, h * 0.15), new AnnotationLook(Strength: Math.Max(4, Math.Round(h / 50.0))), ""),
@@ -48,7 +49,7 @@ public static class AnnotationEdits
         }
 
         var count = project.Tracks.Count(t => t.Kind == TrackKind.Annotation);
-        var track = new Track(Ids.New(), TrackKind.Annotation, count == 0 ? "Annotations" : $"Annotations {count + 1}", [item]);
+        var track = new Track(Ids.New(), TrackKind.Annotation, count == 0 ? VideoEditorStrings.TrackAnnotations : VideoEditorStrings.TrackAnnotationsNumbered(count + 1), [item]);
         return (project with { Tracks = [.. project.Tracks, track] }, item.Id);
     }
 
@@ -67,7 +68,7 @@ public static class AnnotationEdits
         }
 
         var count = project.Tracks.Count(t => t.Kind == TrackKind.Effect);
-        var track = new Track(Ids.New(), TrackKind.Effect, count == 0 ? "Effects" : $"Effects {count + 1}", [item]);
+        var track = new Track(Ids.New(), TrackKind.Effect, count == 0 ? VideoEditorStrings.TrackEffects : VideoEditorStrings.TrackEffectsNumbered(count + 1), [item]);
         return (project with { Tracks = [.. project.Tracks, track] }, item.Id);
     }
 

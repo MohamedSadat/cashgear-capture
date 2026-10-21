@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CashGear.Capture.VideoEditor.Model;
 
 namespace CashGear.Capture.VideoEditor.Editing;
@@ -24,7 +25,7 @@ public interface IMergeableProjectCommand : IProjectCommand
 /// Any edit: the project before and after it (projects are immutable, so this is all undo needs). Changes with the
 /// same non-null merge key merge into one undo step.
 /// </summary>
-public sealed class ProjectChange(string name, VideoProject before, VideoProject after, string? mergeKey = null) : IMergeableProjectCommand
+public sealed class ProjectChange(string name, VideoProject before, VideoProject after, [Localizable(false)] string? mergeKey = null) : IMergeableProjectCommand
 {
     public string Name { get; } = name;
 
@@ -96,8 +97,11 @@ public sealed class ProjectHistory(VideoProject project)
         OnChanged();
     }
 
-    /// <summary>Records an edit that made <paramref name="after"/> from the current project; nothing when it changed nothing.</summary>
-    public void Apply(string name, VideoProject after, string? mergeKey = null)
+    /// <summary>
+    /// Records an edit that made <paramref name="after"/> from the current project; nothing when it changed nothing.
+    /// <paramref name="name"/> is shown after Undo and Redo; <paramref name="mergeKey"/> only matches edits up, so it isn't translated.
+    /// </summary>
+    public void Apply(string name, VideoProject after, [Localizable(false)] string? mergeKey = null)
     {
         ArgumentNullException.ThrowIfNull(after);
         if (ReferenceEquals(after, Project))

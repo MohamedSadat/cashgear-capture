@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using Microsoft.Extensions.Logging;
 using SkiaSharp;
@@ -110,7 +111,7 @@ internal sealed partial class PreviewHost : Border
         Child = _surface;
         if (_viewModel is not null)
         {
-            _viewModel.PreviewBackend = UsesGpu ? "preview on the graphics card" : "preview in memory";
+            _viewModel.PreviewBackend = UsesGpu ? VideoEditorText.PreviewOnGpu : VideoEditorText.PreviewInMemory;
         }
 
         Invalidate();

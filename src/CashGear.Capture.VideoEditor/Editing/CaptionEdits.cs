@@ -1,6 +1,7 @@
 using CashGear.Capture.Core.Transcripts;
 using CashGear.Capture.VideoEditor.Export;
 using CashGear.Capture.VideoEditor.Model;
+using CashGear.Capture.VideoEditor.Resources;
 
 namespace CashGear.Capture.VideoEditor.Editing;
 
@@ -112,11 +113,14 @@ public static class CaptionEdits
         })];
     }
 
-    /// <summary>A caption track named <paramref name="name"/> with <paramref name="captions"/>, on top of the others.</summary>
-    public static (VideoProject Project, string TrackId) AddTrack(VideoProject project, IEnumerable<CaptionItem> captions, string name = "Captions")
+    /// <summary>
+    /// A caption track named <paramref name="name"/> (null: "Captions" in the UI language) with <paramref name="captions"/>,
+    /// on top of the others.
+    /// </summary>
+    public static (VideoProject Project, string TrackId) AddTrack(VideoProject project, IEnumerable<CaptionItem> captions, string? name = null)
     {
         ArgumentNullException.ThrowIfNull(project);
-        var track = new Track(Ids.New(), TrackKind.Caption, name, []).WithItems(captions);
+        var track = new Track(Ids.New(), TrackKind.Caption, name ?? VideoEditorStrings.TrackCaptions, []).WithItems(captions);
         return (project with { Tracks = [.. project.Tracks, track] }, track.Id);
     }
 

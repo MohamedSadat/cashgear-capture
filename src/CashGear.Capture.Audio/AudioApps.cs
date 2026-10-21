@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using CashGear.Capture.Core.Recording;
@@ -15,6 +16,7 @@ namespace CashGear.Capture.Audio;
 internal sealed partial class AudioApps(ILogger<AudioApps> logger) : IAudioApps
 {
     /// <summary>Programs that are part of Windows or this app, never worth recording by themselves.</summary>
+    [Localizable(false)] // process names, as Windows gives them
     private static readonly HashSet<string> Ignored = new(StringComparer.OrdinalIgnoreCase)
     {
         "explorer.exe", "searchapp.exe", "searchhost.exe", "shellexperiencehost.exe", "startmenuexperiencehost.exe",

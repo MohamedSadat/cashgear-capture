@@ -3,6 +3,7 @@ using System.Windows;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Licensing;
@@ -31,7 +32,7 @@ public interface IVideoEditorLauncher
 /// </summary>
 public sealed partial class VideoEditorWindows : IVideoEditorLauncher
 {
-    public const string MediaFilter = "Recordings and projects (*.mp4;*.mkv;*.mov;*.webm;*.cgcap)|*.mp4;*.mkv;*.mov;*.webm;*.cgcap|Projects (*.cgcap)|*.cgcap|All files (*.*)|*.*";
+    public static string MediaFilter => VideoEditorText.MediaFilter;
 
     private readonly List<VideoEditorWindow> _windows = [];
     private readonly IUiDispatcher _ui;
@@ -80,7 +81,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         ArgumentException.ThrowIfNullOrEmpty(path);
         if (_runtime.Problem is { } problem)
         {
-            _notifier.Notify("The video editor can't start", problem, NotificationKind.Error);
+            _notifier.Notify(VideoEditorText.CantStart, problem, NotificationKind.Error);
             return;
         }
 
@@ -108,7 +109,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
                 var project = ProjectFactory.FromRecording(asset);
                 if (project.Duration <= 0)
                 {
-                    _notifier.Notify("The video editor", $"{Path.GetFileName(path)} has nothing to edit.", NotificationKind.Warning);
+                    _notifier.Notify(VideoEditorText.VideoEditor, VideoEditorText.NothingToEdit(Path.GetFileName(path)), NotificationKind.Warning);
                     return;
                 }
 
@@ -118,7 +119,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         catch (Exception e) when (e is FfmpegException or IOException or UnauthorizedAccessException or InvalidDataException)
         {
             LogOpenFailed(e, path);
-            _notifier.Notify("The video editor can't open it", $"{Path.GetFileName(path)}: {e.Message}", NotificationKind.Error);
+            _notifier.Notify(VideoEditorText.CantOpenIt, $"{Path.GetFileName(path)}: {e.Message}", NotificationKind.Error);
         }
     }
 
@@ -130,7 +131,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         {
             var dialog = new OpenFileDialog
             {
-                Title = "Open in the video editor",
+                Title = VideoEditorText.OpenInVideoEditor,
                 Filter = MediaFilter,
                 InitialDirectory = Directory.Exists(folder) ? folder : null,
                 CheckFileExists = true,
@@ -186,8 +187,8 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
     {
         var dialog = new OpenFileDialog
         {
-            Title = $"Where is {missing.Name}?",
-            Filter = $"{missing.Name}|{missing.Name}|Videos and sound (*.mp4;*.mkv;*.mov;*.webm;*.mp3;*.m4a;*.wav;*.ogg)|*.mp4;*.mkv;*.mov;*.webm;*.mp3;*.m4a;*.wav;*.ogg|All files (*.*)|*.*",
+            Title = VideoEditorText.WhereIs(missing.Name),
+            Filter = VideoEditorText.LocateFilter(missing.Name),
             CheckFileExists = true,
         };
         return dialog.ShowDialog() == true ? dialog.FileName : null;
@@ -202,14 +203,12 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
     /// <summary>The window's dialogs (made after the window, which needs the view model that needs them).</summary>
     private sealed class WindowDialogs(Func<Window> owner, AppTheme theme) : IVideoEditorDialogs
     {
-        private const string Caption = "CashGear Capture — Video Editor";
-
         public string? AskProjectPath(string suggestedName, string? folder)
         {
             var dialog = new SaveFileDialog
             {
-                Title = "Save the project",
-                Filter = "Video projects (*.cgcap)|*.cgcap",
+                Title = VideoEditorText.SaveProjectTitle,
+                Filter = VideoEditorText.ProjectFilter,
                 FileName = suggestedName + ProjectFile.Extension,
                 InitialDirectory = folder is not null && Directory.Exists(folder) ? folder : null,
                 AddExtension = true,
@@ -231,15 +230,15 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         }
 
         public SaveChangesChoice AskSaveChanges(string name) =>
-            MessageBox.Show(owner(), $"Save the changes to {name}?", Caption, MessageBoxButton.YesNoCancel, MessageBoxImage.Question) switch
+            AppDialog.Show(owner(), VideoEditorText.SaveChangesTo(name), VideoEditorText.DialogTitle, DialogButtons.YesNoCancel, DialogKind.Question, theme) switch
             {
-                MessageBoxResult.Yes => SaveChangesChoice.Save,
-                MessageBoxResult.No => SaveChangesChoice.Discard,
+                DialogAnswer.Yes => SaveChangesChoice.Save,
+                DialogAnswer.No => SaveChangesChoice.Discard,
                 _ => SaveChangesChoice.Cancel,
             };
 
         public void ShowError(string message) =>
-            MessageBox.Show(owner(), message, Caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+            AppDialog.Show(owner(), message, VideoEditorText.DialogTitle, DialogButtons.Ok, DialogKind.Warning, theme);
 
         public void ShowExport(ExportViewModel viewModel) =>
             new ExportWindow(viewModel, theme) { Owner = owner() }.ShowDialog();
@@ -268,7 +267,7 @@ internal sealed class VideoEditorDestination(IVideoEditorLauncher launcher) : IO
 {
     public string Id => DestinationIds.VideoEditor;
 
-    public string DisplayName => "Open in the video editor";
+    public string DisplayName => VideoEditorText.OpenInVideoEditor;
 
     public bool SupportsVideo => true;
 
@@ -277,12 +276,12 @@ internal sealed class VideoEditorDestination(IVideoEditorLauncher launcher) : IO
         ArgumentNullException.ThrowIfNull(item);
         if (item.Kind != OutputKind.Video || item.SavedPath is not { } path)
         {
-            return OutputResult.Skip("The video editor takes recordings only.");
+            return OutputResult.Skip(VideoEditorText.TakesRecordingsOnly);
         }
 
         await launcher.OpenAsync(path, ct).ConfigureAwait(false);
-        return OutputResult.Done("Opened in the video editor");
+        return OutputResult.Done(VideoEditorText.OpenedInVideoEditor);
     }
 
-    public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done("Nothing to set up."));
+    public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done(VideoEditorText.NothingToSetUp));
 }

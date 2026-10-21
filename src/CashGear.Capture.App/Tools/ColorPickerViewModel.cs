@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Media;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
@@ -52,10 +53,10 @@ public sealed partial class ColorPickerViewModel : ObservableObject
         PickCommand = new AsyncRelayCommand(pick);
         Formats =
         [
-            new ColorText(ColorFormat.Hex, "HEX", CopyAsync),
-            new ColorText(ColorFormat.Rgb, "RGB", CopyAsync),
-            new ColorText(ColorFormat.Hsl, "HSL", CopyAsync),
-            new ColorText(ColorFormat.CSharp, "C#", CopyAsync),
+            new ColorText(ColorFormat.Hex, ToolsText.FormatHex, CopyAsync),
+            new ColorText(ColorFormat.Rgb, ToolsText.FormatRgb, CopyAsync),
+            new ColorText(ColorFormat.Hsl, ToolsText.FormatHsl, CopyAsync),
+            new ColorText(ColorFormat.CSharp, ToolsText.FormatCSharp, CopyAsync),
         ];
 
         foreach (var hex in state.Current.Colors ?? [])
@@ -139,7 +140,7 @@ public sealed partial class ColorPickerViewModel : ObservableObject
     {
         var text = ColorFormats.Format(format, _color.R, _color.G, _color.B);
         await _output.CopyTextToClipboardAsync(text);
-        await _ui.InvokeAsync(() => Status = $"Copied {text}");
+        await _ui.InvokeAsync(() => Status = ToolsText.Copied(text));
     }
 
     private void Refresh()

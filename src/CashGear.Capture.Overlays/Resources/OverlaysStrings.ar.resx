@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NoWebcam" xml:space="preserve">
+    <value>لا توجد كاميرا ويب متصلة، لذا لا يتضمن التسجيل كاميرا ويب.</value>
+  </data>
+  <data name="ChosenWebcamMissing" xml:space="preserve">
+    <value>كاميرا الويب المحددة في الإعدادات غير متصلة، لذا لا يتضمن التسجيل كاميرا ويب.</value>
+  </data>
+  <data name="WebcamNoColour" xml:space="preserve">
+    <value>لا تقدّم {0} صورًا ملونة، لذا لا يتضمن التسجيل كاميرا ويب.</value>
+  </data>
+  <data name="CameraNotAllowed" xml:space="preserve">
+    <value>لا يسمح Windows للتطبيقات باستخدام الكاميرا (الإعدادات › الخصوصية › الكاميرا)، لذا لا يتضمن التسجيل كاميرا ويب.</value>
+  </data>
+  <data name="WebcamNotOpened" xml:space="preserve">
+    <value>تعذر فتح {0} ({1})، لذا لا يتضمن التسجيل كاميرا ويب.</value>
+  </data>
+  <data name="WebcamNotStarted" xml:space="preserve">
+    <value>لم تبدأ {0} ({1}).</value>
+  </data>
+  <data name="InputHooksRefused" xml:space="preserve">
+    <value>رفض Windows خطافات الإدخال: {0}</value>
+  </data>
+</root>

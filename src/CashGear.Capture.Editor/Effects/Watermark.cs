@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using CashGear.Capture.Editor.Imaging;
 using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Editor.Rendering;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Effects;
@@ -18,11 +20,13 @@ public enum WatermarkKind
 /// the whole image (<see cref="Tile"/>, <see cref="Spacing"/> pixels apart), turned by <see cref="Rotation"/>
 /// degrees, at <see cref="Opacity"/> percent. A light shadow keeps it readable on any background.
 /// </summary>
+/// <param name="Text">The text; null for <see cref="DefaultText"/>, in the UI language.</param>
+/// <param name="FontFamily">A font's name, which is never translated.</param>
 /// <param name="Scale">An image watermark's size, in percent of the picture file's own size.</param>
 public sealed record Watermark(
     WatermarkKind Kind = WatermarkKind.Text,
-    string Text = Watermark.DefaultText,
-    string FontFamily = AnnotationStyle.DefaultFontFamily,
+    string? Text = null,
+    [Localizable(false)] string FontFamily = AnnotationStyle.DefaultFontFamily,
     int FontSize = 36,
     bool Bold = true,
     SKColor? Color = null,
@@ -36,13 +40,17 @@ public sealed record Watermark(
     int Spacing = 80,
     bool Shadow = true)
 {
-    public const string DefaultText = "© CashGear Capture";
     public const int MinFontSize = 6;
     public const int MaxFontSize = 400;
     public const int MaxScale = 1000;
     public const int MaxMargin = 2000;
 
     private static readonly ConcurrentDictionary<(string Path, DateTime Written), SKImage> Pictures = new();
+
+    /// <summary>A new text watermark's text ("© CashGear Capture"), in the UI language; saved watermarks keep theirs.</summary>
+    public static string DefaultText => EditorStrings.DefaultWatermarkText;
+
+    public string Text { get; init; } = Text ?? DefaultText;
 
     public SKColor TextColor => Color ?? SKColors.White;
 
@@ -155,7 +163,7 @@ public sealed record Watermark(
     /// <summary>The picture file, decoded once per version of the file (batches stamp it on every image).</summary>
     private SKImage LoadPicture()
     {
-        var path = ImagePath ?? throw new InvalidOperationException("No picture is chosen for the watermark.");
+        var path = ImagePath ?? throw new InvalidOperationException(EditorStrings.WatermarkNoPicture);
         DateTime written;
         try
         {
@@ -163,18 +171,18 @@ public sealed record Watermark(
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            throw new InvalidOperationException($"The watermark picture {Path.GetFileName(path)} can't be read: {ex.Message}", ex);
+            throw new InvalidOperationException(EditorStrings.WatermarkPictureUnreadableBecause(Path.GetFileName(path), ex.Message), ex);
         }
 
         if (!File.Exists(path))
         {
-            throw new InvalidOperationException($"The watermark picture {path} isn't there any more.");
+            throw new InvalidOperationException(EditorStrings.WatermarkPictureGone(path));
         }
 
         return Pictures.GetOrAdd((path, written), key =>
         {
-            using var data = SKData.Create(key.Path) ?? throw new InvalidOperationException($"The watermark picture {Path.GetFileName(key.Path)} can't be read.");
-            var image = SKImage.FromEncodedData(data) ?? throw new InvalidOperationException($"{Path.GetFileName(key.Path)} isn't a picture this app can read (PNG, JPEG, BMP, GIF or WebP).");
+            using var data = SKData.Create(key.Path) ?? throw new InvalidOperationException(EditorStrings.WatermarkPictureUnreadable(Path.GetFileName(key.Path)));
+            var image = SKImage.FromEncodedData(data) ?? throw new InvalidOperationException(EditorStrings.WatermarkNotAPicture(Path.GetFileName(key.Path)));
             return image.ToRasterImage(ensurePixelData: true) is { } raster && !ReferenceEquals(raster, image) ? Keep(raster, image) : image;
         });
     }
@@ -189,7 +197,7 @@ public sealed record Watermark(
 /// <summary>Stamps a <see cref="Watermark"/> on the image.</summary>
 public sealed record WatermarkEffect(Watermark Watermark) : ImageEffect
 {
-    public override string Name => "watermark";
+    public override string Name => EditorStrings.EffectWatermark;
 
     public override EffectOutput Apply(SKImage source) => new(Watermark.Apply(source), default);
 

@@ -120,6 +120,37 @@ public sealed class CrashReporterTests : IDisposable
     }
 
     [Fact]
+    public void Paths_of_an_installed_copy_in_the_user_folder_are_taken_out_of_modules_and_threads()
+    {
+        const string Profile = @"C:\Users\Ada.Lovelace";
+        const string Installed = Profile + @"\AppData\Local\CashGear.Capture\current\CashGear.Capture.App.dll";
+        var report = new Sentry.SentryEvent(new InvalidOperationException("Could not open " + Profile + @"\Videos\a.mp4"))
+        {
+            DebugImages = [new Sentry.Protocol.DebugImage { CodeFile = Installed, DebugFile = Installed.Replace(".dll", ".pdb", StringComparison.Ordinal) }],
+            SentryThreads =
+            [
+                new Sentry.SentryThread
+                {
+                    Stacktrace = new Sentry.SentryStackTrace
+                    {
+                        Frames = [new Sentry.SentryStackFrame { FileName = Installed, AbsolutePath = Installed, Module = "CashGear.Capture.App" }],
+                    },
+                },
+            ],
+        };
+
+        var scrubbed = CrashReporter.Scrub(report, Profile);
+
+        var image = scrubbed.DebugImages!.Single();
+        image.CodeFile.Should().Be(@"%USERPROFILE%\AppData\Local\CashGear.Capture\current\CashGear.Capture.App.dll");
+        image.DebugFile.Should().StartWith("%USERPROFILE%");
+        var frame = scrubbed.SentryThreads!.Single().Stacktrace!.Frames.Single();
+        frame.FileName.Should().StartWith("%USERPROFILE%");
+        frame.AbsolutePath.Should().StartWith("%USERPROFILE%");
+        scrubbed.User.Username.Should().BeNull();
+    }
+
+    [Fact]
     public void An_address_in_settings_wins_and_a_bad_one_turns_reports_off()
     {
         _settings.Current = new AppSettings { CrashReports = new CrashReportSettings(Send: true, Dsn: "not a dsn") };

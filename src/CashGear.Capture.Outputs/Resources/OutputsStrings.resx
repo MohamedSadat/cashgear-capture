@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="StepFailed" xml:space="preserve">
+    <value>{0} failed: {1}</value>
+    <comment>a line of the workflow's summary; {0} is a destination's name, {1} what went wrong</comment>
+  </data>
+  <data name="DestinationGone" xml:space="preserve">
+    <value>"{0}" isn't set up any more (Settings › Destinations).</value>
+    <comment>{0} is a destination's id</comment>
+  </data>
+  <data name="NoRecordings" xml:space="preserve">
+    <value>{0} doesn't take recordings.</value>
+    <comment>{0} is a destination's name</comment>
+  </data>
+  <data name="NotSetUp" xml:space="preserve">
+    <value>{0} (not set up)</value>
+    <comment>a workflow step whose destination is gone; {0} is its id</comment>
+  </data>
+  <data name="OpenWith" xml:space="preserve">
+    <value>Open with {0}</value>
+    <comment>a destination's name; {0} is a program</comment>
+  </data>
+  <data name="OpenedWith" xml:space="preserve">
+    <value>Opened with {0}</value>
+    <comment>{0} is a program</comment>
+  </data>
+  <data name="ProgramGoneSettings" xml:space="preserve">
+    <value>{0} isn't there (Settings › Destinations).</value>
+    <comment>{0} is a program's path</comment>
+  </data>
+  <data name="ProgramGone" xml:space="preserve">
+    <value>{0} isn't there.</value>
+    <comment>{0} is a program's path</comment>
+  </data>
+  <data name="ProgramNotStarted" xml:space="preserve">
+    <value>{0} couldn't be started: {1}</value>
+    <comment>{0} is a program's file name, {1} the reason from Windows</comment>
+  </data>
+  <data name="ProgramFound" xml:space="preserve">
+    <value>Found {0}. It will be started as: {1} {2}</value>
+    <comment>{0} is a program's path, {1} {2} its command line</comment>
+  </data>
+  <data name="ChooseProgram" xml:space="preserve">
+    <value>Choose the program.</value>
+  </data>
+  <data name="CopyLink" xml:space="preserve">
+    <value>Copy the link</value>
+    <comment>a destination's name</comment>
+  </data>
+  <data name="NoLinkToCopy" xml:space="preserve">
+    <value>No link to copy (put an upload before Copy the link).</value>
+  </data>
+  <data name="LinksCopied_one" xml:space="preserve">
+    <value>Link copied to the clipboard</value>
+  </data>
+  <data name="LinksCopied_other" xml:space="preserve">
+    <value>{0} links copied to the clipboard</value>
+  </data>
+  <data name="NothingToSetUp" xml:space="preserve">
+    <value>Nothing to set up.</value>
+  </data>
+  <data name="HttpUpload" xml:space="preserve">
+    <value>HTTP upload</value>
+    <comment>the name of an upload destination without an address</comment>
+  </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>Uploaded</value>
+  </data>
+  <data name="UploadedTo" xml:space="preserve">
+    <value>Uploaded to {0}: {1}</value>
+    <comment>{0} is a destination's name, {1} the link</comment>
+  </data>
+  <data name="TestPictureUploaded" xml:space="preserve">
+    <value>Uploaded a 1 × 1 test picture; the link is {0}</value>
+    <comment>{0} is the link</comment>
+  </data>
+  <data name="AddressNotHttp" xml:space="preserve">
+    <value>The address must start with https:// (or http://).</value>
+  </data>
+  <data name="BadHeader" xml:space="preserve">
+    <value>"{0}" can't be sent as a header.</value>
+    <comment>{0} is an HTTP header's name</comment>
+  </data>
+  <data name="NoHeaderValue" xml:space="preserve">
+    <value>No value is saved for the {0} header (Settings › Destinations).</value>
+    <comment>{0} is an HTTP header's name</comment>
+  </data>
+  <data name="CouldNotReach" xml:space="preserve">
+    <value>Couldn't reach {0}: {1}</value>
+    <comment>{0} is a server, {1} the reason from .NET</comment>
+  </data>
+  <data name="NoAnswer_one" xml:space="preserve">
+    <value>{1} didn't answer within {0} minute.</value>
+    <comment>{1} is a server</comment>
+  </data>
+  <data name="NoAnswer_other" xml:space="preserve">
+    <value>{1} didn't answer within {0} minutes.</value>
+    <comment>{1} is a server</comment>
+  </data>
+  <data name="ServerAnswered" xml:space="preserve">
+    <value>{0} answered {1} {2}: {3}</value>
+    <comment>{0} is a server, {1} {2} the HTTP status (404 Not Found), {3} the start of its reply</comment>
+  </data>
+  <data name="LinkNotInReply" xml:space="preserve">
+    <value>The link isn't in the reply. {0}</value>
+    <comment>{0} says why (a sentence)</comment>
+  </data>
+  <data name="ReplyNotLink" xml:space="preserve">
+    <value>The reply isn't a link (set where the link is in Settings › Destinations): {0}</value>
+    <comment>{0} is the start of the reply</comment>
+  </data>
+  <data name="NotWebAddress" xml:space="preserve">
+    <value>{0} isn't a web address: {1}</value>
+    <comment>{0} is where the link is in the reply (data.link), {1} what was there</comment>
+  </data>
+  <data name="PathBadIndex" xml:space="preserve">
+    <value>"{0}" has a [ without a number and ] after it.</value>
+    <comment>{0} is where the link is in an upload's reply (data.files[0].url)</comment>
+  </data>
+  <data name="PathEndsWithDot" xml:space="preserve">
+    <value>"{0}" ends with a dot.</value>
+    <comment>{0} is where the link is in an upload's reply</comment>
+  </data>
+  <data name="PathEmptyName" xml:space="preserve">
+    <value>"{0}" has an empty name (two dots, or a dot at the start or end).</value>
+    <comment>{0} is where the link is in an upload's reply</comment>
+  </data>
+  <data name="ReplyNotJson" xml:space="preserve">
+    <value>The reply isn't JSON: {0}</value>
+    <comment>{0} is the start of the reply</comment>
+  </data>
+  <data name="ReplyNotList" xml:space="preserve">
+    <value>The reply isn't a list.</value>
+  </data>
+  <data name="PathNotList" xml:space="preserve">
+    <value>"{0}" isn't a list.</value>
+    <comment>{0} is a place in the reply (data.files)</comment>
+  </data>
+  <data name="ReplyTooShort" xml:space="preserve">
+    <value>The reply has {0} item(s), so there is no [{1}].</value>
+    <comment>{0} is a number of items, {1} the index asked for</comment>
+  </data>
+  <data name="PathTooShort" xml:space="preserve">
+    <value>"{0}" has {1} item(s), so there is no [{2}].</value>
+    <comment>{0} is a place in the reply (data.files), {1} a number of items, {2} the index asked for</comment>
+  </data>
+  <data name="ReplyHasNo" xml:space="preserve">
+    <value>The reply has no "{0}": {1}</value>
+    <comment>{0} is a name, {1} the start of the reply</comment>
+  </data>
+  <data name="PathHasNo" xml:space="preserve">
+    <value>"{0}" has no "{1}".</value>
+    <comment>{0} is a place in the reply (data), {1} a name</comment>
+  </data>
+  <data name="ReplyNotText" xml:space="preserve">
+    <value>The reply isn't text but {0}.</value>
+    <comment>{0} is JsonObject, JsonList, JsonBoolean or JsonNull</comment>
+  </data>
+  <data name="PathNotText" xml:space="preserve">
+    <value>"{0}" isn't text but {1}.</value>
+    <comment>{0} is a place in the reply (data), {1} JsonObject, JsonList, JsonBoolean or JsonNull</comment>
+  </data>
+  <data name="JsonObject" xml:space="preserve">
+    <value>an object</value>
+    <comment>in ReplyNotText and PathNotText</comment>
+  </data>
+  <data name="JsonList" xml:space="preserve">
+    <value>a list</value>
+    <comment>in ReplyNotText and PathNotText</comment>
+  </data>
+  <data name="JsonBoolean" xml:space="preserve">
+    <value>true or false</value>
+    <comment>in ReplyNotText and PathNotText: JSON's words, kept</comment>
+  </data>
+  <data name="JsonNull" xml:space="preserve">
+    <value>null</value>
+    <comment>in ReplyNotText and PathNotText: JSON's word, kept</comment>
+  </data>
+  <data name="ChooseOfficeFile" xml:space="preserve">
+    <value>Choose the {0} file to add captures to (Settings › Destinations).</value>
+    <comment>{0} is Word or PowerPoint</comment>
+  </data>
+  <data name="FileGone" xml:space="preserve">
+    <value>{0} isn't there any more ({1}).</value>
+    <comment>{0} is a file name, {1} its folder</comment>
+  </data>
+  <data name="NewFileEachCapture" xml:space="preserve">
+    <value>A new file is made for each capture in {0}.</value>
+    <comment>{0} is a folder</comment>
+  </data>
+  <data name="CantWriteTo" xml:space="preserve">
+    <value>Can't write to {0}: {1}</value>
+    <comment>{0} is a folder, {1} the reason from Windows</comment>
+  </data>
+  <data name="FileOpenInApp" xml:space="preserve">
+    <value>{0} is open in {1} (or another app); close it there first.</value>
+    <comment>{0} is a file name, {1} Word or PowerPoint</comment>
+  </data>
+  <data name="FileReadOnly" xml:space="preserve">
+    <value>{0} can't be changed (it is read-only, or not yours).</value>
+    <comment>{0} is a file name</comment>
+  </data>
+  <data name="NotAppendable" xml:space="preserve">
+    <value>{0} isn't a {1} file that can be added to ({2}).</value>
+    <comment>{0} is a file name, {1} Word or PowerPoint, {2} the reason</comment>
+  </data>
+  <data name="NoSlidesPart" xml:space="preserve">
+    <value>It has no slides part.</value>
+    <comment>why a presentation can't be added to</comment>
+  </data>
+  <data name="NoPresentation" xml:space="preserve">
+    <value>It has no presentation.</value>
+    <comment>why a presentation can't be added to</comment>
+  </data>
+  <data name="NoSlideLayouts" xml:space="preserve">
+    <value>It has no slide layouts.</value>
+    <comment>why a presentation can't be added to</comment>
+  </data>
+  <data name="PutIn" xml:space="preserve">
+    <value>Put in {0}</value>
+    <comment>the capture went into a new file; {0} is its name</comment>
+  </data>
+  <data name="WordDocument" xml:space="preserve">
+    <value>Word document</value>
+    <comment>a destination's name</comment>
+  </data>
+  <data name="AddTo" xml:space="preserve">
+    <value>Add to {0}</value>
+    <comment>a destination's name; {0} is a Word document's file name</comment>
+  </data>
+  <data name="AddedTo" xml:space="preserve">
+    <value>Added to {0}</value>
+    <comment>{0} is a Word document's file name</comment>
+  </data>
+  <data name="WordPicturesOnly" xml:space="preserve">
+    <value>Word takes pictures only.</value>
+  </data>
+  <data name="AddedAtEnd" xml:space="preserve">
+    <value>Captures will be added at the end of {0}.</value>
+    <comment>{0} is a Word document's file name</comment>
+  </data>
+  <data name="PictureName" xml:space="preserve">
+    <value>Capture {0}</value>
+    <comment>the name of a picture in a Word document; {0} is its number</comment>
+  </data>
+  <data name="PowerPointSlide" xml:space="preserve">
+    <value>PowerPoint slide</value>
+    <comment>a destination's name</comment>
+  </data>
+  <data name="AddSlideTo" xml:space="preserve">
+    <value>Add a slide to {0}</value>
+    <comment>a destination's name; {0} is a presentation's file name</comment>
+  </data>
+  <data name="AddedSlideTo" xml:space="preserve">
+    <value>Added a slide to {0}</value>
+    <comment>{0} is a presentation's file name</comment>
+  </data>
+  <data name="PowerPointPicturesOnly" xml:space="preserve">
+    <value>PowerPoint takes pictures only.</value>
+  </data>
+  <data name="SlidesAddedAtEnd" xml:space="preserve">
+    <value>Captures will be added as slides at the end of {0}.</value>
+    <comment>{0} is a presentation's file name</comment>
+  </data>
+  <data name="Pdf" xml:space="preserve">
+    <value>PDF</value>
+    <comment>a destination's name</comment>
+  </data>
+  <data name="PdfPicturesOnly" xml:space="preserve">
+    <value>A PDF takes pictures only.</value>
+  </data>
+  <data name="PdfNotSaved" xml:space="preserve">
+    <value>Could not save the PDF: {0}</value>
+    <comment>{0} is the reason from Windows</comment>
+  </data>
+  <data name="PdfNotSavedNamed" xml:space="preserve">
+    <value>Could not save the PDF {0}: {1}</value>
+    <comment>{0} is a file name, {1} the reason from Windows</comment>
+  </data>
+  <data name="SavedFile" xml:space="preserve">
+    <value>Saved {0}</value>
+    <comment>{0} is a file name</comment>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>Server</value>
+    <comment>the name of a server destination without a name or address</comment>
+  </data>
+  <data name="LoginFolder" xml:space="preserve">
+    <value>the login folder</value>
+    <comment>in LoggedInCantWrite, FtpTestPlain, FtpTestTls and SftpTest</comment>
+  </data>
+  <data name="UploadedAs" xml:space="preserve">
+    <value>Uploaded to {0} as {1}</value>
+    <comment>{0} is a server's name, {1} the file's name there</comment>
+  </data>
+  <data name="FileNotTaken" xml:space="preserve">
+    <value>{0} didn't take the file.</value>
+    <comment>{0} is a server's name</comment>
+  </data>
+  <data name="LoggedInCantWrite" xml:space="preserve">
+    <value>Logged in, but couldn't write to {0}.</value>
+    <comment>{0} is a folder on the server, or LoginFolder</comment>
+  </data>
+  <data name="FtpTestPlain" xml:space="preserve">
+    <value>Connected to {0} as {1}, not encrypted; a test file was written to {2} and deleted.</value>
+    <comment>{0} is a server, {1} a user name, {2} a folder on the server or LoginFolder</comment>
+  </data>
+  <data name="FtpTestTls" xml:space="preserve">
+    <value>Connected to {0} as {1}, encrypted with TLS; a test file was written to {2} and deleted.</value>
+    <comment>{0} is a server, {1} a user name, {2} a folder on the server or LoginFolder</comment>
+  </data>
+  <data name="SftpTest" xml:space="preserve">
+    <value>Connected to {0} as {1} (server key {2}); a test file was written to {3} and deleted.</value>
+    <comment>{0} is a server, {1} a user name, {2} the server key's fingerprint, {3} a folder on the server or LoginFolder</comment>
+  </data>
+  <data name="CertificateNotTrusted" xml:space="preserve">
+    <value>Windows doesn't trust {0}'s certificate ({1}). Its fingerprint is {2}; trust it only if the server's owner confirms it.</value>
+    <comment>{0} is a server, {1} why (CertificateWrongName…), {2} the fingerprint</comment>
+  </data>
+  <data name="CertificateChanged" xml:space="preserve">
+    <value>{0}'s certificate has changed: it is now {1}, not the one you trusted. Someone may be in between; check with the server's owner.</value>
+    <comment>{0} is a server, {1} the new fingerprint</comment>
+  </data>
+  <data name="CertificateWrongNameAndAuthority" xml:space="preserve">
+    <value>it is for another name and isn't from a known authority</value>
+    <comment>in CertificateNotTrusted</comment>
+  </data>
+  <data name="CertificateWrongName" xml:space="preserve">
+    <value>it is for another name</value>
+    <comment>in CertificateNotTrusted</comment>
+  </data>
+  <data name="CertificateUnknownAuthority" xml:space="preserve">
+    <value>it isn't from a known authority, e.g. self-signed</value>
+    <comment>in CertificateNotTrusted</comment>
+  </data>
+  <data name="NoCertificate" xml:space="preserve">
+    <value>no certificate</value>
+    <comment>in CertificateNotTrusted</comment>
+  </data>
+  <data name="FtpLoginRefused" xml:space="preserve">
+    <value>{0} refused the user name or password ({1}).</value>
+    <comment>{0} is a server, {1} what it said (English)</comment>
+  </data>
+  <data name="NoTls" xml:space="preserve">
+    <value>{0} doesn't offer encryption (TLS); choose plain FTP only if that is acceptable.</value>
+    <comment>{0} is a server</comment>
+  </data>
+  <data name="ServerSaid" xml:space="preserve">
+    <value>{0} said: {1}</value>
+    <comment>{0} is a server, {1} what it said (English)</comment>
+  </data>
+  <data name="TlsFailed" xml:space="preserve">
+    <value>The encrypted connection to {0} failed: {1}</value>
+    <comment>{0} is a server, {1} the reason from .NET</comment>
+  </data>
+  <data name="CouldNotReachPort" xml:space="preserve">
+    <value>Couldn't reach {0}:{1}: {2}</value>
+    <comment>{0}:{1} is a server and port, {2} the reason</comment>
+  </data>
+  <data name="SftpNeedsUserName" xml:space="preserve">
+    <value>SFTP needs a user name.</value>
+  </data>
+  <data name="KeyNeedsPassphrase" xml:space="preserve">
+    <value>The key {0} is protected by a passphrase; enter it in Settings › Destinations.</value>
+    <comment>{0} is a key file's name</comment>
+  </data>
+  <data name="KeyFileUnusable" xml:space="preserve">
+    <value>The key file {0} can't be used: {1}</value>
+    <comment>{0} is a key file's name, {1} the reason (English)</comment>
+  </data>
+  <data name="KeyFileUnusablePassphrase" xml:space="preserve">
+    <value>The key file {0} can't be used (is the passphrase right?): {1}</value>
+    <comment>{0} is a key file's name, {1} the reason (English)</comment>
+  </data>
+  <data name="NoPasswordOrKey" xml:space="preserve">
+    <value>Enter a password or choose a key file for this server.</value>
+  </data>
+  <data name="HostKeyNotTrusted" xml:space="preserve">
+    <value>{0}'s key isn't trusted yet. Its fingerprint is {1}; trust it only if it is the one the server's owner gives.</value>
+    <comment>{0} is a server, {1} the fingerprint</comment>
+  </data>
+  <data name="HostKeyChanged" xml:space="preserve">
+    <value>{0}'s key has changed: it is now {1}, not the one you trusted. Someone may be in between; check with the server's owner.</value>
+    <comment>{0} is a server, {1} the new fingerprint</comment>
+  </data>
+  <data name="SftpLoginRefused" xml:space="preserve">
+    <value>{0} refused the user name, password or key ({1}).</value>
+    <comment>{0} is a server, {1} what it said (English)</comment>
+  </data>
+  <data name="NotAllowed" xml:space="preserve">
+    <value>{0} didn't allow it: {1}</value>
+    <comment>{0} is a server, {1} what it said (English)</comment>
+  </data>
+  <data name="NoSuchFolder" xml:space="preserve">
+    <value>{0} has no such folder: {1}</value>
+    <comment>{0} is a server, {1} what it said (English)</comment>
+  </data>
+</root>

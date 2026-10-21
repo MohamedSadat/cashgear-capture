@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CashGear.Capture.Core.Audio;
 
 namespace CashGear.Capture.Core.Recording;
@@ -326,6 +327,8 @@ public sealed record SoundTrack(string Title, int? Source);
 
 public static class SoundTracks
 {
+    // Stays English: it is the track's title in the MP4 file.
+    [Localizable(false)]
     public const string MixedTitle = "Mixed";
 
     /// <summary>The file's tracks for the given sources (by name, in mixer order); a single source is always one track.</summary>

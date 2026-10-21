@@ -2,6 +2,7 @@ using CashGear.Capture.Editor.Batch;
 using CashGear.Capture.Editor.Composition;
 using CashGear.Capture.Editor.Effects;
 using CashGear.Capture.Editor.Pdf;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Presets;
@@ -43,19 +44,19 @@ public sealed record PresetLibrary(
 
     public PdfOptions? Pdf { get; init; } = Pdf ?? new PdfOptions();
 
-    /// <summary>What a new installation starts with.</summary>
-    public static PresetLibrary Defaults { get; } = new(
+    /// <summary>What a new installation starts with: names and text in the UI language (a saved library keeps its own).</summary>
+    public static PresetLibrary Defaults => new(
         Effects:
         [
-            new("Shadow", [new ShadowEffect()]),
-            new("Torn bottom with a shadow", [new TornEdgeEffect(), new ShadowEffect()]),
-            new("Rounded with a shadow", [new RoundedCornersEffect(), new ShadowEffect()]),
-            new("Thin border and a shadow", [new BorderEffect(1, new SKColor(0xA0, 0xA0, 0xA0)), new ShadowEffect()]),
+            new(EditorStrings.PresetShadow, [new ShadowEffect()]),
+            new(EditorStrings.PresetTornBottomShadow, [new TornEdgeEffect(), new ShadowEffect()]),
+            new(EditorStrings.PresetRoundedShadow, [new RoundedCornersEffect(), new ShadowEffect()]),
+            new(EditorStrings.PresetThinBorderShadow, [new BorderEffect(1, new SKColor(0xA0, 0xA0, 0xA0)), new ShadowEffect()]),
         ],
         Watermarks:
         [
-            new("Confidential, across the image", new Watermark(
-                Text: "CONFIDENTIAL", FontSize: 48, Color: new SKColor(0x80, 0x80, 0x80), Opacity: 25, Rotation: -30, Tile: true, Spacing: 120, Shadow: false)),
+            new(EditorStrings.PresetConfidential, new Watermark(
+                Text: EditorStrings.ConfidentialWatermarkText, FontSize: 48, Color: new SKColor(0x80, 0x80, 0x80), Opacity: 25, Rotation: -30, Tile: true, Spacing: 120, Shadow: false)),
         ]);
 
     public IReadOnlyList<EffectPreset> EffectPresets => Effects ?? [];

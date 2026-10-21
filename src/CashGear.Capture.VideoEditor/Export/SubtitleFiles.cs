@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using CashGear.Capture.VideoEditor.Model;
+using CashGear.Capture.VideoEditor.Resources;
 
 namespace CashGear.Capture.VideoEditor.Export;
 
@@ -129,7 +130,7 @@ public static partial class SubtitleFiles
             }
         }
 
-        return cues.Count == 0 ? throw new InvalidDataException("This isn't an SRT or WebVTT file with captions in it.") : cues;
+        return cues.Count == 0 ? throw new InvalidDataException(VideoEditorStrings.NotSubtitles) : cues;
     }
 
     /// <summary><c>hh:mm:ss,mmm</c>, <c>hh:mm:ss.mmm</c> or <c>mm:ss.mmm</c>.</summary>

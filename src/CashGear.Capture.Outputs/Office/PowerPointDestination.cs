@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs.Resources;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Presentation;
@@ -26,8 +28,8 @@ public sealed class PowerPointDestination(OfficeSettings settings, string captur
     public string Id => DestinationIds.PowerPoint;
 
     public string DisplayName => settings.Mode == OfficeMode.Append && OfficeFiles.AppendPath(settings) is { } path
-        ? $"Add a slide to {Path.GetFileName(path)}"
-        : "PowerPoint slide";
+        ? OutputsStrings.AddSlideTo(Path.GetFileName(path))
+        : OutputsStrings.PowerPointSlide;
 
     public bool SupportsVideo => false;
 
@@ -36,7 +38,7 @@ public sealed class PowerPointDestination(OfficeSettings settings, string captur
         ArgumentNullException.ThrowIfNull(item);
         if (item.Image is not { } image)
         {
-            return OutputResult.Skip("PowerPoint takes pictures only.");
+            return OutputResult.Skip(OutputsStrings.PowerPointPicturesOnly);
         }
 
         var picture = await item.GetFileAsync(ct).ConfigureAwait(false);
@@ -57,21 +59,21 @@ public sealed class PowerPointDestination(OfficeSettings settings, string captur
             return failure;
         }
 
-        return new OutputResult(true, append ? $"Added a slide to {Path.GetFileName(target)}" : $"Put in {Path.GetFileName(target)}") { Path = target };
+        return new OutputResult(true, append ? OutputsStrings.AddedSlideTo(Path.GetFileName(target)) : OutputsStrings.PutIn(Path.GetFileName(target))) { Path = target };
     }
 
     public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(settings.Mode == OfficeMode.Append
         ? OfficeFiles.CheckAppendable(OfficeFiles.AppendPath(settings), App, p => PresentationDocument.Open(p, false))
-            ?? OutputResult.Done($"Captures will be added as slides at the end of {Path.GetFileName(OfficeFiles.AppendPath(settings))}.")
+            ?? OutputResult.Done(OutputsStrings.SlidesAddedAtEnd(Path.GetFileName(OfficeFiles.AppendPath(settings))))
         : OfficeFiles.CheckFolder(captureFolder));
 
     /// <summary>Creates the presentation, or opens it, and adds a slide with the picture.</summary>
     internal static void Write(string path, string picture, (long Width, long Height) naturalSize, string description, bool append)
     {
         using var document = append ? PresentationDocument.Open(path, true) : Create(path);
-        var presentationPart = document.PresentationPart ?? throw new InvalidDataException("It has no slides part.");
-        var presentation = presentationPart.Presentation ?? throw new InvalidDataException("It has no presentation.");
-        var layout = BlankLayout(presentationPart) ?? throw new InvalidDataException("It has no slide layouts.");
+        var presentationPart = document.PresentationPart ?? throw new InvalidDataException(OutputsStrings.NoSlidesPart);
+        var presentation = presentationPart.Presentation ?? throw new InvalidDataException(OutputsStrings.NoPresentation);
+        var layout = BlankLayout(presentationPart) ?? throw new InvalidDataException(OutputsStrings.NoSlideLayouts);
 
         var slideWidth = (long?)presentation.SlideSize?.Cx?.Value ?? SlideWidth;
         var slideHeight = (long?)presentation.SlideSize?.Cy?.Value ?? SlideHeight;
@@ -169,6 +171,7 @@ public sealed class PowerPointDestination(OfficeSettings settings, string captur
         new ApplicationNonVisualDrawingProperties());
 
     /// <summary>A plain theme with Office's colours and fonts (PowerPoint needs one).</summary>
+    [Localizable(false)] // font and theme names inside the file, as Office names them
     private static D.Theme Theme()
     {
         static D.SolidFill Fill() => new(new D.SchemeColor { Val = D.SchemeColorValues.PhColor });

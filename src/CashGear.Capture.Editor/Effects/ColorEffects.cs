@@ -1,4 +1,5 @@
 using CashGear.Capture.Editor.Imaging;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Effects;
@@ -9,7 +10,7 @@ namespace CashGear.Capture.Editor.Effects;
 /// </summary>
 public sealed record AdjustEffect(int Brightness = 0, int Contrast = 0) : ImageEffect
 {
-    public override string Name => "brightness and contrast";
+    public override string Name => EditorStrings.EffectBrightnessContrast;
 
     public override EffectOutput Apply(SKImage source)
     {
@@ -36,7 +37,7 @@ public sealed record AdjustEffect(int Brightness = 0, int Contrast = 0) : ImageE
 /// <summary>Shades of grey by the colours' luminance (Rec. 709 weights); transparency is kept.</summary>
 public sealed record GrayscaleEffect : ImageEffect
 {
-    public override string Name => "grayscale";
+    public override string Name => EditorStrings.EffectGrayscale;
 
     public override EffectOutput Apply(SKImage source)
     {
@@ -63,7 +64,7 @@ public sealed record SharpenEffect(int Amount = 50) : ImageEffect
 {
     public const int MaxAmount = 200;
 
-    public override string Name => "sharpen";
+    public override string Name => EditorStrings.EffectSharpen;
 
     public override EffectOutput Apply(SKImage source)
     {

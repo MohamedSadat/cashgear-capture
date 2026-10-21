@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Settings;
@@ -26,8 +27,8 @@ internal sealed class WpfRecordingPicker : IRecordingPicker
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Add overlays to a recording",
-            Filter = "Recordings (*.mp4)|*.mp4",
+            Title = RecordingText.AddOverlaysDialogTitle,
+            Filter = RecordingText.RecordingsFilter,
             InitialDirectory = folder is not null && Directory.Exists(folder) ? folder : null,
         };
         var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive);
@@ -44,7 +45,7 @@ public interface IOverlayProgress : IDisposable
 /// <summary>The progress window's state: what is being done and how far, and Cancel.</summary>
 public sealed partial class OverlayProgressViewModel(string name, Action cancel) : ObservableObject
 {
-    public string Title => $"Adding overlays to {name}";
+    public string Title => RecordingText.AddingOverlaysTo(name);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PercentText))]
@@ -97,8 +98,8 @@ public sealed partial class AddOverlaysController(
             if (renderer.FindMetadata(video) is null)
             {
                 notifier.Notify(
-                    "Add overlays",
-                    $"{name} has no metadata file, so its clicks and keys aren't known. Recordings get one when Settings › Overlays › Save a metadata file is on.",
+                    RecordingText.AddOverlays,
+                    RecordingText.NoMetadata(name),
                     NotificationKind.Warning);
                 return;
             }
@@ -109,7 +110,7 @@ public sealed partial class AddOverlaysController(
             {
                 var progress = new Progress<double>(p => _ = ui.InvokeAsync(() => window.Report(p)));
                 var output = await renderer.RenderAsync(video, progress, cancel.Token).ConfigureAwait(false);
-                notifier.Notify("Overlays added", $"{Path.GetFileName(output)}\nin {Path.GetDirectoryName(output)}", NotificationKind.Info, onClick: () => shell.ShowInFolder(output));
+                notifier.Notify(RecordingText.OverlaysAdded, $"{Path.GetFileName(output)}\n{RecordingText.InFolder(Path.GetDirectoryName(output))}", NotificationKind.Info, onClick: () => shell.ShowInFolder(output));
             }
             catch (OperationCanceledException)
             {
@@ -118,7 +119,7 @@ public sealed partial class AddOverlaysController(
             catch (Exception e) when (e is CaptureException or IOException or UnauthorizedAccessException)
             {
                 LogFailed(e, video);
-                notifier.Notify("Overlays couldn't be added", e.Message, NotificationKind.Error);
+                notifier.Notify(RecordingText.OverlaysNotAdded, e.Message, NotificationKind.Error);
             }
             finally
             {

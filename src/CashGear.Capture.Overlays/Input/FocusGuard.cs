@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -23,7 +24,7 @@ public enum KeyVerdict
 /// <param name="Private">A password field, an excluded app, or something that couldn't be checked.</param>
 /// <param name="App">The foreground program's file name, if known.</param>
 /// <param name="Reason">Why it is private (for the log), or null.</param>
-public readonly record struct FocusCheck(bool Private, string? App, string? Reason);
+public readonly record struct FocusCheck(bool Private, string? App, [Localizable(false)] string? Reason); // Reason: for the log
 
 /// <summary>Looks at what has the keyboard focus now.</summary>
 public interface IFocusProbe : IDisposable
@@ -57,6 +58,7 @@ public sealed partial class FocusGuard : IDisposable
     private long _checked;
 
     /// <param name="probe">Creates the probe on the guard's thread (UI Automation lives there).</param>
+    [Localizable(false)] // the thread's name, for debuggers
     public FocusGuard(Func<IFocusProbe> probe, ILogger logger)
     {
         _createProbe = probe;

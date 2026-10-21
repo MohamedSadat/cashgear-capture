@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using CashGear.Capture.Interop.Native;
 using Vortice.Direct3D;
@@ -22,6 +23,7 @@ namespace CashGear.Capture.Engine.Capture.Wgc;
 /// </summary>
 internal sealed class ToneMapper : IDisposable
 {
+    [Localizable(false)] // HLSL shader code
     private const string Source = """
         Texture2D<float4> Picture : register(t0);
 

@@ -3,6 +3,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Geometry;
@@ -78,7 +79,7 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
 
     public bool IsRecordingNow => !IsPaused;
 
-    public string PauseText => IsPaused ? "Resume" : "Pause";
+    public string PauseText => IsPaused ? CommonText.Resume : CommonText.Pause;
 
     public bool HasSound { get; }
 
@@ -127,11 +128,11 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     }
 
     public string KeystrokesToolTip => KeystrokesShown
-        ? "Keystrokes are shown. Click to stop showing them for a while (e.g. to type something private)."
-        : "Keystrokes are hidden. Click to show them again.";
+        ? RecordingText.KeystrokesShownTip
+        : RecordingText.KeystrokesHiddenTip;
 
     /// <summary>"Hold F13 to talk", or "Talking" while it is held.</summary>
-    public string PushToTalkText => IsTalking ? "Talking" : $"Hold {_pushToTalk?.Key} to talk";
+    public string PushToTalkText => IsTalking ? RecordingText.Talking : RecordingText.HoldToTalk(_pushToTalk?.Key);
 
     /// <summary>System audio's level as recorded (after its volume and mute).</summary>
     public MeterReading SystemMeter { get; } = new();
@@ -169,11 +170,19 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
 
     public bool IsSoundMissing => SoundNote is not null && !HasSound;
 
-    public string MicrophoneText => MicrophoneMuted ? "Unmute mic" : "Mute mic";
+    public string MicrophoneText => MicrophoneMuted ? RecordingText.UnmuteMic : RecordingText.MuteMic;
 
     public string SoundToolTip => HasSound
-        ? "Recording " + RecordingController.SoundText(_recorder.Sound) + (SoundNote is null ? string.Empty : ". " + SoundNote)
-        : SoundNote ?? "No sound";
+        ? SoundNote is null ? SoundRecorded : RecordingText.SoundWithNote(SoundRecorded, SoundNote)
+        : SoundNote ?? RecordingText.NoSound;
+
+    /// <summary>"Recording system sound", "Recording microphone" or "Recording system sound + microphone".</summary>
+    private string SoundRecorded => _recorder.Sound switch
+    {
+        RecordingSound.System => RecordingText.RecordingSystemSound,
+        RecordingSound.Microphone => RecordingText.RecordingMicrophone,
+        _ => RecordingText.RecordingSystemSoundAndMicrophone,
+    };
 
     /// <summary>Reads the recorder's clock and state.</summary>
     public void Refresh()

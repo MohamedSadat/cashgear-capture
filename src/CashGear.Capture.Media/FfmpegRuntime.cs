@@ -1,3 +1,4 @@
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 using FFmpeg.AutoGen.Bindings.DynamicallyLoaded;
 using Microsoft.Extensions.Logging;
@@ -61,7 +62,7 @@ public sealed partial class FfmpegRuntime
         var missing = Libraries.Select(FileName).Where(file => !File.Exists(Path.Combine(Directory, file))).ToList();
         if (missing.Count > 0)
         {
-            return Fail($"FFmpeg is missing: {string.Join(", ", missing)} not found in {Directory}.");
+            return Fail(MediaStrings.FfmpegMissing(string.Join(", ", missing), Directory));
         }
 
         lock (LoadGate)
@@ -75,7 +76,7 @@ public sealed partial class FfmpegRuntime
             }
             else if (!string.Equals(_loadedFrom, Directory, StringComparison.OrdinalIgnoreCase))
             {
-                return Fail($"FFmpeg is already loaded from {_loadedFrom}.");
+                return Fail(MediaStrings.FfmpegLoadedElsewhere(_loadedFrom));
             }
         }
 
@@ -87,7 +88,7 @@ public sealed partial class FfmpegRuntime
                 var expected = DynamicallyLoadedBindings.LibraryVersionMap[library];
                 if (actual != expected)
                 {
-                    return Fail($"FFmpeg in {Directory} is the wrong version: {library} {actual}, the app needs {expected}.");
+                    return Fail(MediaStrings.FfmpegWrongVersion(Directory, library, actual, expected));
                 }
             }
 
@@ -99,7 +100,7 @@ public sealed partial class FfmpegRuntime
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException
                                       or NotSupportedException or InvalidOperationException)
         {
-            return Fail($"FFmpeg in {Directory} could not be loaded: {e.Message}");
+            return Fail(MediaStrings.FfmpegNotLoaded(Directory, e.Message));
         }
     }
 

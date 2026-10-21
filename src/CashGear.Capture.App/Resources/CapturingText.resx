@@ -22,4 +22,115 @@
     <value>{0} in</value>
     <comment>{0} is the kind of capture, such as Open menu: "Open menu in 3"</comment>
   </data>
+  <data name="RepeatLastCapture" xml:space="preserve">
+    <value>Repeat Last Capture</value>
+    <comment>notification title</comment>
+  </data>
+  <data name="NothingCapturedYet" xml:space="preserve">
+    <value>Nothing has been captured yet. Take a capture first; this repeats it.</value>
+  </data>
+  <data name="LastWindowClosed" xml:space="preserve">
+    <value>The window of the last capture ({0}) isn't open any more. Capture another window first.</value>
+    <comment>{0}: the window's title</comment>
+  </data>
+  <data name="LastAreaOffScreen" xml:space="preserve">
+    <value>The area of the last capture isn't on any monitor now (the display layout changed). Take a new capture.</value>
+  </data>
+  <data name="NoOpenMenu" xml:space="preserve">
+    <value>No open menu</value>
+  </data>
+  <data name="NoMenuWasOpen" xml:space="preserve">
+    <value>No menu was open when the capture was taken. Open the menu during the countdown ({0} s; Settings › Capture › Delay per kind of capture).</value>
+    <comment>{0}: seconds</comment>
+  </data>
+  <data name="ScrollingCapture" xml:space="preserve">
+    <value>Scrolling capture</value>
+  </data>
+  <data name="NothingScrolled" xml:space="preserve">
+    <value>Nothing scrolled, so only the visible part was captured.</value>
+  </data>
+  <data name="StoppedAtHeightLimit" xml:space="preserve">
+    <value>Stopped at the height limit ({0} px). It can be raised in Settings &gt; Capture.</value>
+  </data>
+  <data name="StoppedLostTrack" xml:space="preserve">
+    <value>Stopped early at {0} px: the next part did not line up with the last (the page may change as it scrolls).</value>
+  </data>
+  <data name="StoppedResized" xml:space="preserve">
+    <value>Stopped at {0} px: the window changed size.</value>
+  </data>
+  <data name="CaptureText" xml:space="preserve">
+    <value>Capture Text</value>
+    <comment>notification title</comment>
+  </data>
+  <data name="NoTextFound" xml:space="preserve">
+    <value>No text was found in the selected area ({0}).</value>
+    <comment>{0}: the OCR language</comment>
+  </data>
+  <data name="TextCopied" xml:space="preserve">
+    <value>Text copied</value>
+  </data>
+  <data name="CaptureActiveWindow" xml:space="preserve">
+    <value>Capture Active Window</value>
+    <comment>notification title</comment>
+  </data>
+  <data name="NoActiveWindow" xml:space="preserve">
+    <value>There is no active window to capture. Click a window first.</value>
+  </data>
+  <data name="NothingToDo" xml:space="preserve">
+    <value>Nothing to do with the capture</value>
+  </data>
+  <data name="SwitchOnStep" xml:space="preserve">
+    <value>Switch on a step of the after-capture workflow (Settings › Output), such as "Open in the editor" or "Save to file".</value>
+  </data>
+  <data name="CaptureFailed" xml:space="preserve">
+    <value>Capture failed</value>
+  </data>
+  <data name="PartBlack" xml:space="preserve">
+    <value>Part of the capture is black</value>
+  </data>
+  <data name="RegionWindowTitle" xml:space="preserve">
+    <value>CashGear Capture - select a region</value>
+  </data>
+  <data name="ScrollProgress_one" xml:space="preserve">
+    <value>{0} part · {1} px</value>
+    <comment>{0}: pictures stitched so far; {1}: their height</comment>
+  </data>
+  <data name="ScrollProgress_other" xml:space="preserve">
+    <value>{0} parts · {1} px</value>
+    <comment>{0}: pictures stitched so far; {1}: their height</comment>
+  </data>
+  <data name="ScrollingWith" xml:space="preserve">
+    <value>Scrolling with {0}</value>
+    <comment>{0}: the mouse wheel, UI Automation</comment>
+  </data>
+  <data name="ScrollHint" xml:space="preserve">
+    <value>It stops by itself at the bottom. Esc cancels; Finish now keeps what has been captured.</value>
+  </data>
+  <data name="FinishNow" xml:space="preserve">
+    <value>Finish now</value>
+  </data>
+  <data name="NothingToScroll" xml:space="preserve">
+    <value>"{0}" has no area large enough to scroll.</value>
+    <comment>{0}: the window's title</comment>
+  </data>
+  <data name="MouseWheel" xml:space="preserve">
+    <value>the mouse wheel</value>
+    <comment>Scrolling with {0}</comment>
+  </data>
+  <data name="UiAutomation" xml:space="preserve">
+    <value>UI Automation</value>
+    <comment>Scrolling with {0}; a Windows technology's name</comment>
+  </data>
+  <data name="LinesAndLanguage_one" xml:space="preserve">
+    <value>{0} line · {1}</value>
+    <comment>under the copied text's start; {0}: lines; {1}: the OCR language</comment>
+  </data>
+  <data name="LinesAndLanguage_other" xml:space="preserve">
+    <value>{0} lines · {1}</value>
+    <comment>under the copied text's start; {0}: lines; {1}: the OCR language</comment>
+  </data>
+  <data name="WindowNamesSeparator" xml:space="preserve">
+    <value>", "</value>
+    <comment>between window titles inside the quotes of CoreStrings.ProtectedInCapture/InRecording: "A", "B" / «A»، «B»</comment>
+  </data>
 </root>

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -56,6 +57,7 @@ public sealed record LicenseInfo(
     [property: JsonPropertyName("expires")] DateTimeOffset? Expires,
     [property: JsonPropertyName("activationUrl")] string? ActivationUrl)
 {
+    [Localizable(false)] // a value of the signed licence file, compared as it is
     public const string ProductName = "CashGear Capture";
 
     public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, LicensingJson.Default.LicenseInfo);
@@ -86,6 +88,7 @@ public static class MachineId
     }
 
     /// <summary>The id for a machine GUID: SHA-256 with the product's salt, as hex.</summary>
+    [Localizable(false)] // the hash's salt
     public static string From(string machineGuid) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes("CashGear Capture machine|" + machineGuid.Trim().ToUpperInvariant())));
 }

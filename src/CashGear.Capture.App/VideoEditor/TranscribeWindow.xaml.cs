@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
 
 namespace CashGear.Capture.App.VideoEditor;
@@ -32,5 +33,5 @@ public partial class TranscribeWindow : Window, IThemedWindow
         (DataContext as TranscribeViewModel)?.Stop();
     }
 
-    private void UpdateCancel() => CancelButton.Content = DataContext is TranscribeViewModel { IsRunning: true } ? "Cancel" : "Close";
+    private void UpdateCancel() => CancelButton.Content = DataContext is TranscribeViewModel { IsRunning: true } ? CommonText.Cancel : CommonText.Close;
 }

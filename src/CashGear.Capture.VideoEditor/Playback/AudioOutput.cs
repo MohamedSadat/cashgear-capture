@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
@@ -29,6 +30,10 @@ public sealed class WasapiAudioOutput : IAudioOutput
 {
     private static readonly TimeSpan BufferLength = TimeSpan.FromMilliseconds(100);
 
+    /// <summary>The thread's name, for debuggers.</summary>
+    [Localizable(false)]
+    private const string ThreadName = "Video editor sound";
+
     private Thread? _thread;
     private volatile bool _stopping;
     private long _written;
@@ -49,7 +54,7 @@ public sealed class WasapiAudioOutput : IAudioOutput
         _waiting = 0;
         var ready = new ManualResetEventSlim();
         Exception? startFailure = null;
-        _thread = new Thread(() => Run(pull, ready, e => startFailure = e)) { IsBackground = true, Name = "Video editor sound", Priority = ThreadPriority.Highest };
+        _thread = new Thread(() => Run(pull, ready, e => startFailure = e)) { IsBackground = true, Name = ThreadName, Priority = ThreadPriority.Highest };
         _thread.Start();
         ready.Wait(TimeSpan.FromSeconds(5));
         if (startFailure is not null)

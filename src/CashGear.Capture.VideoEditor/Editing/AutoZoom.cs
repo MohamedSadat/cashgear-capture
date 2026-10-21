@@ -1,5 +1,6 @@
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.VideoEditor.Rendering;
+using CashGear.Capture.VideoEditor.Resources;
 
 namespace CashGear.Capture.VideoEditor.Editing;
 
@@ -201,7 +202,7 @@ public static class AutoZoom
         }
 
         var count = project.Tracks.Count(t => t.Kind == TrackKind.Effect && t.Items.Count > 0 && t.Items.All(i => i is ZoomItem));
-        return project with { Tracks = [.. project.Tracks, new Track(Ids.New(), TrackKind.Effect, count == 0 ? "Zoom" : $"Zoom {count + 1}", [zoom])] };
+        return project with { Tracks = [.. project.Tracks, new Track(Ids.New(), TrackKind.Effect, count == 0 ? VideoEditorStrings.TrackZoom : VideoEditorStrings.TrackZoomNumbered(count + 1), [zoom])] };
     }
 
     /// <summary>The largest zoom (up to the maximum) whose view holds the events with a margin around them.</summary>

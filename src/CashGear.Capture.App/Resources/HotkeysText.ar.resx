@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="InvalidHotkey" xml:space="preserve">
+    <value>«{0}» ليس مفتاح اختصار صالحًا.</value>
+  </data>
+  <data name="BlocksKey" xml:space="preserve">
+    <value>سيحظر {0} وحده هذا المفتاح في كل التطبيقات؛ أضف Ctrl أو Alt أو Shift أو Win.</value>
+  </data>
+  <data name="AlreadySetFor" xml:space="preserve">
+    <value>{0} معيّن بالفعل لـ«{1}».</value>
+  </data>
+  <data name="CouldNotRegister" xml:space="preserve">
+    <value>تعذر تسجيل {0}.</value>
+  </data>
+  <data name="AlreadyUsed" xml:space="preserve">
+    <value>{0} مستخدم بالفعل من تطبيق آخر أو من Windows.</value>
+  </data>
+  <data name="RegisterFailed" xml:space="preserve">
+    <value>تعذر تسجيل {0} (خطأ Win32 رقم {1}).</value>
+  </data>
+  <data name="ProblemLine" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="NotAvailableTitle" xml:space="preserve">
+    <value>بعض مفاتيح الاختصار غير متاحة</value>
+  </data>
+  <data name="CaptureRegion" xml:space="preserve">
+    <value>التقاط منطقة</value>
+  </data>
+  <data name="CaptureActiveWindow" xml:space="preserve">
+    <value>التقاط النافذة النشطة</value>
+  </data>
+  <data name="CaptureFullScreen" xml:space="preserve">
+    <value>التقاط الشاشة كاملة</value>
+  </data>
+  <data name="CaptureScrolling" xml:space="preserve">
+    <value>التقاط مع التمرير</value>
+  </data>
+  <data name="Record" xml:space="preserve">
+    <value>تسجيل الشاشة (مرة أخرى للإيقاف)</value>
+  </data>
+  <data name="CaptureText" xml:space="preserve">
+    <value>التقاط النص (OCR)</value>
+  </data>
+  <data name="ToggleDrawing" xml:space="preserve">
+    <value>الرسم على الشاشة (أثناء التسجيل)</value>
+  </data>
+  <data name="RepeatLastCapture" xml:space="preserve">
+    <value>تكرار آخر التقاط</value>
+  </data>
+  <data name="CaptureWindow" xml:space="preserve">
+    <value>التقاط نافذة (اختيار واحدة)</value>
+  </data>
+  <data name="CaptureFixedRegion" xml:space="preserve">
+    <value>التقاط منطقة بحجم ثابت</value>
+  </data>
+  <data name="CaptureFreehand" xml:space="preserve">
+    <value>التقاط منطقة حرة</value>
+  </data>
+  <data name="CapturePolygon" xml:space="preserve">
+    <value>التقاط منطقة مضلعة</value>
+  </data>
+  <data name="CaptureRoundedRegion" xml:space="preserve">
+    <value>التقاط منطقة بزوايا مستديرة</value>
+  </data>
+  <data name="CaptureObject" xml:space="preserve">
+    <value>التقاط عنصر (جزء من نافذة)</value>
+  </data>
+  <data name="CaptureMenu" xml:space="preserve">
+    <value>التقاط قائمة مفتوحة</value>
+  </data>
+  <data name="ToggleToolbar" xml:space="preserve">
+    <value>إظهار شريط أدوات الالتقاط أو إخفاؤه</value>
+  </data>
+  <data name="Magnifier" xml:space="preserve">
+    <value>مكبّر الشاشة</value>
+  </data>
+  <data name="ColorPicker" xml:space="preserve">
+    <value>منتقي الألوان</value>
+  </data>
+  <data name="Ruler" xml:space="preserve">
+    <value>إظهار مسطرة الشاشة أو إخفاؤها</value>
+  </data>
+  <data name="Crosshair" xml:space="preserve">
+    <value>إظهار خطّي التقاطع أو إخفاؤهما</value>
+  </data>
+  <data name="ChooseOtherKeys" xml:space="preserve">
+    <value>اختر مفاتيح أخرى من الإعدادات.</value>
+  </data>
+</root>

@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using CashGear.Capture.Audio.Resources;
 using CashGear.Capture.Core.Recording;
 using Microsoft.Extensions.Logging;
 using NAudio.CoreAudioApi;
@@ -83,7 +85,7 @@ internal sealed partial class WasapiAudioSource : IAudioEndpoint
     {
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
         {
-            throw new PlatformNotSupportedException("Recording one app's sound needs Windows 10 version 2004 or later.");
+            throw new PlatformNotSupportedException(AudioStrings.OneAppNeedsNewerWindows);
         }
 
         // The activation completes on a Windows thread; nothing here waits on a UI thread.
@@ -108,6 +110,7 @@ internal sealed partial class WasapiAudioSource : IAudioEndpoint
         }
     }
 
+    [Localizable(false)] // the thread's name, for debuggers
     public void Start(AudioDataHandler data, Action<Exception> failed)
     {
         _client.Start();

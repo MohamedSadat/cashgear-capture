@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using CashGear.Capture.Transcription.Resources;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Transcription;
@@ -9,7 +10,7 @@ namespace CashGear.Capture.Transcription;
 /// </summary>
 public sealed record WhisperModel(string Id, string Name, string File, long Bytes, string Sha256, string About)
 {
-    public string SizeText => $"{Bytes / 1_000_000} MB";
+    public string SizeText => TranscriptionStrings.SizeInMegabytes(Bytes / 1_000_000);
 
     public override string ToString() => $"{Name} ({SizeText})";
 }
@@ -19,11 +20,11 @@ public static class WhisperModels
     /// <summary>Where the models are downloaded from.</summary>
     public static Uri Source { get; } = new("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/");
 
-    public static WhisperModel Base { get; } = new("base", "Base", "ggml-base-q5_1.bin", 59_707_625, "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898", "fast; good for clear English");
+    public static WhisperModel Base { get; } = new("base", TranscriptionStrings.ModelBase, "ggml-base-q5_1.bin", 59_707_625, "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898", TranscriptionStrings.AboutBase);
 
-    public static WhisperModel Small { get; } = new("small", "Small", "ggml-small-q5_1.bin", 190_085_487, "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb", "better; the least for Arabic");
+    public static WhisperModel Small { get; } = new("small", TranscriptionStrings.ModelSmall, "ggml-small-q5_1.bin", 190_085_487, "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb", TranscriptionStrings.AboutSmall);
 
-    public static WhisperModel Medium { get; } = new("medium", "Medium", "ggml-medium-q5_0.bin", 539_212_467, "19fea4b380c3a618ec4723c3eef2eb785ffba0d0538cf43f8f235e7b3b34220f", "best; slow without a graphics card");
+    public static WhisperModel Medium { get; } = new("medium", TranscriptionStrings.ModelMedium, "ggml-medium-q5_0.bin", 539_212_467, "19fea4b380c3a618ec4723c3eef2eb785ffba0d0538cf43f8f235e7b3b34220f", TranscriptionStrings.AboutMedium);
 
     public static IReadOnlyList<WhisperModel> All { get; } = [Base, Small, Medium];
 
@@ -98,7 +99,7 @@ public sealed partial class WhisperModelStore(string folder, HttpClient http, IL
             var actual = Convert.ToHexStringLower(hash.GetHashAndReset());
             if (!string.Equals(actual, model.Sha256, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidDataException($"The download of the {model.Name} model is damaged (its checksum doesn't match). Try again.");
+                throw new InvalidDataException(TranscriptionStrings.ModelDamaged(model.Name));
             }
 
             File.Move(partial, path, overwrite: true);

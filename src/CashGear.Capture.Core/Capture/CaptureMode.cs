@@ -1,3 +1,5 @@
+using CashGear.Capture.Core.Resources;
+
 namespace CashGear.Capture.Core.Capture;
 
 /// <summary>How a capture is taken (what the user starts), as opposed to <see cref="CaptureKind"/>, what it shows.</summary>
@@ -42,18 +44,18 @@ public static class CaptureModes
     /// <summary>The name shown to the user (countdown, notifications, settings).</summary>
     public static string Label(this CaptureMode mode) => mode switch
     {
-        CaptureMode.Region => "Region",
-        CaptureMode.Window => "Window",
-        CaptureMode.ActiveWindow => "Active window",
-        CaptureMode.FullScreen => "Full screen",
-        CaptureMode.Scrolling => "Scrolling",
-        CaptureMode.Text => "Text (OCR)",
-        CaptureMode.FixedRegion => "Fixed-size region",
-        CaptureMode.Freehand => "Freehand region",
-        CaptureMode.Polygon => "Polygon region",
-        CaptureMode.RoundedRegion => "Rounded region",
-        CaptureMode.Object => "Object",
-        CaptureMode.Menu => "Open menu",
+        CaptureMode.Region => CoreStrings.ModeRegion,
+        CaptureMode.Window => CoreStrings.ModeWindow,
+        CaptureMode.ActiveWindow => CoreStrings.ModeActiveWindow,
+        CaptureMode.FullScreen => CoreStrings.ModeFullScreen,
+        CaptureMode.Scrolling => CoreStrings.ModeScrolling,
+        CaptureMode.Text => CoreStrings.ModeText,
+        CaptureMode.FixedRegion => CoreStrings.ModeFixedRegion,
+        CaptureMode.Freehand => CoreStrings.ModeFreehand,
+        CaptureMode.Polygon => CoreStrings.ModePolygon,
+        CaptureMode.RoundedRegion => CoreStrings.ModeRoundedRegion,
+        CaptureMode.Object => CoreStrings.ModeObject,
+        CaptureMode.Menu => CoreStrings.ModeMenu,
         _ => mode.ToString(),
     };
 }

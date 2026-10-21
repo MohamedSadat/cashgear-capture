@@ -1,8 +1,10 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CashGear.Capture.Interop.Native;
+using CashGear.Capture.Overlays.Resources;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Overlays.Input;
@@ -55,6 +57,7 @@ public sealed unsafe partial class InputHooks : IDisposable
     private long _dropped;
     private int _disposed;
 
+    [Localizable(false)] // the thread's name, for debuggers
     private InputHooks(bool keyboard, ILogger logger)
     {
         _keyboard = keyboard;
@@ -80,7 +83,7 @@ public sealed unsafe partial class InputHooks : IDisposable
         if (hooks._failure is { } failure)
         {
             hooks.Dispose();
-            throw new InvalidOperationException("Windows refused the input hooks: " + failure.Message, failure);
+            throw new InvalidOperationException(OverlaysStrings.InputHooksRefused(failure.Message), failure);
         }
 
         return hooks;

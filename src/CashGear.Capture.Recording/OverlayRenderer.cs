@@ -7,6 +7,7 @@ using CashGear.Capture.Engine.Capture.Wgc;
 using CashGear.Capture.Media;
 using CashGear.Capture.Overlays.Input;
 using CashGear.Capture.Overlays.Rendering;
+using CashGear.Capture.Recording.Resources;
 using Microsoft.Extensions.Logging;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -74,11 +75,11 @@ internal sealed partial class OverlayRenderer(IRecordingEncoders encoders, ISett
         ArgumentException.ThrowIfNullOrEmpty(video);
         if (encoders.Problem is { } problem)
         {
-            throw new CaptureException("Overlays can't be added: " + problem);
+            throw new CaptureException(RecordingStrings.OverlaysUnavailable(problem));
         }
 
         var metadataPath = FindMetadata(video)
-            ?? throw new CaptureException($"{Path.GetFileName(video)} has no metadata file ({Path.GetFileNameWithoutExtension(video)}{RecordingMetadata.Extension}), so its clicks and keys aren't known.");
+            ?? throw new CaptureException(RecordingStrings.NoMetadataFile(Path.GetFileName(video), Path.GetFileNameWithoutExtension(video) + RecordingMetadata.Extension));
         RecordingMetadata metadata;
         try
         {
@@ -91,7 +92,7 @@ internal sealed partial class OverlayRenderer(IRecordingEncoders encoders, ISett
 
         if (metadata.OverlaysInVideo)
         {
-            throw new CaptureException($"{Path.GetFileName(video)} already has its overlays drawn in.");
+            throw new CaptureException(RecordingStrings.OverlaysAlreadyDrawn(Path.GetFileName(video)));
         }
 
         var current = settings.Current;
@@ -99,7 +100,7 @@ internal sealed partial class OverlayRenderer(IRecordingEncoders encoders, ISett
         var usable = EncoderService.Usable(current.Recording.Encoder, detected);
         if (usable.Count == 0)
         {
-            throw new CaptureException("No video encoder works on this PC.");
+            throw new CaptureException(RecordingStrings.NoVideoEncoder);
         }
 
         var output = PartNames.Unique(Path.Combine(
@@ -112,7 +113,7 @@ internal sealed partial class OverlayRenderer(IRecordingEncoders encoders, ISett
         }
         catch (FfmpegException e)
         {
-            throw new CaptureException($"Overlays couldn't be added to {Path.GetFileName(video)}: {e.Message}", e);
+            throw new CaptureException(RecordingStrings.OverlaysFailed(Path.GetFileName(video), e.Message), e);
         }
 
         LogRendered(output);
@@ -240,7 +241,7 @@ internal sealed partial class OverlayRenderer(IRecordingEncoders encoders, ISett
             }
         }
 
-        throw new FfmpegException($"No video encoder could encode {format.Width}x{format.Height}. {string.Join(" ", problems)}");
+        throw new FfmpegException(RecordingStrings.NoEncoderCouldEncode(format.Width, format.Height, string.Join(" ", problems)));
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Adding overlays to {Video} from {Metadata} into {Output}")]

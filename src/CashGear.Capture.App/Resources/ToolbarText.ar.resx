@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>شريط أدوات الالتقاط</value>
+  </data>
+  <data name="GripTip" xml:space="preserve">
+    <value>اسحب للتحريك. أفلته عند حافة الشاشة لإرسائه هناك.</value>
+  </data>
+  <data name="MoveToolbar" xml:space="preserve">
+    <value>تحريك شريط الأدوات</value>
+  </data>
+  <data name="CaptureRegion" xml:space="preserve">
+    <value>التقاط منطقة</value>
+  </data>
+  <data name="CaptureWindow" xml:space="preserve">
+    <value>التقاط نافذة</value>
+  </data>
+  <data name="CaptureActiveWindow" xml:space="preserve">
+    <value>التقاط النافذة النشطة</value>
+  </data>
+  <data name="CaptureFullScreen" xml:space="preserve">
+    <value>التقاط الشاشة كاملة</value>
+  </data>
+  <data name="ScrollingCapture" xml:space="preserve">
+    <value>التقاط مع التمرير</value>
+  </data>
+  <data name="CaptureFixedRegion" xml:space="preserve">
+    <value>التقاط منطقة بحجم ثابت</value>
+  </data>
+  <data name="CaptureFreehandRegion" xml:space="preserve">
+    <value>التقاط منطقة حرة</value>
+  </data>
+  <data name="CapturePolygonRegion" xml:space="preserve">
+    <value>التقاط منطقة مضلعة</value>
+  </data>
+  <data name="CaptureRoundedRegion" xml:space="preserve">
+    <value>التقاط منطقة بزوايا مستديرة</value>
+  </data>
+  <data name="CaptureObject" xml:space="preserve">
+    <value>التقاط عنصر</value>
+  </data>
+  <data name="CaptureOpenMenu" xml:space="preserve">
+    <value>التقاط قائمة مفتوحة</value>
+  </data>
+  <data name="CaptureText" xml:space="preserve">
+    <value>التقاط النص</value>
+  </data>
+  <data name="ToolsTip" xml:space="preserve">
+    <value>الأدوات: المكبّر، منتقي الألوان، المسطرة، خطّا التقاطع، المعالجة الدفعية، الدمج، الصور إلى PDF</value>
+  </data>
+  <data name="ScreenTools" xml:space="preserve">
+    <value>أدوات الشاشة</value>
+  </data>
+  <data name="RepeatLastCapture" xml:space="preserve">
+    <value>تكرار آخر التقاط</value>
+  </data>
+  <data name="RecordScreen" xml:space="preserve">
+    <value>تسجيل الشاشة</value>
+  </data>
+  <data name="CaptureDelay" xml:space="preserve">
+    <value>تأخير الالتقاط</value>
+  </data>
+  <data name="AfterCaptureTip" xml:space="preserve">
+    <value>بعد الالتقاط: المحرر، الملف، الحافظة</value>
+  </data>
+  <data name="AfterCapture" xml:space="preserve">
+    <value>بعد الالتقاط</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>الإعدادات</value>
+  </data>
+  <data name="HideTip" xml:space="preserve">
+    <value>إخفاء شريط الأدوات (تعيده قائمة منطقة الإعلامات › شريط أدوات الالتقاط)</value>
+  </data>
+  <data name="HideToolbar" xml:space="preserve">
+    <value>إخفاء شريط الأدوات</value>
+  </data>
+  <data name="ChangeWorkflow" xml:space="preserve">
+    <value>تغيير سير العمل…</value>
+  </data>
+  <data name="RegionTip" xml:space="preserve">
+    <value>التقاط منطقة: اسحب مستطيلًا أو انقر نافذة</value>
+  </data>
+  <data name="WindowTip" xml:space="preserve">
+    <value>التقاط نافذة: اختر واحدة</value>
+  </data>
+  <data name="ActiveWindowTip" xml:space="preserve">
+    <value>التقاط النافذة النشطة (التي في المقدمة)</value>
+  </data>
+  <data name="FixedTip" xml:space="preserve">
+    <value>التقاط منطقة بحجم ثابت (انقر بزر الماوس الأيمن لاختيار الحجم)</value>
+  </data>
+  <data name="FreehandTip" xml:space="preserve">
+    <value>التقاط منطقة حرة</value>
+  </data>
+  <data name="PolygonTip" xml:space="preserve">
+    <value>التقاط منطقة مضلعة</value>
+  </data>
+  <data name="RoundedTip" xml:space="preserve">
+    <value>التقاط منطقة بزوايا مستديرة</value>
+  </data>
+  <data name="ObjectTip" xml:space="preserve">
+    <value>التقاط عنصر (جزء من نافذة)</value>
+  </data>
+  <data name="MenuTip" xml:space="preserve">
+    <value>التقاط قائمة مفتوحة (افتحها أثناء العد التنازلي)</value>
+  </data>
+  <data name="TextTip" xml:space="preserve">
+    <value>التقاط النص (OCR)</value>
+  </data>
+  <data name="RepeatTip" xml:space="preserve">
+    <value>تكرار آخر التقاط</value>
+  </data>
+  <data name="RecordScreenTip" xml:space="preserve">
+    <value>تسجيل الشاشة</value>
+  </data>
+  <data name="StopRecordingTip" xml:space="preserve">
+    <value>إيقاف التسجيل</value>
+  </data>
+  <data name="SavingRecordingTip" xml:space="preserve">
+    <value>جارٍ حفظ التسجيل</value>
+  </data>
+  <data name="WithHotkey" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+</root>

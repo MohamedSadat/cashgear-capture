@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>Capture toolbar</value>
+  </data>
+  <data name="GripTip" xml:space="preserve">
+    <value>Drag to move. Drop it at the edge of the screen to dock it there.</value>
+  </data>
+  <data name="MoveToolbar" xml:space="preserve">
+    <value>Move the toolbar</value>
+  </data>
+  <data name="CaptureRegion" xml:space="preserve">
+    <value>Capture region</value>
+  </data>
+  <data name="CaptureWindow" xml:space="preserve">
+    <value>Capture window</value>
+  </data>
+  <data name="CaptureActiveWindow" xml:space="preserve">
+    <value>Capture active window</value>
+  </data>
+  <data name="CaptureFullScreen" xml:space="preserve">
+    <value>Capture full screen</value>
+  </data>
+  <data name="ScrollingCapture" xml:space="preserve">
+    <value>Scrolling capture</value>
+  </data>
+  <data name="CaptureFixedRegion" xml:space="preserve">
+    <value>Capture fixed-size region</value>
+  </data>
+  <data name="CaptureFreehandRegion" xml:space="preserve">
+    <value>Capture freehand region</value>
+  </data>
+  <data name="CapturePolygonRegion" xml:space="preserve">
+    <value>Capture polygon region</value>
+  </data>
+  <data name="CaptureRoundedRegion" xml:space="preserve">
+    <value>Capture rounded region</value>
+  </data>
+  <data name="CaptureObject" xml:space="preserve">
+    <value>Capture object</value>
+  </data>
+  <data name="CaptureOpenMenu" xml:space="preserve">
+    <value>Capture open menu</value>
+  </data>
+  <data name="CaptureText" xml:space="preserve">
+    <value>Capture text</value>
+  </data>
+  <data name="ToolsTip" xml:space="preserve">
+    <value>Tools: magnifier, colour picker, ruler, crosshair, batch, combine, images to PDF</value>
+  </data>
+  <data name="ScreenTools" xml:space="preserve">
+    <value>Screen tools</value>
+  </data>
+  <data name="RepeatLastCapture" xml:space="preserve">
+    <value>Repeat last capture</value>
+  </data>
+  <data name="RecordScreen" xml:space="preserve">
+    <value>Record the screen</value>
+  </data>
+  <data name="CaptureDelay" xml:space="preserve">
+    <value>Capture delay</value>
+  </data>
+  <data name="AfterCaptureTip" xml:space="preserve">
+    <value>After capture: editor, file, clipboard</value>
+  </data>
+  <data name="AfterCapture" xml:space="preserve">
+    <value>After capture</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="HideTip" xml:space="preserve">
+    <value>Hide the toolbar (tray › Capture Toolbar brings it back)</value>
+  </data>
+  <data name="HideToolbar" xml:space="preserve">
+    <value>Hide the toolbar</value>
+  </data>
+  <data name="ChangeWorkflow" xml:space="preserve">
+    <value>Change the workflow…</value>
+  </data>
+  <data name="RegionTip" xml:space="preserve">
+    <value>Capture region: drag a rectangle or click a window</value>
+  </data>
+  <data name="WindowTip" xml:space="preserve">
+    <value>Capture window: pick one</value>
+  </data>
+  <data name="ActiveWindowTip" xml:space="preserve">
+    <value>Capture the active window (the one in front)</value>
+  </data>
+  <data name="FixedTip" xml:space="preserve">
+    <value>Capture a fixed-size region (right-click for sizes)</value>
+  </data>
+  <data name="FreehandTip" xml:space="preserve">
+    <value>Capture a freehand region</value>
+  </data>
+  <data name="PolygonTip" xml:space="preserve">
+    <value>Capture a polygon region</value>
+  </data>
+  <data name="RoundedTip" xml:space="preserve">
+    <value>Capture a rounded region</value>
+  </data>
+  <data name="ObjectTip" xml:space="preserve">
+    <value>Capture an object (a part of a window)</value>
+  </data>
+  <data name="MenuTip" xml:space="preserve">
+    <value>Capture an open menu (open it during the countdown)</value>
+  </data>
+  <data name="TextTip" xml:space="preserve">
+    <value>Capture text (OCR)</value>
+  </data>
+  <data name="RepeatTip" xml:space="preserve">
+    <value>Repeat the last capture</value>
+  </data>
+  <data name="RecordScreenTip" xml:space="preserve">
+    <value>Record Screen</value>
+  </data>
+  <data name="StopRecordingTip" xml:space="preserve">
+    <value>Stop Recording</value>
+  </data>
+  <data name="SavingRecordingTip" xml:space="preserve">
+    <value>Saving the Recording</value>
+  </data>
+  <data name="WithHotkey" xml:space="preserve">
+    <value>{0} ({1})</value>
+    <comment>a tooltip and its hotkey, e.g. Capture full screen (PrintScreen)</comment>
+  </data>
+</root>

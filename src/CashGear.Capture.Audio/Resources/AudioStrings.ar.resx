@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="SystemAudio" xml:space="preserve">
+    <value>صوت النظام</value>
+  </data>
+  <data name="Microphone" xml:space="preserve">
+    <value>الميكروفون</value>
+  </data>
+  <data name="SystemAudioDevice" xml:space="preserve">
+    <value>صوت النظام ({0})</value>
+  </data>
+  <data name="SystemAudioExcept" xml:space="preserve">
+    <value>صوت النظام باستثناء {0}</value>
+  </data>
+  <data name="AppSound" xml:space="preserve">
+    <value>صوت {0}</value>
+  </data>
+  <data name="ExcludeAppNeedsNewerWindows" xml:space="preserve">
+    <value>يتطلب تسجيل كل الأصوات باستثناء صوت تطبيق واحد الإصدار 2004 من Windows 10 أو إصدارًا أحدث.</value>
+  </data>
+  <data name="OneAppNeedsNewerWindows" xml:space="preserve">
+    <value>يتطلب تسجيل صوت تطبيق واحد الإصدار 2004 من Windows 10 أو إصدارًا أحدث.</value>
+  </data>
+  <data name="NotRunning" xml:space="preserve">
+    <value>لا يعمل</value>
+  </data>
+  <data name="ExcludedAppNotRunning" xml:space="preserve">
+    <value>{0} لا يعمل، لذا تُسجَّل كل الأصوات؛ وعند بدء تشغيله يُستبعد صوته.</value>
+  </data>
+  <data name="RecordedAppNotRunning" xml:space="preserve">
+    <value>{0} لا يعمل، لذا يكون صوته صامتًا حتى يبدأ تشغيله.</value>
+  </data>
+  <data name="CouldNotRecord" xml:space="preserve">
+    <value>تعذر تسجيل {0} ({1}).</value>
+  </data>
+  <data name="NoOutputDevice" xml:space="preserve">
+    <value>لا يوجد جهاز إخراج صوت متصل، لذا يكون صوت النظام صامتًا حتى يتم توصيل جهاز.</value>
+  </data>
+  <data name="NoMicrophone" xml:space="preserve">
+    <value>لا يوجد ميكروفون متصل، لذا يكون الميكروفون صامتًا حتى يتم توصيل ميكروفون.</value>
+  </data>
+  <data name="ChosenOutputDeviceMissing" xml:space="preserve">
+    <value>جهاز الإخراج المحدد في الإعدادات غير متصل، لذا يكون صوت النظام صامتًا حتى يتم توصيله.</value>
+  </data>
+  <data name="ChosenMicrophoneMissing" xml:space="preserve">
+    <value>الميكروفون المحدد في الإعدادات غير متصل، لذا يكون صامتًا حتى يتم توصيله.</value>
+  </data>
+  <data name="DevicesNotListed" xml:space="preserve">
+    <value>تعذر سرد أجهزة الصوت في Windows ({0}).</value>
+  </data>
+  <data name="DeviceNotAllowed" xml:space="preserve">
+    <value>لا يسمح Windows للتطبيقات باستخدام {0} (الإعدادات › الخصوصية › الميكروفون › السماح لتطبيقات سطح المكتب بالوصول إلى الميكروفون)، لذا لا يُسجَّل.</value>
+  </data>
+  <data name="DeviceUnusable" xml:space="preserve">
+    <value>تعذر استخدام {0} ({1})، لذا لا يُسجَّل.</value>
+  </data>
+  <data name="NoOtherMicrophone" xml:space="preserve">
+    <value>توقف {0} عن العمل، ولم يحل محله ميكروفون آخر. يكون صوته صامتًا في التسجيل حتى يحدث ذلك.</value>
+  </data>
+  <data name="NoOtherOutputDevice" xml:space="preserve">
+    <value>توقف {0} عن العمل، ولم يحل محله جهاز إخراج آخر. يكون صوته صامتًا في التسجيل حتى يحدث ذلك.</value>
+  </data>
+  <data name="NewDefaultMicrophone" xml:space="preserve">
+    <value>الميكروفون الذي يُسجَّل الآن هو {0}، الميكروفون الافتراضي الجديد.</value>
+  </data>
+  <data name="NewDefaultOutputDevice" xml:space="preserve">
+    <value>يأتي صوت النظام الآن من {0}، جهاز الإخراج الافتراضي الجديد.</value>
+  </data>
+  <data name="DeviceConnected" xml:space="preserve">
+    <value>{0} متصل الآن ويجري تسجيله.</value>
+  </data>
+  <data name="DeviceWorksAgain" xml:space="preserve">
+    <value>عاد {0} إلى العمل ويجري تسجيله.</value>
+  </data>
+  <data name="DeviceStopped" xml:space="preserve">
+    <value>توقف {0} عن العمل ({1}). يكون صوته صامتًا في التسجيل حتى يعود.</value>
+  </data>
+  <data name="DeviceDisconnected" xml:space="preserve">
+    <value>تم فصل {0}. يكون صوته صامتًا في التسجيل حتى يعود.</value>
+  </data>
+  <data name="NoDefaultMicrophone" xml:space="preserve">
+    <value>لم يعد هناك ميكروفون افتراضي، لذا لا يُسجَّل {0}. يكون صوته صامتًا في التسجيل حتى يتوفر ميكروفون.</value>
+  </data>
+  <data name="NoDefaultOutputDevice" xml:space="preserve">
+    <value>لم يعد هناك جهاز إخراج افتراضي، لذا لا يُسجَّل {0}. يكون صوته صامتًا في التسجيل حتى يتوفر جهاز.</value>
+  </data>
+  <data name="AppNotRecordable" xml:space="preserve">
+    <value>تعذر تسجيل {0} ({1}). يكون صامتًا في التسجيل حتى يمكن تسجيله.</value>
+  </data>
+  <data name="AppLeftOut" xml:space="preserve">
+    <value>{0} يعمل الآن، لذا يُستبعد صوته من التسجيل.</value>
+  </data>
+  <data name="RecordedAgain" xml:space="preserve">
+    <value>يجري تسجيل {0} من جديد.</value>
+  </data>
+  <data name="AppStartedAgain" xml:space="preserve">
+    <value>أُعيد تشغيل {0}؛ ويجري تسجيل صوته من جديد.</value>
+  </data>
+  <data name="AppStarted" xml:space="preserve">
+    <value>بدأ تشغيل {0}؛ ويجري تسجيل صوته.</value>
+  </data>
+  <data name="AppSoundStopped" xml:space="preserve">
+    <value>توقف {0} ({1}). يكون صامتًا في التسجيل حتى يمكن تسجيله من جديد.</value>
+  </data>
+  <data name="NoiseSuppressionOff" xml:space="preserve">
+    <value>منع الضوضاء متوقف.</value>
+  </data>
+  <data name="RnnoiseMissing" xml:space="preserve">
+    <value>يحتاج منع الضوضاء إلى RNNoise ({0})، وهو غير موجود في هذه النسخة من التطبيق.</value>
+  </data>
+  <data name="RnnoiseFrameSize" xml:space="preserve">
+    <value>يستخدم ملف rnnoise.dll هذا حجم إطار مختلفًا.</value>
+  </data>
+  <data name="RnnoiseNotLoaded" xml:space="preserve">
+    <value>تعذر تحميل RNNoise ({0}).</value>
+  </data>
+  <data name="RnnoiseNotStarted" xml:space="preserve">
+    <value>تعذر بدء RNNoise.</value>
+  </data>
+  <data name="MicrophoneUnusable" xml:space="preserve">
+    <value>لا يمكن استخدام الميكروفون.</value>
+  </data>
+  <data name="MicrophoneSentNoSound" xml:space="preserve">
+    <value>لم يُرسل الميكروفون أي صوت.</value>
+  </data>
+</root>

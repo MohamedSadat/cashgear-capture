@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using CashGear.Capture.VideoEditor.Model;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,10 @@ public sealed partial class PlaybackEngine : IDisposable
     private static readonly TimeSpan MixAhead = TimeSpan.FromMilliseconds(250);
 
     private const int BlockFrames = 1024;
+
+    /// <summary>The mixing thread's name, for debuggers.</summary>
+    [Localizable(false)]
+    private const string ThreadName = "Video editor mixer";
 
     private readonly Func<VideoProject> _project;
     private readonly Func<IAudioOutput?> _createOutput;
@@ -86,7 +91,7 @@ public sealed partial class PlaybackEngine : IDisposable
 
         _useClock = _output is null;
         Interlocked.Exchange(ref _silence, 0);
-        _mixer = new Thread(() => MixLoop(TimelineMixer.Sample(_start), stop)) { IsBackground = true, Name = "Video editor mixer" };
+        _mixer = new Thread(() => MixLoop(TimelineMixer.Sample(_start), stop)) { IsBackground = true, Name = ThreadName };
         _mixer.Start();
         try
         {

@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace CashGear.Capture.App.Tray;
 
 public enum NotificationKind
@@ -11,5 +13,5 @@ public enum NotificationKind
 public interface ITrayNotifier
 {
     /// <param name="onClick">Runs on the UI thread if the user clicks the notification (e.g. to show a saved file).</param>
-    void Notify(string title, string message, NotificationKind kind = NotificationKind.Info, Action? onClick = null);
+    void Notify([Localizable(true)] string title, [Localizable(true)] string message, NotificationKind kind = NotificationKind.Info, Action? onClick = null);
 }

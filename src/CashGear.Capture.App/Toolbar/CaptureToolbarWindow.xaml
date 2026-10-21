@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.Toolbar"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CaptureToolbarViewModel}"
-        Title="Capture toolbar" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="None"
+        Title="{x:Static r:ToolbarText.WindowTitle}" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="None"
         Topmost="True" ShowInTaskbar="False" ShowActivated="False" BorderThickness="1" BorderBrush="#60808080">
   <Window.Resources>
     <!-- The buttons keep the theme's own style; their size is set in code (CaptureToolbarWindow.Compact). -->
@@ -30,14 +31,14 @@
       </ContextMenu.ItemContainerStyle>
     </ContextMenu>
     <ContextMenu x:Key="ToolsMenu">
-      <MenuItem Header="_Magnifier" Command="{Binding Tray.ToggleMagnifierCommand}" InputGestureText="{Binding Tray.MagnifierHotkey}" />
-      <MenuItem Header="_Colour Picker" Command="{Binding Tray.PickColorCommand}" InputGestureText="{Binding Tray.ColorPickerHotkey}" />
-      <MenuItem Header="Screen _Ruler" IsCheckable="True" IsChecked="{Binding Tray.IsRulerVisible, Mode=OneWay}" Command="{Binding Tray.ToggleRulerCommand}" InputGestureText="{Binding Tray.RulerHotkey}" />
-      <MenuItem Header="Cross_hair" IsCheckable="True" IsChecked="{Binding Tray.IsCrosshairVisible, Mode=OneWay}" Command="{Binding Tray.ToggleCrosshairCommand}" InputGestureText="{Binding Tray.CrosshairHotkey}" />
+      <MenuItem Header="{x:Static r:TrayText.Magnifier}" Command="{Binding Tray.ToggleMagnifierCommand}" InputGestureText="{Binding Tray.MagnifierHotkey}" />
+      <MenuItem Header="{x:Static r:TrayText.ColorPicker}" Command="{Binding Tray.PickColorCommand}" InputGestureText="{Binding Tray.ColorPickerHotkey}" />
+      <MenuItem Header="{x:Static r:TrayText.ScreenRuler}" IsCheckable="True" IsChecked="{Binding Tray.IsRulerVisible, Mode=OneWay}" Command="{Binding Tray.ToggleRulerCommand}" InputGestureText="{Binding Tray.RulerHotkey}" />
+      <MenuItem Header="{x:Static r:TrayText.Crosshair}" IsCheckable="True" IsChecked="{Binding Tray.IsCrosshairVisible, Mode=OneWay}" Command="{Binding Tray.ToggleCrosshairCommand}" InputGestureText="{Binding Tray.CrosshairHotkey}" />
       <Separator />
-      <MenuItem Header="_Batch Process…" Command="{Binding Tray.BatchProcessCommand}" />
-      <MenuItem Header="Com_bine Images…" Command="{Binding Tray.CombineImagesCommand}" />
-      <MenuItem Header="Images to _PDF…" Command="{Binding Tray.ImagesToPdfCommand}" />
+      <MenuItem Header="{x:Static r:TrayText.BatchProcess}" Command="{Binding Tray.BatchProcessCommand}" />
+      <MenuItem Header="{x:Static r:TrayText.CombineImages}" Command="{Binding Tray.CombineImagesCommand}" />
+      <MenuItem Header="{x:Static r:TrayText.ImagesToPdf}" Command="{Binding Tray.ImagesToPdfCommand}" />
     </ContextMenu>
     <ContextMenu x:Key="AfterMenu" ItemsSource="{Binding AfterSteps}">
       <ContextMenu.ItemContainerStyle>
@@ -70,78 +71,78 @@
   <WrapPanel x:Name="Bar" Orientation="Horizontal" Margin="2">
     <Border x:Name="Grip" Width="14" Height="34" Background="Transparent" Cursor="SizeAll"
             MouseLeftButtonDown="OnGripDown" MouseMove="OnGripMove" MouseLeftButtonUp="OnGripUp"
-            ToolTip="Drag to move. Drop it at the edge of the screen to dock it there." AutomationProperties.Name="Move the toolbar">
+            ToolTip="{x:Static r:ToolbarText.GripTip}" AutomationProperties.Name="{x:Static r:ToolbarText.MoveToolbar}">
       <TextBlock x:Name="GripGlyph" Text="&#xE784;" Style="{StaticResource Glyph}" FontSize="12" Opacity="0.6" />
     </Border>
 
-    <Button Command="{Binding Tray.CaptureRegionCommand}" ToolTip="{Binding RegionTip}" AutomationProperties.Name="Capture region">
+    <Button Command="{Binding Tray.CaptureRegionCommand}" ToolTip="{Binding RegionTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureRegion}">
       <Path Style="{StaticResource Icon}" Data="M2,2 H5 M7,2 H9 M11,2 H14 V5 M14,7 V9 M14,11 V14 H11 M9,14 H7 M5,14 H2 V11 M2,9 V7 M2,5 V2" />
     </Button>
-    <Button Command="{Binding Tray.CaptureWindowCommand}" ToolTip="{Binding WindowTip}" AutomationProperties.Name="Capture window">
+    <Button Command="{Binding Tray.CaptureWindowCommand}" ToolTip="{Binding WindowTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureWindow}">
       <Path Style="{StaticResource Icon}" Data="M1.5,2.5 H14.5 V13.5 H1.5 Z M1.5,5.5 H14.5 M10,4 H10.5 M12,4 H12.5" />
     </Button>
-    <Button Command="{Binding CaptureActiveWindowCommand}" ToolTip="{Binding ActiveWindowTip}" AutomationProperties.Name="Capture active window">
+    <Button Command="{Binding CaptureActiveWindowCommand}" ToolTip="{Binding ActiveWindowTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureActiveWindow}">
       <Grid>
         <Path Style="{StaticResource Icon}" Data="M1.5,2.5 H14.5 V13.5 H1.5 Z" />
         <Path Style="{StaticResource Icon}" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="M1.5,2.5 H14.5 V6 H1.5 Z" />
       </Grid>
     </Button>
-    <Button Command="{Binding Tray.CaptureFullScreenCommand}" ToolTip="{Binding FullScreenTip}" AutomationProperties.Name="Capture full screen">
+    <Button Command="{Binding Tray.CaptureFullScreenCommand}" ToolTip="{Binding FullScreenTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureFullScreen}">
       <Path Style="{StaticResource Icon}" Data="M1.5,6 V1.5 H6 M10,1.5 H14.5 V6 M14.5,10 V14.5 H10 M6,14.5 H1.5 V10 M5,5 H11 V11 H5 Z" />
     </Button>
-    <Button Command="{Binding Tray.CaptureScrollingCommand}" ToolTip="{Binding ScrollingTip}" AutomationProperties.Name="Scrolling capture">
+    <Button Command="{Binding Tray.CaptureScrollingCommand}" ToolTip="{Binding ScrollingTip}" AutomationProperties.Name="{x:Static r:ToolbarText.ScrollingCapture}">
       <Path Style="{StaticResource Icon}" Data="M2.5,1.5 H13.5 V9.5 H2.5 Z M8,11 V15 M5.5,12.5 L8,15 L10.5,12.5" />
     </Button>
 
     <Border Tag="Separator" Width="1" Height="24" Margin="3,0" Background="#60808080" />
 
     <Button x:Name="FixedButton" Command="{Binding Tray.CaptureFixedRegionCommand}" ToolTip="{Binding FixedTip}"
-            AutomationProperties.Name="Capture fixed-size region" MouseRightButtonUp="OnFixedSizes">
+            AutomationProperties.Name="{x:Static r:ToolbarText.CaptureFixedRegion}" MouseRightButtonUp="OnFixedSizes">
       <Path Style="{StaticResource Icon}" Data="M5,5 H14.5 V14.5 H5 Z M5,1.5 H14.5 M5,0.5 V2.5 M14.5,0.5 V2.5 M1.5,5 V14.5 M0.5,5 H2.5 M0.5,14.5 H2.5" />
     </Button>
-    <Button Command="{Binding Tray.CaptureFreehandCommand}" ToolTip="{Binding FreehandTip}" AutomationProperties.Name="Capture freehand region">
+    <Button Command="{Binding Tray.CaptureFreehandCommand}" ToolTip="{Binding FreehandTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureFreehandRegion}">
       <Path Style="{StaticResource Icon}" Data="M4,8.5 C1.5,4.5 5.5,1.5 9,2.5 C13,3.5 15.5,7.5 12.5,11 C10.5,13.5 6,14.5 3.5,12.5 C2,11 5,10 4,8.5 Z" />
     </Button>
-    <Button Command="{Binding Tray.CapturePolygonCommand}" ToolTip="{Binding PolygonTip}" AutomationProperties.Name="Capture polygon region">
+    <Button Command="{Binding Tray.CapturePolygonCommand}" ToolTip="{Binding PolygonTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CapturePolygonRegion}">
       <Path Style="{StaticResource Icon}" Data="M8,1.5 L14.5,6.5 L12,14.5 H4 L1.5,6.5 Z" />
     </Button>
-    <Button Command="{Binding Tray.CaptureRoundedRegionCommand}" ToolTip="{Binding RoundedTip}" AutomationProperties.Name="Capture rounded region">
+    <Button Command="{Binding Tray.CaptureRoundedRegionCommand}" ToolTip="{Binding RoundedTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureRoundedRegion}">
       <Path Style="{StaticResource Icon}" Data="M5,2.5 H11 A3,3 0 0 1 14,5.5 V10.5 A3,3 0 0 1 11,13.5 H5 A3,3 0 0 1 2,10.5 V5.5 A3,3 0 0 1 5,2.5 Z" />
     </Button>
-    <Button Command="{Binding Tray.CaptureObjectCommand}" ToolTip="{Binding ObjectTip}" AutomationProperties.Name="Capture object">
+    <Button Command="{Binding Tray.CaptureObjectCommand}" ToolTip="{Binding ObjectTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureObject}">
       <Grid>
         <Path Style="{StaticResource Icon}" Data="M1.5,1.5 H14.5 V14.5 H1.5 Z" StrokeDashArray="1.5 1.5" StrokeThickness="1" />
         <Path Style="{StaticResource Icon}" Data="M4.5,5.5 H11.5 V10.5 H4.5 Z" />
       </Grid>
     </Button>
-    <Button Command="{Binding Tray.CaptureMenuCommand}" ToolTip="{Binding MenuTip}" AutomationProperties.Name="Capture open menu">
+    <Button Command="{Binding Tray.CaptureMenuCommand}" ToolTip="{Binding MenuTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureOpenMenu}">
       <Path Style="{StaticResource Icon}" Data="M2.5,1.5 H11.5 V14.5 H2.5 Z M4.5,4.5 H9.5 M4.5,8 H9.5 M4.5,11.5 H9.5 M11.5,7 H14.5 V12 H11.5" />
     </Button>
-    <Button Command="{Binding Tray.CaptureTextCommand}" ToolTip="{Binding TextTip}" AutomationProperties.Name="Capture text">
+    <Button Command="{Binding Tray.CaptureTextCommand}" ToolTip="{Binding TextTip}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureText}">
       <Path Style="{StaticResource Icon}" Data="M1.5,4.5 V1.5 H4.5 M11.5,1.5 H14.5 V4.5 M14.5,11.5 V14.5 H11.5 M4.5,14.5 H1.5 V11.5 M4.5,5 H11.5 M8,5 V11.5" />
     </Button>
 
     <Border Tag="Separator" Width="1" Height="24" Margin="3,0" Background="#60808080" />
 
-    <Button x:Name="ToolsButton" Click="OnTools" ToolTip="Tools: magnifier, colour picker, ruler, crosshair, batch, combine, images to PDF" AutomationProperties.Name="Screen tools">
+    <Button x:Name="ToolsButton" Click="OnTools" ToolTip="{x:Static r:ToolbarText.ToolsTip}" AutomationProperties.Name="{x:Static r:ToolbarText.ScreenTools}">
       <Path Style="{StaticResource Icon}" Data="M6.5,11.5 A5,5 0 1 1 6.5,1.5 A5,5 0 1 1 6.5,11.5 Z M10,10 L14.5,14.5" />
     </Button>
-    <Button Command="{Binding Tray.RepeatLastCaptureCommand}" ToolTip="{Binding RepeatTip}" AutomationProperties.Name="Repeat last capture">
+    <Button Command="{Binding Tray.RepeatLastCaptureCommand}" ToolTip="{Binding RepeatTip}" AutomationProperties.Name="{x:Static r:ToolbarText.RepeatLastCapture}">
       <TextBlock Text="&#xE8EE;" Style="{StaticResource Glyph}" />
     </Button>
-    <Button Command="{Binding Tray.ToggleRecordingCommand}" ToolTip="{Binding RecordTip}" AutomationProperties.Name="Record the screen">
+    <Button Command="{Binding Tray.ToggleRecordingCommand}" ToolTip="{Binding RecordTip}" AutomationProperties.Name="{x:Static r:ToolbarText.RecordScreen}">
       <Ellipse Width="13" Height="13" Fill="#E81123" />
     </Button>
-    <Button x:Name="DelayButton" Click="OnDelay" ToolTip="Capture delay" AutomationProperties.Name="Capture delay">
+    <Button x:Name="DelayButton" Click="OnDelay" ToolTip="{x:Static r:ToolbarText.CaptureDelay}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureDelay}">
       <Path Style="{StaticResource Icon}" Data="M8,15 A6,6 0 1 1 8,3 A6,6 0 1 1 8,15 Z M8,6 V9 L10,10.5 M6.5,1 H9.5" />
     </Button>
-    <Button x:Name="AfterButton" Click="OnAfterCapture" ToolTip="After capture: editor, file, clipboard" AutomationProperties.Name="After capture">
+    <Button x:Name="AfterButton" Click="OnAfterCapture" ToolTip="{x:Static r:ToolbarText.AfterCaptureTip}" AutomationProperties.Name="{x:Static r:ToolbarText.AfterCapture}">
       <Path Style="{StaticResource Icon}" Data="M8,1.5 V10 M4.5,6.5 L8,10 L11.5,6.5 M2,12 V14.5 H14 V12" />
     </Button>
-    <Button Command="{Binding Tray.OpenSettingsCommand}" ToolTip="Settings" AutomationProperties.Name="Settings">
+    <Button Command="{Binding Tray.OpenSettingsCommand}" ToolTip="{x:Static r:ToolbarText.Settings}" AutomationProperties.Name="{x:Static r:ToolbarText.Settings}">
       <TextBlock Text="&#xE713;" Style="{StaticResource Glyph}" />
     </Button>
-    <Button Command="{Binding HideToolbarCommand}" ToolTip="Hide the toolbar (tray › Capture Toolbar brings it back)" AutomationProperties.Name="Hide the toolbar">
+    <Button Command="{Binding HideToolbarCommand}" ToolTip="{x:Static r:ToolbarText.HideTip}" AutomationProperties.Name="{x:Static r:ToolbarText.HideToolbar}">
       <TextBlock Text="&#xE711;" Style="{StaticResource Glyph}" FontSize="12" />
     </Button>
   </WrapPanel>

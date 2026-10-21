@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Editor.Effects;
 using CashGear.Capture.Editor.Model;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -158,15 +159,15 @@ public sealed class AnchorCell(AnchorParameter owner, Anchor anchor) : Observabl
 
     public string Name => anchor switch
     {
-        Anchor.TopLeft => "Top left",
-        Anchor.Top => "Top",
-        Anchor.TopRight => "Top right",
-        Anchor.Left => "Left",
-        Anchor.Center => "Centre",
-        Anchor.Right => "Right",
-        Anchor.BottomLeft => "Bottom left",
-        Anchor.Bottom => "Bottom",
-        _ => "Bottom right",
+        Anchor.TopLeft => EditorText.TopLeft,
+        Anchor.Top => EditorText.Top,
+        Anchor.TopRight => EditorText.TopRight,
+        Anchor.Left => EditorText.Left,
+        Anchor.Center => EditorText.Centre,
+        Anchor.Right => EditorText.Right,
+        Anchor.BottomLeft => EditorText.BottomLeft,
+        Anchor.Bottom => EditorText.Bottom,
+        _ => EditorText.BottomRight,
     };
 
     public bool IsSelected

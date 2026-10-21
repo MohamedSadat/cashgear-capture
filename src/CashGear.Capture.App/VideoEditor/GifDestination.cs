@@ -34,7 +34,7 @@ internal sealed class GifDestination(ProjectExporter exporter, FfmpegRuntime ffm
 {
     public string Id => DestinationIds.Gif;
 
-    public string DisplayName => "Make a GIF";
+    public string DisplayName => VideoEditorText.MakeGif;
 
     public bool SupportsVideo => true;
 
@@ -43,7 +43,7 @@ internal sealed class GifDestination(ProjectExporter exporter, FfmpegRuntime ffm
         ArgumentNullException.ThrowIfNull(item);
         if (item.Kind != OutputKind.Video || item.SavedPath is not { } path)
         {
-            return OutputResult.Skip("GIFs are made from recordings only.");
+            return OutputResult.Skip(VideoEditorText.GifsFromRecordingsOnly);
         }
 
         if (!(features ?? FeatureGate.Open).IsEnabled(ProFeature.GifExport))
@@ -62,14 +62,14 @@ internal sealed class GifDestination(ProjectExporter exporter, FfmpegRuntime ffm
             var project = await Task.Run(() => ProjectFactory.FromRecording(ProjectFactory.ReadAsset(path)), ct).ConfigureAwait(false);
             var options = GifChoices.From(state.Current.VideoEditor);
             var result = await exporter.ExportAsync(new ExportRequest(project, ExportPresets.Gif, QualityPreset.High, gif, Gif: options), null, ct).ConfigureAwait(false);
-            return OutputResult.Done($"Saved {Path.GetFileName(gif)} ({result.Bytes / 1024.0 / 1024.0:0.0} MB)") with { Path = gif };
+            return OutputResult.Done(VideoEditorText.GifSaved(Path.GetFileName(gif), CommonText.Megabytes(result.Bytes / 1024.0 / 1024.0))) with { Path = gif };
         }
         catch (Exception e) when (e is ExportException or FfmpegException or IOException or UnauthorizedAccessException)
         {
-            return OutputResult.Failed($"The GIF couldn't be made: {e.Message}");
+            return OutputResult.Failed(VideoEditorText.GifNotMade(e.Message));
         }
     }
 
     public Task<OutputResult> TestAsync(CancellationToken ct) =>
-        Task.FromResult(ffmpeg.Problem is { } problem ? OutputResult.Failed(problem) : OutputResult.Done("Nothing to set up: GIFs are made with the export window's GIF choices."));
+        Task.FromResult(ffmpeg.Problem is { } problem ? OutputResult.Failed(problem) : OutputResult.Done(VideoEditorText.GifNothingToSetUp));
 }

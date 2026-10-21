@@ -157,7 +157,7 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
         return window;
     }
 
-    public void Notify(string title, string message, NotificationKind kind = NotificationKind.Info, Action? onClick = null)
+    public void Notify([Localizable(true)] string title, [Localizable(true)] string message, NotificationKind kind = NotificationKind.Info, Action? onClick = null)
     {
         if (!ui.CheckAccess())
         {

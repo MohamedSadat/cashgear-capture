@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.ImageTools"
         xmlns:editor="clr-namespace:CashGear.Capture.App.Editor"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CombineViewModel}"
-        Title="Combine Images – CashGear Capture" Width="980" Height="640" MinWidth="760" MinHeight="460"
+        Title="{x:Static r:ImageToolsText.CombineTitle}" Width="980" Height="640" MinWidth="760" MinHeight="460"
         WindowStartupLocation="CenterScreen">
   <Window.Resources>
     <ResourceDictionary>
@@ -22,8 +23,8 @@
   <DockPanel Margin="16">
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
       <TextBlock Text="{Binding Error}" Foreground="#C42B1C" VerticalAlignment="Center" Margin="0,0,12,0" MaxWidth="460" TextWrapping="Wrap" />
-      <Button Content="Save as…" Command="{Binding SaveAsCommand}" MinWidth="90" Margin="0,0,8,0" />
-      <Button Content="Open in the editor" Command="{Binding OpenInEditorCommand}" IsDefault="True" FontWeight="SemiBold" />
+      <Button Content="{x:Static r:EditorText.SaveAs}" Command="{Binding SaveAsCommand}" MinWidth="90" Margin="0,0,8,0" />
+      <Button Content="{x:Static r:ImageToolsText.OpenInEditor}" Command="{Binding OpenInEditorCommand}" IsDefault="True" FontWeight="SemiBold" />
     </StackPanel>
 
     <Grid>
@@ -39,18 +40,18 @@
 
       <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
         <StackPanel>
-          <TextBlock Text="Layout" />
-          <ComboBox Margin="0,2,0,0" ItemsSource="{Binding Layouts}" SelectedItem="{Binding Layout}" DisplayMemberPath="Label" AutomationProperties.Name="Layout" />
+          <TextBlock Text="{x:Static r:ImageToolsText.Layout}" />
+          <ComboBox Margin="0,2,0,0" ItemsSource="{Binding Layouts}" SelectedItem="{Binding Layout}" DisplayMemberPath="Label" AutomationProperties.Name="{x:Static r:ImageToolsText.Layout}" />
           <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding ShowColumns, Converter={StaticResource Visible}}">
-            <TextBlock Text="Columns" VerticalAlignment="Center" Margin="0,0,8,0" />
-            <TextBox Text="{Binding Columns}" Width="60" AutomationProperties.Name="Columns" />
+            <TextBlock Text="{x:Static r:ImageToolsText.Columns}" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBox Text="{Binding Columns}" Width="60" AutomationProperties.Name="{x:Static r:ImageToolsText.Columns}" />
           </StackPanel>
-          <TextBlock Text="Aligned" Margin="0,8,0,0" />
-          <ComboBox Margin="0,2,0,0" ItemsSource="{Binding Alignments}" SelectedItem="{Binding Alignment}" DisplayMemberPath="Label" AutomationProperties.Name="Aligned" />
-          <TextBlock Margin="0,8,0,0"><Run Text="Space between: " /><Run Text="{Binding Spacing, Mode=OneWay}" /><Run Text=" px" /></TextBlock>
-          <Slider Minimum="0" Maximum="100" Value="{Binding Spacing}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="Space between" />
-          <TextBlock Margin="0,8,0,0"><Run Text="Border around: " /><Run Text="{Binding Margin, Mode=OneWay}" /><Run Text=" px" /></TextBlock>
-          <Slider Minimum="0" Maximum="100" Value="{Binding Margin}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="Border around" />
+          <TextBlock Text="{x:Static r:ImageToolsText.Aligned}" Margin="0,8,0,0" />
+          <ComboBox Margin="0,2,0,0" ItemsSource="{Binding Alignments}" SelectedItem="{Binding Alignment}" DisplayMemberPath="Label" AutomationProperties.Name="{x:Static r:ImageToolsText.Aligned}" />
+          <TextBlock Margin="0,8,0,0" Text="{Binding Spacing, Mode=OneWay, StringFormat={x:Static r:ImageToolsText.SpaceBetweenFormat}}" />
+          <Slider Minimum="0" Maximum="100" Value="{Binding Spacing}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="{x:Static r:ImageToolsText.SpaceBetween}" />
+          <TextBlock Margin="0,8,0,0" Text="{Binding Margin, Mode=OneWay, StringFormat={x:Static r:ImageToolsText.BorderAroundFormat}}" />
+          <Slider Minimum="0" Maximum="100" Value="{Binding Margin}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="{x:Static r:ImageToolsText.BorderAround}" />
           <ContentControl Content="{Binding Background}" Focusable="False" />
         </StackPanel>
       </ScrollViewer>

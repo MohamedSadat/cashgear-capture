@@ -2,6 +2,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Ocr;
+using CashGear.Capture.Engine.Resources;
 using Microsoft.Extensions.Logging;
 using Windows.Globalization;
 using Windows.Graphics.Imaging;
@@ -40,7 +41,7 @@ internal sealed partial class WindowsOcrService(ILogger<WindowsOcrService> logge
         var tags = languageTag is null ? AutomaticLanguages() : [Resolve(languageTag)];
         if (tags.Count == 0)
         {
-            throw new InvalidOperationException("Windows has no text recognition (OCR) language installed.");
+            throw new InvalidOperationException(EngineStrings.OcrNoLanguage);
         }
 
         var scale = ScaleFor(image.Width, image.Height);
@@ -79,7 +80,7 @@ internal sealed partial class WindowsOcrService(ILogger<WindowsOcrService> logge
     /// <exception cref="ArgumentException">That language's OCR isn't installed.</exception>
     private string Resolve(string tag) =>
         Match(tag) ?? throw new ArgumentException(
-            $"Text recognition for \"{tag}\" isn't installed. Add it in Windows Settings › Time & language › Language (Optical character recognition).",
+            EngineStrings.OcrLanguageMissing(tag),
             nameof(tag));
 
     /// <summary>The installed OCR language for a tag: the same tag, else the same language (ar-EG → ar-SA).</summary>
@@ -103,7 +104,7 @@ internal sealed partial class WindowsOcrService(ILogger<WindowsOcrService> logge
             if (!_engines.TryGetValue(tag, out var engine))
             {
                 engine = WinOcrEngine.TryCreateFromLanguage(new Language(tag))
-                    ?? throw new InvalidOperationException($"Windows could not start text recognition for {tag}.");
+                    ?? throw new InvalidOperationException(EngineStrings.OcrCouldNotStart(tag));
                 _engines[tag] = engine;
             }
 

@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Security.Authentication;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Outputs.Credentials;
+using CashGear.Capture.Outputs.Resources;
 using FluentFTP;
 using FluentFTP.Exceptions;
 
@@ -39,11 +40,11 @@ public sealed class FtpDestination(ServerDestination server, ICredentialStore cr
             await client.Disconnect(ct).ConfigureAwait(false);
             if (status != FtpStatus.Success)
             {
-                return OutputResult.Failed($"{DisplayName} didn't take the file.");
+                return OutputResult.Failed(OutputsStrings.FileNotTaken(DisplayName));
             }
 
             var link = RemoteFiles.Link(server, name);
-            return new OutputResult(true, $"Uploaded to {DisplayName} as {name}") { Link = link };
+            return new OutputResult(true, OutputsStrings.UploadedAs(DisplayName, name)) { Link = link };
         }
         catch (Exception ex) when (Failure(ex, certificate) is { } failure)
         {
@@ -64,13 +65,14 @@ public sealed class FtpDestination(ServerDestination server, ICredentialStore cr
             var status = await client.UploadBytes("CashGear Capture test"u8.ToArray(), probe, FtpRemoteExists.NoCheck, createRemoteDir: false, token: ct).ConfigureAwait(false);
             if (status != FtpStatus.Success)
             {
-                return OutputResult.Failed($"Logged in, but couldn't write to {Shown(server.RemoteFolder)}.");
+                return OutputResult.Failed(OutputsStrings.LoggedInCantWrite(Shown(server.RemoteFolder)));
             }
 
             await client.DeleteFile(probe, ct).ConfigureAwait(false);
             await client.Disconnect(ct).ConfigureAwait(false);
-            var security = server.Protocol == ServerProtocol.Ftp ? "not encrypted" : "encrypted with TLS";
-            return OutputResult.Done($"Connected to {server.Host} as {UserName}, {security}; a test file was written to {Shown(server.RemoteFolder)} and deleted.");
+            return OutputResult.Done(server.Protocol == ServerProtocol.Ftp
+                ? OutputsStrings.FtpTestPlain(server.Host, UserName, Shown(server.RemoteFolder))
+                : OutputsStrings.FtpTestTls(server.Host, UserName, Shown(server.RemoteFolder)));
         }
         catch (Exception ex) when (Failure(ex, certificate) is { } failure)
         {
@@ -140,18 +142,18 @@ public sealed class FtpDestination(ServerDestination server, ICredentialStore cr
         if (certificate is { Accepted: false, Fingerprint: { } fingerprint })
         {
             return OutputResult.Failed(server.TrustedFingerprint is null
-                ? $"Windows doesn't trust {server.Host}'s certificate ({Describe(certificate.Problem)}). Its fingerprint is {fingerprint}; trust it only if the server's owner confirms it."
-                : $"{server.Host}'s certificate has changed: it is now {fingerprint}, not the one you trusted. Someone may be in between; check with the server's owner.")
+                ? OutputsStrings.CertificateNotTrusted(server.Host, Describe(certificate.Problem), fingerprint)
+                : OutputsStrings.CertificateChanged(server.Host, fingerprint))
                 with { Fingerprint = fingerprint };
         }
 
         return ex switch
         {
-            FtpAuthenticationException => OutputResult.Failed($"{server.Host} refused the user name or password ({ex.Message.Trim()})."),
-            FtpSecurityNotAvailableException => OutputResult.Failed($"{server.Host} doesn't offer encryption (TLS); choose plain FTP only if that is acceptable."),
-            FtpCommandException command => OutputResult.Failed($"{server.Host} said: {command.Message.Trim()}"),
-            AuthenticationException => OutputResult.Failed($"The encrypted connection to {server.Host} failed: {ex.Message}"),
-            SocketException or TimeoutException or IOException or FtpException => OutputResult.Failed($"Couldn't reach {server.Host}:{server.EffectivePort}: {Innermost(ex).Message}"),
+            FtpAuthenticationException => OutputResult.Failed(OutputsStrings.FtpLoginRefused(server.Host, ex.Message.Trim())),
+            FtpSecurityNotAvailableException => OutputResult.Failed(OutputsStrings.NoTls(server.Host)),
+            FtpCommandException command => OutputResult.Failed(OutputsStrings.ServerSaid(server.Host, command.Message.Trim())),
+            AuthenticationException => OutputResult.Failed(OutputsStrings.TlsFailed(server.Host, ex.Message)),
+            SocketException or TimeoutException or IOException or FtpException => OutputResult.Failed(OutputsStrings.CouldNotReachPort(server.Host, server.EffectivePort, Innermost(ex).Message)),
             _ => null,
         };
     }
@@ -160,12 +162,12 @@ public sealed class FtpDestination(ServerDestination server, ICredentialStore cr
 
     private static string Describe(SslPolicyErrors errors) =>
         errors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch) && errors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors)
-            ? "it is for another name and isn't from a known authority"
-            : errors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch) ? "it is for another name"
-            : errors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors) ? "it isn't from a known authority, e.g. self-signed"
-            : "no certificate";
+            ? OutputsStrings.CertificateWrongNameAndAuthority
+            : errors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch) ? OutputsStrings.CertificateWrongName
+            : errors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors) ? OutputsStrings.CertificateUnknownAuthority
+            : OutputsStrings.NoCertificate;
 
-    private static string Shown(string? folder) => RemoteFiles.Folder(folder) is { Length: > 0 } path ? path : "the login folder";
+    private static string Shown(string? folder) => RemoteFiles.Folder(folder) is { Length: > 0 } path ? path : OutputsStrings.LoginFolder;
 
     private sealed class SeenCertificate
     {
@@ -180,5 +182,5 @@ public sealed class FtpDestination(ServerDestination server, ICredentialStore cr
 /// <summary>How servers are named in menus and messages.</summary>
 internal static class ServerNames
 {
-    public static string Of(ServerDestination server) => server.Name.Length > 0 ? server.Name : server.Host.Length > 0 ? server.Host : "Server";
+    public static string Of(ServerDestination server) => server.Name.Length > 0 ? server.Name : server.Host.Length > 0 ? server.Host : OutputsStrings.Server;
 }

@@ -2,6 +2,7 @@ using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Imaging;
 using CashGear.Capture.Editor.Pdf;
 using CashGear.Capture.Outputs.Office;
+using CashGear.Capture.Outputs.Resources;
 
 namespace CashGear.Capture.Outputs.Pdf;
 
@@ -13,7 +14,7 @@ public sealed class PdfDestination(PdfSettings settings, string captureFolder) :
 {
     public string Id => DestinationIds.Pdf;
 
-    public string DisplayName => "PDF";
+    public string DisplayName => OutputsStrings.Pdf;
 
     public bool SupportsVideo => false;
 
@@ -22,7 +23,7 @@ public sealed class PdfDestination(PdfSettings settings, string captureFolder) :
         ArgumentNullException.ThrowIfNull(item);
         if (item.Image is not { } capture)
         {
-            return OutputResult.Skip("A PDF takes pictures only.");
+            return OutputResult.Skip(OutputsStrings.PdfPicturesOnly);
         }
 
         string? target = null;
@@ -35,10 +36,10 @@ public sealed class PdfDestination(PdfSettings settings, string captureFolder) :
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return OutputResult.Failed($"Could not save the PDF{(target is null ? string.Empty : " " + Path.GetFileName(target))}: {ex.Message}");
+            return OutputResult.Failed(target is null ? OutputsStrings.PdfNotSaved(ex.Message) : OutputsStrings.PdfNotSavedNamed(Path.GetFileName(target), ex.Message));
         }
 
-        return new OutputResult(true, $"Saved {Path.GetFileName(target)}") { Path = target };
+        return new OutputResult(true, OutputsStrings.SavedFile(Path.GetFileName(target))) { Path = target };
     }
 
     public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OfficeFiles.CheckFolder(captureFolder));

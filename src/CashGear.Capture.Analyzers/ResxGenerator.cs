@@ -172,8 +172,13 @@ public sealed class ResxGenerator : IIncrementalGenerator
         code.AppendLine("        /// <summary>The language to use instead of the thread's UI culture, or null.</summary>");
         code.AppendLine("        public static global::System.Globalization.CultureInfo? Culture { get; set; }");
         code.AppendLine();
-        code.AppendLine("        /// <summary>The string called <paramref name=\"name\"/>, or the name itself when there is none.</summary>");
-        code.AppendLine("        public static string GetString(string name) => ResourceManager.GetString(name, Culture) ?? name;");
+        code.AppendLine("        /// <summary>");
+        code.AppendLine("        /// The string called <paramref name=\"name\"/>, or the name itself when there is none. A line break is a");
+        code.AppendLine("        /// single LF, whatever line endings the .resx file has.");
+        code.AppendLine("        /// </summary>");
+        code.AppendLine("        public static string GetString(string name) => Lines(ResourceManager.GetString(name, Culture)) ?? name;");
+        code.AppendLine();
+        code.AppendLine("        private static string? Lines(string? text) => text is not null && text.IndexOf('\\r') >= 0 ? text.Replace(\"\\r\\n\", \"\\n\") : text;");
         code.AppendLine();
         code.AppendLine("        private static string Format(string name, params object?[] args) =>");
         code.AppendLine("            string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetString(name), args);");
@@ -183,8 +188,8 @@ public sealed class ResxGenerator : IIncrementalGenerator
             code.AppendLine("        private static string Plural(string name, long count, params object?[] args)");
             code.AppendLine("        {");
             code.AppendLine("            var language = (Culture ?? global::System.Globalization.CultureInfo.CurrentUICulture).TwoLetterISOLanguageName;");
-            code.AppendLine("            var template = ResourceManager.GetString(name + \"_\" + PluralForm(language, count), Culture)");
-            code.AppendLine("                ?? ResourceManager.GetString(name + \"_other\", Culture)");
+            code.AppendLine("            var template = Lines(ResourceManager.GetString(name + \"_\" + PluralForm(language, count), Culture)");
+            code.AppendLine("                ?? ResourceManager.GetString(name + \"_other\", Culture))");
             code.AppendLine("                ?? name;");
             code.AppendLine("            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, template, args);");
             code.AppendLine("        }");

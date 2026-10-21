@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.VideoEditor"
         xmlns:editor="clr-namespace:CashGear.Capture.App.Editor"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:VideoEditorViewModel}"
         Title="{Binding Title}"
@@ -46,18 +47,18 @@
       <Border Height="{Binding Height}" BorderThickness="0,0,0,1" BorderBrush="#30808080" Padding="8,3,4,3" Background="Transparent">
         <Border.ContextMenu>
           <ContextMenu>
-            <MenuItem Header="_Delete the Track" Command="{Binding DeleteCommand}" />
+            <MenuItem Header="{x:Static r:VideoEditorText.DeleteTrack}" Command="{Binding DeleteCommand}" />
           </ContextMenu>
         </Border.ContextMenu>
         <DockPanel LastChildFill="True">
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-            <ToggleButton Content="M" Width="26" Height="24" Padding="0" Margin="2,0" ToolTip="Mute"
+            <ToggleButton Content="M" Width="26" Height="24" Padding="0" Margin="2,0" ToolTip="{x:Static r:VideoEditorText.MuteTip}"
                           IsChecked="{Binding IsMuted}" Visibility="{Binding HasSound, Converter={StaticResource Visible}}" />
-            <ToggleButton Content="S" Width="26" Height="24" Padding="0" Margin="2,0" ToolTip="Solo: hear only the solo tracks"
+            <ToggleButton Content="S" Width="26" Height="24" Padding="0" Margin="2,0" ToolTip="{x:Static r:VideoEditorText.SoloTip}"
                           IsChecked="{Binding IsSolo}" Visibility="{Binding HasSound, Converter={StaticResource Visible}}" />
-            <CheckBox ToolTip="Shown in the video" IsChecked="{Binding IsShown}" MinWidth="0" Margin="2,0"
+            <CheckBox ToolTip="{x:Static r:VideoEditorText.ShownTip}" IsChecked="{Binding IsShown}" MinWidth="0" Margin="2,0"
                       Visibility="{Binding HasPictures, Converter={StaticResource Visible}}" />
-            <ToggleButton Content="L" Width="26" Height="24" Padding="0" Margin="2,0" ToolTip="Lock: edits leave this track alone"
+            <ToggleButton Content="L" Width="26" Height="24" Padding="0" Margin="2,0" ToolTip="{x:Static r:VideoEditorText.LockTip}"
                           IsChecked="{Binding IsLocked}" />
           </StackPanel>
           <StackPanel VerticalAlignment="Center">
@@ -65,7 +66,7 @@
             <TextBlock Text="{Binding Kind}" FontSize="11" Opacity="0.7"
                        Visibility="{Binding HasPictures, Converter={StaticResource Visible}}" />
             <Slider Minimum="0" Maximum="200" Value="{Binding Volume}" Width="64" HorizontalAlignment="Left" Margin="0,-2,0,0"
-                    ToolTip="{Binding Volume}" ToolTipService.ShowDuration="2000" AutomationProperties.Name="Track volume"
+                    ToolTip="{Binding Volume}" ToolTipService.ShowDuration="2000" AutomationProperties.Name="{x:Static r:VideoEditorText.TrackVolume}"
                     Visibility="{Binding HasSound, Converter={StaticResource Visible}}" />
           </StackPanel>
         </DockPanel>
@@ -76,61 +77,61 @@
 
   <DockPanel>
     <Menu DockPanel.Dock="Top">
-      <MenuItem Header="_File">
-        <MenuItem Header="_Add a Recording…" Command="{Binding AddRecordingCommand}" />
-        <MenuItem Header="Add _Music…" Command="{Binding AddMusicCommand}" ToolTip="A sound file on a track of its own, under the voice" />
+      <MenuItem Header="{x:Static r:VideoEditorText.MenuFile}">
+        <MenuItem Header="{x:Static r:VideoEditorText.AddRecordingMenu}" Command="{Binding AddRecordingCommand}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.AddMusicMenu}" Command="{Binding AddMusicCommand}" ToolTip="{x:Static r:VideoEditorText.AddMusicTip}" />
         <Separator />
-        <MenuItem Header="_Save Project" Command="{Binding SaveProjectCommand}" InputGestureText="Ctrl+S" />
-        <MenuItem Header="Save Project _As…" Command="{Binding SaveProjectAsCommand}" InputGestureText="Ctrl+Shift+S" />
-        <MenuItem Header="Save with _Media…" Command="{Binding SaveWithMediaCommand}" ToolTip="A copy of the project with its recordings inside, to take to another PC" />
+        <MenuItem Header="{x:Static r:VideoEditorText.SaveProjectMenu}" Command="{Binding SaveProjectCommand}" InputGestureText="Ctrl+S" />
+        <MenuItem Header="{x:Static r:VideoEditorText.SaveProjectAsMenu}" Command="{Binding SaveProjectAsCommand}" InputGestureText="Ctrl+Shift+S" />
+        <MenuItem Header="{x:Static r:VideoEditorText.SaveWithMediaMenu}" Command="{Binding SaveWithMediaCommand}" ToolTip="{x:Static r:VideoEditorText.SaveWithMediaTip}" />
         <Separator />
-        <MenuItem Header="_Import Captions…" Command="{Binding ImportCaptionsCommand}" ToolTip="An SRT or WebVTT file as a caption track" />
-        <MenuItem Header="Save _Captions…" Command="{Binding SaveCaptionsCommand}" ToolTip="The captions as an SRT or WebVTT file" />
+        <MenuItem Header="{x:Static r:VideoEditorText.ImportCaptionsMenu}" Command="{Binding ImportCaptionsCommand}" ToolTip="{x:Static r:VideoEditorText.ImportCaptionsTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.SaveCaptionsMenu}" Command="{Binding SaveCaptionsCommand}" ToolTip="{x:Static r:VideoEditorText.SaveCaptionsTip}" />
         <Separator />
-        <MenuItem Header="_Export…" Command="{Binding ExportCommand}" InputGestureText="Ctrl+E" />
+        <MenuItem Header="{x:Static r:VideoEditorText.ExportMenu}" Command="{Binding ExportCommand}" InputGestureText="Ctrl+E" />
         <Separator />
-        <MenuItem Header="_Close" Click="OnCloseClick" />
+        <MenuItem Header="{x:Static r:VideoEditorText.CloseMenu}" Click="OnCloseClick" />
       </MenuItem>
-      <MenuItem Header="_Edit">
+      <MenuItem Header="{x:Static r:VideoEditorText.MenuEdit}">
         <MenuItem Header="{Binding UndoText}" Command="{Binding UndoCommand}" InputGestureText="Ctrl+Z" />
         <MenuItem Header="{Binding RedoText}" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y" />
         <Separator />
-        <MenuItem Header="_Split at the Playhead" Command="{Binding SplitCommand}" InputGestureText="S" />
-        <MenuItem Header="_Delete" Command="{Binding DeleteCommand}" InputGestureText="Del" ToolTip="The marked range (closing the gap), or the selected clip" />
-        <MenuItem Header="_Ripple Delete" Command="{Binding RippleDeleteCommand}" InputGestureText="Shift+Del" ToolTip="The selected clip and its time, from every track" />
+        <MenuItem Header="{x:Static r:VideoEditorText.SplitMenu}" Command="{Binding SplitCommand}" InputGestureText="S" />
+        <MenuItem Header="{x:Static r:VideoEditorText.DeleteMenu}" Command="{Binding DeleteCommand}" InputGestureText="Del" ToolTip="{x:Static r:VideoEditorText.DeleteMenuTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.RippleDeleteMenu}" Command="{Binding RippleDeleteCommand}" InputGestureText="Shift+Del" ToolTip="{x:Static r:VideoEditorText.RippleDeleteTip}" />
         <Separator />
-        <MenuItem Header="_Freeze the Frame at the Playhead" Command="{Binding FreezeFrameCommand}" ToolTip="Hold the picture for 2 s; the sound waits" />
-        <MenuItem Header="Cross_fade into the Next Clip" Command="{Binding CrossfadeCommand}" ToolTip="The selected clip blends into the one after it over 1 s" />
+        <MenuItem Header="{x:Static r:VideoEditorText.FreezeFrameMenu}" Command="{Binding FreezeFrameCommand}" ToolTip="{x:Static r:VideoEditorText.FreezeFrameTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.CrossfadeMenu}" Command="{Binding CrossfadeCommand}" ToolTip="{x:Static r:VideoEditorText.CrossfadeTip}" />
         <Separator />
-        <MenuItem Header="Mark _In" Command="{Binding MarkInCommand}" InputGestureText="I" />
-        <MenuItem Header="Mark _Out" Command="{Binding MarkOutCommand}" InputGestureText="O" />
-        <MenuItem Header="_Clear the Selection" Command="{Binding ClearSelectionCommand}" InputGestureText="Esc" />
+        <MenuItem Header="{x:Static r:VideoEditorText.MarkInMenu}" Command="{Binding MarkInCommand}" InputGestureText="I" />
+        <MenuItem Header="{x:Static r:VideoEditorText.MarkOutMenu}" Command="{Binding MarkOutCommand}" InputGestureText="O" />
+        <MenuItem Header="{x:Static r:VideoEditorText.ClearSelectionMenu}" Command="{Binding ClearSelectionCommand}" InputGestureText="Esc" />
       </MenuItem>
-      <MenuItem Header="_Insert">
-        <MenuItem Header="_Text" Command="{Binding InsertTextCommand}" />
-        <MenuItem Header="_Arrow" Command="{Binding InsertArrowCommand}" />
-        <MenuItem Header="_Line" Command="{Binding InsertLineCommand}" />
-        <MenuItem Header="_Rectangle" Command="{Binding InsertRectangleCommand}" />
-        <MenuItem Header="_Ellipse" Command="{Binding InsertEllipseCommand}" />
-        <MenuItem Header="_Highlight" Command="{Binding InsertHighlightCommand}" />
+      <MenuItem Header="{x:Static r:VideoEditorText.MenuInsert}">
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertTextMenu}" Command="{Binding InsertTextCommand}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertArrowMenu}" Command="{Binding InsertArrowCommand}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertLineMenu}" Command="{Binding InsertLineCommand}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertRectangleMenu}" Command="{Binding InsertRectangleCommand}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertEllipseMenu}" Command="{Binding InsertEllipseCommand}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertHighlightMenu}" Command="{Binding InsertHighlightCommand}" />
         <Separator />
-        <MenuItem Header="_Blur an Area" Command="{Binding InsertBlurCommand}" />
-        <MenuItem Header="_Pixelate an Area" Command="{Binding InsertPixelateCommand}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertBlurMenu}" Command="{Binding InsertBlurCommand}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertPixelateMenu}" Command="{Binding InsertPixelateCommand}" />
         <Separator />
-        <MenuItem Header="_Click Highlights" Command="{Binding InsertClicksCommand}" ToolTip="Rings at the clicks, from the recording's metadata" />
-        <MenuItem Header="_Keystrokes" Command="{Binding InsertKeystrokesCommand}" ToolTip="The keys pressed, from the recording's metadata" />
-        <MenuItem Header="Pointer _Effects" Command="{Binding InsertPointerCommand}" ToolTip="A halo or spotlight, a bigger or smoother pointer, from the recording's metadata" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertClicksMenu}" Command="{Binding InsertClicksCommand}" ToolTip="{x:Static r:VideoEditorText.InsertClicksTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertKeystrokesMenu}" Command="{Binding InsertKeystrokesCommand}" ToolTip="{x:Static r:VideoEditorText.InsertKeystrokesTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertPointerMenu}" Command="{Binding InsertPointerCommand}" ToolTip="{x:Static r:VideoEditorText.InsertPointerTip}" />
         <Separator />
-        <MenuItem Header="_Zoom" Command="{Binding InsertZoomCommand}" ToolTip="Zoom into the screen from the playhead (or over the marked range), following the pointer" />
-        <MenuItem Header="_Auto-Zoom from Clicks and Typing" Command="{Binding MakeAutoZoomsCommand}" ToolTip="Zooms around the clicks and typing in the recording's metadata (made again each time)" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertZoomMenu}" Command="{Binding InsertZoomCommand}" ToolTip="{x:Static r:VideoEditorText.InsertZoomTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.AutoZoomMenu}" Command="{Binding MakeAutoZoomsCommand}" ToolTip="{x:Static r:VideoEditorText.AutoZoomTip}" />
         <Separator />
-        <MenuItem Header="Ca_ption" Command="{Binding InsertCaptionCommand}" ToolTip="A caption to type, from the playhead (or over the marked range)" />
-        <MenuItem Header="Captions from _Speech…" Command="{Binding TranscribeCommand}" ToolTip="Captions made from a sound track's speech (English, Arabic and more), on this PC" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertCaptionMenu}" Command="{Binding InsertCaptionCommand}" ToolTip="{x:Static r:VideoEditorText.InsertCaptionTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.TranscribeMenu}" Command="{Binding TranscribeCommand}" ToolTip="{x:Static r:VideoEditorText.TranscribeMenuTip}" />
       </MenuItem>
-      <MenuItem Header="_View">
-        <MenuItem Header="Zoom _In" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
-        <MenuItem Header="Zoom _Out" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />
-        <MenuItem Header="_Fit the Timeline" Command="{Binding ZoomFitCommand}" InputGestureText="Ctrl+0" />
+      <MenuItem Header="{x:Static r:VideoEditorText.MenuView}">
+        <MenuItem Header="{x:Static r:VideoEditorText.ZoomInMenu}" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
+        <MenuItem Header="{x:Static r:VideoEditorText.ZoomOutMenu}" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />
+        <MenuItem Header="{x:Static r:VideoEditorText.FitTimelineMenu}" Command="{Binding ZoomFitCommand}" InputGestureText="Ctrl+0" />
       </MenuItem>
     </Menu>
 
@@ -146,7 +147,7 @@
       <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="12,10,12,12">
           <TextBlock Text="{Binding PropertiesTitle}" FontWeight="SemiBold" FontSize="14" />
-          <TextBlock Text="Select a clip on the timeline, or a picture on the preview, to change it here." TextWrapping="Wrap" Opacity="0.7" Margin="0,4,0,0">
+          <TextBlock Text="{x:Static r:VideoEditorText.NothingSelected}" TextWrapping="Wrap" Opacity="0.7" Margin="0,4,0,0">
             <TextBlock.Style>
               <Style TargetType="TextBlock">
                 <Style.Triggers>
@@ -176,21 +177,21 @@
       <Border Grid.Row="1" Padding="10,6" BorderThickness="0,1,0,1" BorderBrush="#40808080">
         <DockPanel>
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-            <Button Content="Text" Command="{Binding InsertTextCommand}" ToolTip="Text over the video, from the playhead (or the marked range)" Margin="4,0" />
-            <Button Content="Arrow" Command="{Binding InsertArrowCommand}" ToolTip="An arrow, from the playhead (or the marked range)" Margin="4,0" />
-            <Button Content="Blur" Command="{Binding InsertBlurCommand}" ToolTip="Hide an area, from the playhead (or the marked range)" Margin="4,0" />
-            <Button Content="Zoom" Command="{Binding InsertZoomCommand}" ToolTip="Zoom into the screen from the playhead (or over the marked range), following the pointer" Margin="4,0" />
-            <Button Content="Captions…" Command="{Binding TranscribeCommand}" ToolTip="Captions from the speech in a sound track" Margin="4,0,16,0" />
-            <Button Content="Split" Command="{Binding SplitCommand}" ToolTip="Cut every clip at the playhead (S)" Margin="4,0" />
-            <Button Content="Delete" Command="{Binding DeleteCommand}" ToolTip="The marked range or the selected clip (Del)" Margin="4,0" />
-            <Button Content="Export…" Command="{Binding ExportCommand}" ToolTip="Make a video file (Ctrl+E)" Margin="4,0" />
+            <Button Content="{x:Static r:VideoEditorText.TextButton}" Command="{Binding InsertTextCommand}" ToolTip="{x:Static r:VideoEditorText.TextButtonTip}" Margin="4,0" />
+            <Button Content="{x:Static r:VideoEditorText.ArrowButton}" Command="{Binding InsertArrowCommand}" ToolTip="{x:Static r:VideoEditorText.ArrowButtonTip}" Margin="4,0" />
+            <Button Content="{x:Static r:VideoEditorText.BlurButton}" Command="{Binding InsertBlurCommand}" ToolTip="{x:Static r:VideoEditorText.BlurButtonTip}" Margin="4,0" />
+            <Button Content="{x:Static r:VideoEditorText.ZoomButton}" Command="{Binding InsertZoomCommand}" ToolTip="{x:Static r:VideoEditorText.InsertZoomTip}" Margin="4,0" />
+            <Button Content="{x:Static r:VideoEditorText.CaptionsButton}" Command="{Binding TranscribeCommand}" ToolTip="{x:Static r:VideoEditorText.CaptionsButtonTip}" Margin="4,0,16,0" />
+            <Button Content="{x:Static r:VideoEditorText.SplitButton}" Command="{Binding SplitCommand}" ToolTip="{x:Static r:VideoEditorText.SplitButtonTip}" Margin="4,0" />
+            <Button Content="{x:Static r:CommonText.Delete}" Command="{Binding DeleteCommand}" ToolTip="{x:Static r:VideoEditorText.DeleteButtonTip}" Margin="4,0" />
+            <Button Content="{x:Static r:VideoEditorText.ExportButton}" Command="{Binding ExportCommand}" ToolTip="{x:Static r:VideoEditorText.ExportButtonTip}" Margin="4,0" />
           </StackPanel>
           <StackPanel Orientation="Horizontal">
-            <Button Content="⏮" Command="{Binding GoToStartCommand}" ToolTip="Start (Home)" Width="40" Margin="0,0,4,0" />
-            <Button Content="◀" Command="{Binding StepBackCommand}" ToolTip="A frame back (←)" Width="40" Margin="0,0,4,0" />
-            <Button x:Name="PlayButton" Command="{Binding PlayPauseCommand}" ToolTip="Play or pause (Space)" Width="56" Margin="0,0,4,0" />
-            <Button Content="▶" Command="{Binding StepForwardCommand}" ToolTip="A frame on (→)" Width="40" Margin="0,0,4,0" />
-            <Button Content="⏭" Command="{Binding GoToEndCommand}" ToolTip="End (End)" Width="40" Margin="0,0,12,0" />
+            <Button Content="⏮" Command="{Binding GoToStartCommand}" ToolTip="{x:Static r:VideoEditorText.GoToStartTip}" Width="40" Margin="0,0,4,0" />
+            <Button Content="◀" Command="{Binding StepBackCommand}" ToolTip="{x:Static r:VideoEditorText.StepBackTip}" Width="40" Margin="0,0,4,0" />
+            <Button x:Name="PlayButton" Command="{Binding PlayPauseCommand}" ToolTip="{x:Static r:VideoEditorText.PlayPauseTip}" Width="56" Margin="0,0,4,0" />
+            <Button Content="▶" Command="{Binding StepForwardCommand}" ToolTip="{x:Static r:VideoEditorText.StepForwardTip}" Width="40" Margin="0,0,4,0" />
+            <Button Content="⏭" Command="{Binding GoToEndCommand}" ToolTip="{x:Static r:VideoEditorText.GoToEndTip}" Width="40" Margin="0,0,12,0" />
             <TextBlock Text="{Binding TimeText}" VerticalAlignment="Center" FontFamily="Consolas" FontSize="14" />
           </StackPanel>
         </DockPanel>

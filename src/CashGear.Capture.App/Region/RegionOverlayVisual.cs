@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
@@ -27,6 +28,7 @@ internal sealed class RegionOverlayVisual : FrameworkElement
     private static readonly Brush PanelBrush = Frozen(new SolidColorBrush(Color.FromArgb(0xE6, 0x1C, 0x1C, 0x1C)));
     private static readonly Brush HintBrush = Frozen(new SolidColorBrush(Color.FromArgb(0xC0, 0xFF, 0xFF, 0xFF)));
     private static readonly Brush TextBrush = Brushes.White;
+    [Localizable(false)] // a font's name
     private static readonly Typeface LabelTypeface = new("Segoe UI");
 
     private readonly PixelRect _virtual;

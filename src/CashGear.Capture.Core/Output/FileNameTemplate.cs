@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using CashGear.Capture.Core.Capture;
+using CashGear.Capture.Core.Resources;
 
 namespace CashGear.Capture.Core.Output;
 
@@ -27,16 +28,16 @@ public static partial class FileNameTemplate
     /// <summary>Every token with a one-line description (for the settings window).</summary>
     public static IReadOnlyList<(string Token, string Description)> Tokens { get; } =
     [
-        ("{yyyy}", "Year, e.g. 2026"),
-        ("{MM}", "Month, 01–12"),
-        ("{dd}", "Day, 01–31"),
-        ("{HH}", "Hour, 00–23"),
-        ("{mm}", "Minute, 00–59"),
-        ("{ss}", "Second, 00–59"),
-        ("{counter}", "Running number, 0001, 0002, … (kept across restarts)"),
-        ("{kind}", "fullscreen, monitor, region, window, scrolling, object, menu or recording"),
-        ("{monitor}", "Monitor name, e.g. DISPLAY1 (all for the whole screen, multi when spanning)"),
-        ("{window}", "Title of the captured window (empty otherwise)"),
+        ("{yyyy}", CoreStrings.TokenYear),
+        ("{MM}", CoreStrings.TokenMonth),
+        ("{dd}", CoreStrings.TokenDay),
+        ("{HH}", CoreStrings.TokenHour),
+        ("{mm}", CoreStrings.TokenMinute),
+        ("{ss}", CoreStrings.TokenSecond),
+        ("{counter}", CoreStrings.TokenCounter),
+        ("{kind}", CoreStrings.TokenKind),
+        ("{monitor}", CoreStrings.TokenMonitor),
+        ("{window}", CoreStrings.TokenWindow),
     ];
 
     private static readonly HashSet<string> KnownTokens = new(
@@ -61,7 +62,7 @@ public static partial class FileNameTemplate
     {
         if (string.IsNullOrWhiteSpace(template))
         {
-            error = "The file name template is empty.";
+            error = CoreStrings.TemplateEmpty;
             return false;
         }
 
@@ -69,7 +70,7 @@ public static partial class FileNameTemplate
         {
             if (template[i] == '}')
             {
-                error = $"Unexpected '}}' at position {i + 1}.";
+                error = CoreStrings.TemplateUnexpectedBrace(i + 1);
                 return false;
             }
 
@@ -81,14 +82,14 @@ public static partial class FileNameTemplate
             var close = template.IndexOf('}', i + 1);
             if (close < 0)
             {
-                error = $"'{{' at position {i + 1} is never closed.";
+                error = CoreStrings.TemplateUnclosedBrace(i + 1);
                 return false;
             }
 
             var token = template[(i + 1)..close];
             if (!KnownTokens.Contains(token))
             {
-                error = $"Unknown token {{{token}}}.";
+                error = CoreStrings.TemplateUnknownToken(token);
                 return false;
             }
 

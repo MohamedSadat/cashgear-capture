@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using CashGear.Capture.Outputs.Resources;
 
 namespace CashGear.Capture.Outputs.Http;
 
@@ -30,7 +31,7 @@ public static class LinkPath
                 var close = text.IndexOf(']', i);
                 if (close < 0 || !int.TryParse(text.AsSpan(i + 1, close - i - 1), NumberStyles.None, CultureInfo.InvariantCulture, out var index))
                 {
-                    error = $"\"{path}\" has a [ without a number and ] after it.";
+                    error = OutputsStrings.PathBadIndex(path);
                     return false;
                 }
 
@@ -41,7 +42,7 @@ public static class LinkPath
                     i++;
                     if (i == text.Length)
                     {
-                        error = $"\"{path}\" ends with a dot.";
+                        error = OutputsStrings.PathEndsWithDot(path);
                         return false;
                     }
                 }
@@ -54,7 +55,7 @@ public static class LinkPath
             var name = text[i..end];
             if (name.Length == 0)
             {
-                error = $"\"{path}\" has an empty name (two dots, or a dot at the start or end).";
+                error = OutputsStrings.PathEmptyName(path);
                 return false;
             }
 
@@ -65,7 +66,7 @@ public static class LinkPath
                 i++;
                 if (i == text.Length)
                 {
-                    error = $"\"{path}\" ends with a dot.";
+                    error = OutputsStrings.PathEndsWithDot(path);
                     return false;
                 }
             }
@@ -96,42 +97,44 @@ public static class LinkPath
         }
         catch (JsonException)
         {
-            throw new FormatException($"The reply isn't JSON: {Start(reply)}");
+            throw new FormatException(OutputsStrings.ReplyNotJson(Start(reply)));
         }
 
         using (document)
         {
             var node = document.RootElement;
-            var walked = "the reply";
+            string? walked = null; // the reply itself
             foreach (var segment in segments)
             {
                 if (segment is int index)
                 {
                     if (node.ValueKind != JsonValueKind.Array)
                     {
-                        throw new FormatException($"{Named(walked)} isn't a list.");
+                        throw new FormatException(walked is null ? OutputsStrings.ReplyNotList : OutputsStrings.PathNotList(walked));
                     }
 
                     if (index >= node.GetArrayLength())
                     {
-                        throw new FormatException($"{Named(walked)} has {node.GetArrayLength()} item(s), so there is no [{index}].");
+                        throw new FormatException(walked is null
+                            ? OutputsStrings.ReplyTooShort(node.GetArrayLength(), index)
+                            : OutputsStrings.PathTooShort(walked, node.GetArrayLength(), index));
                     }
 
                     node = node[index];
-                    walked = walked == "the reply" ? $"[{index}]" : $"{walked}[{index}]";
+                    walked = $"{walked}[{index}]";
                 }
                 else
                 {
                     var name = (string)segment;
                     if (node.ValueKind != JsonValueKind.Object || !TryGetProperty(node, name, out var child))
                     {
-                        throw new FormatException(walked == "the reply"
-                            ? $"The reply has no \"{name}\": {Start(reply)}"
-                            : $"{Named(walked)} has no \"{name}\".");
+                        throw new FormatException(walked is null
+                            ? OutputsStrings.ReplyHasNo(name, Start(reply))
+                            : OutputsStrings.PathHasNo(walked, name));
                     }
 
                     node = child;
-                    walked = walked == "the reply" ? name : $"{walked}.{name}";
+                    walked = walked is null ? name : $"{walked}.{name}";
                 }
             }
 
@@ -139,7 +142,9 @@ public static class LinkPath
             {
                 JsonValueKind.String => node.GetString()!.Trim(),
                 JsonValueKind.Number => node.GetRawText(),
-                _ => throw new FormatException($"{Named(walked)} isn't text but {Describe(node.ValueKind)}."),
+                _ => throw new FormatException(walked is null
+                    ? OutputsStrings.ReplyNotText(Describe(node.ValueKind))
+                    : OutputsStrings.PathNotText(walked, Describe(node.ValueKind))),
             };
         }
     }
@@ -164,15 +169,12 @@ public static class LinkPath
         return false;
     }
 
-    /// <summary>"The reply", or a path in quotes: "data.files[0]".</summary>
-    private static string Named(string walked) => walked == "the reply" ? "The reply" : $"\"{walked}\"";
-
     private static string Describe(JsonValueKind kind) => kind switch
     {
-        JsonValueKind.Object => "an object",
-        JsonValueKind.Array => "a list",
-        JsonValueKind.True or JsonValueKind.False => "true or false",
-        JsonValueKind.Null => "null",
+        JsonValueKind.Object => OutputsStrings.JsonObject,
+        JsonValueKind.Array => OutputsStrings.JsonList,
+        JsonValueKind.True or JsonValueKind.False => OutputsStrings.JsonBoolean,
+        JsonValueKind.Null => OutputsStrings.JsonNull,
         _ => kind.ToString(),
     };
 

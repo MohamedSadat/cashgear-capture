@@ -21,4 +21,193 @@
   <data name="SettingsFileDamaged" xml:space="preserve">
     <value>تعذرت قراءة الإعدادات في الملف: {0}</value>
   </data>
+  <data name="SecureScreen" xml:space="preserve">
+    <value>يعرض Windows شاشة آمنة (مطالبة UAC أو شاشة القفل أو Ctrl+Alt+Del) لا يمكن لأي تطبيق التقاطها. أعد المحاولة بعد أن تختفي.</value>
+  </data>
+  <data name="ProtectedInCapture" xml:space="preserve">
+    <value>لا تسمح النافذة «{0}» للتطبيقات الأخرى بالتقاطها (فيديو محمي أو إعداد خصوصية)، لذا تظهر سوداء أو مفقودة في اللقطة.</value>
+  </data>
+  <data name="ProtectedInRecording" xml:space="preserve">
+    <value>لا تسمح النافذة «{0}» للتطبيقات الأخرى بالتقاطها (فيديو محمي أو إعداد خصوصية)، لذا تظهر سوداء أو مفقودة في التسجيل.</value>
+  </data>
+  <data name="ModeRegion" xml:space="preserve">
+    <value>منطقة</value>
+  </data>
+  <data name="ModeWindow" xml:space="preserve">
+    <value>نافذة</value>
+  </data>
+  <data name="ModeActiveWindow" xml:space="preserve">
+    <value>النافذة النشطة</value>
+  </data>
+  <data name="ModeFullScreen" xml:space="preserve">
+    <value>الشاشة كاملة</value>
+  </data>
+  <data name="ModeScrolling" xml:space="preserve">
+    <value>التقاط مع التمرير</value>
+  </data>
+  <data name="ModeText" xml:space="preserve">
+    <value>نص (OCR)</value>
+  </data>
+  <data name="ModeFixedRegion" xml:space="preserve">
+    <value>منطقة بحجم ثابت</value>
+  </data>
+  <data name="ModeFreehand" xml:space="preserve">
+    <value>منطقة حرة</value>
+  </data>
+  <data name="ModePolygon" xml:space="preserve">
+    <value>منطقة مضلّعة</value>
+  </data>
+  <data name="ModeRoundedRegion" xml:space="preserve">
+    <value>منطقة بزوايا مستديرة</value>
+  </data>
+  <data name="ModeObject" xml:space="preserve">
+    <value>عنصر</value>
+  </data>
+  <data name="ModeMenu" xml:space="preserve">
+    <value>قائمة مفتوحة</value>
+  </data>
+  <data name="KindFullScreen" xml:space="preserve">
+    <value>الشاشة كاملة</value>
+  </data>
+  <data name="KindMonitor" xml:space="preserve">
+    <value>شاشة</value>
+  </data>
+  <data name="KindWindow" xml:space="preserve">
+    <value>نافذة</value>
+  </data>
+  <data name="KindScrolling" xml:space="preserve">
+    <value>التقاط مع التمرير</value>
+  </data>
+  <data name="KindRecording" xml:space="preserve">
+    <value>تسجيل</value>
+  </data>
+  <data name="KindObject" xml:space="preserve">
+    <value>عنصر</value>
+  </data>
+  <data name="KindMenu" xml:space="preserve">
+    <value>قائمة</value>
+  </data>
+  <data name="KindRegion" xml:space="preserve">
+    <value>منطقة</value>
+  </data>
+  <data name="TokenYear" xml:space="preserve">
+    <value>السنة، مثل 2026</value>
+  </data>
+  <data name="TokenMonth" xml:space="preserve">
+    <value>الشهر، 01–12</value>
+  </data>
+  <data name="TokenDay" xml:space="preserve">
+    <value>اليوم، 01–31</value>
+  </data>
+  <data name="TokenHour" xml:space="preserve">
+    <value>الساعة، 00–23</value>
+  </data>
+  <data name="TokenMinute" xml:space="preserve">
+    <value>الدقيقة، 00–59</value>
+  </data>
+  <data name="TokenSecond" xml:space="preserve">
+    <value>الثانية، 00–59</value>
+  </data>
+  <data name="TokenCounter" xml:space="preserve">
+    <value>رقم تسلسلي، 0001، 0002، … (يُحفظ بين مرات التشغيل)</value>
+  </data>
+  <data name="TokenKind" xml:space="preserve">
+    <value>fullscreen أو monitor أو region أو window أو scrolling أو object أو menu أو recording</value>
+  </data>
+  <data name="TokenMonitor" xml:space="preserve">
+    <value>اسم الشاشة، مثل DISPLAY1 (all للشاشة كاملة، وmulti عند الامتداد على أكثر من شاشة)</value>
+  </data>
+  <data name="TokenWindow" xml:space="preserve">
+    <value>عنوان النافذة الملتقطة (فارغ في غير ذلك)</value>
+  </data>
+  <data name="TemplateEmpty" xml:space="preserve">
+    <value>قالب اسم الملف فارغ.</value>
+  </data>
+  <data name="TemplateUnexpectedBrace" xml:space="preserve">
+    <value>يوجد '‎}}‎' غير متوقع في الموضع {0}.</value>
+  </data>
+  <data name="TemplateUnclosedBrace" xml:space="preserve">
+    <value>لم يُغلق '‎{{‎' في الموضع {0}.</value>
+  </data>
+  <data name="TemplateUnknownToken" xml:space="preserve">
+    <value>الرمز {{{0}}} غير معروف.</value>
+  </data>
+  <data name="FixedRegionHintHovering" xml:space="preserve">
+    <value>انقر للوضع · Tab: حجم آخر · Enter: الالتقاط هنا</value>
+  </data>
+  <data name="FixedRegionHintPlaced" xml:space="preserve">
+    <value>اسحب للنقل · الأسهم للتحريك الدقيق · Tab: حجم آخر · Enter أو النقر المزدوج: الالتقاط</value>
+  </data>
+  <data name="ObjectHint" xml:space="preserve">
+    <value>انقر للالتقاط · عجلة الماوس للأعلى: ما يحتويه · العجلة للأسفل: العودة إلى الداخل</value>
+  </data>
+  <data name="ColourPickerHint" xml:space="preserve">
+    <value>انقر لاختيار اللون تحت المؤشر · الأسهم للتحريك بكسلًا واحدًا · Esc للإلغاء</value>
+  </data>
+  <data name="RoundedRegionHint" xml:space="preserve">
+    <value>عجلة الماوس: نصف قطر الزوايا</value>
+  </data>
+  <data name="CornerRadius" xml:space="preserve">
+    <value>نصف القطر {0}</value>
+  </data>
+  <data name="PolygonHint" xml:space="preserve">
+    <value>انقر لإضافة زوايا · النقر على الزاوية الأولى أو النقر المزدوج أو Enter: الالتقاط · Backspace: التراجع عن زاوية</value>
+  </data>
+  <data name="FreehandHint" xml:space="preserve">
+    <value>اضغط الزر مع الاستمرار وارسم حول ما تريد التقاطه، ثم اتركه للالتقاط</value>
+  </data>
+  <data name="ObjectDescription" xml:space="preserve">
+    <value>{0} «{1}»</value>
+  </data>
+  <data name="ObjectKindUnknown" xml:space="preserve">
+    <value>عنصر</value>
+  </data>
+  <data name="EncoderNvencH264" xml:space="preserve">
+    <value>NVIDIA NVENC (H.264)</value>
+  </data>
+  <data name="EncoderNvencHevc" xml:space="preserve">
+    <value>NVIDIA NVENC (HEVC)</value>
+  </data>
+  <data name="EncoderNvencAv1" xml:space="preserve">
+    <value>NVIDIA NVENC (AV1)</value>
+  </data>
+  <data name="EncoderQuickSyncH264" xml:space="preserve">
+    <value>Intel Quick Sync (H.264)</value>
+  </data>
+  <data name="EncoderAmfH264" xml:space="preserve">
+    <value>AMD AMF (H.264)</value>
+  </data>
+  <data name="EncoderWindowsHardwareH264" xml:space="preserve">
+    <value>مرمّز Windows العتادي (H.264)</value>
+  </data>
+  <data name="EncoderWindowsHardwareHevc" xml:space="preserve">
+    <value>مرمّز Windows العتادي (HEVC)</value>
+  </data>
+  <data name="EncoderWindowsSoftwareH264" xml:space="preserve">
+    <value>مرمّز Windows البرمجي (H.264)</value>
+  </data>
+  <data name="EncoderOpenH264" xml:space="preserve">
+    <value>OpenH264 (برمجي)</value>
+  </data>
+  <data name="EncoderVp9" xml:space="preserve">
+    <value>VP9 (برمجي)</value>
+  </data>
+  <data name="EncoderSvtAv1" xml:space="preserve">
+    <value>SVT-AV1 (برمجي)</value>
+  </data>
+  <data name="EncoderKvazaar" xml:space="preserve">
+    <value>Kvazaar (HEVC برمجي)</value>
+  </data>
+  <data name="RulerInches" xml:space="preserve">
+    <value>{0} بوصة</value>
+  </data>
+  <data name="RulerCentimetres" xml:space="preserve">
+    <value>{0} سم</value>
+  </data>
+  <data name="NotRecordingMetadata" xml:space="preserve">
+    <value>الملف {0} ليس ملف بيانات وصفية لتسجيل: {1}</value>
+  </data>
+  <data name="UnreadableRecordingMetadata" xml:space="preserve">
+    <value>الملف {0} ليس ملف بيانات وصفية لتسجيل يستطيع هذا الإصدار من التطبيق قراءته.</value>
+  </data>
 </root>

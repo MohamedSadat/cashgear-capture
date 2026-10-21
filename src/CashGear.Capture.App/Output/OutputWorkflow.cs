@@ -1,5 +1,6 @@
 using System.IO;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
@@ -63,7 +64,7 @@ public sealed partial class OutputWorkflow(
         ArgumentNullException.ThrowIfNull(current);
         using var item = Item(primary, files, current.Output, distinguishMonitors: files.Count > 1);
         var summary = await runner.RunAsync(item, current.Destinations.Workflow ?? [], ct, current).ConfigureAwait(false);
-        Notify(summary, "Capture");
+        Notify(summary, recording: false);
         return new CaptureDelivery(summary, item.SavedPath);
     }
 
@@ -78,7 +79,7 @@ public sealed partial class OutputWorkflow(
 
         using var item = OutputItem.ForVideo(path, recordedAt);
         var summary = await runner.RunAsync(item, current.Destinations.RecordingWorkflow ?? [], ct, current).ConfigureAwait(false);
-        Notify(summary, "Recording");
+        Notify(summary, recording: true);
     }
 
     public IReadOnlyList<SendTarget> Targets() =>
@@ -106,11 +107,11 @@ public sealed partial class OutputWorkflow(
         }
 
         var summary = await runner.RunAsync(item, enabled, ct, current).ConfigureAwait(false);
-        Notify(summary, "Capture");
+        Notify(summary, recording: false);
         var failed = summary.Steps.Where(s => !s.Result.Succeeded).Select(s => s.Name).ToList();
         var message = failed.Count > 0
-            ? $"{string.Join(", ", failed)} failed (see the notification)"
-            : summary.Links.Any() ? "Sent; the link is in the notification" : "Sent";
+            ? OutputText.StepsFailed(string.Join(OutputText.ListSeparator, failed))
+            : summary.Links.Any() ? OutputText.SentWithLink : OutputText.Sent;
         var saved = summary.Steps.Any(s => DestinationIds.Same(s.Destination, DestinationIds.File) && s.Result.Succeeded) ? item.SavedPath : null;
         return new EditorSendResult(saved, message, failed.Count == 0);
     }
@@ -144,7 +145,7 @@ public sealed partial class OutputWorkflow(
     /// One notification for the run: what was saved, sent and copied, and what failed. When the editor opened, only
     /// failures and links are worth one. A click shows the saved file (or document), else opens the link.
     /// </summary>
-    private void Notify(WorkflowSummary summary, string what)
+    private void Notify(WorkflowSummary summary, bool recording)
     {
         var lines = summary.Lines.ToList();
         if (lines.Count == 0 || (summary.OpenedEditor && !summary.AnyFailed && !summary.Links.Any()))
@@ -153,20 +154,43 @@ public sealed partial class OutputWorkflow(
         }
 
         var succeeded = summary.Steps.Where(s => s.Result.Succeeded && !s.Result.Skipped).ToList();
-        var title = summary.AnyFailed
-            ? (succeeded.Count == 0 ? $"{what} not sent" : $"{what}: not everything worked")
-            : succeeded.Any(s => DestinationIds.Same(s.Destination, DestinationIds.File)) ? $"{what} saved"
-            : summary.Links.Any() ? $"{what} uploaded"
-            : succeeded.All(s => DestinationIds.Same(s.Destination, DestinationIds.Clipboard) || DestinationIds.Same(s.Destination, DestinationIds.CopyLink)) ? $"{what} copied"
-            : $"{what} sent";
+        var outcome = summary.AnyFailed
+            ? (succeeded.Count == 0 ? Outcome.NotSent : Outcome.PartlyDone)
+            : succeeded.Any(s => DestinationIds.Same(s.Destination, DestinationIds.File)) ? Outcome.Saved
+            : summary.Links.Any() ? Outcome.Uploaded
+            : succeeded.All(s => DestinationIds.Same(s.Destination, DestinationIds.Clipboard) || DestinationIds.Same(s.Destination, DestinationIds.CopyLink)) ? Outcome.Copied
+            : Outcome.Sent;
+        var title = Title(outcome, recording);
         var kind = !summary.AnyFailed ? NotificationKind.Info : succeeded.Count == 0 ? NotificationKind.Error : NotificationKind.Warning;
         var file = summary.Steps.Select(s => s.Result.Path).OfType<string>().FirstOrDefault();
         var link = summary.Links.FirstOrDefault();
         Action? onClick = file is not null ? () => shell.ShowInFolder(file) : link is not null ? () => shell.OpenLink(link) : null;
-        LogDelivered(what, summary.Steps.Count, summary.Steps.Count(s => !s.Result.Succeeded));
+        LogDelivered(recording ? "Recording" : "Capture", summary.Steps.Count, summary.Steps.Count(s => !s.Result.Succeeded));
         notifier.Notify(title, string.Join('\n', lines), kind, onClick);
     }
 
+    /// <summary>"Capture saved", "Recording: not everything worked"…</summary>
+    private static string Title(Outcome outcome, bool recording) => outcome switch
+    {
+        Outcome.NotSent => recording ? OutputText.RecordingNotSent : OutputText.CaptureNotSent,
+        Outcome.PartlyDone => recording ? OutputText.RecordingPartlyDone : OutputText.CapturePartlyDone,
+        Outcome.Saved => recording ? OutputText.RecordingSaved : OutputText.CaptureSaved,
+        Outcome.Uploaded => recording ? OutputText.RecordingUploaded : OutputText.CaptureUploaded,
+        Outcome.Copied => recording ? OutputText.RecordingCopied : OutputText.CaptureCopied,
+        _ => recording ? OutputText.RecordingSent : OutputText.CaptureSent,
+    };
+
     [LoggerMessage(Level = LogLevel.Information, Message = "{What} went through {Steps} step(s), {Failed} failed")]
     private partial void LogDelivered(string what, int steps, int failed);
+
+    /// <summary>What a run of the workflow came to, for the notification's title.</summary>
+    private enum Outcome
+    {
+        NotSent,
+        PartlyDone,
+        Saved,
+        Uploaded,
+        Copied,
+        Sent,
+    }
 }

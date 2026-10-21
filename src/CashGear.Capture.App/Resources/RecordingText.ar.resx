@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Recording" xml:space="preserve">
+    <value>التسجيل</value>
+  </data>
+  <data name="DragToMove" xml:space="preserve">
+    <value>اسحب للتحريك</value>
+  </data>
+  <data name="SystemAudioLevel" xml:space="preserve">
+    <value>مؤشر صوت النظام</value>
+  </data>
+  <data name="MicrophoneLevel" xml:space="preserve">
+    <value>مؤشر الميكروفون</value>
+  </data>
+  <data name="MuteMicTip" xml:space="preserve">
+    <value>كتم الميكروفون في التسجيل (يستمر تسجيل صوت النظام)</value>
+  </data>
+  <data name="PushToTalkTip" xml:space="preserve">
+    <value>الضغط للتحدث: لا يُسجَّل الميكروفون إلا أثناء الضغط على هذا المفتاح باستمرار (يُضبط من الإعدادات › مفاتيح الاختصار)</value>
+  </data>
+  <data name="ShowKeystrokes" xml:space="preserve">
+    <value>إظهار ضغطات المفاتيح</value>
+  </data>
+  <data name="SoundSettingsTip" xml:space="preserve">
+    <value>مستوى الصوت والكتم لكل مصدر صوت</value>
+  </data>
+  <data name="SoundSettings" xml:space="preserve">
+    <value>إعدادات الصوت</value>
+  </data>
+  <data name="DrawOnScreen" xml:space="preserve">
+    <value>الرسم على الشاشة</value>
+  </data>
+  <data name="DrawOnScreenTip" xml:space="preserve">
+    <value>الرسم على الشاشة (يُسجَّل الرسم)؛ ينهيه Esc أو «تم»</value>
+  </data>
+  <data name="StopTip" xml:space="preserve">
+    <value>إيقاف وحفظ (أو اضغط مفتاح اختصار التسجيل)</value>
+  </data>
+  <data name="Pen" xml:space="preserve">
+    <value>قلم</value>
+  </data>
+  <data name="PenTip" xml:space="preserve">
+    <value>قلم (1)</value>
+  </data>
+  <data name="Highlighter" xml:space="preserve">
+    <value>قلم تمييز</value>
+  </data>
+  <data name="HighlighterTip" xml:space="preserve">
+    <value>قلم تمييز (2)</value>
+  </data>
+  <data name="Arrow" xml:space="preserve">
+    <value>سهم</value>
+  </data>
+  <data name="ArrowTip" xml:space="preserve">
+    <value>سهم (3)</value>
+  </data>
+  <data name="Rectangle" xml:space="preserve">
+    <value>مستطيل</value>
+  </data>
+  <data name="RectangleTip" xml:space="preserve">
+    <value>مستطيل (4)</value>
+  </data>
+  <data name="PenWidth" xml:space="preserve">
+    <value>عرض القلم</value>
+  </data>
+  <data name="UndoStrokeTip" xml:space="preserve">
+    <value>التراجع عن آخر خط (Ctrl+Z)</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>مسح</value>
+  </data>
+  <data name="ClearTip" xml:space="preserve">
+    <value>إزالة كل الرسومات (Delete)</value>
+  </data>
+  <data name="DoneTip" xml:space="preserve">
+    <value>إيقاف الرسم؛ تبقى الرسومات (Esc)</value>
+  </data>
+  <data name="SystemAudio" xml:space="preserve">
+    <value>صوت النظام</value>
+  </data>
+  <data name="SystemAudioVolume" xml:space="preserve">
+    <value>مستوى صوت النظام</value>
+  </data>
+  <data name="Mute" xml:space="preserve">
+    <value>كتم</value>
+  </data>
+  <data name="Microphone" xml:space="preserve">
+    <value>الميكروفون</value>
+  </data>
+  <data name="MicrophoneVolume" xml:space="preserve">
+    <value>مستوى صوت الميكروفون</value>
+  </data>
+  <data name="NoiseSuppressionOnMicrophone" xml:space="preserve">
+    <value>منع الضوضاء في الميكروفون</value>
+  </data>
+  <data name="NoiseSuppressionTip" xml:space="preserve">
+    <value>RNNoise: يزيل الضوضاء الثابتة مثل المراوح والطنين والكتابة؛ ويُسمع أثره فورًا</value>
+  </data>
+  <data name="KeystrokesShownTip" xml:space="preserve">
+    <value>ضغطات المفاتيح ظاهرة. انقر لإخفائها مؤقتًا (مثلًا لكتابة شيء خاص).</value>
+  </data>
+  <data name="KeystrokesHiddenTip" xml:space="preserve">
+    <value>ضغطات المفاتيح مخفية. انقر لإظهارها من جديد.</value>
+  </data>
+  <data name="Talking" xml:space="preserve">
+    <value>جارٍ التحدث</value>
+  </data>
+  <data name="HoldToTalk" xml:space="preserve">
+    <value>اضغط {0} باستمرار للتحدث</value>
+  </data>
+  <data name="MuteMic" xml:space="preserve">
+    <value>كتم الميكروفون</value>
+  </data>
+  <data name="UnmuteMic" xml:space="preserve">
+    <value>إلغاء كتم الميكروفون</value>
+  </data>
+  <data name="RecordingSystemSound" xml:space="preserve">
+    <value>يجري تسجيل صوت النظام</value>
+  </data>
+  <data name="RecordingMicrophone" xml:space="preserve">
+    <value>يجري تسجيل الميكروفون</value>
+  </data>
+  <data name="RecordingSystemSoundAndMicrophone" xml:space="preserve">
+    <value>يجري تسجيل صوت النظام + الميكروفون</value>
+  </data>
+  <data name="SoundWithNote" xml:space="preserve">
+    <value>{0}. {1}</value>
+  </data>
+  <data name="NoSound" xml:space="preserve">
+    <value>بلا صوت</value>
+  </data>
+  <data name="SoundSystem" xml:space="preserve">
+    <value>صوت النظام</value>
+  </data>
+  <data name="SoundMicrophone" xml:space="preserve">
+    <value>الميكروفون</value>
+  </data>
+  <data name="SoundSystemAndMicrophone" xml:space="preserve">
+    <value>صوت النظام + الميكروفون</value>
+  </data>
+  <data name="SoundNone" xml:space="preserve">
+    <value>بلا صوت</value>
+  </data>
+  <data name="RecordingStopped" xml:space="preserve">
+    <value>توقف التسجيل</value>
+  </data>
+  <data name="StoppedSaving" xml:space="preserve">
+    <value>{0} يجري حفظ ما سُجِّل.</value>
+  </data>
+  <data name="StillSaving" xml:space="preserve">
+    <value>لا يزال التسجيل الأخير قيد الحفظ. أعد المحاولة بعد قليل.</value>
+  </data>
+  <data name="NotAvailable" xml:space="preserve">
+    <value>التسجيل غير متاح</value>
+  </data>
+  <data name="TooSmall" xml:space="preserve">
+    <value>هذه المنطقة أصغر من أن تُسجَّل ({0}x{1}).</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>تم حفظ التسجيل</value>
+  </data>
+  <data name="CouldNotStart" xml:space="preserve">
+    <value>تعذر بدء التسجيل</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>فشل التسجيل</value>
+  </data>
+  <data name="NameAndMoreParts_zero" xml:space="preserve">
+    <value>{1}</value>
+  </data>
+  <data name="NameAndMoreParts_one" xml:space="preserve">
+    <value>{1} (+ جزء آخر)</value>
+  </data>
+  <data name="NameAndMoreParts_two" xml:space="preserve">
+    <value>{1} (+ جزآن آخران)</value>
+  </data>
+  <data name="NameAndMoreParts_few" xml:space="preserve">
+    <value>{1} (+{0} أجزاء أخرى)</value>
+  </data>
+  <data name="NameAndMoreParts_many" xml:space="preserve">
+    <value>{1} (+{0} جزءًا آخر)</value>
+  </data>
+  <data name="NameAndMoreParts_other" xml:space="preserve">
+    <value>{1} (+{0} جزء آخر)</value>
+  </data>
+  <data name="EncoderAndSound" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="FramesSkipped" xml:space="preserve">
+    <value>تم تخطي {0:P0} من الإطارات لأن الترميز لم يستطع المواكبة. يساعد خفض معدل الإطارات أو تصغير المنطقة.</value>
+  </data>
+  <data name="InterruptedFound_zero" xml:space="preserve">
+    <value>لم يُعثر على تسجيلات متقطعة</value>
+  </data>
+  <data name="InterruptedFound_one" xml:space="preserve">
+    <value>عُثر على تسجيل متقطع</value>
+  </data>
+  <data name="InterruptedFound_two" xml:space="preserve">
+    <value>عُثر على تسجيلين متقطعين</value>
+  </data>
+  <data name="InterruptedFound_few" xml:space="preserve">
+    <value>عُثر على {0} تسجيلات متقطعة</value>
+  </data>
+  <data name="InterruptedFound_many" xml:space="preserve">
+    <value>عُثر على {0} تسجيلًا متقطعًا</value>
+  </data>
+  <data name="InterruptedFound_other" xml:space="preserve">
+    <value>عُثر على {0} تسجيل متقطع</value>
+  </data>
+  <data name="InterruptedMessage_zero" xml:space="preserve">
+    <value>لم تُحفظ تسجيلات لأن CashGear Capture أُغلق أثناء التسجيل. انقر هنا (أو استخدم قائمة منطقة الإعلامات) لحفظ ما سُجِّل.</value>
+  </data>
+  <data name="InterruptedMessage_one" xml:space="preserve">
+    <value>لم يُحفظ تسجيل لأن CashGear Capture أُغلق أثناء التسجيل. انقر هنا (أو استخدم قائمة منطقة الإعلامات) لحفظ ما سُجِّل.</value>
+  </data>
+  <data name="InterruptedMessage_two" xml:space="preserve">
+    <value>لم يُحفظ تسجيلان لأن CashGear Capture أُغلق أثناء التسجيل. انقر هنا (أو استخدم قائمة منطقة الإعلامات) لحفظ ما سُجِّل.</value>
+  </data>
+  <data name="InterruptedMessage_few" xml:space="preserve">
+    <value>لم تُحفظ تسجيلات لأن CashGear Capture أُغلق أثناء التسجيل. انقر هنا (أو استخدم قائمة منطقة الإعلامات) لحفظ ما سُجِّل.</value>
+  </data>
+  <data name="InterruptedMessage_many" xml:space="preserve">
+    <value>لم تُحفظ تسجيلات لأن CashGear Capture أُغلق أثناء التسجيل. انقر هنا (أو استخدم قائمة منطقة الإعلامات) لحفظ ما سُجِّل.</value>
+  </data>
+  <data name="InterruptedMessage_other" xml:space="preserve">
+    <value>لم تُحفظ تسجيلات لأن CashGear Capture أُغلق أثناء التسجيل. انقر هنا (أو استخدم قائمة منطقة الإعلامات) لحفظ ما سُجِّل.</value>
+  </data>
+  <data name="NothingToSave" xml:space="preserve">
+    <value>لا شيء للحفظ</value>
+  </data>
+  <data name="NothingWritten" xml:space="preserve">
+    <value>توقف التسجيل الذي بدأ في {0} قبل أن يُكتب أي شيء، لذا أُزيل.</value>
+  </data>
+  <data name="Recovered" xml:space="preserve">
+    <value>تم استرداد التسجيل</value>
+  </data>
+  <data name="LastSecondMissing" xml:space="preserve">
+    <value>الثانية الأخيرة تقريبًا قبل الانقطاع مفقودة.</value>
+  </data>
+  <data name="ListSeparator" xml:space="preserve">
+    <value>، </value>
+  </data>
+  <data name="NotRecovered" xml:space="preserve">
+    <value>تعذر استرداد التسجيل</value>
+  </data>
+  <data name="KeptTryAgain" xml:space="preserve">
+    <value>{0} تم الاحتفاظ به؛ أعد المحاولة من قائمة منطقة الإعلامات.</value>
+  </data>
+  <data name="AddOverlaysDialogTitle" xml:space="preserve">
+    <value>إضافة التراكبات إلى تسجيل</value>
+  </data>
+  <data name="RecordingsFilter" xml:space="preserve">
+    <value>تسجيلات (*.mp4)|*.mp4</value>
+  </data>
+  <data name="AddingOverlaysTo" xml:space="preserve">
+    <value>جارٍ إضافة التراكبات إلى «{0}»</value>
+  </data>
+  <data name="AddOverlays" xml:space="preserve">
+    <value>إضافة التراكبات</value>
+  </data>
+  <data name="NoMetadata" xml:space="preserve">
+    <value>ليس لـ«{0}» ملف بيانات وصفية، لذا نقراته ومفاتيحه غير معروفة. تحصل التسجيلات على هذا الملف عند تشغيل الإعدادات › التراكبات › حفظ ملف بيانات وصفية.</value>
+  </data>
+  <data name="OverlaysAdded" xml:space="preserve">
+    <value>تمت إضافة التراكبات</value>
+  </data>
+  <data name="OverlaysNotAdded" xml:space="preserve">
+    <value>تعذرت إضافة التراكبات</value>
+  </data>
+  <data name="OverlaysDrawnNote" xml:space="preserve">
+    <value>تُرسم التراكبات كما هي الآن في الإعدادات › التراكبات، في ملف جديد بجوار التسجيل؛ ولا يتغير التسجيل نفسه.</value>
+  </data>
+  <data name="ColorRed" xml:space="preserve">
+    <value>أحمر</value>
+  </data>
+  <data name="ColorYellow" xml:space="preserve">
+    <value>أصفر</value>
+  </data>
+  <data name="ColorGreen" xml:space="preserve">
+    <value>أخضر</value>
+  </data>
+  <data name="ColorBlue" xml:space="preserve">
+    <value>أزرق</value>
+  </data>
+  <data name="ColorWhite" xml:space="preserve">
+    <value>أبيض</value>
+  </data>
+  <data name="ColorBlack" xml:space="preserve">
+    <value>أسود</value>
+  </data>
+  <data name="DrawingTitle" xml:space="preserve">
+    <value>الرسم</value>
+  </data>
+  <data name="MeterSilent" xml:space="preserve">
+    <value>صامت</value>
+  </data>
+  <data name="MeterClipping" xml:space="preserve">
+    <value>تشويه: الصوت مرتفع جدًا</value>
+  </data>
+  <data name="MeterPeak" xml:space="preserve">
+    <value>الذروة {0:0} dB</value>
+  </data>
+  <data name="InFolder" xml:space="preserve">
+    <value>في {0}</value>
+  </data>
+  <data name="StartedAt" xml:space="preserve">
+    <value>{0} · بدأ في {1}</value>
+  </data>
+</root>

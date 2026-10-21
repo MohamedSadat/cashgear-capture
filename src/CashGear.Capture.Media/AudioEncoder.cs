@@ -1,3 +1,4 @@
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -26,8 +27,8 @@ public sealed unsafe class AudioEncoder : IDisposable
         _frame->format = (int)context->sample_fmt;
         _frame->sample_rate = SampleRate;
         _frame->nb_samples = context->frame_size;
-        FfmpegException.Check(ffmpeg.av_channel_layout_copy(&_frame->ch_layout, &context->ch_layout), "Setting up a sound frame");
-        FfmpegException.Check(ffmpeg.av_frame_get_buffer(_frame, 0), "Allocating a sound frame");
+        FfmpegException.Check(ffmpeg.av_channel_layout_copy(&_frame->ch_layout, &context->ch_layout), MediaStrings.SettingUpSoundFrame);
+        FfmpegException.Check(ffmpeg.av_frame_get_buffer(_frame, 0), MediaStrings.AllocatingSoundFrame);
     }
 
     public int Stream { get; }
@@ -48,7 +49,7 @@ public sealed unsafe class AudioEncoder : IDisposable
         var encoder = ffmpeg.avcodec_find_encoder_by_name(codec);
         if (encoder is null)
         {
-            throw new FfmpegException($"The {codec} encoder isn't in this FFmpeg build.");
+            throw new FfmpegException(MediaStrings.NamedEncoderNotInBuild(codec));
         }
 
         var context = ffmpeg.avcodec_alloc_context3(encoder);
@@ -66,7 +67,7 @@ public sealed unsafe class AudioEncoder : IDisposable
         if (result < 0)
         {
             ffmpeg.avcodec_free_context(&context);
-            throw new FfmpegException($"Opening the {codec} encoder", result, log.Summary());
+            throw new FfmpegException(MediaStrings.OpeningNamedEncoder(codec), result, log.Summary());
         }
 
         return new AudioEncoder(context, stream);
@@ -81,7 +82,7 @@ public sealed unsafe class AudioEncoder : IDisposable
             throw new ArgumentException($"Expected 1 to {FrameSize} stereo samples, got {interleaved.Length} values.", nameof(interleaved));
         }
 
-        FfmpegException.Check(ffmpeg.av_frame_make_writable(_frame), "Preparing a sound frame");
+        FfmpegException.Check(ffmpeg.av_frame_make_writable(_frame), MediaStrings.PreparingSoundFrame);
         _frame->nb_samples = samples;
         _frame->pts = pts;
         if (_context->sample_fmt == AVSampleFormat.AV_SAMPLE_FMT_FLT)
@@ -115,7 +116,7 @@ public sealed unsafe class AudioEncoder : IDisposable
 
         if (result < 0 && !(frame is null && result == ffmpeg.AVERROR_EOF))
         {
-            throw new FfmpegException("Encoding sound", result);
+            throw new FfmpegException(MediaStrings.EncodingSound, result);
         }
 
         Receive(output);
@@ -131,7 +132,7 @@ public sealed unsafe class AudioEncoder : IDisposable
                 return;
             }
 
-            FfmpegException.Check(result, "Encoding sound");
+            FfmpegException.Check(result, MediaStrings.EncodingSound);
             output.Add(EncodedPacket.Take(_packet, Stream, _context->time_base));
         }
     }

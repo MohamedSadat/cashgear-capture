@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="OpenInEditor" xml:space="preserve">
+    <value>Open in the editor</value>
+    <comment>a step of the after-capture workflow</comment>
+  </data>
+  <data name="EditorPicturesOnly" xml:space="preserve">
+    <value>The editor takes pictures only.</value>
+  </data>
+  <data name="OpenedInEditor" xml:space="preserve">
+    <value>Opened in the editor</value>
+  </data>
+  <data name="NothingToSetUp" xml:space="preserve">
+    <value>Nothing to set up.</value>
+  </data>
+  <data name="SaveToFile" xml:space="preserve">
+    <value>Save to file</value>
+    <comment>a step of the after-capture workflow</comment>
+  </data>
+  <data name="RecordingAlreadyIn" xml:space="preserve">
+    <value>The recording is in {0} already.</value>
+    <comment>{0}: folder</comment>
+  </data>
+  <data name="FileAndMore_one" xml:space="preserve">
+    <value>{1} and {0} more</value>
+    <comment>{0}: how many more files; {1}: the first file's name</comment>
+  </data>
+  <data name="FileAndMore_other" xml:space="preserve">
+    <value>{1} and {0} more</value>
+    <comment>{0}: how many more files; {1}: the first file's name</comment>
+  </data>
+  <data name="CapturesSavedIn" xml:space="preserve">
+    <value>Captures are saved in {0}.</value>
+  </data>
+  <data name="CantWriteTo" xml:space="preserve">
+    <value>Can't write to {0}: {1}</value>
+    <comment>{0}: folder; {1}: the error</comment>
+  </data>
+  <data name="CopyToClipboard" xml:space="preserve">
+    <value>Copy to clipboard</value>
+    <comment>a step of the after-capture workflow</comment>
+  </data>
+  <data name="CopiedToClipboard" xml:space="preserve">
+    <value>Copied to the clipboard.</value>
+  </data>
+  <data name="FileOnClipboard" xml:space="preserve">
+    <value>The file is on the clipboard (paste it into a folder, a chat or an email).</value>
+  </data>
+  <data name="Print" xml:space="preserve">
+    <value>Print</value>
+    <comment>a step of the after-capture workflow</comment>
+  </data>
+  <data name="RecordingsCantBePrinted" xml:space="preserve">
+    <value>Recordings can't be printed.</value>
+  </data>
+  <data name="StepsFailed" xml:space="preserve">
+    <value>{0} failed (see the notification)</value>
+    <comment>editor status bar; {0}: the steps that failed</comment>
+  </data>
+  <data name="SentWithLink" xml:space="preserve">
+    <value>Sent; the link is in the notification</value>
+  </data>
+  <data name="Sent" xml:space="preserve">
+    <value>Sent</value>
+  </data>
+  <data name="ListSeparator" xml:space="preserve">
+    <value>, </value>
+    <comment>between names in a list</comment>
+  </data>
+  <data name="CaptureNotSent" xml:space="preserve">
+    <value>Capture not sent</value>
+  </data>
+  <data name="CapturePartlyDone" xml:space="preserve">
+    <value>Capture: not everything worked</value>
+  </data>
+  <data name="CaptureSaved" xml:space="preserve">
+    <value>Capture saved</value>
+  </data>
+  <data name="CaptureUploaded" xml:space="preserve">
+    <value>Capture uploaded</value>
+  </data>
+  <data name="CaptureCopied" xml:space="preserve">
+    <value>Capture copied</value>
+  </data>
+  <data name="CaptureSent" xml:space="preserve">
+    <value>Capture sent</value>
+  </data>
+  <data name="RecordingNotSent" xml:space="preserve">
+    <value>Recording not sent</value>
+  </data>
+  <data name="RecordingPartlyDone" xml:space="preserve">
+    <value>Recording: not everything worked</value>
+  </data>
+  <data name="RecordingSaved" xml:space="preserve">
+    <value>Recording saved</value>
+  </data>
+  <data name="RecordingUploaded" xml:space="preserve">
+    <value>Recording uploaded</value>
+  </data>
+  <data name="RecordingCopied" xml:space="preserve">
+    <value>Recording copied</value>
+  </data>
+  <data name="RecordingSent" xml:space="preserve">
+    <value>Recording sent</value>
+  </data>
+  <data name="PrinterNotInstalledSettings" xml:space="preserve">
+    <value>The printer "{0}" isn't installed (Settings › Destinations).</value>
+  </data>
+  <data name="PrintingCancelled" xml:space="preserve">
+    <value>Printing was cancelled.</value>
+  </data>
+  <data name="PrintJobName" xml:space="preserve">
+    <value>CashGear Capture – {0}</value>
+    <comment>the print job's name in the printer's queue; {0}: the capture's title</comment>
+  </data>
+  <data name="PrintedOn" xml:space="preserve">
+    <value>Printed on {0}</value>
+    <comment>{0}: printer</comment>
+  </data>
+  <data name="CouldntPrint" xml:space="preserve">
+    <value>Couldn't print: {0}</value>
+  </data>
+  <data name="NoDefaultPrinter" xml:space="preserve">
+    <value>Windows has no default printer.</value>
+  </data>
+  <data name="PrinterNotInstalled" xml:space="preserve">
+    <value>The printer "{0}" isn't installed.</value>
+  </data>
+  <data name="FitFillPage" xml:space="preserve">
+    <value>filling the page</value>
+    <comment>{1} of PrintsOn</comment>
+  </data>
+  <data name="FitActualSize" xml:space="preserve">
+    <value>at the size it was on the screen</value>
+  </data>
+  <data name="FitLargest" xml:space="preserve">
+    <value>as large as fits</value>
+  </data>
+  <data name="PrintsOn" xml:space="preserve">
+    <value>Prints on {0}, one capture per page {1}, {2:0.#} mm margins.</value>
+    <comment>{0}: printer; {1}: how the capture fits the page; {2}: margin</comment>
+  </data>
+  <data name="PrintsOnWithDialog" xml:space="preserve">
+    <value>Prints on {0}, one capture per page {1}, {2:0.#} mm margins; the print dialog lets you change it each time.</value>
+  </data>
+  <data name="PrintersCantBeRead" xml:space="preserve">
+    <value>The printers can't be read: {0}</value>
+  </data>
+  <data name="InFolderClickToShow" xml:space="preserve">
+    <value>in {0} (click to show)</value>
+    <comment>a notification's line under the saved files; {0}: folder</comment>
+  </data>
+</root>

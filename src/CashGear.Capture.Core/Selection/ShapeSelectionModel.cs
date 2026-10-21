@@ -1,4 +1,5 @@
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Resources;
 
 namespace CashGear.Capture.Core.Selection;
 
@@ -75,8 +76,8 @@ public sealed class ShapeSelectionModel : ISelectionModel
                 CanClosePath = CursorOnFirst,
                 Label = bounds.IsEmpty ? null : $"{bounds.Width} × {bounds.Height}",
                 Hint = IsPolygon
-                    ? "Click to add corners · click the first corner, double-click or Enter: capture · Backspace: undo a corner"
-                    : "Hold the button down and draw around what to capture; let go to capture",
+                    ? CoreStrings.PolygonHint
+                    : CoreStrings.FreehandHint,
                 Tracking = !IsFinished,
             };
         }

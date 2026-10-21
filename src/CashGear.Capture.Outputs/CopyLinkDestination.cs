@@ -1,5 +1,6 @@
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs.Resources;
 
 namespace CashGear.Capture.Outputs;
 
@@ -8,7 +9,7 @@ public sealed class CopyLinkDestination(IOutputService output) : IOutputDestinat
 {
     public string Id => DestinationIds.CopyLink;
 
-    public string DisplayName => "Copy the link";
+    public string DisplayName => OutputsStrings.CopyLink;
 
     public bool SupportsVideo => true;
 
@@ -17,12 +18,12 @@ public sealed class CopyLinkDestination(IOutputService output) : IOutputDestinat
         ArgumentNullException.ThrowIfNull(item);
         if (item.Links.Count == 0)
         {
-            return OutputResult.Skip("No link to copy (put an upload before Copy the link).");
+            return OutputResult.Skip(OutputsStrings.NoLinkToCopy);
         }
 
         await output.CopyTextToClipboardAsync(string.Join(Environment.NewLine, item.Links), ct).ConfigureAwait(false);
-        return OutputResult.Done(item.Links.Count == 1 ? "Link copied to the clipboard" : $"{item.Links.Count} links copied to the clipboard");
+        return OutputResult.Done(OutputsStrings.LinksCopied(item.Links.Count));
     }
 
-    public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done("Nothing to set up."));
+    public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done(OutputsStrings.NothingToSetUp));
 }

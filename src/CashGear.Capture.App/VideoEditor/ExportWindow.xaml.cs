@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
 using Microsoft.Win32;
 
@@ -34,7 +35,7 @@ public partial class ExportWindow : Window, IThemedWindow
         (DataContext as ExportViewModel)?.Stop();
     }
 
-    private void UpdateCancel() => CancelButton.Content = DataContext is ExportViewModel { IsRunning: true } ? "Cancel" : "Close";
+    private void UpdateCancel() => CancelButton.Content = DataContext is ExportViewModel { IsRunning: true } ? CommonText.Cancel : CommonText.Close;
 
     private sealed class SaveDialogPicker(Window owner) : IExportPathPicker
     {
@@ -42,7 +43,7 @@ public partial class ExportWindow : Window, IThemedWindow
         {
             var dialog = new SaveFileDialog
             {
-                Title = "Export",
+                Title = VideoEditorText.Export,
                 Filter = filter,
                 FileName = fileName,
                 InitialDirectory = folder,

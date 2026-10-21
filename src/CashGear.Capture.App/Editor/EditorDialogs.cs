@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Imaging;
@@ -46,14 +47,12 @@ public interface IEditorDialogs
 
 internal sealed class WpfEditorDialogs(Window owner, AppTheme theme) : IEditorDialogs
 {
-    private const string Caption = "CashGear Capture";
-
     public string? AskSavePath(string folder, string fileName, ImageFileFormat format)
     {
         var dialog = new SaveFileDialog
         {
-            Title = "Save capture as",
-            Filter = "PNG image (*.png)|*.png|JPEG image (*.jpg)|*.jpg;*.jpeg|Bitmap (*.bmp)|*.bmp",
+            Title = EditorText.SaveCaptureAsTitle,
+            Filter = EditorText.SaveImageFilter,
             FilterIndex = format switch
             {
                 ImageFileFormat.Jpeg => 2,
@@ -93,7 +92,7 @@ internal sealed class WpfEditorDialogs(Window owner, AppTheme theme) : IEditorDi
 
     public string? PickImageFile()
     {
-        var dialog = new OpenFileDialog { Title = "Choose the watermark picture", Filter = CashGear.Capture.Editor.Batch.ImageFiles.DialogFilter, CheckFileExists = true };
+        var dialog = new OpenFileDialog { Title = EditorText.ChooseWatermarkPicture, Filter = CashGear.Capture.Editor.Batch.ImageFiles.DialogFilter, CheckFileExists = true };
         return dialog.ShowDialog(owner) == true ? dialog.FileName : null;
     }
 
@@ -106,15 +105,15 @@ internal sealed class WpfEditorDialogs(Window owner, AppTheme theme) : IEditorDi
     }
 
     public SaveChangesChoice AskSaveChanges(string documentName) =>
-        MessageBox.Show(owner, $"Save the changes to {documentName}?", Caption, MessageBoxButton.YesNoCancel, MessageBoxImage.Question) switch
+        AppDialog.Show(owner, EditorText.SaveChangesQuestion(documentName), CommonText.ProductName, DialogButtons.YesNoCancel, DialogKind.Question, theme) switch
         {
-            MessageBoxResult.Yes => SaveChangesChoice.Save,
-            MessageBoxResult.No => SaveChangesChoice.Discard,
+            DialogAnswer.Yes => SaveChangesChoice.Save,
+            DialogAnswer.No => SaveChangesChoice.Discard,
             _ => SaveChangesChoice.Cancel,
         };
 
     public void ShowError(string message) =>
-        MessageBox.Show(owner, message, Caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+        AppDialog.Show(owner, message, CommonText.ProductName, DialogButtons.Ok, DialogKind.Warning, theme);
 }
 
 /// <summary>The Resize image dialog: new width and height, proportional by default.</summary>

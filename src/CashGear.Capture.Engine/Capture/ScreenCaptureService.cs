@@ -4,6 +4,7 @@ using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Engine.Resources;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Engine.Capture;
@@ -69,7 +70,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         var monitors = _monitors.GetMonitors();
         if (monitors.Count == 0)
         {
-            throw new CaptureException("No monitors found.");
+            throw new CaptureException(EngineStrings.NoMonitors);
         }
 
         var bounds = VirtualScreen.GetBounds(monitors.Select(m => m.Bounds));
@@ -93,15 +94,15 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
     public async Task<CapturedImage> CaptureWindowAsync(nint hwnd, CaptureWindowOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        var window = _windows.GetWindow(hwnd) ?? throw new CaptureException("That window no longer exists.");
+        var window = _windows.GetWindow(hwnd) ?? throw new CaptureException(EngineStrings.WindowGone);
         if (window.IsMinimized)
         {
-            throw new CaptureException($"\"{Describe(window)}\" is minimized. Restore it, then capture again.");
+            throw new CaptureException(EngineStrings.WindowMinimized(Describe(window)));
         }
 
         if (window.IsCloaked)
         {
-            throw new CaptureException($"\"{Describe(window)}\" is hidden by Windows (on another desktop, or an app that is suspended). Switch to it, then capture again.");
+            throw new CaptureException(EngineStrings.WindowCloaked(Describe(window)));
         }
 
         ThrowIfSecure();
@@ -175,8 +176,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         var area = window.Bounds.Intersect(virtualBounds);
         if (area.IsEmpty)
         {
-            throw new CaptureException(
-                $"\"{Describe(window)}\" is off every screen, perhaps on a monitor that is no longer connected. Bring it back first: click it on the taskbar, then press Windows+Shift+Left or Right to move it onto a monitor.");
+            throw new CaptureException(EngineStrings.WindowOffScreen(Describe(window)));
         }
 
         var image = await ComposeAsync(area, CaptureKind.Window, monitors, ScreenBackend(), includeCursor, ct).ConfigureAwait(false);
@@ -205,7 +205,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         }
 
         return IsAlmostBlack(image)
-            ? $"The capture of \"{Describe(window)}\" is black. Video that is protected from copying (DRM), and apps that hide themselves from captures, are always black in screenshots and recordings."
+            ? EngineStrings.CaptureIsBlack(Describe(window))
             : null;
     }
 
@@ -259,7 +259,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
             .ToList();
         if (parts.Count == 0)
         {
-            throw new CaptureException($"{target} is not on any monitor.");
+            throw new CaptureException(EngineStrings.AreaOffMonitors(target));
         }
 
         var metadata = new CaptureMetadata

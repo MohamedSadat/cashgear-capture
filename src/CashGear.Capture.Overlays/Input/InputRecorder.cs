@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Overlays;
@@ -43,6 +44,7 @@ public sealed partial class InputRecorder : IDisposable
     private long _shown;
     private long _hidden;
 
+    [Localizable(false)] // the thread's name, for debuggers
     private InputRecorder(
         RecordingClock clock,
         InputTimeline timeline,

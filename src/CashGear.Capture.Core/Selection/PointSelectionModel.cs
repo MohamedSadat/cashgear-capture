@@ -1,4 +1,5 @@
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Resources;
 
 namespace CashGear.Capture.Core.Selection;
 
@@ -31,7 +32,7 @@ public sealed class PointSelectionModel : ISelectionModel
 
     public SelectionView View => new()
     {
-        Hint = "Click to pick the colour under the cursor · arrows move a pixel · Esc cancels",
+        Hint = CoreStrings.ColourPickerHint,
         Tracking = !IsFinished,
         Dim = false,
     };

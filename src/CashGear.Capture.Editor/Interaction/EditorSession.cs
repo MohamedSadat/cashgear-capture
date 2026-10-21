@@ -3,6 +3,7 @@ using CashGear.Capture.Editor.Effects;
 using CashGear.Capture.Editor.Imaging;
 using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Editor.Rendering;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Interaction;
@@ -280,11 +281,11 @@ public sealed class EditorSession
                 break;
 
             case MoveDrag move:
-                Commit(move.Before, "move " + move.Before.Kind.DisplayName());
+                Commit(move.Before, EditorStrings.UndoMove(move.Before.Kind.DisplayName()));
                 break;
 
             case ResizeDrag resize:
-                Commit(resize.Before, "resize " + resize.Before.Kind.DisplayName());
+                Commit(resize.Before, EditorStrings.UndoResize(resize.Before.Kind.DisplayName()));
                 break;
 
             case CropDrag when Marquee is { } area && (area.Width < MinShapeSize || area.Height < MinShapeSize):
@@ -383,7 +384,7 @@ public sealed class EditorSession
         if (Selected is { } selected && !IsDragging)
         {
             Document.Execute(new ReplaceAnnotationCommand(
-                selected, selected.Offset(dx, dy), "move " + selected.Kind.DisplayName(), "nudge"));
+                selected, selected.Offset(dx, dy), EditorStrings.UndoMove(selected.Kind.DisplayName()), "nudge"));
         }
     }
 
@@ -396,13 +397,13 @@ public sealed class EditorSession
         if (Selected is { } selected && selected.Style != style && !IsDragging)
         {
             Document.Execute(new ReplaceAnnotationCommand(
-                selected, selected with { Style = style }, "change " + selected.Kind.DisplayName(), mergeKey is null ? null : "style:" + mergeKey));
+                selected, selected with { Style = style }, EditorStrings.UndoChange(selected.Kind.DisplayName()), mergeKey is null ? null : "style:" + mergeKey));
         }
     }
 
-    public void BringToFront() => Reorder(Document.Annotations.Count - 1, "bring to front");
+    public void BringToFront() => Reorder(Document.Annotations.Count - 1, EditorStrings.UndoBringToFront);
 
-    public void SendToBack() => Reorder(0, "send to back");
+    public void SendToBack() => Reorder(0, EditorStrings.UndoSendToBack);
 
     /// <summary>Ends text typing: adds, changes or (when emptied) deletes the text annotation.</summary>
     public void CommitTextEdit(string text)
@@ -431,7 +432,7 @@ public sealed class EditorSession
         }
         else if (existing.Text != text)
         {
-            Document.Execute(new ReplaceAnnotationCommand(existing, existing with { Text = text }, "edit text"));
+            Document.Execute(new ReplaceAnnotationCommand(existing, existing with { Text = text }, EditorStrings.UndoEditText));
         }
 
         Invalidate();
@@ -451,21 +452,22 @@ public sealed class EditorSession
         if (CropArea is { } area && !IsDragging)
         {
             CropArea = null;
-            RunImageEdit("crop", s => ImageOperations.Crop(s, area));
+            RunImageEdit(EditorStrings.UndoCrop, s => ImageOperations.Crop(s, area));
         }
     }
 
-    public void Rotate(bool clockwise) => RunImageEdit(clockwise ? "rotate right" : "rotate left", s => ImageOperations.Rotate(s, clockwise));
+    public void Rotate(bool clockwise) =>
+        RunImageEdit(clockwise ? EditorStrings.UndoRotateRight : EditorStrings.UndoRotateLeft, s => ImageOperations.Rotate(s, clockwise));
 
-    public void ResizeImage(int width, int height) => RunImageEdit("resize image", s => ImageOperations.Resize(s, width, height));
+    public void ResizeImage(int width, int height) => RunImageEdit(EditorStrings.UndoResizeImage, s => ImageOperations.Resize(s, width, height));
 
     public void Flip(bool horizontal) =>
-        RunImageEdit(horizontal ? "flip horizontally" : "flip vertically", s => ImageOperations.Flip(s, horizontal));
+        RunImageEdit(horizontal ? EditorStrings.UndoFlipHorizontally : EditorStrings.UndoFlipVertically, s => ImageOperations.Flip(s, horizontal));
 
-    public void RotateBy(double degrees, SKColor background) => RunImageEdit("rotate", s => ImageOperations.RotateBy(s, degrees, background));
+    public void RotateBy(double degrees, SKColor background) => RunImageEdit(EditorStrings.UndoRotate, s => ImageOperations.RotateBy(s, degrees, background));
 
     public void SetCanvasSize(int width, int height, Anchor anchor, SKColor background) =>
-        RunImageEdit("change the canvas size", s => ImageOperations.CanvasSize(s, width, height, anchor, background));
+        RunImageEdit(EditorStrings.UndoCanvasSize, s => ImageOperations.CanvasSize(s, width, height, anchor, background));
 
     /// <summary>Crops away plain borders. False when there were none.</summary>
     public bool AutoTrim(int tolerance = 8)
@@ -475,7 +477,7 @@ public sealed class EditorSession
             return false;
         }
 
-        RunImageEdit("trim borders", s => ImageOperations.Crop(s, area));
+        RunImageEdit(EditorStrings.UndoTrimBorders, s => ImageOperations.Crop(s, area));
         return true;
     }
 
@@ -580,11 +582,12 @@ public sealed class EditorSession
         Document.Execute(new ImageEditCommand(name, before, after));
     }
 
-    private void Reorder(int index, string name)
+    /// <param name="name">The undo step's name for the selection's kind ("bring to front arrow").</param>
+    private void Reorder(int index, Func<string, string> name)
     {
         if (Selected is { } selected && !IsDragging && Document.IndexOf(selected.Id) != index)
         {
-            Document.Execute(new ReorderAnnotationCommand(selected.Id, index, name + " " + selected.Kind.DisplayName()));
+            Document.Execute(new ReorderAnnotationCommand(selected.Id, index, name(selected.Kind.DisplayName())));
         }
     }
 

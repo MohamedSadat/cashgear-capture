@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="PresetMp4Hd" xml:space="preserve">
+    <value>MP4, H.264, 1080p</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetMp4Small" xml:space="preserve">
+    <value>MP4, H.264, 720p</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetMp4Project" xml:space="preserve">
+    <value>MP4, H.264, the project's size</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetMp4Hevc" xml:space="preserve">
+    <value>MP4, HEVC, the project's size</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetWebMVp9" xml:space="preserve">
+    <value>WebM, VP9</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetWebMAv1" xml:space="preserve">
+    <value>WebM, AV1</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetM4a" xml:space="preserve">
+    <value>M4A (AAC), sound only</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetMp3" xml:space="preserve">
+    <value>MP3, sound only</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetGif" xml:space="preserve">
+    <value>GIF, animated (no sound)</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="TimelineEmpty" xml:space="preserve">
+    <value>The timeline is empty: there is nothing to export.</value>
+  </data>
+  <data name="ExportFailed" xml:space="preserve">
+    <value>The export failed: {0}</value>
+    <comment>{0}: FFmpeg's message</comment>
+  </data>
+  <data name="NotEnoughMemory" xml:space="preserve">
+    <value>Not enough memory for {0} × {1} pictures.</value>
+    <comment>{0} × {1}: width × height in pixels</comment>
+  </data>
+  <data name="GifEncoder" xml:space="preserve">
+    <value>GIF (FFmpeg palettegen and paletteuse)</value>
+    <comment>the encoder an export used, shown after it</comment>
+  </data>
+  <data name="NoEncoder" xml:space="preserve">
+    <value>No {0} encoder works on this PC.</value>
+    <comment>{0}: a codec (H264, Hevc…)</comment>
+  </data>
+  <data name="NoEncoderForSize" xml:space="preserve">
+    <value>No {0} encoder could encode {1} × {2}. {3}</value>
+    <comment>{0}: a codec; {1} × {2}: the size; {3}: each encoder's error</comment>
+  </data>
+  <data name="TrackScreen" xml:space="preserve">
+    <value>Screen</value>
+    <comment>track name of a recording's screen</comment>
+  </data>
+  <data name="TrackVideo" xml:space="preserve">
+    <value>Video</value>
+    <comment>track name of a video without metadata</comment>
+  </data>
+  <data name="TrackWebcam" xml:space="preserve">
+    <value>Webcam</value>
+    <comment>track name</comment>
+  </data>
+  <data name="TrackSound" xml:space="preserve">
+    <value>Sound</value>
+    <comment>track name</comment>
+  </data>
+  <data name="TrackSoundNumbered" xml:space="preserve">
+    <value>Sound {0}</value>
+    <comment>track name; {0}: the stream's number</comment>
+  </data>
+  <data name="TrackEffects" xml:space="preserve">
+    <value>Effects</value>
+    <comment>track name</comment>
+  </data>
+  <data name="TrackEffectsNumbered" xml:space="preserve">
+    <value>Effects {0}</value>
+    <comment>track name; {0}: 2, 3…</comment>
+  </data>
+  <data name="TrackAnnotations" xml:space="preserve">
+    <value>Annotations</value>
+    <comment>track name</comment>
+  </data>
+  <data name="TrackAnnotationsNumbered" xml:space="preserve">
+    <value>Annotations {0}</value>
+    <comment>track name; {0}: 2, 3…</comment>
+  </data>
+  <data name="TrackZoom" xml:space="preserve">
+    <value>Zoom</value>
+    <comment>track name</comment>
+  </data>
+  <data name="TrackZoomNumbered" xml:space="preserve">
+    <value>Zoom {0}</value>
+    <comment>track name; {0}: 2, 3…</comment>
+  </data>
+  <data name="TrackCaptions" xml:space="preserve">
+    <value>Captions</value>
+    <comment>track name</comment>
+  </data>
+  <data name="DefaultAnnotationText" xml:space="preserve">
+    <value>Text</value>
+    <comment>a new text annotation's text, drawn into the video</comment>
+  </data>
+  <data name="MissingMedia" xml:space="preserve">
+    <value>Missing media</value>
+    <comment>timeline label of a clip whose file is gone</comment>
+  </data>
+  <data name="ClickHighlights" xml:space="preserve">
+    <value>Click highlights</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="Keystrokes" xml:space="preserve">
+    <value>Keystrokes</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="Pointer" xml:space="preserve">
+    <value>Pointer</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="ZoomLabel" xml:space="preserve">
+    <value>Zoom {0:0.##}×</value>
+    <comment>timeline label; {0}: the scale</comment>
+  </data>
+  <data name="ZoomFollowingLabel" xml:space="preserve">
+    <value>Zoom {0:0.##}×, following the pointer</value>
+    <comment>timeline label; {0}: the scale</comment>
+  </data>
+  <data name="FreezeLabel" xml:space="preserve">
+    <value>Freeze · {0}</value>
+    <comment>timeline label of a freeze frame; {0}: the clip's label</comment>
+  </data>
+  <data name="ShapeArrow" xml:space="preserve">
+    <value>Arrow</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="ShapeLine" xml:space="preserve">
+    <value>Line</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="ShapeRectangle" xml:space="preserve">
+    <value>Rectangle</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="ShapeEllipse" xml:space="preserve">
+    <value>Ellipse</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="ShapeHighlight" xml:space="preserve">
+    <value>Highlight</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="ShapeBlur" xml:space="preserve">
+    <value>Blur</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="ShapePixelate" xml:space="preserve">
+    <value>Pixelate</value>
+    <comment>timeline label</comment>
+  </data>
+  <data name="NotAProjectBecause" xml:space="preserve">
+    <value>This isn't a video project: {0}</value>
+    <comment>{0}: the JSON reader's message</comment>
+  </data>
+  <data name="NotAProject" xml:space="preserve">
+    <value>This isn't a video project.</value>
+  </data>
+  <data name="NewerProject" xml:space="preserve">
+    <value>This project was saved by a newer version of the app.</value>
+  </data>
+  <data name="FileNotAProject" xml:space="preserve">
+    <value>{0} isn't a video project.</value>
+    <comment>{0}: a file name</comment>
+  </data>
+  <data name="ProjectEntryMissing" xml:space="preserve">
+    <value>{0} has no {1}.</value>
+    <comment>{0}: a file name; {1}: project.json</comment>
+  </data>
+  <data name="NotSubtitles" xml:space="preserve">
+    <value>This isn't an SRT or WebVTT file with captions in it.</value>
+  </data>
+  <data name="UndoMove" xml:space="preserve">
+    <value>move</value>
+    <comment>undo step, after Undo/Redo</comment>
+  </data>
+  <data name="UndoTrimStart" xml:space="preserve">
+    <value>trim start</value>
+    <comment>undo step, after Undo/Redo</comment>
+  </data>
+  <data name="UndoTrimEnd" xml:space="preserve">
+    <value>trim end</value>
+    <comment>undo step, after Undo/Redo</comment>
+  </data>
+</root>

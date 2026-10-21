@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using System.Globalization;
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.VideoEditor.Playback;
+using CashGear.Capture.VideoEditor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.VideoEditor.Timeline;
@@ -32,8 +34,12 @@ public sealed record TimelineColors(SKColor Background, SKColor RowA, SKColor Ro
 /// </summary>
 public sealed class TimelineRenderer : IDisposable
 {
-    private readonly SKFont _font = new(SKTypeface.FromFamilyName("Segoe UI"), 11);
-    private readonly SKFont _small = new(SKTypeface.FromFamilyName("Segoe UI"), 10);
+    /// <summary>The labels' font (its name, not text).</summary>
+    [Localizable(false)]
+    private const string FontFamily = "Segoe UI";
+
+    private readonly SKFont _font = new(SKTypeface.FromFamilyName(FontFamily), 11);
+    private readonly SKFont _small = new(SKTypeface.FromFamilyName(FontFamily), 10);
 
     public TimelineColors Colors { get; set; } = TimelineColors.Light;
 
@@ -186,13 +192,13 @@ public sealed class TimelineRenderer : IDisposable
         canvas.ClipRect(box);
         var label = item switch
         {
-            Clip clip => project.Asset(clip.AssetId)?.Name ?? "Missing media",
+            Clip clip => project.Asset(clip.AssetId)?.Name ?? VideoEditorStrings.MissingMedia,
             AnnotationItem { Shape: AnnotationShape.Text } written => written.Text.ReplaceLineEndings(" "),
-            AnnotationItem annotation => annotation.Shape.ToString(),
-            EffectItem { Kind: EffectKind.Clicks } => "Click highlights",
-            EffectItem { Kind: EffectKind.Keystrokes } => "Keystrokes",
-            EffectItem => "Pointer",
-            ZoomItem zoom => zoom.Focus == ZoomFocus.FollowPointer ? $"Zoom {zoom.ClampedScale:0.##}×, following the pointer" : $"Zoom {zoom.ClampedScale:0.##}×",
+            AnnotationItem annotation => ShapeLabel(annotation.Shape),
+            EffectItem { Kind: EffectKind.Clicks } => VideoEditorStrings.ClickHighlights,
+            EffectItem { Kind: EffectKind.Keystrokes } => VideoEditorStrings.Keystrokes,
+            EffectItem => VideoEditorStrings.Pointer,
+            ZoomItem zoom => zoom.Focus == ZoomFocus.FollowPointer ? VideoEditorStrings.ZoomFollowingLabel(zoom.ClampedScale) : VideoEditorStrings.ZoomLabel(zoom.ClampedScale),
             CaptionItem caption => caption.Text.ReplaceLineEndings(" "),
             _ => item.GetType().Name,
         };
@@ -234,7 +240,7 @@ public sealed class TimelineRenderer : IDisposable
             DrawFades(canvas, shaped, box, view);
             if (shaped.IsFreeze)
             {
-                label = "Freeze · " + label;
+                label = VideoEditorStrings.FreezeLabel(label);
             }
             else if (shaped.IsRamp)
             {
@@ -253,6 +259,19 @@ public sealed class TimelineRenderer : IDisposable
         canvas.DrawText(label, x, box.Top + 13, SKTextAlign.Left, _font, text);
         canvas.Restore();
     }
+
+    /// <summary>An annotation's kind, as its label on the timeline.</summary>
+    private static string ShapeLabel(AnnotationShape shape) => shape switch
+    {
+        AnnotationShape.Arrow => VideoEditorStrings.ShapeArrow,
+        AnnotationShape.Line => VideoEditorStrings.ShapeLine,
+        AnnotationShape.Rectangle => VideoEditorStrings.ShapeRectangle,
+        AnnotationShape.Ellipse => VideoEditorStrings.ShapeEllipse,
+        AnnotationShape.Highlight => VideoEditorStrings.ShapeHighlight,
+        AnnotationShape.Blur => VideoEditorStrings.ShapeBlur,
+        AnnotationShape.Pixelate => VideoEditorStrings.ShapePixelate,
+        _ => shape.ToString(),
+    };
 
     private static void DrawThumbnails(SKCanvas canvas, ThumbnailStrip? strip, Clip clip, SKRect box, TimelineView view)
     {

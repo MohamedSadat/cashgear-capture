@@ -2,6 +2,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Resources;
 using CashGear.Capture.Core.Settings;
 
 namespace CashGear.Capture.Core.Overlays;
@@ -97,12 +98,12 @@ public sealed record RecordingMetadata(
         }
         catch (JsonException e)
         {
-            throw new InvalidDataException($"{Path.GetFileName(path)} is not a recording metadata file: {e.Message}", e);
+            throw new InvalidDataException(CoreStrings.NotRecordingMetadata(Path.GetFileName(path), e.Message), e);
         }
 
         if (metadata is null || metadata.Format != FormatName || metadata.Version > CurrentVersion)
         {
-            throw new InvalidDataException($"{Path.GetFileName(path)} is not a recording metadata file this version of the app can read.");
+            throw new InvalidDataException(CoreStrings.UnreadableRecordingMetadata(Path.GetFileName(path)));
         }
 
         return metadata;

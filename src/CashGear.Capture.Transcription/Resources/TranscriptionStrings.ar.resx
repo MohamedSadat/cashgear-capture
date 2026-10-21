@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ModelBase" xml:space="preserve">
+    <value>أساسي</value>
+  </data>
+  <data name="ModelSmall" xml:space="preserve">
+    <value>صغير</value>
+  </data>
+  <data name="ModelMedium" xml:space="preserve">
+    <value>متوسط</value>
+  </data>
+  <data name="AboutBase" xml:space="preserve">
+    <value>سريع؛ جيد للإنجليزية الواضحة</value>
+  </data>
+  <data name="AboutSmall" xml:space="preserve">
+    <value>أفضل؛ الحد الأدنى للعربية</value>
+  </data>
+  <data name="AboutMedium" xml:space="preserve">
+    <value>الأفضل؛ بطيء بلا بطاقة رسومات</value>
+  </data>
+  <data name="SizeInMegabytes" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="ModelDamaged" xml:space="preserve">
+    <value>تنزيل نموذج «{0}» تالف (المجموع الاختباري غير مطابق). حاول مرة أخرى.</value>
+  </data>
+</root>

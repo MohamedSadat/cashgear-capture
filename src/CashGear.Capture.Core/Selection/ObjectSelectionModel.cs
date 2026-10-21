@@ -1,5 +1,6 @@
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Resources;
 
 namespace CashGear.Capture.Core.Selection;
 
@@ -72,7 +73,7 @@ public sealed class ObjectSelectionModel : ISelectionModel
             {
                 Lit = bounds,
                 Label = lit is null ? null : $"{lit.Description}   {bounds.Width} × {bounds.Height}",
-                Hint = "Click to capture · mouse wheel up: what it is in · wheel down: back in",
+                Hint = CoreStrings.ObjectHint,
                 Tracking = false,
             };
         }

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="InvalidHotkey" xml:space="preserve">
+    <value>"{0}" is not a valid hotkey.</value>
+    <comment>{0}: the text from the settings</comment>
+  </data>
+  <data name="BlocksKey" xml:space="preserve">
+    <value>{0} on its own would block that key in every app; add Ctrl, Alt, Shift or Win.</value>
+    <comment>{0}: a key such as F9</comment>
+  </data>
+  <data name="AlreadySetFor" xml:space="preserve">
+    <value>{0} is already set for {1}.</value>
+    <comment>{0}: the hotkey; {1}: what it does</comment>
+  </data>
+  <data name="CouldNotRegister" xml:space="preserve">
+    <value>{0} could not be registered.</value>
+  </data>
+  <data name="AlreadyUsed" xml:space="preserve">
+    <value>{0} is already used by another app or by Windows.</value>
+  </data>
+  <data name="RegisterFailed" xml:space="preserve">
+    <value>{0} could not be registered (Win32 error {1}).</value>
+  </data>
+  <data name="ProblemLine" xml:space="preserve">
+    <value>{0}: {1}</value>
+    <comment>{0}: what the hotkey does; {1}: what is wrong</comment>
+  </data>
+  <data name="NotAvailableTitle" xml:space="preserve">
+    <value>Some hotkeys are not available</value>
+  </data>
+  <data name="CaptureRegion" xml:space="preserve">
+    <value>Capture Region</value>
+  </data>
+  <data name="CaptureActiveWindow" xml:space="preserve">
+    <value>Capture Active Window</value>
+  </data>
+  <data name="CaptureFullScreen" xml:space="preserve">
+    <value>Capture Full Screen</value>
+  </data>
+  <data name="CaptureScrolling" xml:space="preserve">
+    <value>Scrolling Capture</value>
+  </data>
+  <data name="Record" xml:space="preserve">
+    <value>Record Screen (again to stop)</value>
+  </data>
+  <data name="CaptureText" xml:space="preserve">
+    <value>Capture Text (OCR)</value>
+  </data>
+  <data name="ToggleDrawing" xml:space="preserve">
+    <value>Draw on Screen (while recording)</value>
+  </data>
+  <data name="RepeatLastCapture" xml:space="preserve">
+    <value>Repeat Last Capture</value>
+  </data>
+  <data name="CaptureWindow" xml:space="preserve">
+    <value>Capture Window (pick one)</value>
+  </data>
+  <data name="CaptureFixedRegion" xml:space="preserve">
+    <value>Capture Fixed-Size Region</value>
+  </data>
+  <data name="CaptureFreehand" xml:space="preserve">
+    <value>Capture Freehand Region</value>
+  </data>
+  <data name="CapturePolygon" xml:space="preserve">
+    <value>Capture Polygon Region</value>
+  </data>
+  <data name="CaptureRoundedRegion" xml:space="preserve">
+    <value>Capture Rounded Region</value>
+  </data>
+  <data name="CaptureObject" xml:space="preserve">
+    <value>Capture Object (part of a window)</value>
+  </data>
+  <data name="CaptureMenu" xml:space="preserve">
+    <value>Capture Open Menu</value>
+  </data>
+  <data name="ToggleToolbar" xml:space="preserve">
+    <value>Show or Hide the Capture Toolbar</value>
+  </data>
+  <data name="Magnifier" xml:space="preserve">
+    <value>Screen Magnifier</value>
+  </data>
+  <data name="ColorPicker" xml:space="preserve">
+    <value>Colour Picker</value>
+  </data>
+  <data name="Ruler" xml:space="preserve">
+    <value>Show or Hide the Screen Ruler</value>
+  </data>
+  <data name="Crosshair" xml:space="preserve">
+    <value>Show or Hide the Crosshair</value>
+  </data>
+  <data name="ChooseOtherKeys" xml:space="preserve">
+    <value>Choose other keys in Settings.</value>
+    <comment>the last line, under the problems</comment>
+  </data>
+</root>

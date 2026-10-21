@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
 using CashGear.Capture.Core.Display;
@@ -11,7 +12,7 @@ namespace CashGear.Capture.App.Scrolling;
 /// <param name="Scroller">UI Automation when the app supports it, else the mouse wheel.</param>
 /// <param name="Source">For the log: what the area was found from.</param>
 /// <param name="WheelPoint">Where the mouse wheel is turned if it is used (kept clear of the progress window).</param>
-public sealed record ScrollTarget(PixelRect Area, IScroller Scroller, string Source, PixelPoint WheelPoint);
+public sealed record ScrollTarget(PixelRect Area, IScroller Scroller, [Localizable(false)] string Source, PixelPoint WheelPoint);
 
 /// <summary>
 /// Finds the scrolling part of a picked window. Starting at the point the user clicked, it walks up the UI

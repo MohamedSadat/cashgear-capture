@@ -1,5 +1,6 @@
 using System.Globalization;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs.Resources;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -23,8 +24,8 @@ public sealed class WordDestination(OfficeSettings settings, string captureFolde
     public string Id => DestinationIds.Word;
 
     public string DisplayName => settings.Mode == OfficeMode.Append && OfficeFiles.AppendPath(settings) is { } path
-        ? $"Add to {Path.GetFileName(path)}"
-        : "Word document";
+        ? OutputsStrings.AddTo(Path.GetFileName(path))
+        : OutputsStrings.WordDocument;
 
     public bool SupportsVideo => false;
 
@@ -33,7 +34,7 @@ public sealed class WordDestination(OfficeSettings settings, string captureFolde
         ArgumentNullException.ThrowIfNull(item);
         if (item.Image is not { } image)
         {
-            return OutputResult.Skip("Word takes pictures only.");
+            return OutputResult.Skip(OutputsStrings.WordPicturesOnly);
         }
 
         var picture = await item.GetFileAsync(ct).ConfigureAwait(false);
@@ -55,12 +56,12 @@ public sealed class WordDestination(OfficeSettings settings, string captureFolde
             return failure;
         }
 
-        return new OutputResult(true, settings.Mode == OfficeMode.Append ? $"Added to {Path.GetFileName(target)}" : $"Put in {Path.GetFileName(target)}") { Path = target };
+        return new OutputResult(true, settings.Mode == OfficeMode.Append ? OutputsStrings.AddedTo(Path.GetFileName(target)) : OutputsStrings.PutIn(Path.GetFileName(target))) { Path = target };
     }
 
     public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(settings.Mode == OfficeMode.Append
         ? OfficeFiles.CheckAppendable(OfficeFiles.AppendPath(settings), App, p => WordprocessingDocument.Open(p, false))
-            ?? OutputResult.Done($"Captures will be added at the end of {Path.GetFileName(OfficeFiles.AppendPath(settings))}.")
+            ?? OutputResult.Done(OutputsStrings.AddedAtEnd(Path.GetFileName(OfficeFiles.AppendPath(settings))))
         : OfficeFiles.CheckFolder(captureFolder));
 
     /// <summary>Creates the document, or opens it, and adds the picture at the end in a paragraph of its own.</summary>
@@ -128,7 +129,7 @@ public sealed class WordDestination(OfficeSettings settings, string captureFolde
         new(new DW.Inline(
             new DW.Extent { Cx = size.Width, Cy = size.Height },
             new DW.EffectExtent { LeftEdge = 0L, TopEdge = 0L, RightEdge = 0L, BottomEdge = 0L },
-            new DW.DocProperties { Id = id, Name = $"Capture {id}", Description = description },
+            new DW.DocProperties { Id = id, Name = OutputsStrings.PictureName(id), Description = description },
             new DW.NonVisualGraphicFrameDrawingProperties(new A.GraphicFrameLocks { NoChangeAspect = true }),
             new A.Graphic(new A.GraphicData(
                 new PIC.Picture(

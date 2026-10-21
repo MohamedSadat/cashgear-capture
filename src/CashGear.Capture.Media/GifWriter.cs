@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.Globalization;
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -88,7 +90,7 @@ public sealed unsafe class GifWriter : IDisposable
             throw new InvalidOperationException("The palette is made already.");
         }
 
-        Push(_learnIn, bgra, stride, _learned++, "Choosing the GIF's colours");
+        Push(_learnIn, bgra, stride, _learned++, MediaStrings.ChoosingGifColours);
     }
 
     /// <summary>The end of the first pass: the palette is made, and the file started.</summary>
@@ -99,9 +101,9 @@ public sealed unsafe class GifWriter : IDisposable
             throw new InvalidOperationException("The palette is made already.");
         }
 
-        FfmpegException.Check(ffmpeg.av_buffersrc_add_frame_flags(_learnIn, null, 0), "Choosing the GIF's colours");
+        FfmpegException.Check(ffmpeg.av_buffersrc_add_frame_flags(_learnIn, null, 0), MediaStrings.ChoosingGifColours);
         _palette = ffmpeg.av_frame_alloc();
-        FfmpegException.Check(ffmpeg.av_buffersink_get_frame(_learnOut, _palette), "Choosing the GIF's colours");
+        FfmpegException.Check(ffmpeg.av_buffersink_get_frame(_learnOut, _palette), MediaStrings.ChoosingGifColours);
         var learning = _learning;
         ffmpeg.avfilter_graph_free(&learning);
         _learning = null;
@@ -118,8 +120,8 @@ public sealed unsafe class GifWriter : IDisposable
         _palette->pts = 0;
         using (var log = FfmpegLog.Capture())
         {
-            Check(ffmpeg.av_buffersrc_add_frame_flags(paletteIn, _palette, KeepReference), "Giving the GIF its colours", log);
-            Check(ffmpeg.av_buffersrc_add_frame_flags(paletteIn, null, 0), "Giving the GIF its colours", log);
+            Check(ffmpeg.av_buffersrc_add_frame_flags(paletteIn, _palette, KeepReference), MediaStrings.GivingGifColours, log);
+            Check(ffmpeg.av_buffersrc_add_frame_flags(paletteIn, null, 0), MediaStrings.GivingGifColours, log);
         }
 
         OpenEncoder();
@@ -133,7 +135,7 @@ public sealed unsafe class GifWriter : IDisposable
             throw new InvalidOperationException("The palette isn't made yet (EndLearning).");
         }
 
-        Push(_mapIn, bgra, stride, _written++, "Writing the GIF");
+        Push(_mapIn, bgra, stride, _written++, MediaStrings.WritingGif);
         Drain();
     }
 
@@ -145,10 +147,10 @@ public sealed unsafe class GifWriter : IDisposable
             throw new InvalidOperationException("The palette isn't made yet (EndLearning).");
         }
 
-        FfmpegException.Check(ffmpeg.av_buffersrc_add_frame_flags(_mapIn, null, 0), "Writing the GIF");
+        FfmpegException.Check(ffmpeg.av_buffersrc_add_frame_flags(_mapIn, null, 0), MediaStrings.WritingGif);
         Drain();
         Encode(null);
-        FfmpegException.Check(ffmpeg.av_write_trailer(_output), "Finishing the GIF");
+        FfmpegException.Check(ffmpeg.av_write_trailer(_output), MediaStrings.FinishingGif);
         ffmpeg.avio_closep(&_output->pb);
         return new FileInfo(_path).Length;
     }
@@ -182,7 +184,7 @@ public sealed unsafe class GifWriter : IDisposable
     }
 
     /// <summary>A filter graph from the BGRA source "in" (and the palette source "palette") to the sink "out".</summary>
-    private AVFilterGraph* Graph(string description, bool withPalette, out AVFilterContext* input, out AVFilterContext* output, out AVFilterContext* paletteIn)
+    private AVFilterGraph* Graph([Localizable(false)] string description, bool withPalette, out AVFilterContext* input, out AVFilterContext* output, out AVFilterContext* paletteIn)
     {
         var graph = ffmpeg.avfilter_graph_alloc();
         input = null;
@@ -195,15 +197,15 @@ public sealed unsafe class GifWriter : IDisposable
             AVFilterContext* palette = null;
             AVFilterContext* sink = null;
             var args = string.Create(CultureInfo.InvariantCulture, $"video_size={_width}x{_height}:pix_fmt={(int)AVPixelFormat.AV_PIX_FMT_BGRA}:time_base=1/{_fps}:pixel_aspect=1/1");
-            Check(ffmpeg.avfilter_graph_create_filter(&source, ffmpeg.avfilter_get_by_name("buffer"), "in", args, null, graph), "Creating the GIF's input", log);
-            Check(ffmpeg.avfilter_graph_create_filter(&sink, ffmpeg.avfilter_get_by_name("buffersink"), "out", null, null, graph), "Creating the GIF's output", log);
+            Check(ffmpeg.avfilter_graph_create_filter(&source, ffmpeg.avfilter_get_by_name("buffer"), "in", args, null, graph), MediaStrings.CreatingGifInput, log);
+            Check(ffmpeg.avfilter_graph_create_filter(&sink, ffmpeg.avfilter_get_by_name("buffersink"), "out", null, null, graph), MediaStrings.CreatingGifOutput, log);
             var outputs = ffmpeg.avfilter_inout_alloc();
             outputs->name = ffmpeg.av_strdup("in");
             outputs->filter_ctx = source;
             if (withPalette)
             {
                 var paletteArgs = string.Create(CultureInfo.InvariantCulture, $"video_size=16x16:pix_fmt={(int)AVPixelFormat.AV_PIX_FMT_BGRA}:time_base=1/{_fps}:pixel_aspect=1/1");
-                Check(ffmpeg.avfilter_graph_create_filter(&palette, ffmpeg.avfilter_get_by_name("buffer"), "palette", paletteArgs, null, graph), "Creating the GIF's palette input", log);
+                Check(ffmpeg.avfilter_graph_create_filter(&palette, ffmpeg.avfilter_get_by_name("buffer"), "palette", paletteArgs, null, graph), MediaStrings.CreatingGifPaletteInput, log);
                 var second = ffmpeg.avfilter_inout_alloc();
                 second->name = ffmpeg.av_strdup("palette");
                 second->filter_ctx = palette;
@@ -216,8 +218,8 @@ public sealed unsafe class GifWriter : IDisposable
             var parsed = ffmpeg.avfilter_graph_parse_ptr(graph, description, &inputs, &outputs, null);
             ffmpeg.avfilter_inout_free(&inputs);
             ffmpeg.avfilter_inout_free(&outputs);
-            Check(parsed, $"Setting up the GIF's filters ({description})", log);
-            Check(ffmpeg.avfilter_graph_config(graph, null), "Starting the GIF's filters", log);
+            Check(parsed, MediaStrings.SettingUpGifFilters(description), log);
+            Check(ffmpeg.avfilter_graph_config(graph, null), MediaStrings.StartingGifFilters, log);
             input = source;
             output = sink;
             paletteIn = palette;
@@ -230,7 +232,7 @@ public sealed unsafe class GifWriter : IDisposable
         }
     }
 
-    private void Push(AVFilterContext* source, ReadOnlySpan<byte> bgra, int stride, long pts, string what)
+    private void Push(AVFilterContext* source, ReadOnlySpan<byte> bgra, int stride, long pts, [Localizable(true)] string what)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(bgra.Length, stride * _height, nameof(bgra));
         _frame->format = (int)AVPixelFormat.AV_PIX_FMT_BGRA;
@@ -255,7 +257,7 @@ public sealed unsafe class GifWriter : IDisposable
         var codec = ffmpeg.avcodec_find_encoder_by_name("gif");
         if (codec is null)
         {
-            throw new FfmpegException("This FFmpeg build has no GIF encoder.");
+            throw new FfmpegException(MediaStrings.NoGifEncoder);
         }
 
         _encoder = ffmpeg.avcodec_alloc_context3(codec);
@@ -264,20 +266,20 @@ public sealed unsafe class GifWriter : IDisposable
         _encoder->pix_fmt = AVPixelFormat.AV_PIX_FMT_PAL8;
         _encoder->time_base = new AVRational { num = 1, den = _fps };
         _encoder->framerate = new AVRational { num = _fps, den = 1 };
-        FfmpegException.Check(ffmpeg.avcodec_open2(_encoder, codec, null), "Opening the GIF encoder");
+        FfmpegException.Check(ffmpeg.avcodec_open2(_encoder, codec, null), MediaStrings.OpeningGifEncoder);
 
         AVFormatContext* output = null;
-        FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&output, null, "gif", _path), "Creating the GIF");
+        FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&output, null, "gif", _path), MediaStrings.CreatingGif);
         _output = output;
         var stream = ffmpeg.avformat_new_stream(output, null);
-        FfmpegException.Check(ffmpeg.avcodec_parameters_from_context(stream->codecpar, _encoder), "Copying the GIF's settings");
+        FfmpegException.Check(ffmpeg.avcodec_parameters_from_context(stream->codecpar, _encoder), MediaStrings.CopyingGifSettings);
         stream->time_base = _encoder->time_base;
-        FfmpegException.Check(ffmpeg.avio_open(&output->pb, _path, ffmpeg.AVIO_FLAG_WRITE), "Creating the GIF file");
+        FfmpegException.Check(ffmpeg.avio_open(&output->pb, _path, ffmpeg.AVIO_FLAG_WRITE), MediaStrings.CreatingGifFile);
         AVDictionary* options = null;
         ffmpeg.av_dict_set(&options, "loop", _settings.Loop.ToString(CultureInfo.InvariantCulture), 0);
         try
         {
-            FfmpegException.Check(ffmpeg.avformat_write_header(output, &options), "Starting the GIF");
+            FfmpegException.Check(ffmpeg.avformat_write_header(output, &options), MediaStrings.StartingGif);
         }
         finally
         {
@@ -303,7 +305,7 @@ public sealed unsafe class GifWriter : IDisposable
 
     private void Encode(AVFrame* frame)
     {
-        FfmpegException.Check(ffmpeg.avcodec_send_frame(_encoder, frame), "Encoding the GIF");
+        FfmpegException.Check(ffmpeg.avcodec_send_frame(_encoder, frame), MediaStrings.EncodingGif);
         while (true)
         {
             var received = ffmpeg.avcodec_receive_packet(_encoder, _packet);
@@ -312,7 +314,7 @@ public sealed unsafe class GifWriter : IDisposable
                 return;
             }
 
-            FfmpegException.Check(received, "Encoding the GIF");
+            FfmpegException.Check(received, MediaStrings.EncodingGif);
             _packet->stream_index = 0;
             if (_packet->duration <= 0)
             {
@@ -320,11 +322,11 @@ public sealed unsafe class GifWriter : IDisposable
             }
 
             ffmpeg.av_packet_rescale_ts(_packet, _encoder->time_base, _output->streams[0]->time_base);
-            FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_output, _packet), "Writing the GIF");
+            FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_output, _packet), MediaStrings.WritingGif);
         }
     }
 
-    private static void Check(int result, string what, FfmpegLog.Scope log)
+    private static void Check(int result, [Localizable(true)] string what, FfmpegLog.Scope log)
     {
         if (result < 0)
         {

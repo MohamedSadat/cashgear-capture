@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -15,7 +17,7 @@ public sealed unsafe class StreamSetup : IDisposable
     private StreamSetup(AVCodecContext* context, string? title, bool isDefault)
     {
         _parameters = ffmpeg.avcodec_parameters_alloc();
-        FfmpegException.Check(ffmpeg.avcodec_parameters_from_context(_parameters, context), "Copying codec settings");
+        FfmpegException.Check(ffmpeg.avcodec_parameters_from_context(_parameters, context), MediaStrings.CopyingCodecSettings);
         TimeBase = context->time_base;
         Title = title;
         IsDefault = isDefault;
@@ -61,6 +63,9 @@ public sealed unsafe partial class MediaWriter : IDisposable
 {
     private const int QueueWarning = 600;
 
+    [Localizable(false)] // a thread's name, for debuggers and dumps
+    private const string ThreadName = "Recording file writer";
+
     private readonly Func<int, string> _segmentPath;
     private readonly IReadOnlyList<StreamSetup> _audio;
     private readonly ILogger _logger;
@@ -85,7 +90,7 @@ public sealed unsafe partial class MediaWriter : IDisposable
         _segmentPath = segmentPath;
         _audio = audio;
         _logger = logger;
-        _thread = new Thread(Run) { IsBackground = true, Name = "Recording file writer" };
+        _thread = new Thread(Run) { IsBackground = true, Name = ThreadName };
         _thread.Start();
     }
 
@@ -277,7 +282,7 @@ public sealed unsafe partial class MediaWriter : IDisposable
         var index = Segments.Count + 1;
         var path = _segmentPath(index);
         AVFormatContext* file = null;
-        FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&file, null, "mp4", path), "Creating the recording file");
+        FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&file, null, "mp4", path), MediaStrings.CreatingRecordingFile);
         _file = file;
         var streams = new List<StreamSetup> { video };
         streams.AddRange(_audio);
@@ -286,7 +291,7 @@ public sealed unsafe partial class MediaWriter : IDisposable
         {
             var setup = streams[i];
             var stream = ffmpeg.avformat_new_stream(file, null);
-            FfmpegException.Check(ffmpeg.avcodec_parameters_copy(stream->codecpar, setup.Parameters), "Copying codec settings");
+            FfmpegException.Check(ffmpeg.avcodec_parameters_copy(stream->codecpar, setup.Parameters), MediaStrings.CopyingCodecSettings);
             stream->codecpar->codec_tag = 0;
             stream->time_base = setup.TimeBase;
             stream->disposition = setup.IsDefault ? ffmpeg.AV_DISPOSITION_DEFAULT : 0;
@@ -299,7 +304,7 @@ public sealed unsafe partial class MediaWriter : IDisposable
             _streamOf[i] = stream->index;
         }
 
-        FfmpegException.Check(ffmpeg.avio_open(&file->pb, path, ffmpeg.AVIO_FLAG_WRITE), $"Opening {path}");
+        FfmpegException.Check(ffmpeg.avio_open(&file->pb, path, ffmpeg.AVIO_FLAG_WRITE), MediaStrings.Opening(path));
         AVDictionary* options = null;
         ffmpeg.av_dict_set(&options, "movflags", "+frag_keyframe+empty_moov+delay_moov+default_base_moof", 0);
         ffmpeg.av_dict_set(&options, "frag_duration", "1000000", 0);
@@ -310,7 +315,7 @@ public sealed unsafe partial class MediaWriter : IDisposable
         ffmpeg.av_dict_free(&options);
         if (result < 0)
         {
-            throw new FfmpegException("Starting the recording file", result, log.Summary());
+            throw new FfmpegException(MediaStrings.StartingRecordingFile, result, log.Summary());
         }
 
         lock (_segments)
@@ -327,7 +332,7 @@ public sealed unsafe partial class MediaWriter : IDisposable
         var raw = packet.Packet;
         raw->stream_index = stream->index;
         ffmpeg.av_packet_rescale_ts(raw, packet.TimeBase, stream->time_base);
-        FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_file, raw), "Writing the recording");
+        FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_file, raw), MediaStrings.WritingRecording);
     }
 
     private void CloseFile()
@@ -337,8 +342,8 @@ public sealed unsafe partial class MediaWriter : IDisposable
             return;
         }
 
-        FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_file, null), "Writing the recording");
-        FfmpegException.Check(ffmpeg.av_write_trailer(_file), "Finishing the recording file");
+        FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_file, null), MediaStrings.WritingRecording);
+        FfmpegException.Check(ffmpeg.av_write_trailer(_file), MediaStrings.FinishingRecordingFile);
         FreeFile();
     }
 

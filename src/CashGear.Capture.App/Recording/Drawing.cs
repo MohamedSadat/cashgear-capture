@@ -1,4 +1,5 @@
 using System.Windows;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Settings;
 using CashGear.Capture.Core.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -33,12 +34,12 @@ public sealed partial class DrawingViewModel : ObservableObject
     /// <summary>The colours offered on the toolbar.</summary>
     public IReadOnlyList<ColorChoice> Colors { get; } =
     [
-        new("#FF3030", "Red"),
-        new("#FFC800", "Yellow"),
-        new("#30C060", "Green"),
-        new("#2F80FF", "Blue"),
-        new("#FFFFFF", "White"),
-        new("#000000", "Black"),
+        new("#FF3030", RecordingText.ColorRed),
+        new("#FFC800", RecordingText.ColorYellow),
+        new("#30C060", RecordingText.ColorGreen),
+        new("#2F80FF", RecordingText.ColorBlue),
+        new("#FFFFFF", RecordingText.ColorWhite),
+        new("#000000", RecordingText.ColorBlack),
     ];
 
     /// <summary>Strokes fade away this long after they are drawn (0: they stay until cleared).</summary>

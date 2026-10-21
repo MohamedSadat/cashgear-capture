@@ -22,4 +22,255 @@
     <value>The settings in the file can't be read: {0}</value>
     <comment>{0} is the reason, from the JSON reader (English)</comment>
   </data>
+  <data name="SecureScreen" xml:space="preserve">
+    <value>Windows is showing a secure screen (a UAC prompt, the lock screen or Ctrl+Alt+Del), which no app can capture. Try again once it's gone.</value>
+    <comment>a capture was asked for while Windows shows a secure screen</comment>
+  </data>
+  <data name="ProtectedInCapture" xml:space="preserve">
+    <value>"{0}" doesn't let other apps capture it (protected video or a privacy setting), so it is black or missing in the capture.</value>
+    <comment>{0}: window titles</comment>
+  </data>
+  <data name="ProtectedInRecording" xml:space="preserve">
+    <value>"{0}" doesn't let other apps capture it (protected video or a privacy setting), so it is black or missing in the recording.</value>
+    <comment>{0}: window titles</comment>
+  </data>
+  <data name="ModeRegion" xml:space="preserve">
+    <value>Region</value>
+    <comment>capture mode (countdown, notifications, settings)</comment>
+  </data>
+  <data name="ModeWindow" xml:space="preserve">
+    <value>Window</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="ModeActiveWindow" xml:space="preserve">
+    <value>Active window</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="ModeFullScreen" xml:space="preserve">
+    <value>Full screen</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="ModeScrolling" xml:space="preserve">
+    <value>Scrolling</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="ModeText" xml:space="preserve">
+    <value>Text (OCR)</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="ModeFixedRegion" xml:space="preserve">
+    <value>Fixed-size region</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="ModeFreehand" xml:space="preserve">
+    <value>Freehand region</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="ModePolygon" xml:space="preserve">
+    <value>Polygon region</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="ModeRoundedRegion" xml:space="preserve">
+    <value>Rounded region</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="ModeObject" xml:space="preserve">
+    <value>Object</value>
+    <comment>capture mode: a part of a window</comment>
+  </data>
+  <data name="ModeMenu" xml:space="preserve">
+    <value>Open menu</value>
+    <comment>capture mode</comment>
+  </data>
+  <data name="KindFullScreen" xml:space="preserve">
+    <value>Full screen</value>
+    <comment>what a capture in the history shows</comment>
+  </data>
+  <data name="KindMonitor" xml:space="preserve">
+    <value>Monitor</value>
+    <comment>what a capture in the history shows</comment>
+  </data>
+  <data name="KindWindow" xml:space="preserve">
+    <value>Window</value>
+    <comment>what a capture in the history shows</comment>
+  </data>
+  <data name="KindScrolling" xml:space="preserve">
+    <value>Scrolling</value>
+    <comment>what a capture in the history shows</comment>
+  </data>
+  <data name="KindRecording" xml:space="preserve">
+    <value>Recording</value>
+    <comment>what a capture in the history shows</comment>
+  </data>
+  <data name="KindObject" xml:space="preserve">
+    <value>Object</value>
+    <comment>what a capture in the history shows</comment>
+  </data>
+  <data name="KindMenu" xml:space="preserve">
+    <value>Menu</value>
+    <comment>what a capture in the history shows</comment>
+  </data>
+  <data name="KindRegion" xml:space="preserve">
+    <value>Region</value>
+    <comment>what a capture in the history shows</comment>
+  </data>
+  <data name="TokenYear" xml:space="preserve">
+    <value>Year, e.g. 2026</value>
+    <comment>file name token {yyyy}</comment>
+  </data>
+  <data name="TokenMonth" xml:space="preserve">
+    <value>Month, 01–12</value>
+    <comment>file name token {MM}</comment>
+  </data>
+  <data name="TokenDay" xml:space="preserve">
+    <value>Day, 01–31</value>
+    <comment>file name token {dd}</comment>
+  </data>
+  <data name="TokenHour" xml:space="preserve">
+    <value>Hour, 00–23</value>
+    <comment>file name token {HH}</comment>
+  </data>
+  <data name="TokenMinute" xml:space="preserve">
+    <value>Minute, 00–59</value>
+    <comment>file name token {mm}</comment>
+  </data>
+  <data name="TokenSecond" xml:space="preserve">
+    <value>Second, 00–59</value>
+    <comment>file name token {ss}</comment>
+  </data>
+  <data name="TokenCounter" xml:space="preserve">
+    <value>Running number, 0001, 0002, … (kept across restarts)</value>
+    <comment>file name token {counter}</comment>
+  </data>
+  <data name="TokenKind" xml:space="preserve">
+    <value>fullscreen, monitor, region, window, scrolling, object, menu or recording</value>
+    <comment>file name token {kind}: its values stay English (they go into file names)</comment>
+  </data>
+  <data name="TokenMonitor" xml:space="preserve">
+    <value>Monitor name, e.g. DISPLAY1 (all for the whole screen, multi when spanning)</value>
+    <comment>file name token {monitor}: all and multi stay English (they go into file names)</comment>
+  </data>
+  <data name="TokenWindow" xml:space="preserve">
+    <value>Title of the captured window (empty otherwise)</value>
+    <comment>file name token {window}</comment>
+  </data>
+  <data name="TemplateEmpty" xml:space="preserve">
+    <value>The file name template is empty.</value>
+  </data>
+  <data name="TemplateUnexpectedBrace" xml:space="preserve">
+    <value>Unexpected '}}' at position {0}.</value>
+    <comment>{0}: position of the character (1 = first); the left-to-right marks keep the brace from being mirrored</comment>
+  </data>
+  <data name="TemplateUnclosedBrace" xml:space="preserve">
+    <value>'{{' at position {0} is never closed.</value>
+    <comment>{0}: position of the character (1 = first); the left-to-right marks keep the brace from being mirrored</comment>
+  </data>
+  <data name="TemplateUnknownToken" xml:space="preserve">
+    <value>Unknown token {{{0}}}.</value>
+    <comment>{0}: the token as written, without braces</comment>
+  </data>
+  <data name="FixedRegionHintHovering" xml:space="preserve">
+    <value>Click to place · Tab: another size · Enter: capture here</value>
+    <comment>selection hint, key names stay English</comment>
+  </data>
+  <data name="FixedRegionHintPlaced" xml:space="preserve">
+    <value>Drag to move · arrows nudge · Tab: another size · Enter or double-click: capture</value>
+    <comment>selection hint, key names stay English</comment>
+  </data>
+  <data name="ObjectHint" xml:space="preserve">
+    <value>Click to capture · mouse wheel up: what it is in · wheel down: back in</value>
+    <comment>selection hint for object capture</comment>
+  </data>
+  <data name="ColourPickerHint" xml:space="preserve">
+    <value>Click to pick the colour under the cursor · arrows move a pixel · Esc cancels</value>
+    <comment>selection hint, key names stay English</comment>
+  </data>
+  <data name="RoundedRegionHint" xml:space="preserve">
+    <value>Mouse wheel: corner radius</value>
+    <comment>selection hint</comment>
+  </data>
+  <data name="CornerRadius" xml:space="preserve">
+    <value>radius {0}</value>
+    <comment>after the size of the selection: corner radius in pixels</comment>
+  </data>
+  <data name="PolygonHint" xml:space="preserve">
+    <value>Click to add corners · click the first corner, double-click or Enter: capture · Backspace: undo a corner</value>
+    <comment>selection hint, key names stay English</comment>
+  </data>
+  <data name="FreehandHint" xml:space="preserve">
+    <value>Hold the button down and draw around what to capture; let go to capture</value>
+    <comment>selection hint</comment>
+  </data>
+  <data name="ObjectDescription" xml:space="preserve">
+    <value>{0} "{1}"</value>
+    <comment>an object of a window: {0} what it is, as Windows says it (button); {1} its name</comment>
+  </data>
+  <data name="ObjectKindUnknown" xml:space="preserve">
+    <value>object</value>
+    <comment>an object of a window that Windows doesn't say the kind of</comment>
+  </data>
+  <data name="EncoderNvencH264" xml:space="preserve">
+    <value>NVIDIA NVENC (H.264)</value>
+    <comment>video encoder</comment>
+  </data>
+  <data name="EncoderNvencHevc" xml:space="preserve">
+    <value>NVIDIA NVENC (HEVC)</value>
+    <comment>video encoder</comment>
+  </data>
+  <data name="EncoderNvencAv1" xml:space="preserve">
+    <value>NVIDIA NVENC (AV1)</value>
+    <comment>video encoder</comment>
+  </data>
+  <data name="EncoderQuickSyncH264" xml:space="preserve">
+    <value>Intel Quick Sync (H.264)</value>
+    <comment>video encoder</comment>
+  </data>
+  <data name="EncoderAmfH264" xml:space="preserve">
+    <value>AMD AMF (H.264)</value>
+    <comment>video encoder</comment>
+  </data>
+  <data name="EncoderWindowsHardwareH264" xml:space="preserve">
+    <value>Windows hardware encoder (H.264)</value>
+    <comment>video encoder (Media Foundation, on the graphics card)</comment>
+  </data>
+  <data name="EncoderWindowsHardwareHevc" xml:space="preserve">
+    <value>Windows hardware encoder (HEVC)</value>
+    <comment>video encoder (Media Foundation, on the graphics card)</comment>
+  </data>
+  <data name="EncoderWindowsSoftwareH264" xml:space="preserve">
+    <value>Windows software encoder (H.264)</value>
+    <comment>video encoder (Media Foundation, on the CPU)</comment>
+  </data>
+  <data name="EncoderOpenH264" xml:space="preserve">
+    <value>OpenH264 (software)</value>
+    <comment>video encoder</comment>
+  </data>
+  <data name="EncoderVp9" xml:space="preserve">
+    <value>VP9 (software)</value>
+    <comment>video encoder</comment>
+  </data>
+  <data name="EncoderSvtAv1" xml:space="preserve">
+    <value>SVT-AV1 (software)</value>
+    <comment>video encoder</comment>
+  </data>
+  <data name="EncoderKvazaar" xml:space="preserve">
+    <value>Kvazaar (software HEVC)</value>
+    <comment>video encoder</comment>
+  </data>
+  <data name="RulerInches" xml:space="preserve">
+    <value>{0} in</value>
+    <comment>screen ruler reading, {0} e.g. 1.28</comment>
+  </data>
+  <data name="RulerCentimetres" xml:space="preserve">
+    <value>{0} cm</value>
+    <comment>screen ruler reading, {0} e.g. 3.25</comment>
+  </data>
+  <data name="NotRecordingMetadata" xml:space="preserve">
+    <value>{0} is not a recording metadata file: {1}</value>
+    <comment>{0}: file name; {1}: the reason, from the JSON reader (English)</comment>
+  </data>
+  <data name="UnreadableRecordingMetadata" xml:space="preserve">
+    <value>{0} is not a recording metadata file this version of the app can read.</value>
+    <comment>{0}: file name</comment>
+  </data>
 </root>

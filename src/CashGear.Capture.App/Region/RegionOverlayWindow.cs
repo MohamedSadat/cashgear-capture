@@ -6,6 +6,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
@@ -53,7 +54,7 @@ internal sealed partial class RegionOverlayWindow : Window
         _model = model;
         _logger = logger;
 
-        Title = "CashGear Capture - select a region";
+        Title = CapturingText.RegionWindowTitle;
         WindowStyle = WindowStyle.None;
         ResizeMode = ResizeMode.NoResize;
         ShowInTaskbar = false;

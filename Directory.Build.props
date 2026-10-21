@@ -37,9 +37,4 @@
     <CompilerVisibleProperty Include="MSBuildProjectDirectory" />
   </ItemGroup>
 
-  <!-- Until every string is in a .resx file: build with -p:CashGearStringCheck=true to list what is left. -->
-  <PropertyGroup Condition="'$(CashGearLocalized)' == 'true' and '$(CashGearStringCheck)' != 'true'">
-    <NoWarn>$(NoWarn);CG0001;CG0002</NoWarn>
-  </PropertyGroup>
-
 </Project>

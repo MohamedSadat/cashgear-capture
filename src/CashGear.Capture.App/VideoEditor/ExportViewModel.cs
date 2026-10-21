@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Licensing;
@@ -86,20 +87,20 @@ public sealed partial class ExportViewModel : ObservableObject
 
     public IReadOnlyList<DitherChoice> GifDithers { get; } =
     [
-        new(GifDither.Pattern, "A fine pattern (smaller; best for screens)"),
-        new(GifDither.Diffusion, "Diffusion (smoother gradients and video)"),
-        new(GifDither.None, "None (flat colours only)"),
+        new(GifDither.Pattern, VideoEditorText.DitherPattern),
+        new(GifDither.Diffusion, VideoEditorText.DitherDiffusion),
+        new(GifDither.None, VideoEditorText.DitherNone),
     ];
 
     public IReadOnlyList<SizeLimitChoice> GifLimits { get; } =
     [
-        new(0, "No limit"),
-        new(1, "1 MB"),
-        new(2, "2 MB"),
-        new(5, "5 MB"),
-        new(8, "8 MB"),
-        new(10, "10 MB"),
-        new(25, "25 MB"),
+        new(0, VideoEditorText.NoLimit),
+        new(1, VideoEditorText.SizeLimit(1)),
+        new(2, VideoEditorText.SizeLimit(2)),
+        new(5, VideoEditorText.SizeLimit(5)),
+        new(8, VideoEditorText.SizeLimit(8)),
+        new(10, VideoEditorText.SizeLimit(10)),
+        new(25, VideoEditorText.SizeLimit(25)),
     ];
 
     [ObservableProperty]
@@ -127,7 +128,7 @@ public sealed partial class ExportViewModel : ObservableObject
     public bool HasRange => _range is not null;
 
     public string RangeText => _range is { } range
-        ? $"Only the marked range ({TimeText(TimeSpan.FromSeconds(range.From))} to {TimeText(TimeSpan.FromSeconds(range.To))})"
+        ? VideoEditorText.OnlyMarkedRange(TimeText(TimeSpan.FromSeconds(range.From)), TimeText(TimeSpan.FromSeconds(range.To)))
         : "";
 
     /// <summary>The project has captions: they can be burned in and saved as files.</summary>
@@ -154,10 +155,10 @@ public sealed partial class ExportViewModel : ObservableObject
 
     public IReadOnlyList<QualityChoice> Qualities { get; } =
     [
-        new(QualityPreset.Small, "Small file"),
-        new(QualityPreset.Balanced, "Balanced"),
-        new(QualityPreset.High, "High"),
-        new(QualityPreset.Lossless, "Near lossless"),
+        new(QualityPreset.Small, VideoEditorText.QualitySmall),
+        new(QualityPreset.Balanced, VideoEditorText.QualityBalanced),
+        new(QualityPreset.High, VideoEditorText.QualityHigh),
+        new(QualityPreset.Lossless, VideoEditorText.QualityNearLossless),
     ];
 
     /// <summary>Picks the file (set by the window; tests set their own).</summary>
@@ -203,17 +204,18 @@ public sealed partial class ExportViewModel : ObservableObject
         {
             if (!SelectedPreset.HasVideo)
             {
-                return $"Sound only, {TimeText(TimeSpan.FromSeconds(Duration))} long";
+                return VideoEditorText.SoundOnlySize(TimeText(TimeSpan.FromSeconds(Duration)));
             }
 
             if (SelectedPreset.IsGif)
             {
                 var (w, h) = GifOptions.Size(_project.Canvas.Width, _project.Canvas.Height);
-                return $"{w} × {h}, {GifFps} frames a second, {TimeText(TimeSpan.FromSeconds(Duration))} long, no sound, {(GifLoop ? "plays over and over" : "plays once")}";
+                var length = TimeText(TimeSpan.FromSeconds(Duration));
+                return GifLoop ? VideoEditorText.GifSizeLooping(w, h, GifFps, length) : VideoEditorText.GifSizeOnce(w, h, GifFps, length);
             }
 
             var (width, height) = SelectedPreset.Size(_project.Canvas.Width, _project.Canvas.Height);
-            return $"{width} × {height}, {_project.Canvas.Fps} fps, {TimeText(TimeSpan.FromSeconds(Duration))} long";
+            return VideoEditorText.VideoSize(width, height, _project.Canvas.Fps, TimeText(TimeSpan.FromSeconds(Duration)));
         }
     }
 
@@ -247,7 +249,7 @@ public sealed partial class ExportViewModel : ObservableObject
         Result = null;
         IsRunning = true;
         Progress = 0;
-        ProgressText = "Starting…";
+        ProgressText = VideoEditorText.Starting;
         _cancel = new CancellationTokenSource();
         var preset = SelectedPreset;
         var quality = Quality.Value;
@@ -286,7 +288,7 @@ public sealed partial class ExportViewModel : ObservableObject
             {
                 Progress = p.Fraction;
                 ProgressText = p.Remaining is { } left
-                    ? string.Create(CultureInfo.CurrentCulture, $"{p.Fraction:P0} · about {TimeText(left)} left")
+                    ? VideoEditorText.ProgressTimeLeft(p.Fraction, TimeText(left))
                     : string.Create(CultureInfo.CurrentCulture, $"{p.Fraction:P0}");
             });
             var files = (srt ? CaptionFiles.Srt : CaptionFiles.None) | (vtt ? CaptionFiles.Vtt : CaptionFiles.None);
@@ -295,18 +297,21 @@ public sealed partial class ExportViewModel : ObservableObject
                 progress,
                 _cancel.Token);
             Progress = 1;
-            var captions = result.CaptionPaths is { Count: > 0 } written ? $", with {string.Join(" and ", written.Select(System.IO.Path.GetFileName))}" : "";
+            var captions = result.CaptionPaths is { Count: > 0 } written
+                ? VideoEditorText.WithCaptionFiles(written.Select(System.IO.Path.GetFileName).Aggregate((list, next) => VideoEditorText.AndList(list, next)))
+                : "";
             if (result.Gif is { } made && made != gif)
             {
                 var (w, _) = made.Size(_project.Canvas.Width, _project.Canvas.Height);
-                captions += $" (made smaller to fit: {w} px wide, {made.Fps} frames a second, {made.Colors} colours)";
+                captions += VideoEditorText.GifMadeSmaller(w, made.Fps, made.Colors);
             }
-            ProgressText = $"Done in {TimeText(result.Elapsed)}: {System.IO.Path.GetFileName(result.Path)}, {result.Bytes / 1024.0 / 1024.0:0.0} MB{(result.Encoder is { } encoder ? $" ({encoder})" : "")}{captions}";
+            var encoder = result.Encoder is { } used ? $" ({used})" : "";
+            ProgressText = VideoEditorText.ExportDone(TimeText(result.Elapsed), System.IO.Path.GetFileName(result.Path), CommonText.Megabytes(result.Bytes / 1024.0 / 1024.0), encoder, captions);
             Result = result.Path;
         }
         catch (OperationCanceledException)
         {
-            ProgressText = "Cancelled: no file was made.";
+            ProgressText = VideoEditorText.ExportCancelled;
             Progress = 0;
         }
         catch (Exception e) when (e is ExportException or IOException or UnauthorizedAccessException)
@@ -380,7 +385,7 @@ public sealed partial class ExportViewModel : ObservableObject
     {
         var invalid = System.IO.Path.GetInvalidFileNameChars();
         var safe = new string([.. name.Select(c => invalid.Contains(c) ? '_' : c)]).Trim();
-        return safe.Length == 0 ? "Export" : safe;
+        return safe.Length == 0 ? VideoEditorText.ExportFileName : safe;
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Exporting {Path} failed")]

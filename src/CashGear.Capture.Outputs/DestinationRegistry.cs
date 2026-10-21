@@ -1,5 +1,6 @@
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Outputs.Credentials;
+using CashGear.Capture.Outputs.Resources;
 
 namespace CashGear.Capture.Outputs;
 
@@ -36,7 +37,7 @@ public sealed class DestinationRegistry(IEnumerable<IDestinationSource> sources,
         All(current, secrets).FirstOrDefault(d => DestinationIds.Same(d.Id, id));
 
     /// <summary>The destination's name, or what to show for a step whose destination is gone.</summary>
-    public string NameOf(string id, AppSettings? current = null) => Find(id, current)?.DisplayName ?? $"{id} (not set up)";
+    public string NameOf(string id, AppSettings? current = null) => Find(id, current)?.DisplayName ?? OutputsStrings.NotSetUp(id);
 
     private static int Rank(string id)
     {

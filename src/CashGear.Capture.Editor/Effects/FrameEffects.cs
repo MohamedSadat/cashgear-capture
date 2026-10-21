@@ -1,4 +1,5 @@
 using CashGear.Capture.Editor.Imaging;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Effects;
@@ -21,7 +22,7 @@ public sealed record ShadowEffect(int Blur = 10, int OffsetX = 0, int OffsetY = 
     public const int MaxBlur = 60;
     public const int MaxOffset = 100;
 
-    public override string Name => "drop shadow";
+    public override string Name => EditorStrings.EffectDropShadow;
 
     public override bool KeepsAnnotations => true;
 
@@ -64,7 +65,7 @@ public sealed record BorderEffect(int Thickness = 4, SKColor? Color = null) : Im
 {
     public const int MaxThickness = 200;
 
-    public override string Name => "border";
+    public override string Name => EditorStrings.EffectBorder;
 
     public override bool KeepsAnnotations => true;
 
@@ -98,7 +99,7 @@ public sealed record RoundedCornersEffect(int Radius = 16) : ImageEffect
 {
     public const int MaxRadius = 500;
 
-    public override string Name => "rounded corners";
+    public override string Name => EditorStrings.EffectRoundedCorners;
 
     public override EffectOutput Apply(SKImage source)
     {
@@ -127,7 +128,7 @@ public sealed record TornEdgeEffect(Edges Edges = Edges.Bottom, int Depth = 12, 
     public const int MinToothWidth = 4;
     public const int MaxToothWidth = 200;
 
-    public override string Name => "torn edge";
+    public override string Name => EditorStrings.EffectTornEdge;
 
     public override EffectOutput Apply(SKImage source)
     {
@@ -213,7 +214,7 @@ public sealed record FadeEdgeEffect(Edges Edges = Edges.All, int Width = 40) : I
 {
     public const int MaxWidth = 500;
 
-    public override string Name => "faded edges";
+    public override string Name => EditorStrings.EffectFadedEdges;
 
     public override EffectOutput Apply(SKImage source)
     {
@@ -269,7 +270,7 @@ public sealed record PerspectiveEffect(int Angle = 20, PerspectiveAxis Axis = Pe
     /// <summary>How far the eye is, in image sizes: closer looks more dramatic.</summary>
     private const float Distance = 2.5f;
 
-    public override string Name => "perspective";
+    public override string Name => EditorStrings.EffectPerspective;
 
     public override EffectOutput Apply(SKImage source)
     {

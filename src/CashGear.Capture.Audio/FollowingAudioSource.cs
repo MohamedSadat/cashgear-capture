@@ -1,3 +1,4 @@
+using CashGear.Capture.Audio.Resources;
 using CashGear.Capture.Core.Recording;
 using Microsoft.Extensions.Logging;
 using NAudio.CoreAudioApi;
@@ -113,8 +114,6 @@ internal sealed partial class FollowingAudioSource : IAudioSource
 
     private bool FollowsDefault => _wanted is null;
 
-    private string What => Kind == RecordingSound.Microphone ? "microphone" : "output device";
-
     public void Start(AudioDataHandler data, AudioStatusHandler status)
     {
         lock (_gate)
@@ -173,7 +172,7 @@ internal sealed partial class FollowingAudioSource : IAudioSource
                 // Following the default: Windows names a new default a moment after the old one goes, so the loss is
                 // only reported if nothing took over by the first retry.
                 _lostReported = true;
-                Report(AudioSourceStatus.Lost, $"{_name} stopped working, and no other {What} took over. Its sound is silent in the recording until one does.");
+                Report(AudioSourceStatus.Lost, Kind == RecordingSound.Microphone ? AudioStrings.NoOtherMicrophone(_name) : AudioStrings.NoOtherOutputDevice(_name));
             }
             else if (how is { } status)
             {
@@ -237,14 +236,20 @@ internal sealed partial class FollowingAudioSource : IAudioSource
     private string Message(AudioSourceStatus status) => status switch
     {
         AudioSourceStatus.Switched => Kind == RecordingSound.Microphone
-            ? $"The microphone recorded is now {_name}, the new default microphone."
-            : $"System audio now comes from {DeviceName(_name)}, the new default output device.",
-        _ => _restoredFirst ? $"{_name} is connected now and is being recorded." : $"{_name} works again and is being recorded.",
+            ? AudioStrings.NewDefaultMicrophone(_name)
+            : AudioStrings.NewDefaultOutputDevice(DeviceName(_name)),
+        _ => _restoredFirst ? AudioStrings.DeviceConnected(_name) : AudioStrings.DeviceWorksAgain(_name),
     };
 
-    /// <summary>"Headphones (H5)" from "system audio (Headphones (H5))".</summary>
-    private static string DeviceName(string name) =>
-        name.StartsWith("system audio (", StringComparison.Ordinal) && name.EndsWith(')') ? name["system audio (".Length..^1] : name;
+    /// <summary>"Headphones (H5)" from "system audio (Headphones (H5))" (<see cref="AudioStrings.SystemAudioDevice"/>).</summary>
+    private static string DeviceName(string name)
+    {
+        var around = AudioStrings.SystemAudioDevice("\0").Split('\0'); // the text before and after the device's name
+        return around is [var before, var after] && name.Length >= before.Length + after.Length
+            && name.StartsWith(before, StringComparison.Ordinal) && name.EndsWith(after, StringComparison.Ordinal)
+            ? name[before.Length..^after.Length]
+            : name;
+    }
 
     /// <summary>The device stopped working (on the watcher's thread).</summary>
     private void OnFailed(int generation, Exception ex)
@@ -256,7 +261,7 @@ internal sealed partial class FollowingAudioSource : IAudioSource
                 return;
             }
 
-            Lose($"{_name} stopped working ({ex.Message.Trim()}).");
+            Lose(AudioStrings.DeviceStopped(_name, ex.Message.Trim()));
         }
     }
 
@@ -269,7 +274,7 @@ internal sealed partial class FollowingAudioSource : IAudioSource
                 return;
             }
 
-            Lose($"{_name} was disconnected.");
+            Lose(AudioStrings.DeviceDisconnected(_name));
         }
     }
 
@@ -308,7 +313,7 @@ internal sealed partial class FollowingAudioSource : IAudioSource
                 if (!_lostReported)
                 {
                     _lostReported = true;
-                    Report(AudioSourceStatus.Lost, $"There is no default {What} any more, so {_name} isn't recorded. Its sound is silent in the recording until there is one.");
+                    Report(AudioSourceStatus.Lost, Kind == RecordingSound.Microphone ? AudioStrings.NoDefaultMicrophone(_name) : AudioStrings.NoDefaultOutputDevice(_name));
                 }
 
                 StartRetrying();
@@ -326,8 +331,8 @@ internal sealed partial class FollowingAudioSource : IAudioSource
         }
     }
 
-    /// <summary>The device is gone: stop it, tell the user (or, following the default, wait a moment for a new default), and keep trying; under the lock.</summary>
-    private void Lose(string what)
+    /// <summary>The device is gone: stop it, tell the user <paramref name="message"/> (or, following the default, wait a moment for a new default), and keep trying; under the lock.</summary>
+    private void Lose(string message)
     {
         Close();
         if (FollowsDefault)
@@ -337,7 +342,7 @@ internal sealed partial class FollowingAudioSource : IAudioSource
         else
         {
             _lostReported = true;
-            Report(AudioSourceStatus.Lost, $"{what} Its sound is silent in the recording until it is back.");
+            Report(AudioSourceStatus.Lost, message);
         }
 
         StartRetrying();

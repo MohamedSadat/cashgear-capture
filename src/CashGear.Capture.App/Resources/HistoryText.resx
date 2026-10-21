@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>Capture History</value>
+  </data>
+  <data name="OpenInEditor" xml:space="preserve">
+    <value>Open in Editor</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>Show in Folder</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>Save As…</value>
+  </data>
+  <data name="ClearHistory" xml:space="preserve">
+    <value>Clear History…</value>
+  </data>
+  <data name="Captures" xml:space="preserve">
+    <value>Captures</value>
+    <comment>the list of captures</comment>
+  </data>
+  <data name="NothingYet" xml:space="preserve">
+    <value>Nothing here yet.</value>
+  </data>
+  <data name="NoCaptures" xml:space="preserve">
+    <value>No captures yet. Captures appear here as you take them.</value>
+  </data>
+  <data name="CaptureCount_one" xml:space="preserve">
+    <value>{0} capture. Double-click it to open it in the editor.</value>
+  </data>
+  <data name="CaptureCount_other" xml:space="preserve">
+    <value>{0} captures, newest first. Double-click one to open it in the editor.</value>
+  </data>
+  <data name="TodayAt" xml:space="preserve">
+    <value>Today {0:t}</value>
+    <comment>{0} when the capture was taken; t is the culture's short time</comment>
+  </data>
+  <data name="YesterdayAt" xml:space="preserve">
+    <value>Yesterday {0:t}</value>
+    <comment>{0} when the capture was taken; t is the culture's short time</comment>
+  </data>
+  <data name="DayAt" xml:space="preserve">
+    <value>{0:d MMM} {0:t}</value>
+    <comment>an older capture: day, month and the culture's short time (13 Oct 09:30)</comment>
+  </data>
+  <data name="DefaultFileName" xml:space="preserve">
+    <value>Capture_{0:yyyy-MM-dd_HH-mm-ss}</value>
+    <comment>suggested file name for Save As; {0} when the capture was taken</comment>
+  </data>
+  <data name="ClearConfirm_one" xml:space="preserve">
+    <value>Remove all {0} captures from the history? Files you saved are not deleted.</value>
+  </data>
+  <data name="ClearConfirm_other" xml:space="preserve">
+    <value>Remove all {0} captures from the history? Files you saved are not deleted.</value>
+  </data>
+  <data name="NotificationTitle" xml:space="preserve">
+    <value>Capture history</value>
+    <comment>title of a notification when an action failed</comment>
+  </data>
+  <data name="CaptureSaved" xml:space="preserve">
+    <value>Capture saved</value>
+  </data>
+  <data name="SavedIn" xml:space="preserve">
+    <value>{0}&#10;in {1}</value>
+    <comment>{0} file name, {1} its folder</comment>
+  </data>
+  <data name="CouldNotOpen" xml:space="preserve">
+    <value>Couldn't open the capture: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="CouldNotCopy" xml:space="preserve">
+    <value>Couldn't copy the capture: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="CouldNotSave" xml:space="preserve">
+    <value>Couldn't save the capture: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+</root>

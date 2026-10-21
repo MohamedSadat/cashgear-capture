@@ -21,4 +21,124 @@
   <data name="CountdownWhat" xml:space="preserve">
     <value>{0} بعد</value>
   </data>
+  <data name="RepeatLastCapture" xml:space="preserve">
+    <value>تكرار آخر التقاط</value>
+  </data>
+  <data name="NothingCapturedYet" xml:space="preserve">
+    <value>لم يُلتقط شيء بعد. التقط لقطة أولًا، وسيكررها هذا الأمر.</value>
+  </data>
+  <data name="LastWindowClosed" xml:space="preserve">
+    <value>نافذة آخر التقاط ({0}) لم تعد مفتوحة. التقط نافذة أخرى أولًا.</value>
+  </data>
+  <data name="LastAreaOffScreen" xml:space="preserve">
+    <value>منطقة آخر التقاط لم تعد على أي شاشة (تغيّر ترتيب الشاشات). التقط لقطة جديدة.</value>
+  </data>
+  <data name="NoOpenMenu" xml:space="preserve">
+    <value>لا توجد قائمة مفتوحة</value>
+  </data>
+  <data name="NoMenuWasOpen" xml:space="preserve">
+    <value>لم تكن أي قائمة مفتوحة عند الالتقاط. افتح القائمة أثناء العد التنازلي ({0} ث؛ الإعدادات › الالتقاط › التأخير لكل نوع من الالتقاط).</value>
+  </data>
+  <data name="ScrollingCapture" xml:space="preserve">
+    <value>التقاط مع التمرير</value>
+  </data>
+  <data name="NothingScrolled" xml:space="preserve">
+    <value>لم يحدث أي تمرير، لذا التُقط الجزء الظاهر فقط.</value>
+  </data>
+  <data name="StoppedAtHeightLimit" xml:space="preserve">
+    <value>توقف عند حد الارتفاع ({0} px). يمكن رفعه من الإعدادات › الالتقاط.</value>
+  </data>
+  <data name="StoppedLostTrack" xml:space="preserve">
+    <value>توقف مبكرًا عند {0} px: لم يتطابق الجزء التالي مع السابق (قد تتغير الصفحة أثناء التمرير).</value>
+  </data>
+  <data name="StoppedResized" xml:space="preserve">
+    <value>توقف عند {0} px: تغيّر حجم النافذة.</value>
+  </data>
+  <data name="CaptureText" xml:space="preserve">
+    <value>التقاط النص</value>
+  </data>
+  <data name="NoTextFound" xml:space="preserve">
+    <value>لم يُعثر على نص في المنطقة المحددة ({0}).</value>
+  </data>
+  <data name="TextCopied" xml:space="preserve">
+    <value>تم نسخ النص</value>
+  </data>
+  <data name="CaptureActiveWindow" xml:space="preserve">
+    <value>التقاط النافذة النشطة</value>
+  </data>
+  <data name="NoActiveWindow" xml:space="preserve">
+    <value>لا توجد نافذة نشطة لالتقاطها. انقر نافذة أولًا.</value>
+  </data>
+  <data name="NothingToDo" xml:space="preserve">
+    <value>لا يوجد ما يُفعل باللقطة</value>
+  </data>
+  <data name="SwitchOnStep" xml:space="preserve">
+    <value>شغّل خطوة من سير العمل بعد الالتقاط (الإعدادات › الإخراج)، مثل «فتح في المحرر» أو «حفظ في ملف».</value>
+  </data>
+  <data name="CaptureFailed" xml:space="preserve">
+    <value>فشل الالتقاط</value>
+  </data>
+  <data name="PartBlack" xml:space="preserve">
+    <value>جزء من اللقطة أسود</value>
+  </data>
+  <data name="RegionWindowTitle" xml:space="preserve">
+    <value>CashGear Capture - تحديد منطقة</value>
+  </data>
+  <data name="ScrollProgress_zero" xml:space="preserve">
+    <value>لا أجزاء · {1} px</value>
+  </data>
+  <data name="ScrollProgress_one" xml:space="preserve">
+    <value>جزء واحد · {1} px</value>
+  </data>
+  <data name="ScrollProgress_two" xml:space="preserve">
+    <value>جزآن · {1} px</value>
+  </data>
+  <data name="ScrollProgress_few" xml:space="preserve">
+    <value>{0} أجزاء · {1} px</value>
+  </data>
+  <data name="ScrollProgress_many" xml:space="preserve">
+    <value>{0} جزءًا · {1} px</value>
+  </data>
+  <data name="ScrollProgress_other" xml:space="preserve">
+    <value>{0} جزء · {1} px</value>
+  </data>
+  <data name="ScrollingWith" xml:space="preserve">
+    <value>التمرير باستخدام {0}</value>
+  </data>
+  <data name="ScrollHint" xml:space="preserve">
+    <value>يتوقف تلقائيًا عند الأسفل. يلغي Esc الالتقاط؛ ويحتفظ «إنهاء الآن» بما التُقط.</value>
+  </data>
+  <data name="FinishNow" xml:space="preserve">
+    <value>إنهاء الآن</value>
+  </data>
+  <data name="NothingToScroll" xml:space="preserve">
+    <value>لا توجد في «{0}» منطقة كبيرة بما يكفي للتمرير.</value>
+  </data>
+  <data name="MouseWheel" xml:space="preserve">
+    <value>عجلة الماوس</value>
+  </data>
+  <data name="UiAutomation" xml:space="preserve">
+    <value>UI Automation</value>
+  </data>
+  <data name="LinesAndLanguage_zero" xml:space="preserve">
+    <value>لا أسطر · {1}</value>
+  </data>
+  <data name="LinesAndLanguage_one" xml:space="preserve">
+    <value>سطر واحد · {1}</value>
+  </data>
+  <data name="LinesAndLanguage_two" xml:space="preserve">
+    <value>سطران · {1}</value>
+  </data>
+  <data name="LinesAndLanguage_few" xml:space="preserve">
+    <value>{0} أسطر · {1}</value>
+  </data>
+  <data name="LinesAndLanguage_many" xml:space="preserve">
+    <value>{0} سطرًا · {1}</value>
+  </data>
+  <data name="LinesAndLanguage_other" xml:space="preserve">
+    <value>{0} سطر · {1}</value>
+  </data>
+  <data name="WindowNamesSeparator" xml:space="preserve">
+    <value>»، «</value>
+  </data>
 </root>

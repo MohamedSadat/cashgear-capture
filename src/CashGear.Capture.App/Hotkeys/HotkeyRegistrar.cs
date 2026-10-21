@@ -1,4 +1,5 @@
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Core.Settings;
@@ -116,20 +117,20 @@ public sealed partial class HotkeyRegistrar(
 
             if (!HotkeyGesture.TryParse(text, out var gesture))
             {
-                Problem(action, $"\"{text}\" is not a valid hotkey.");
+                Problem(action, HotkeysText.InvalidHotkey(text));
                 continue;
             }
 
             if (!gesture.IsSafeAsGlobalHotkey)
             {
-                Problem(action, $"{gesture} on its own would block that key in every app; add Ctrl, Alt, Shift or Win.");
+                Problem(action, HotkeysText.BlocksKey(gesture));
                 continue;
             }
 
             var owner = _active.Concat(reserved).Where(p => p.Value == gesture).Select(p => (HotkeyAction?)p.Key).FirstOrDefault();
             if (owner is { } other)
             {
-                Problem(action, $"{gesture} is already set for {Label(other)}.");
+                Problem(action, HotkeysText.AlreadySetFor(gesture, Label(other)));
                 continue;
             }
 
@@ -145,22 +146,22 @@ public sealed partial class HotkeyRegistrar(
             }
             else
             {
-                Problem(action, error ?? $"{gesture} could not be registered.");
+                Problem(action, error ?? HotkeysText.CouldNotRegister(gesture));
             }
         }
 
         void Problem(HotkeyAction action, string message)
         {
             _problems[action] = message;
-            problems.Add($"{Label(action)}: {message}");
+            problems.Add(HotkeysText.ProblemLine(Label(action), message));
         }
 
         LogApplied(_active.Count, problems.Count);
         if (problems.Count > 0 && notify)
         {
             notifier.Notify(
-                "Some hotkeys are not available",
-                string.Join("\n", problems) + "\nChoose other keys in Settings.",
+                HotkeysText.NotAvailableTitle,
+                string.Join("\n", problems) + "\n" + HotkeysText.ChooseOtherKeys,
                 NotificationKind.Warning);
         }
 
@@ -169,26 +170,26 @@ public sealed partial class HotkeyRegistrar(
 
     public static string Label(HotkeyAction action) => action switch
     {
-        HotkeyAction.CaptureRegion => "Capture Region",
-        HotkeyAction.CaptureActiveWindow => "Capture Active Window",
-        HotkeyAction.CaptureFullScreen => "Capture Full Screen",
-        HotkeyAction.CaptureScrolling => "Scrolling Capture",
-        HotkeyAction.Record => "Record Screen (again to stop)",
-        HotkeyAction.CaptureText => "Capture Text (OCR)",
-        HotkeyAction.ToggleDrawing => "Draw on Screen (while recording)",
-        HotkeyAction.RepeatLastCapture => "Repeat Last Capture",
-        HotkeyAction.CaptureWindow => "Capture Window (pick one)",
-        HotkeyAction.CaptureFixedRegion => "Capture Fixed-Size Region",
-        HotkeyAction.CaptureFreehand => "Capture Freehand Region",
-        HotkeyAction.CapturePolygon => "Capture Polygon Region",
-        HotkeyAction.CaptureRoundedRegion => "Capture Rounded Region",
-        HotkeyAction.CaptureObject => "Capture Object (part of a window)",
-        HotkeyAction.CaptureMenu => "Capture Open Menu",
-        HotkeyAction.ToggleToolbar => "Show or Hide the Capture Toolbar",
-        HotkeyAction.Magnifier => "Screen Magnifier",
-        HotkeyAction.ColorPicker => "Colour Picker",
-        HotkeyAction.Ruler => "Show or Hide the Screen Ruler",
-        HotkeyAction.Crosshair => "Show or Hide the Crosshair",
+        HotkeyAction.CaptureRegion => HotkeysText.CaptureRegion,
+        HotkeyAction.CaptureActiveWindow => HotkeysText.CaptureActiveWindow,
+        HotkeyAction.CaptureFullScreen => HotkeysText.CaptureFullScreen,
+        HotkeyAction.CaptureScrolling => HotkeysText.CaptureScrolling,
+        HotkeyAction.Record => HotkeysText.Record,
+        HotkeyAction.CaptureText => HotkeysText.CaptureText,
+        HotkeyAction.ToggleDrawing => HotkeysText.ToggleDrawing,
+        HotkeyAction.RepeatLastCapture => HotkeysText.RepeatLastCapture,
+        HotkeyAction.CaptureWindow => HotkeysText.CaptureWindow,
+        HotkeyAction.CaptureFixedRegion => HotkeysText.CaptureFixedRegion,
+        HotkeyAction.CaptureFreehand => HotkeysText.CaptureFreehand,
+        HotkeyAction.CapturePolygon => HotkeysText.CapturePolygon,
+        HotkeyAction.CaptureRoundedRegion => HotkeysText.CaptureRoundedRegion,
+        HotkeyAction.CaptureObject => HotkeysText.CaptureObject,
+        HotkeyAction.CaptureMenu => HotkeysText.CaptureMenu,
+        HotkeyAction.ToggleToolbar => HotkeysText.ToggleToolbar,
+        HotkeyAction.Magnifier => HotkeysText.Magnifier,
+        HotkeyAction.ColorPicker => HotkeysText.ColorPicker,
+        HotkeyAction.Ruler => HotkeysText.Ruler,
+        HotkeyAction.Crosshair => HotkeysText.Crosshair,
         _ => action.ToString(),
     };
 

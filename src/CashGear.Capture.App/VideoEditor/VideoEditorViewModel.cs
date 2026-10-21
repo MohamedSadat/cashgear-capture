@@ -79,7 +79,7 @@ public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Tra
     public double Volume
     {
         get => Math.Round(Track.Volume * 100);
-        set => owner.ChangeTrack(Track, t => t with { Volume = Math.Clamp(value, 0, 200) / 100 }, "track volume", $"volume {Track.Id}");
+        set => owner.ChangeTrack(Track, t => t with { Volume = Math.Clamp(value, 0, 200) / 100 }, VideoEditorText.UndoTrackVolume, $"volume {Track.Id}");
     }
 
     /// <summary>The same track after an edit: its switches show the new state (the header stays, so a slider drag goes on).</summary>
@@ -98,36 +98,36 @@ public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Tra
 
     public string Kind => Track.Kind switch
     {
-        TrackKind.Video => "Picture",
-        TrackKind.Webcam => "Webcam",
-        TrackKind.Audio => "Sound",
-        TrackKind.Annotation => "Annotations",
-        TrackKind.Caption => "Captions",
-        _ => "Effects",
+        TrackKind.Video => VideoEditorText.KindPicture,
+        TrackKind.Webcam => VideoEditorText.KindWebcam,
+        TrackKind.Audio => VideoEditorText.KindSound,
+        TrackKind.Annotation => VideoEditorText.KindAnnotations,
+        TrackKind.Caption => VideoEditorText.KindCaptions,
+        _ => VideoEditorText.KindEffects,
     };
 
     public bool IsMuted
     {
         get => Track.Muted;
-        set => owner.ChangeTrack(Track, t => t with { Muted = value }, value ? "mute" : "unmute");
+        set => owner.ChangeTrack(Track, t => t with { Muted = value }, value ? VideoEditorText.UndoMute : VideoEditorText.UndoUnmute);
     }
 
     public bool IsSolo
     {
         get => Track.Solo;
-        set => owner.ChangeTrack(Track, t => t with { Solo = value }, value ? "solo" : "unsolo");
+        set => owner.ChangeTrack(Track, t => t with { Solo = value }, value ? VideoEditorText.UndoSolo : VideoEditorText.UndoUnsolo);
     }
 
     public bool IsLocked
     {
         get => Track.Locked;
-        set => owner.ChangeTrack(Track, t => t with { Locked = value }, value ? "lock track" : "unlock track");
+        set => owner.ChangeTrack(Track, t => t with { Locked = value }, value ? VideoEditorText.UndoLockTrack : VideoEditorText.UndoUnlockTrack);
     }
 
     public bool IsShown
     {
         get => !Track.Hidden;
-        set => owner.ChangeTrack(Track, t => t with { Hidden = !value }, value ? "show track" : "hide track");
+        set => owner.ChangeTrack(Track, t => t with { Hidden = !value }, value ? VideoEditorText.UndoShowTrack : VideoEditorText.UndoHideTrack);
     }
 }
 
@@ -222,9 +222,9 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
     public string Name => ProjectPath is { } path ? Path.GetFileNameWithoutExtension(path)
         : Project.Assets.FirstOrDefault() is { } asset ? Path.GetFileNameWithoutExtension(asset.Path)
-        : "Untitled";
+        : VideoEditorText.Untitled;
 
-    public string Title => $"{(History.IsDirty ? "• " : "")}{Name} — Video Editor";
+    public string Title => History.IsDirty ? VideoEditorText.WindowTitleUnsaved(Name) : VideoEditorText.WindowTitle(Name);
 
     public bool IsDirty => History.IsDirty;
 
@@ -234,11 +234,13 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
     public string TimeText => $"{TimelineRenderer.Format(Position, Project.Canvas.Fps, frames: true)} / {TimelineRenderer.Format(Project.Duration, Project.Canvas.Fps, frames: true)}";
 
-    public string Status => $"{Project.Canvas.Width} × {Project.Canvas.Height}, {Project.Canvas.Fps} fps · {PreviewBackend}{(Frames.IsHardware ? " · decoding on the graphics card" : "")}";
+    public string Status => Frames.IsHardware
+        ? VideoEditorText.StatusLineDecodingOnGpu(Project.Canvas.Width, Project.Canvas.Height, Project.Canvas.Fps, PreviewBackend)
+        : VideoEditorText.StatusLine(Project.Canvas.Width, Project.Canvas.Height, Project.Canvas.Fps, PreviewBackend);
 
-    public string UndoText => History.UndoName is { } name ? $"Undo {name}" : "Undo";
+    public string UndoText => History.UndoName is { } name ? VideoEditorText.UndoNamed(name) : CommonText.Undo;
 
-    public string RedoText => History.RedoName is { } name ? $"Redo {name}" : "Redo";
+    public string RedoText => History.RedoName is { } name ? VideoEditorText.RedoNamed(name) : CommonText.Redo;
 
     /// <summary>What is selected, in words (empty when nothing is).</summary>
     public string SelectionText
@@ -248,15 +250,15 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             if (Timeline.Selected is not { } item)
             {
                 return Timeline.Range is { } range
-                    ? $"Range {Format(range.From)} – {Format(range.To)} ({range.To - range.From:0.00} s). Cut it out with Delete."
+                    ? VideoEditorText.SelectionRange(Format(range.From), Format(range.To), range.To - range.From)
                     : "";
             }
 
-            var text = $"{Format(item.Start)} – {Format(item.End)} ({item.Duration:0.00} s)";
+            var text = VideoEditorText.SelectionItem(Format(item.Start), Format(item.End), item.Duration);
             if (item is Clip clip)
             {
                 var asset = Project.Asset(clip.AssetId);
-                text = $"{asset?.Name ?? "Missing media"}: {text}, source {Format(clip.SourceIn)} – {Format(clip.SourceOut)}";
+                text = VideoEditorText.SelectionClip(asset?.Name ?? VideoEditorText.MissingMedia, text, Format(clip.SourceIn), Format(clip.SourceOut));
             }
 
             return text;
@@ -393,7 +395,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         if (drag.Item is AnnotationItem annotation)
         {
             item = AnnotationEdits.Drag(annotation, Timeline.Playhead, drag.Grip, drag.Start, point, Project.Canvas.Fps);
-            name = drag.Grip == PreviewGrip.None ? "move annotation" : "resize annotation";
+            name = drag.Grip == PreviewGrip.None ? VideoEditorText.UndoMoveAnnotation : VideoEditorText.UndoResizeAnnotation;
         }
         else if (drag.Item is Clip clip)
         {
@@ -405,12 +407,12 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
                     ? PlacementEdits.Resize(placement, drag.Area, point)
                     : PlacementEdits.Move(placement, Project.Canvas, point.X - drag.Start.X, point.Y - drag.Start.Y),
             };
-            name = resize ? "resize picture" : "move picture";
+            name = resize ? VideoEditorText.UndoResizePicture : VideoEditorText.UndoMovePicture;
         }
         else if (drag.Item is ZoomItem zoom)
         {
             item = PlacementEdits.DragZoom(zoom, Project.Canvas, drag.Area, drag.Grip, point.X - drag.Start.X, point.Y - drag.Start.Y);
-            name = drag.Grip == PreviewGrip.None ? "move zoom" : "resize zoom";
+            name = drag.Grip == PreviewGrip.None ? VideoEditorText.UndoMoveZoom : VideoEditorText.UndoResizeZoom;
         }
         else
         {
@@ -439,7 +441,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     {
         ArgumentNullException.ThrowIfNull(track);
         StopPlaying();
-        History.Apply("delete track", TrackEdits.Remove(Project, track.Id));
+        History.Apply(VideoEditorText.UndoDeleteTrack, TrackEdits.Remove(Project, track.Id));
     }
 
     /// <summary>Asks about unsaved changes before the window closes. False keeps it open.</summary>
@@ -508,7 +510,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     private void Split()
     {
         StopPlaying();
-        History.Apply("split", TimelineEdits.Split(Project, Timeline.Playhead));
+        History.Apply(VideoEditorText.UndoSplit, TimelineEdits.Split(Project, Timeline.Playhead));
     }
 
     /// <summary>Delete: the marked range out of every track (closing the gap), else the selected item and its linked clips.</summary>
@@ -518,13 +520,13 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         StopPlaying();
         if (Timeline.Range is { } range)
         {
-            History.Apply("cut out", TimelineEdits.DeleteRange(Project, range.From, range.To));
+            History.Apply(VideoEditorText.UndoCutOut, TimelineEdits.DeleteRange(Project, range.From, range.To));
             Timeline.SetRange(null);
             Seek(Math.Min(range.From, Project.Duration));
         }
         else if (Timeline.SelectedId is { } id)
         {
-            History.Apply("delete", TimelineEdits.Delete(Project, [id]));
+            History.Apply(VideoEditorText.UndoDelete, TimelineEdits.Delete(Project, [id]));
             Timeline.Select(null);
         }
     }
@@ -536,7 +538,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         StopPlaying();
         if (Timeline.SelectedId is { } id)
         {
-            History.Apply("ripple delete", TimelineEdits.RippleDelete(Project, id));
+            History.Apply(VideoEditorText.UndoRippleDelete, TimelineEdits.RippleDelete(Project, id));
             Timeline.Select(null);
         }
         else
@@ -639,8 +641,8 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     {
         StopPlaying();
         var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (Timeline.Playhead, CaptionItem.DefaultLength);
-        var (project, id) = CaptionEdits.Add(Project, from, length, "Caption");
-        History.Apply("add caption", project);
+        var (project, id) = CaptionEdits.Add(Project, from, length, VideoEditorText.DefaultCaptionText);
+        History.Apply(VideoEditorText.UndoAddCaption, project);
         Timeline.SetRange(null);
         Timeline.Select(id);
         if (!Timeline.Selected!.Covers(Timeline.Playhead))
@@ -669,13 +671,13 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         StopPlaying();
         if (_services.Transcriber is null || _services.Models is null)
         {
-            _dialogs.ShowError("Speech recognition isn't available in this copy of the app.");
+            _dialogs.ShowError(VideoEditorText.SpeechUnavailable);
             return null;
         }
 
         if (!Project.Tracks.Any(t => t.HasSound && t.Items.Count > 0))
         {
-            _dialogs.ShowError("There is no sound on the timeline to make captions from.");
+            _dialogs.ShowError(VideoEditorText.NoSoundForCaptions);
             return null;
         }
 
@@ -693,7 +695,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var path = _dialogs.PickMedia("Import captions", "Subtitles (*.srt;*.vtt)|*.srt;*.vtt|All files (*.*)|*.*", Folder());
+        var path = _dialogs.PickMedia(VideoEditorText.ImportCaptionsTitle, VideoEditorText.SubtitlesFilter, Folder());
         if (path is null)
         {
             return;
@@ -703,11 +705,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         {
             var captions = CaptionEdits.FromCues(SubtitleFiles.Load(path));
             var (project, _) = CaptionEdits.AddTrack(Project, captions, Path.GetFileNameWithoutExtension(path));
-            History.Apply("import captions", project);
+            History.Apply(VideoEditorText.UndoImportCaptions, project);
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            _dialogs.ShowError($"{Path.GetFileName(path)} can't be read: {e.Message}");
+            _dialogs.ShowError(VideoEditorText.CantBeRead(Path.GetFileName(path), e.Message));
         }
     }
 
@@ -718,11 +720,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         var cues = SubtitleFiles.Cues(Project);
         if (cues.Count == 0)
         {
-            _dialogs.ShowError("There are no captions to save.");
+            _dialogs.ShowError(VideoEditorText.NoCaptionsToSave);
             return;
         }
 
-        var path = _dialogs.AskSavePath("Save the captions", "SubRip subtitles (*.srt)|*.srt|WebVTT subtitles (*.vtt)|*.vtt", Name + ".srt", Folder());
+        var path = _dialogs.AskSavePath(VideoEditorText.SaveCaptionsTitle, VideoEditorText.SaveCaptionsFilter, Name + ".srt", Folder());
         if (path is null)
         {
             return;
@@ -734,7 +736,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            _dialogs.ShowError($"The captions couldn't be saved: {e.Message}");
+            _dialogs.ShowError(VideoEditorText.CaptionsNotSaved(e.Message));
         }
     }
 
@@ -742,9 +744,9 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
     private void AddCaptionsFromSpeech(IReadOnlyList<CaptionItem> captions, string language)
     {
-        var name = TranscribeViewModel.LanguageName(language) is { Length: > 0 } heard ? $"Captions ({heard})" : "Captions";
+        var name = TranscribeViewModel.LanguageName(language) is { Length: > 0 } heard ? VideoEditorText.CaptionsInLanguage(heard) : null;
         var (project, _) = CaptionEdits.AddTrack(Project, captions, name);
-        History.Apply("captions from speech", project);
+        History.Apply(VideoEditorText.UndoCaptionsFromSpeech, project);
     }
 
     private void SplitCaption(string id)
@@ -753,7 +755,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         var (project, second) = CaptionEdits.Split(Project, id, Timeline.Playhead);
         if (second is not null)
         {
-            History.Apply("split caption", project);
+            History.Apply(VideoEditorText.UndoSplitCaption, project);
         }
     }
 
@@ -763,15 +765,16 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         var project = CaptionEdits.MergeWithNext(Project, id);
         if (!ReferenceEquals(project, Project))
         {
-            History.Apply("merge captions", project);
+            History.Apply(VideoEditorText.UndoMergeCaptions, project);
         }
     }
 
-    private void ChangeCaptionStyle(string trackId, Func<CaptionStyle, CaptionStyle> change, string name)
+    /// <summary>Changes a caption track's look: one undo step called <paramref name="name"/>, merged by <paramref name="key"/> (not translated).</summary>
+    private void ChangeCaptionStyle(string trackId, Func<CaptionStyle, CaptionStyle> change, string key, string name)
     {
         if (Project.Track(trackId) is { } track)
         {
-            History.Apply(name, Project.WithTrack(track with { Captions = change(track.Captions ?? new CaptionStyle()) }), $"caption style {trackId} {name}");
+            History.Apply(name, Project.WithTrack(track with { Captions = change(track.Captions ?? new CaptionStyle()) }), $"caption style {trackId} {key}");
         }
     }
 
@@ -779,7 +782,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task AddRecordingAsync()
     {
-        var path = _dialogs.PickMedia("Add a recording", "Videos (*.mp4;*.mkv;*.mov;*.webm)|*.mp4;*.mkv;*.mov;*.webm|All files (*.*)|*.*", Folder());
+        var path = _dialogs.PickMedia(VideoEditorText.AddRecordingTitle, VideoEditorText.VideosFilter, Folder());
         if (path is null)
         {
             return;
@@ -788,11 +791,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         try
         {
             var asset = await Task.Run(() => ProjectFactory.ReadAsset(path));
-            History.Apply("add recording", ProjectFactory.AddRecording(Project, asset, Project.Duration));
+            History.Apply(VideoEditorText.UndoAddRecording, ProjectFactory.AddRecording(Project, asset, Project.Duration));
         }
         catch (Exception e) when (e is FfmpegException or IOException)
         {
-            _dialogs.ShowError($"{Path.GetFileName(path)} can't be opened: {e.Message}");
+            _dialogs.ShowError(VideoEditorText.CantBeOpened(Path.GetFileName(path), e.Message));
         }
     }
 
@@ -800,7 +803,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task AddMusicAsync()
     {
-        var path = _dialogs.PickMedia("Add music", "Sound (*.mp3;*.m4a;*.aac;*.wav;*.ogg;*.opus;*.flac;*.wma)|*.mp3;*.m4a;*.aac;*.wav;*.ogg;*.opus;*.flac;*.wma|All files (*.*)|*.*", Folder());
+        var path = _dialogs.PickMedia(VideoEditorText.AddMusicTitle, VideoEditorText.SoundFilter, Folder());
         if (path is null)
         {
             return;
@@ -811,15 +814,15 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             var asset = await Task.Run(() => ProjectFactory.ReadAsset(path));
             if (!asset.Streams.Any(s => s.Kind == StreamKind.Audio))
             {
-                _dialogs.ShowError($"{Path.GetFileName(path)} has no sound.");
+                _dialogs.ShowError(VideoEditorText.HasNoSound(Path.GetFileName(path)));
                 return;
             }
 
-            History.Apply("add music", ProjectFactory.AddSound(Project, asset, 0, "Music", ProjectFactory.MusicVolume));
+            History.Apply(VideoEditorText.UndoAddMusic, ProjectFactory.AddSound(Project, asset, 0, VideoEditorText.MusicTrack, ProjectFactory.MusicVolume));
         }
         catch (Exception e) when (e is FfmpegException or IOException)
         {
-            _dialogs.ShowError($"{Path.GetFileName(path)} can't be opened: {e.Message}");
+            _dialogs.ShowError(VideoEditorText.CantBeOpened(Path.GetFileName(path), e.Message));
         }
     }
 
@@ -864,7 +867,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         StopPlaying();
         var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (Timeline.Playhead, AnnotationItem.DefaultLength);
         var (project, id) = AnnotationEdits.Add(Project, shape, from, length);
-        History.Apply("add " + ItemProperties.ShapeName(shape).ToLowerInvariant(), project);
+        History.Apply(AddStep(shape), project);
         Timeline.SetRange(null);
         Timeline.Select(id);
         if (!Timeline.Selected!.Covers(Timeline.Playhead))
@@ -894,7 +897,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (Timeline.Playhead, ZoomItem.DefaultLength);
         var follow = Project.Assets.Any(a => Compositor.Overlays.Metadata(a) is not null);
         var (project, id) = AnnotationEdits.AddZoom(Project, from, length, follow);
-        History.Apply("add zoom", project);
+        History.Apply(VideoEditorText.UndoAddZoom, project);
         Timeline.SetRange(null);
         Timeline.Select(id);
         if (!Timeline.Selected!.Covers(Timeline.Playhead))
@@ -925,12 +928,12 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         if (count == 0 && !MadeByAutoZoom(Project))
         {
             _dialogs.ShowError(Project.Assets.Any(a => Compositor.Overlays.Metadata(a) is not null)
-                ? "Auto-Zoom found no clicks or typing in the recordings' metadata to zoom to."
-                : "Auto-Zoom needs a recording's metadata file (clicks, keys and the pointer). Recordings get one when Settings › Overlays › Save a metadata file is on.");
+                ? VideoEditorText.AutoZoomFoundNothing
+                : VideoEditorText.AutoZoomNeedsMetadata);
             return 0;
         }
 
-        History.Apply("auto-zoom", project);
+        History.Apply(VideoEditorText.UndoAutoZoom, project);
         Timeline.Select(null);
         return count;
     }
@@ -958,7 +961,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         StopPlaying();
         var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (0, Math.Max(Project.Duration, 1));
         var (project, id) = AnnotationEdits.AddEffect(Project, kind, from, length);
-        History.Apply(kind switch { EffectKind.Clicks => "add click highlights", EffectKind.Keystrokes => "add keystrokes", _ => "add pointer effects" }, project);
+        History.Apply(kind switch { EffectKind.Clicks => VideoEditorText.UndoAddClickHighlights, EffectKind.Keystrokes => VideoEditorText.UndoAddKeystrokes, _ => VideoEditorText.UndoAddPointerEffects }, project);
         Timeline.SetRange(null);
         Timeline.Select(id);
         return id;
@@ -969,7 +972,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     {
         if (Timeline.Selected is AnnotationItem item && item.Covers(Timeline.Playhead))
         {
-            History.Apply("add keyframe", Project.WithItem(item.WithKeyframeAt(Timeline.Playhead, Project.Canvas.Fps)));
+            History.Apply(VideoEditorText.UndoAddKeyframe, Project.WithItem(item.WithKeyframeAt(Timeline.Playhead, Project.Canvas.Fps)));
         }
     }
 
@@ -977,7 +980,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     {
         if (Timeline.Selected is AnnotationItem item)
         {
-            History.Apply("remove keyframe", Project.WithItem(item.WithoutKeyframeAt(Timeline.Playhead, Project.Canvas.Fps)));
+            History.Apply(VideoEditorText.UndoRemoveKeyframe, Project.WithItem(item.WithoutKeyframeAt(Timeline.Playhead, Project.Canvas.Fps)));
         }
     }
 
@@ -991,7 +994,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
 
         StopPlaying();
-        History.Apply("freeze frame", TransitionEdits.Freeze(Project, Times.FrameStart(Timeline.Playhead, Project.Canvas.Fps)));
+        History.Apply(VideoEditorText.UndoFreezeFrame, TransitionEdits.Freeze(Project, Times.FrameStart(Timeline.Playhead, Project.Canvas.Fps)));
     }
 
     /// <summary>The selected clip crossfades into the one after it (1 s).</summary>
@@ -1015,7 +1018,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         StopPlaying();
         var after = TransitionEdits.SetSpeed(Project, clipId, speed, endSpeed);
         _applied = after.Find(clipId)?.Item; // the panel stays while its own slider moves
-        History.Apply("speed", after, mergeKey);
+        History.Apply(VideoEditorText.UndoSpeed, after, mergeKey);
     }
 
     public void SetFreezeLength(string clipId, double length, string mergeKey)
@@ -1023,7 +1026,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         StopPlaying();
         var after = TransitionEdits.SetFreezeLength(Project, clipId, length);
         _applied = after.Find(clipId)?.Item;
-        History.Apply("freeze length", after, mergeKey);
+        History.Apply(VideoEditorText.UndoFreezeLength, after, mergeKey);
     }
 
     public void CrossfadeFrom(string clipId)
@@ -1035,14 +1038,14 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
         StopPlaying();
         _shown = null; // the panel's button becomes "Remove the crossfade"
-        History.Apply("crossfade", TransitionEdits.Crossfade(Project, clipId));
+        History.Apply(VideoEditorText.UndoCrossfade, TransitionEdits.Crossfade(Project, clipId));
     }
 
     public void RemoveCrossfadeFrom(string clipId)
     {
         StopPlaying();
         _shown = null;
-        History.Apply("remove crossfade", TransitionEdits.RemoveCrossfade(Project, clipId));
+        History.Apply(VideoEditorText.UndoRemoveCrossfade, TransitionEdits.RemoveCrossfade(Project, clipId));
     }
 
     private void Step(int frames)
@@ -1088,7 +1091,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             LogSaveFailed(e, path);
-            _dialogs.ShowError($"The project couldn't be saved: {e.Message}");
+            _dialogs.ShowError(VideoEditorText.ProjectNotSaved(e.Message));
             return false;
         }
     }
@@ -1195,6 +1198,19 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     private SKPoint ToCanvas(double x, double y) => new((float)((x - _preview.X) / _preview.Scale), (float)((y - _preview.Y) / _preview.Scale));
+
+    /// <summary>The undo step of adding an annotation of <paramref name="shape"/>.</summary>
+    private static string AddStep(AnnotationShape shape) => shape switch
+    {
+        AnnotationShape.Arrow => VideoEditorText.UndoAddArrow,
+        AnnotationShape.Line => VideoEditorText.UndoAddLine,
+        AnnotationShape.Rectangle => VideoEditorText.UndoAddRectangle,
+        AnnotationShape.Ellipse => VideoEditorText.UndoAddEllipse,
+        AnnotationShape.Highlight => VideoEditorText.UndoAddHighlight,
+        AnnotationShape.Blur => VideoEditorText.UndoAddBlurredArea,
+        AnnotationShape.Pixelate => VideoEditorText.UndoAddPixelatedArea,
+        _ => VideoEditorText.UndoAddText,
+    };
 
     private static bool MadeByAutoZoom(VideoProject project) => project.Tracks.Any(t => t.Items.Any(i => i is ZoomItem { Auto: true }));
 

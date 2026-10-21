@@ -1,4 +1,5 @@
 using CashGear.Capture.Core.Recording;
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -110,10 +111,10 @@ public static unsafe class VideoTranscoder
             WriteEncoded();
             if (_map is null)
             {
-                throw new FfmpegException("The encoder produced no video.");
+                throw new FfmpegException(MediaStrings.EncoderProducedNoVideo);
             }
 
-            FfmpegException.Check(ffmpeg.av_write_trailer(_output), "Finishing the MP4");
+            FfmpegException.Check(ffmpeg.av_write_trailer(_output), MediaStrings.FinishingMp4);
             ffmpeg.avio_closep(&_output->pb);
             var bytes = new FileInfo(partial).Length;
             File.Move(partial, destination, overwrite: false);
@@ -164,16 +165,16 @@ public static unsafe class VideoTranscoder
                 var opened = ffmpeg.avformat_open_input(&input, source, null, null);
                 if (opened < 0)
                 {
-                    throw new FfmpegException($"Opening {source}", opened, log.Summary());
+                    throw new FfmpegException(MediaStrings.Opening(source), opened, log.Summary());
                 }
             }
 
             _input = input;
-            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), "Reading the recording");
+            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), MediaStrings.ReadingRecording);
             _mainIndex = MainVideo(input);
             if (_mainIndex < 0)
             {
-                throw new FfmpegException($"{Path.GetFileName(source)} has no video.");
+                throw new FfmpegException(MediaStrings.NoVideo(Path.GetFileName(source)));
             }
 
             _otherIndex = OtherVideo(input, _mainIndex);
@@ -268,7 +269,7 @@ public static unsafe class VideoTranscoder
                 _end = Math.Max(_end, (packet->pts + packet->duration) * ffmpeg.av_q2d(to->time_base));
             }
 
-            FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_output, packet), "Writing the MP4");
+            FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_output, packet), MediaStrings.WritingMp4);
         }
     }
 
@@ -313,7 +314,7 @@ public static unsafe class VideoTranscoder
     private static AVFormatContext* Start(AVFormatContext* input, int mainIndex, VideoEncoder encoder, string path, out int[] map)
     {
         AVFormatContext* output = null;
-        FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&output, null, "mp4", path), "Creating the MP4");
+        FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&output, null, "mp4", path), MediaStrings.CreatingMp4);
         map = new int[input->nb_streams];
         using var setup = StreamSetup.From(encoder);
         for (var i = 0; i < input->nb_streams; i++)
@@ -328,12 +329,12 @@ public static unsafe class VideoTranscoder
             var to = ffmpeg.avformat_new_stream(output, null);
             if (i == mainIndex)
             {
-                FfmpegException.Check(ffmpeg.avcodec_parameters_copy(to->codecpar, setup.Parameters), "Copying codec settings");
+                FfmpegException.Check(ffmpeg.avcodec_parameters_copy(to->codecpar, setup.Parameters), MediaStrings.CopyingCodecSettings);
                 to->time_base = setup.TimeBase;
             }
             else
             {
-                FfmpegException.Check(ffmpeg.avcodec_parameters_copy(to->codecpar, from->codecpar), "Copying codec settings");
+                FfmpegException.Check(ffmpeg.avcodec_parameters_copy(to->codecpar, from->codecpar), MediaStrings.CopyingCodecSettings);
                 to->time_base = from->time_base;
             }
 
@@ -343,12 +344,12 @@ public static unsafe class VideoTranscoder
             map[i] = to->index;
         }
 
-        FfmpegException.Check(ffmpeg.avio_open(&output->pb, path, ffmpeg.AVIO_FLAG_WRITE), $"Creating {path}");
+        FfmpegException.Check(ffmpeg.avio_open(&output->pb, path, ffmpeg.AVIO_FLAG_WRITE), MediaStrings.Creating(path));
         AVDictionary* options = null;
         ffmpeg.av_dict_set(&options, "movflags", "+faststart", 0);
         var header = ffmpeg.avformat_write_header(output, &options);
         ffmpeg.av_dict_free(&options);
-        FfmpegException.Check(header, "Starting the MP4");
+        FfmpegException.Check(header, MediaStrings.StartingMp4);
         return output;
     }
 
@@ -362,13 +363,13 @@ public static unsafe class VideoTranscoder
             var codec = ffmpeg.avcodec_find_decoder(stream->codecpar->codec_id);
             if (codec is null)
             {
-                throw new FfmpegException($"No decoder for {ffmpeg.avcodec_get_name(stream->codecpar->codec_id)}.");
+                throw new FfmpegException(MediaStrings.NoDecoder(ffmpeg.avcodec_get_name(stream->codecpar->codec_id)));
             }
 
             _context = ffmpeg.avcodec_alloc_context3(codec);
-            FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(_context, stream->codecpar), "Setting up the decoder");
+            FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(_context, stream->codecpar), MediaStrings.SettingUpDecoder);
             _context->pkt_timebase = stream->time_base;
-            FfmpegException.Check(ffmpeg.avcodec_open2(_context, codec, null), "Opening the decoder");
+            FfmpegException.Check(ffmpeg.avcodec_open2(_context, codec, null), MediaStrings.OpeningDecoder);
         }
 
         public BgraConverter Converter { get; } = new();

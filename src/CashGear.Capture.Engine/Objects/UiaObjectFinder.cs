@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
@@ -39,6 +40,7 @@ public sealed partial class UiaObjectFinder : IObjectFinder, IDisposable
     private readonly Thread _thread;
     private Request? _pending;
 
+    [Localizable(false)] // the thread's name, for debuggers
     public UiaObjectFinder(ILogger<UiaObjectFinder> logger)
     {
         _logger = logger;

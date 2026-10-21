@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.ImageTools"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:BatchViewModel}"
-        Title="Batch Process – CashGear Capture" Width="860" Height="640" MinWidth="680" MinHeight="480"
+        Title="{x:Static r:ImageToolsText.BatchTitle}" Width="860" Height="640" MinWidth="680" MinHeight="480"
         WindowStartupLocation="CenterScreen">
   <Window.Resources>
     <ResourceDictionary>
@@ -36,9 +37,9 @@
         </ItemsControl.Template>
       </ItemsControl>
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-        <Button Content="Show the results" Command="{Binding OpenOutputCommand}" Margin="0,0,8,0" />
-        <Button Content="Cancel" Command="{Binding CancelCommand}" MinWidth="90" Margin="0,0,8,0" />
-        <Button Content="Start" Command="{Binding StartCommand}" MinWidth="90" IsDefault="True" FontWeight="SemiBold" />
+        <Button Content="{x:Static r:ImageToolsText.ShowResults}" Command="{Binding OpenOutputCommand}" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelCommand}" MinWidth="90" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:ImageToolsText.Start}" Command="{Binding StartCommand}" MinWidth="90" IsDefault="True" FontWeight="SemiBold" />
       </StackPanel>
     </StackPanel>
 
@@ -53,56 +54,56 @@
 
       <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
         <StackPanel Margin="0,0,8,0">
-          <TextBlock Style="{StaticResource Section}" Text="1. Size" Margin="0,0,0,4" />
-          <ComboBox ItemsSource="{Binding ResizeModes}" SelectedItem="{Binding Resize}" DisplayMemberPath="Label" AutomationProperties.Name="Size" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:ImageToolsText.SectionSize}" Margin="0,0,0,4" />
+          <ComboBox ItemsSource="{Binding ResizeModes}" SelectedItem="{Binding Resize}" DisplayMemberPath="Label" AutomationProperties.Name="{x:Static r:ImageToolsText.Size}" />
           <WrapPanel Margin="0,6,0,0">
             <StackPanel Orientation="Horizontal" Visibility="{Binding ShowPercent, Converter={StaticResource Visible}}" Margin="0,0,12,0">
-              <TextBox Text="{Binding Percent}" Width="60" AutomationProperties.Name="Percent" />
+              <TextBox Text="{Binding Percent}" Width="60" AutomationProperties.Name="{x:Static r:ImageToolsText.Percent}" />
               <TextBlock Text="%" VerticalAlignment="Center" Margin="4,0,0,0" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Visibility="{Binding ShowWidth, Converter={StaticResource Visible}}" Margin="0,0,12,0">
-              <TextBlock Text="Width" VerticalAlignment="Center" Margin="0,0,6,0" />
-              <TextBox Text="{Binding Width}" Width="70" AutomationProperties.Name="Width" />
+              <TextBlock Text="{x:Static r:ImageToolsText.Width}" VerticalAlignment="Center" Margin="0,0,6,0" />
+              <TextBox Text="{Binding Width}" Width="70" AutomationProperties.Name="{x:Static r:ImageToolsText.Width}" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Visibility="{Binding ShowHeight, Converter={StaticResource Visible}}" Margin="0,0,12,0">
-              <TextBlock Text="Height" VerticalAlignment="Center" Margin="0,0,6,0" />
-              <TextBox Text="{Binding Height}" Width="70" AutomationProperties.Name="Height" />
+              <TextBlock Text="{x:Static r:ImageToolsText.Height}" VerticalAlignment="Center" Margin="0,0,6,0" />
+              <TextBox Text="{Binding Height}" Width="70" AutomationProperties.Name="{x:Static r:ImageToolsText.Height}" />
             </StackPanel>
           </WrapPanel>
-          <CheckBox Content="Never make a picture larger" IsChecked="{Binding OnlyShrink}" Margin="0,6,0,0"
+          <CheckBox Content="{x:Static r:ImageToolsText.NeverLarger}" IsChecked="{Binding OnlyShrink}" Margin="0,6,0,0"
                     Visibility="{Binding ShowOnlyShrink, Converter={StaticResource Visible}}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="2. Effects (saved in the editor's Effects window)" />
-          <ComboBox ItemsSource="{Binding EffectPresets}" SelectedItem="{Binding EffectsPreset}" AutomationProperties.Name="Effects preset" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:ImageToolsText.SectionEffects}" />
+          <ComboBox ItemsSource="{Binding EffectPresets}" SelectedItem="{Binding EffectsPreset}" AutomationProperties.Name="{x:Static r:ImageToolsText.EffectsPreset}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="3. Watermark (saved in the editor's Effects window)" />
-          <ComboBox ItemsSource="{Binding WatermarkPresets}" SelectedItem="{Binding WatermarkPreset}" AutomationProperties.Name="Watermark preset" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:ImageToolsText.SectionWatermark}" />
+          <ComboBox ItemsSource="{Binding WatermarkPresets}" SelectedItem="{Binding WatermarkPreset}" AutomationProperties.Name="{x:Static r:ImageToolsText.WatermarkPreset}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="4. Format" />
-          <ComboBox ItemsSource="{Binding Formats}" SelectedItem="{Binding Format}" DisplayMemberPath="Label" AutomationProperties.Name="Format" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:ImageToolsText.SectionFormat}" />
+          <ComboBox ItemsSource="{Binding Formats}" SelectedItem="{Binding Format}" DisplayMemberPath="Label" AutomationProperties.Name="{x:Static r:ImageToolsText.FileFormat}" />
           <StackPanel Orientation="Horizontal" Margin="0,6,0,0" Visibility="{Binding ShowJpegQuality, Converter={StaticResource Visible}}">
-            <TextBlock Text="JPEG quality" VerticalAlignment="Center" Margin="0,0,8,0" />
-            <Slider Minimum="1" Maximum="100" Value="{Binding JpegQuality}" Width="180" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" AutomationProperties.Name="JPEG quality" />
+            <TextBlock Text="{x:Static r:ImageToolsText.JpegQuality}" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <Slider Minimum="1" Maximum="100" Value="{Binding JpegQuality}" Width="180" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:ImageToolsText.JpegQuality}" />
             <TextBlock Text="{Binding JpegQuality}" VerticalAlignment="Center" Margin="8,0,0,0" />
           </StackPanel>
 
-          <TextBlock Style="{StaticResource Section}" Text="5. Names" />
-          <TextBox Text="{Binding NameTemplate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Name template" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:ImageToolsText.SectionNames}" />
+          <TextBox Text="{Binding NameTemplate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:ImageToolsText.NameTemplate}" />
           <TextBlock Margin="0,4,0,0" Opacity="0.8" TextWrapping="Wrap">
-            <Run Text="For example:" /> <Run Text="{Binding NameExample, Mode=OneWay}" />
+            <Run Text="{x:Static r:ImageToolsText.ForExample}" /> <Run Text="{Binding NameExample, Mode=OneWay}" />
           </TextBlock>
           <TextBlock Text="{Binding NameError}" Foreground="#C42B1C" TextWrapping="Wrap" />
           <TextBlock Margin="0,4,0,0" Opacity="0.7" TextWrapping="Wrap"
-                     Text="{}{name} the original name · {counter} 1, 2, 3… · {yyyy} {MM} {dd} {HH} {mm} {ss} the file's date · {width} {height} the new size" />
+                     Text="{x:Static r:ImageToolsText.TokensHelp}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="6. Where the results go" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:ImageToolsText.SectionOutput}" />
           <DockPanel>
-            <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding BrowseOutputCommand}" Margin="6,0,0,0" />
-            <TextBox Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Output folder" />
+            <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseOutputCommand}" Margin="6,0,0,0" />
+            <TextBox Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:ImageToolsText.OutputFolder}" />
           </DockPanel>
           <DockPanel Margin="0,6,0,0">
-            <TextBlock Text="When a name is taken" VerticalAlignment="Center" Margin="0,0,8,0" />
-            <ComboBox ItemsSource="{Binding ExistingChoices}" SelectedItem="{Binding Existing}" DisplayMemberPath="Label" AutomationProperties.Name="When a name is taken" />
+            <TextBlock Text="{x:Static r:ImageToolsText.WhenNameTaken}" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <ComboBox ItemsSource="{Binding ExistingChoices}" SelectedItem="{Binding Existing}" DisplayMemberPath="Label" AutomationProperties.Name="{x:Static r:ImageToolsText.WhenNameTaken}" />
           </DockPanel>
         </StackPanel>
       </ScrollViewer>

@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Interop.Native;
@@ -46,7 +47,7 @@ public sealed class DrawingLayerWindow : Window
         Topmost = true;
         ShowInTaskbar = false;
         ShowActivated = false;
-        Title = "Drawing";
+        Title = RecordingText.DrawingTitle;
         _ink = new InkCanvas { Background = Brushes.Transparent, EditingMode = InkCanvasEditingMode.None };
         Content = _ink;
         _ink.StrokeCollected += (_, e) => Keep(e.Stroke);

@@ -4,6 +4,7 @@ using System.Windows.Media.Imaging;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Imaging;
@@ -54,9 +55,8 @@ public sealed partial class ImageListViewModel(IImageFilePicker picker) : Observ
 
     public string CountText => Files.Count switch
     {
-        0 => "No pictures yet: add files or a folder, or drag them here.",
-        1 => "1 picture",
-        _ => $"{Files.Count} pictures",
+        0 => ImageToolsText.NoPicturesYet,
+        _ => ImageToolsText.PictureCount(Files.Count),
     };
 
     public IReadOnlyList<string> Paths => [.. Files.Select(f => f.Path)];
@@ -81,12 +81,12 @@ public sealed partial class ImageListViewModel(IImageFilePicker picker) : Observ
     }
 
     [RelayCommand]
-    private void AddFiles() => Add(picker.PickImages("Add pictures"));
+    private void AddFiles() => Add(picker.PickImages(ImageToolsText.AddPictures));
 
     [RelayCommand]
     private void AddFolder()
     {
-        if (picker.PickFolder("Add the pictures in a folder", null) is { } folder)
+        if (picker.PickFolder(ImageToolsText.AddFolderPictures, null) is { } folder)
         {
             Add([folder]);
         }
@@ -162,7 +162,8 @@ public sealed partial class ImageListViewModel(IImageFilePicker picker) : Observ
 /// </summary>
 public sealed partial class BatchViewModel : ObservableObject, IDisposable
 {
-    private const string NoPreset = "(none)";
+    /// <summary>The choice of no preset, first in the lists of preset names.</summary>
+    private static readonly string NoPreset = ImageToolsText.NoPreset;
 
     private readonly IPresetStore _presets;
     private readonly IImageFilePicker _picker;
@@ -198,26 +199,26 @@ public sealed partial class BatchViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<Choice> ResizeModes { get; } =
     [
-        new(ResizeMode.None, "Keep the size"),
-        new(ResizeMode.Percent, "To a percentage"),
-        new(ResizeMode.FitWithin, "To fit in a box (in proportion)"),
-        new(ResizeMode.Width, "To a width (in proportion)"),
-        new(ResizeMode.Height, "To a height (in proportion)"),
+        new(ResizeMode.None, ImageToolsText.ResizeKeep),
+        new(ResizeMode.Percent, ImageToolsText.ResizePercent),
+        new(ResizeMode.FitWithin, ImageToolsText.ResizeFit),
+        new(ResizeMode.Width, ImageToolsText.ResizeWidth),
+        new(ResizeMode.Height, ImageToolsText.ResizeHeight),
     ];
 
     public IReadOnlyList<Choice> Formats { get; } =
     [
-        new(BatchFormat.Keep, "Keep each file's format"),
-        new(BatchFormat.Png, "PNG"),
-        new(BatchFormat.Jpeg, "JPEG"),
-        new(BatchFormat.Bmp, "BMP"),
+        new(BatchFormat.Keep, ImageToolsText.FormatKeep),
+        new(BatchFormat.Png, ImageToolsText.FormatPng),
+        new(BatchFormat.Jpeg, ImageToolsText.FormatJpeg),
+        new(BatchFormat.Bmp, ImageToolsText.FormatBmp),
     ];
 
     public IReadOnlyList<Choice> ExistingChoices { get; } =
     [
-        new(ExistingFiles.Number, "Add a number: name (2)"),
-        new(ExistingFiles.Overwrite, "Replace it"),
-        new(ExistingFiles.Skip, "Skip that picture"),
+        new(ExistingFiles.Number, ImageToolsText.ExistingNumber),
+        new(ExistingFiles.Overwrite, ImageToolsText.ExistingReplace),
+        new(ExistingFiles.Skip, ImageToolsText.ExistingSkip),
     ];
 
     public IReadOnlyList<string> EffectPresets { get; }
@@ -322,7 +323,7 @@ public sealed partial class BatchViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void BrowseOutput()
     {
-        if (_picker.PickFolder("Where the results go", OutputFolder) is { } folder)
+        if (_picker.PickFolder(ImageToolsText.WhereResultsGo, OutputFolder) is { } folder)
         {
             OutputFolder = folder;
         }
@@ -348,7 +349,7 @@ public sealed partial class BatchViewModel : ObservableObject, IDisposable
         var job = new BatchJob(List.Paths, options.OutputFolder!, options, effects);
         Failures.Clear();
         Progress = 0;
-        Status = "Starting…";
+        Status = ImageToolsText.Starting;
         IsRunning = true;
         _run = new CancellationTokenSource();
         // A report posted just before the end can arrive after it: once finished, reports are ignored.
@@ -380,12 +381,23 @@ public sealed partial class BatchViewModel : ObservableObject, IDisposable
             }
 
             Progress = result.Cancelled ? Progress : 100;
-            var summary = $"{result.Written.Count} saved" + (result.Skipped > 0 ? $", {result.Skipped} skipped" : string.Empty) + (result.Failures.Count > 0 ? $", {result.Failures.Count} failed" : string.Empty);
-            Status = result.Cancelled ? $"Cancelled: {summary}." : $"Done in {result.Elapsed.TotalSeconds:0.#} s: {summary}.";
+            var counts = new List<string> { ImageToolsText.SavedCount(result.Written.Count) };
+            if (result.Skipped > 0)
+            {
+                counts.Add(ImageToolsText.SkippedCount(result.Skipped));
+            }
+
+            if (result.Failures.Count > 0)
+            {
+                counts.Add(ImageToolsText.FailedCount(result.Failures.Count));
+            }
+
+            var summary = string.Join(ImageToolsText.ListSeparator, counts);
+            Status = result.Cancelled ? ImageToolsText.BatchCancelled(summary) : ImageToolsText.DoneIn(result.Elapsed.TotalSeconds, summary);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            Status = "Could not start: " + ex.Message;
+            Status = ImageToolsText.CouldNotStart(ex.Message);
         }
         finally
         {
@@ -410,7 +422,9 @@ public sealed partial class BatchViewModel : ObservableObject, IDisposable
     private bool HasOutputFolder() => !string.IsNullOrWhiteSpace(OutputFolder);
 
     private static string Describe(BatchProgress p) =>
-        $"{p.Finished} of {p.Total}" + (p.Failed > 0 ? $" · {p.Failed} failed" : string.Empty) + (p.Skipped > 0 ? $" · {p.Skipped} skipped" : string.Empty);
+        ImageToolsText.ProgressCount(p.Finished, p.Total)
+        + (p.Failed > 0 ? " · " + ImageToolsText.FailedCount(p.Failed) : string.Empty)
+        + (p.Skipped > 0 ? " · " + ImageToolsText.SkippedCount(p.Skipped) : string.Empty);
 
     private void Refresh()
     {
@@ -449,7 +463,7 @@ public sealed partial class CombineViewModel : ObservableObject
         _spacing = saved.Spacing;
         _margin = saved.Margin;
         _alignment = Alignments.FirstOrDefault(c => Equals(c.Value, saved.Alignment)) ?? Alignments[1];
-        Background = new ColorParameter("Background", saved.BackgroundColor, allowTransparent: true);
+        Background = new ColorParameter(ImageToolsText.Background, saved.BackgroundColor, allowTransparent: true);
         Background.PropertyChanged += (_, _) => Changed();
     }
 
@@ -457,16 +471,16 @@ public sealed partial class CombineViewModel : ObservableObject
 
     public IReadOnlyList<Choice> Layouts { get; } =
     [
-        new(CombineLayout.Horizontal, "Side by side"),
-        new(CombineLayout.Vertical, "One under another"),
-        new(CombineLayout.Grid, "In a grid"),
+        new(CombineLayout.Horizontal, ImageToolsText.SideBySide),
+        new(CombineLayout.Vertical, ImageToolsText.OneUnderAnother),
+        new(CombineLayout.Grid, ImageToolsText.InAGrid),
     ];
 
     public IReadOnlyList<Choice> Alignments { get; } =
     [
-        new(CombineAlignment.Start, "Top or left"),
-        new(CombineAlignment.Center, "Centred"),
-        new(CombineAlignment.End, "Bottom or right"),
+        new(CombineAlignment.Start, ImageToolsText.TopOrLeft),
+        new(CombineAlignment.Center, ImageToolsText.Centred),
+        new(CombineAlignment.End, ImageToolsText.BottomOrRight),
     ];
 
     [ObservableProperty]
@@ -534,9 +548,9 @@ public sealed partial class CombineViewModel : ObservableObject
     {
         var output = _settings.Current.Output;
         var path = _picker.PickSavePath(
-            "Save the combined picture",
-            "PNG image (*.png)|*.png|JPEG image (*.jpg)|*.jpg;*.jpeg|Bitmap (*.bmp)|*.bmp",
-            "Combined",
+            ImageToolsText.SaveCombinedTitle,
+            EditorText.SaveImageFilter,
+            ImageToolsText.CombinedFileName,
             _paths.ResolveCaptureDirectory(output));
         if (path is null)
         {
@@ -548,7 +562,7 @@ public sealed partial class CombineViewModel : ObservableObject
         {
             await _output.SaveToFileAsync(image, path, ImageFileFormatExtensions.FromPath(path) ?? ImageFileFormat.Png, output.JpegQuality);
             Error = null;
-            SizeText = $"Saved {Path.GetFileName(path)}";
+            SizeText = ImageToolsText.SavedFile(Path.GetFileName(path));
         }
     }
 
@@ -575,7 +589,7 @@ public sealed partial class CombineViewModel : ObservableObject
                         Kind = CaptureKind.Region,
                         SourceBounds = new PixelRect(0, 0, combined.Width, combined.Height),
                         CapturedAt = DateTimeOffset.Now,
-                        WindowTitle = "Combined pictures",
+                        WindowTitle = ImageToolsText.CombinedPicturesTitle,
                     });
                 }
                 finally
@@ -614,7 +628,7 @@ public sealed partial class CombineViewModel : ObservableObject
             if (version == _previewVersion)
             {
                 Preview = preview;
-                SizeText = $"{size.Width} × {size.Height} pixels";
+                SizeText = ImageToolsText.PixelSize(size.Width, size.Height);
                 Error = null;
             }
         }
@@ -755,7 +769,7 @@ public sealed partial class PdfToolViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(OpenCommand), nameof(ShowInFolderCommand))]
     private string? _madeFile;
 
-    public string PerPageText => Columns * Rows == 1 ? "One picture per page" : $"{Columns * Rows} pictures per page ({Columns} across, {Rows} down)";
+    public string PerPageText => Columns * Rows == 1 ? ImageToolsText.OnePicturePerPage : ImageToolsText.PicturesPerPage(Columns * Rows, Columns, Rows);
 
     public PdfOptions Options => new PdfOptions(PageSize, Orientation, MarginMm, Fit, Columns, Rows, SpacingMm, SmallerFile).Normalize();
 
@@ -763,8 +777,8 @@ public sealed partial class PdfToolViewModel : ObservableObject, IDisposable
     private async Task MakeAsync()
     {
         var folder = _paths.ResolveCaptureDirectory(_settings.Current.Output);
-        var suggested = List.Files.Count == 1 ? Path.GetFileNameWithoutExtension(List.Files[0].Path) : "Pictures";
-        if (_picker.PickSavePath("Save the PDF", "PDF document (*.pdf)|*.pdf", suggested, folder) is not { } path)
+        var suggested = List.Files.Count == 1 ? Path.GetFileNameWithoutExtension(List.Files[0].Path) : ImageToolsText.PdfFileName;
+        if (_picker.PickSavePath(ImageToolsText.SavePdfTitle, ImageToolsText.PdfFilter, suggested, folder) is not { } path)
         {
             return;
         }
@@ -775,7 +789,7 @@ public sealed partial class PdfToolViewModel : ObservableObject, IDisposable
         IsRunning = true;
         MadeFile = null;
         Progress = 0;
-        Status = "Making the PDF…";
+        Status = ImageToolsText.MakingPdf;
         _run = new CancellationTokenSource();
         var total = pictures.Count;
 
@@ -789,7 +803,7 @@ public sealed partial class PdfToolViewModel : ObservableObject, IDisposable
                 if (!finished)
                 {
                     Progress = 100.0 * done / total;
-                    Status = $"{done} of {total} pictures";
+                    Status = ImageToolsText.PdfProgress(total, done);
                 }
             }
         });
@@ -807,17 +821,17 @@ public sealed partial class PdfToolViewModel : ObservableObject, IDisposable
             await PdfWriter.WriteAsync(path, pictures, options, Path.GetFileNameWithoutExtension(path), progress, _run.Token);
             Finish();
             MadeFile = path;
-            Status = $"Saved {Path.GetFileName(path)} ({total} pictures).";
+            Status = ImageToolsText.PdfSaved(total, Path.GetFileName(path));
         }
         catch (OperationCanceledException)
         {
             Finish();
-            Status = "Cancelled; no PDF was saved.";
+            Status = ImageToolsText.PdfCancelled;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or ArgumentException)
         {
             Finish();
-            Status = "Could not make the PDF: " + ex.Message;
+            Status = ImageToolsText.PdfFailed(ex.Message);
         }
         finally
         {

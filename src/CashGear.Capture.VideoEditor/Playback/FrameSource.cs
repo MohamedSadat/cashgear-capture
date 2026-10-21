@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CashGear.Capture.Media;
 using Microsoft.Extensions.Logging;
 
@@ -40,9 +41,13 @@ public sealed partial class FrameSource : IDisposable
         Height = height;
         _logger = logger;
         _pool = pool ?? FramePool.Shared;
-        _thread = new Thread(Run) { IsBackground = true, Name = $"Video editor decoder ({Path.GetFileName(path)} #{stream})", Priority = ThreadPriority.AboveNormal };
+        _thread = new Thread(Run) { IsBackground = true, Name = ThreadName(path, stream), Priority = ThreadPriority.AboveNormal };
         _thread.Start();
     }
+
+    /// <summary>The decoding thread's name, for debuggers.</summary>
+    [Localizable(false)]
+    private static string ThreadName(string path, int stream) => $"Video editor decoder ({Path.GetFileName(path)} #{stream})";
 
     /// <summary>Raised on the decoder thread when a picture someone waits for is ready.</summary>
     public event EventHandler? FrameReady;

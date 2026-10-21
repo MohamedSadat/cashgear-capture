@@ -1,4 +1,5 @@
 using CashGear.Capture.Editor.Imaging;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Composition;
@@ -102,7 +103,7 @@ public static class ImageCombiner
         var height = (2L * options.Margin) + heights.Sum(h => (long)h) + ((long)options.Spacing * (rows - 1));
         if (width > ImageOperations.MaxDimension || height > ImageOperations.MaxDimension)
         {
-            throw new ArgumentException($"The combined picture would be {width} × {height} pixels; at most {ImageOperations.MaxDimension} each way.");
+            throw new ArgumentException(EditorStrings.CombinedTooLarge(width, height, ImageOperations.MaxDimension));
         }
 
         return new CombinePlan(new SKSizeI((int)width, (int)height), positions);

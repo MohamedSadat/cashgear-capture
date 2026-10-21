@@ -1,7 +1,9 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
@@ -22,6 +24,7 @@ public sealed class Crosshair
     private readonly ToolOverlay _across = new(LineBrush, clickThrough: true);
     private readonly ToolOverlay _down = new(LineBrush, clickThrough: true);
     private readonly ToolOverlay _readout = new(Frozen(new SolidColorBrush(Color.FromRgb(0x1C, 0x1C, 0x1C))), clickThrough: false); // never under the pointer
+    [Localizable(false)] // a font's name
     private readonly TextBlock _text = new() { Foreground = Brushes.White, FontFamily = new FontFamily("Segoe UI"), FontSize = 12, Padding = new Thickness(6, 3, 6, 4) };
     private PixelPoint? _last;
     private bool _closed;
@@ -116,7 +119,7 @@ public sealed class Crosshair
 
         public ToolOverlay(Brush background, bool clickThrough)
         {
-            Title = "CashGear Capture - crosshair";
+            Title = ToolsText.CrosshairWindowTitle;
             WindowStyle = WindowStyle.None;
             ResizeMode = ResizeMode.NoResize;
             Background = background;

@@ -4,6 +4,7 @@ using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Region;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Scrolling;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
@@ -170,8 +171,8 @@ public sealed partial class CaptureCoordinator
         if (menus.Count == 0)
         {
             _notifier.Notify(
-                "No open menu",
-                $"No menu was open when the capture was taken. Open the menu during the countdown ({current.Capture.DelayFor(CaptureMode.Menu)} s; Settings › Capture › Delay per kind of capture).",
+                CapturingText.NoOpenMenu,
+                CapturingText.NoMenuWasOpen(current.Capture.DelayFor(CaptureMode.Menu)),
                 NotificationKind.Warning);
             return;
         }
@@ -360,7 +361,7 @@ public sealed partial class CaptureCoordinator
         if (Explain(result) is { } explanation)
         {
             var kind = result.Reason is ScrollStopReason.MaxHeight or ScrollStopReason.ReachedEnd ? NotificationKind.Info : NotificationKind.Warning;
-            _notifier.Notify("Scrolling capture", explanation, kind);
+            _notifier.Notify(CapturingText.ScrollingCapture, explanation, kind);
         }
 
         await DeliverAsync(image, [image], current, hidden, ct).ConfigureAwait(false);
@@ -369,10 +370,10 @@ public sealed partial class CaptureCoordinator
     /// <summary>Why a scrolling capture ended, when it is worth telling (null when it simply reached the bottom).</summary>
     private static string? Explain(ScrollingResult result) => result.Reason switch
     {
-        ScrollStopReason.ReachedEnd when result.Frames == 1 => "Nothing scrolled, so only the visible part was captured.",
-        ScrollStopReason.MaxHeight => $"Stopped at the height limit ({result.Image.Height} px). It can be raised in Settings > Capture.",
-        ScrollStopReason.LostTrack => $"Stopped early at {result.Image.Height} px: the next part did not line up with the last (the page may change as it scrolls).",
-        ScrollStopReason.Resized => $"Stopped at {result.Image.Height} px: the window changed size.",
+        ScrollStopReason.ReachedEnd when result.Frames == 1 => CapturingText.NothingScrolled,
+        ScrollStopReason.MaxHeight => CapturingText.StoppedAtHeightLimit(result.Image.Height),
+        ScrollStopReason.LostTrack => CapturingText.StoppedLostTrack(result.Image.Height),
+        ScrollStopReason.Resized => CapturingText.StoppedResized(result.Image.Height),
         _ => null,
     };
 
@@ -409,13 +410,13 @@ public sealed partial class CaptureCoordinator
             tag => _ocr.AvailableLanguages.FirstOrDefault(l => l.Tag == tag)?.DisplayName ?? tag));
         if (result.IsEmpty)
         {
-            _notifier.Notify("Capture Text", $"No text was found in the selected area ({language}).", NotificationKind.Warning);
+            _notifier.Notify(CapturingText.CaptureText, CapturingText.NoTextFound(language), NotificationKind.Warning);
             return;
         }
 
         await _output.CopyTextToClipboardAsync(result.Text, ct).ConfigureAwait(false);
         var lines = result.Text.Split("\r\n").Count(l => l.Length > 0);
-        _notifier.Notify("Text copied", $"{OcrText.Preview(result.Text)}\n{lines} line{(lines == 1 ? string.Empty : "s")} · {language}");
+        _notifier.Notify(CapturingText.TextCopied, $"{OcrText.Preview(result.Text)}\n{CapturingText.LinesAndLanguage(lines, language)}");
     }
 
     /// <summary>Captures the window that was in the foreground when the hotkey was pressed.</summary>
@@ -423,7 +424,7 @@ public sealed partial class CaptureCoordinator
     {
         if (hwnd == 0 || _windows.GetWindow(hwnd) is not { } window || IsShell(window))
         {
-            _notifier.Notify("Capture Active Window", "There is no active window to capture. Click a window first.");
+            _notifier.Notify(CapturingText.CaptureActiveWindow, CapturingText.NoActiveWindow);
             return;
         }
 
@@ -481,8 +482,8 @@ public sealed partial class CaptureCoordinator
         {
             // The capture would just be thrown away.
             _notifier.Notify(
-                "Nothing to do with the capture",
-                "Switch on a step of the after-capture workflow (Settings › Output), such as \"Open in the editor\" or \"Save to file\".",
+                CapturingText.NothingToDo,
+                CapturingText.SwitchOnStep,
                 NotificationKind.Warning);
             return;
         }
@@ -500,7 +501,7 @@ public sealed partial class CaptureCoordinator
         catch (Exception ex)
         {
             LogFailed(ex);
-            _notifier.Notify("Capture failed", ex.Message, NotificationKind.Error);
+            _notifier.Notify(CapturingText.CaptureFailed, ex.Message, NotificationKind.Error);
         }
     }
 
@@ -543,7 +544,7 @@ public sealed partial class CaptureCoordinator
         if (Notice(primary) is { } notice)
         {
             LogNotice(notice);
-            _notifier.Notify("Part of the capture is black", notice, NotificationKind.Warning);
+            _notifier.Notify(CapturingText.PartBlack, notice, NotificationKind.Warning);
         }
 
         var delivery = await _outputs.DeliverCaptureAsync(primary, files, current, ct).ConfigureAwait(false);
@@ -571,7 +572,7 @@ public sealed partial class CaptureCoordinator
             .Select(w => w.Title.Length > 0 ? w.Title : w.ClassName)
             .Distinct()
             .ToList();
-        return hiding.Count == 0 ? null : CaptureMessages.Protected(string.Join("\", \"", hiding));
+        return hiding.Count == 0 ? null : CaptureMessages.Protected(string.Join(CapturingText.WindowNamesSeparator, hiding));
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Capture notice: {Notice}")]

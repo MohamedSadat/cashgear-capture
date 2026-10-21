@@ -1,3 +1,4 @@
+using CashGear.Capture.Audio.Resources;
 using CashGear.Capture.Core.Recording;
 using Microsoft.Extensions.Logging;
 
@@ -62,7 +63,7 @@ internal sealed partial class AppAudioSource : IAudioSource
         _pollInterval = pollInterval ?? TimeSpan.FromSeconds(1);
         _endpoint = first.Endpoint;
         _target = first.Endpoint is null ? 0 : firstTarget;
-        Name = exclude ? $"system audio except {appName}" : $"{appName}'s sound";
+        Name = exclude ? AudioStrings.SystemAudioExcept(appName) : AudioStrings.AppSound(appName);
     }
 
     public string Name { get; }
@@ -149,7 +150,7 @@ internal sealed partial class AppAudioSource : IAudioSource
                 if (!_lostReported)
                 {
                     _lostReported = true;
-                    Report(AudioSourceStatus.Lost, $"{Name} couldn't be recorded ({opened.Problem ?? opened.Missing}). It is silent in the recording until it can be.");
+                    Report(AudioSourceStatus.Lost, AudioStrings.AppNotRecordable(Name, opened.Problem ?? opened.Missing));
                 }
 
                 return;
@@ -166,18 +167,18 @@ internal sealed partial class AppAudioSource : IAudioSource
             {
                 if (found is not null && replacing)
                 {
-                    Report(AudioSourceStatus.Switched, $"{_appName} is running now, so its sound is left out of the recording.");
+                    Report(AudioSourceStatus.Switched, AudioStrings.AppLeftOut(_appName));
                 }
                 else if (wasLost)
                 {
-                    Report(AudioSourceStatus.Restored, $"{Name} is being recorded again.");
+                    Report(AudioSourceStatus.Restored, AudioStrings.RecordedAgain(Name));
                 }
             }
             else
             {
-                Report(AudioSourceStatus.Restored, replacing ? $"{_appName} was started again; its sound is being recorded again."
-                    : wasLost ? $"{Name} is being recorded again."
-                    : $"{_appName} started; its sound is being recorded.");
+                Report(AudioSourceStatus.Restored, replacing ? AudioStrings.AppStartedAgain(_appName)
+                    : wasLost ? AudioStrings.RecordedAgain(Name)
+                    : AudioStrings.AppStarted(_appName));
             }
         }
     }
@@ -217,7 +218,7 @@ internal sealed partial class AppAudioSource : IAudioSource
             Close();
             _target = 0;
             _lostReported = true;
-            Report(AudioSourceStatus.Lost, $"{Name} stopped ({ex.Message.Trim()}). It is silent in the recording until it can be recorded again.");
+            Report(AudioSourceStatus.Lost, AudioStrings.AppSoundStopped(Name, ex.Message.Trim()));
         }
     }
 

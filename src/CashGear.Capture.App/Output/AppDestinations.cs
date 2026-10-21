@@ -1,5 +1,6 @@
 using System.IO;
 using CashGear.Capture.App.Editor;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.VideoEditor;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
@@ -91,7 +92,7 @@ internal sealed class EditorDestination(IEditorLauncher editor) : IOutputDestina
 {
     public string Id => DestinationIds.Editor;
 
-    public string DisplayName => "Open in the editor";
+    public string DisplayName => OutputText.OpenInEditor;
 
     public bool SupportsVideo => false;
 
@@ -99,14 +100,14 @@ internal sealed class EditorDestination(IEditorLauncher editor) : IOutputDestina
     {
         if (item.Image is not { } image)
         {
-            return OutputResult.Skip("The editor takes pictures only.");
+            return OutputResult.Skip(OutputText.EditorPicturesOnly);
         }
 
         await editor.OpenAsync(image, item.SavedPath, item.Pending, ct).ConfigureAwait(false);
-        return OutputResult.Done("Opened in the editor");
+        return OutputResult.Done(OutputText.OpenedInEditor);
     }
 
-    public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done("Nothing to set up."));
+    public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done(OutputText.NothingToSetUp));
 }
 
 /// <summary>
@@ -117,7 +118,7 @@ internal sealed class FileDestination(OutputSettings settings, string folder, IO
 {
     public string Id => DestinationIds.File;
 
-    public string DisplayName => "Save to file";
+    public string DisplayName => OutputText.SaveToFile;
 
     public bool SupportsVideo => true;
 
@@ -125,7 +126,7 @@ internal sealed class FileDestination(OutputSettings settings, string folder, IO
     {
         if (item.Kind == OutputKind.Video)
         {
-            return OutputResult.Skip($"The recording is in {Path.GetDirectoryName(item.SavedPath)} already.");
+            return OutputResult.Skip(OutputText.RecordingAlreadyIn(Path.GetDirectoryName(item.SavedPath)));
         }
 
         var template = owner.Template(settings, distinguishMonitors: item.Images.Count > 1);
@@ -144,8 +145,8 @@ internal sealed class FileDestination(OutputSettings settings, string folder, IO
         }
 
         var first = item.SavedFiles[0];
-        var files = item.SavedFiles.Count == 1 ? Path.GetFileName(first) : $"{Path.GetFileName(first)} and {item.SavedFiles.Count - 1} more";
-        return new OutputResult(true, $"{files}\nin {Path.GetDirectoryName(first)} (click to show)") { Path = first };
+        var files = item.SavedFiles.Count == 1 ? Path.GetFileName(first) : OutputText.FileAndMore(item.SavedFiles.Count - 1, Path.GetFileName(first));
+        return new OutputResult(true, $"{files}\n{OutputText.InFolderClickToShow(Path.GetDirectoryName(first))}") { Path = first };
     }
 
     public Task<OutputResult> TestAsync(CancellationToken ct)
@@ -156,11 +157,11 @@ internal sealed class FileDestination(OutputSettings settings, string folder, IO
             var probe = Path.Combine(folder, $".cashgear-test-{Guid.NewGuid():N}.tmp");
             File.WriteAllBytes(probe, []);
             File.Delete(probe);
-            return Task.FromResult(OutputResult.Done($"Captures are saved in {folder}."));
+            return Task.FromResult(OutputResult.Done(OutputText.CapturesSavedIn(folder)));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(OutputResult.Failed($"Can't write to {folder}: {ex.Message}"));
+            return Task.FromResult(OutputResult.Failed(OutputText.CantWriteTo(folder, ex.Message)));
         }
     }
 }
@@ -170,7 +171,7 @@ internal sealed class ClipboardDestination(IOutputService output) : IOutputDesti
 {
     public string Id => DestinationIds.Clipboard;
 
-    public string DisplayName => "Copy to clipboard";
+    public string DisplayName => OutputText.CopyToClipboard;
 
     public bool SupportsVideo => true;
 
@@ -179,14 +180,14 @@ internal sealed class ClipboardDestination(IOutputService output) : IOutputDesti
         if (item.Image is { } image)
         {
             await output.CopyToClipboardAsync(image, ct).ConfigureAwait(false);
-            return OutputResult.Done("Copied to the clipboard.");
+            return OutputResult.Done(OutputText.CopiedToClipboard);
         }
 
         await output.CopyFilesToClipboardAsync([await item.GetFileAsync(ct).ConfigureAwait(false)], ct).ConfigureAwait(false);
-        return OutputResult.Done("The file is on the clipboard (paste it into a folder, a chat or an email).");
+        return OutputResult.Done(OutputText.FileOnClipboard);
     }
 
-    public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done("Nothing to set up."));
+    public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done(OutputText.NothingToSetUp));
 }
 
 /// <summary>Prints the capture (see <see cref="IPrinter"/>).</summary>
@@ -194,13 +195,13 @@ internal sealed class PrinterDestination(PrintSettings settings, IPrinter printe
 {
     public string Id => DestinationIds.Printer;
 
-    public string DisplayName => "Print";
+    public string DisplayName => OutputText.Print;
 
     public bool SupportsVideo => false;
 
     public Task<OutputResult> SendAsync(OutputItem item, CancellationToken ct) => item.Image is { } image
         ? printer.PrintAsync(image, item.Title ?? item.Name, settings, ct)
-        : Task.FromResult(OutputResult.Skip("Recordings can't be printed."));
+        : Task.FromResult(OutputResult.Skip(OutputText.RecordingsCantBePrinted));
 
     public Task<OutputResult> TestAsync(CancellationToken ct) => printer.CheckAsync(settings, ct);
 }

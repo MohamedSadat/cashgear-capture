@@ -1,3 +1,4 @@
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -55,12 +56,12 @@ public static unsafe class Remuxer
                 var opened = ffmpeg.avformat_open_input(&input, source, null, null);
                 if (opened < 0)
                 {
-                    throw new FfmpegException($"Opening {source}", opened, log.Summary());
+                    throw new FfmpegException(MediaStrings.Opening(source), opened, log.Summary());
                 }
             }
 
-            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), "Reading the recording");
-            FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&output, null, "mp4", partial), "Creating the MP4");
+            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), MediaStrings.ReadingRecording);
+            FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&output, null, "mp4", partial), MediaStrings.CreatingMp4);
 
             var map = new int[input->nb_streams];
             var offsets = new long[input->nb_streams];
@@ -82,12 +83,12 @@ public static unsafe class Remuxer
                     var track = new LoudnessTrack(from, loudness, to->index);
                     tracks[i] = track;
                     normalized[i] = loudness;
-                    FfmpegException.Check(ffmpeg.avcodec_parameters_from_context(to->codecpar, track.Encoder.Context), "Setting up the evened-out sound");
+                    FfmpegException.Check(ffmpeg.avcodec_parameters_from_context(to->codecpar, track.Encoder.Context), MediaStrings.SettingUpEvenedOutSound);
                     to->time_base = track.Encoder.Context->time_base;
                 }
                 else
                 {
-                    FfmpegException.Check(ffmpeg.avcodec_parameters_copy(to->codecpar, from->codecpar), "Copying codec settings");
+                    FfmpegException.Check(ffmpeg.avcodec_parameters_copy(to->codecpar, from->codecpar), MediaStrings.CopyingCodecSettings);
                     to->time_base = from->time_base;
                 }
 
@@ -104,12 +105,12 @@ public static unsafe class Remuxer
                 extraVideo = ExtraVideo.Open(extra, output, start);
             }
 
-            FfmpegException.Check(ffmpeg.avio_open(&output->pb, partial, ffmpeg.AVIO_FLAG_WRITE), $"Creating {partial}");
+            FfmpegException.Check(ffmpeg.avio_open(&output->pb, partial, ffmpeg.AVIO_FLAG_WRITE), MediaStrings.Creating(partial));
             AVDictionary* options = null;
             ffmpeg.av_dict_set(&options, "movflags", "+faststart", 0);
             var header = ffmpeg.avformat_write_header(output, &options);
             ffmpeg.av_dict_free(&options);
-            FfmpegException.Check(header, "Starting the MP4");
+            FfmpegException.Check(header, MediaStrings.StartingMp4);
 
             var size = Math.Max(1, ffmpeg.avio_size(input->pb));
             var truncated = !EndsWithFragmentIndex(source);
@@ -164,7 +165,7 @@ public static unsafe class Remuxer
                 ffmpeg.av_packet_rescale_ts(packet, from->time_base, to->time_base);
                 packet->stream_index = to->index;
                 packet->pos = -1;
-                FfmpegException.Check(ffmpeg.av_interleaved_write_frame(output, packet), "Writing the MP4");
+                FfmpegException.Check(ffmpeg.av_interleaved_write_frame(output, packet), MediaStrings.WritingMp4);
                 if (++count % 256 == 0)
                 {
                     copying?.Report(Math.Clamp((double)ffmpeg.avio_tell(input->pb) / size, 0, 1));
@@ -185,7 +186,7 @@ public static unsafe class Remuxer
                 end = Math.Max(end, extraVideo.WriteUntil(output, double.MaxValue));
             }
 
-            FfmpegException.Check(ffmpeg.av_write_trailer(output), "Finishing the MP4");
+            FfmpegException.Check(ffmpeg.av_write_trailer(output), MediaStrings.FinishingMp4);
             ffmpeg.avio_closep(&output->pb);
             var bytes = new FileInfo(partial).Length;
             File.Move(partial, destination, overwrite: false);
@@ -246,7 +247,7 @@ public static unsafe class Remuxer
             raw->pos = -1;
             ffmpeg.av_packet_rescale_ts(raw, packet.TimeBase, to->time_base);
             end = Math.Max(end, (raw->pts + raw->duration) * ffmpeg.av_q2d(to->time_base));
-            FfmpegException.Check(ffmpeg.av_interleaved_write_frame(output, raw), "Writing the MP4");
+            FfmpegException.Check(ffmpeg.av_interleaved_write_frame(output, raw), MediaStrings.WritingMp4);
         }
 
         encoded.ForEach(p => p.Dispose());
@@ -350,7 +351,7 @@ public static unsafe class Remuxer
 
             var from = input->streams[video._stream];
             var to = ffmpeg.avformat_new_stream(output, null);
-            FfmpegException.Check(ffmpeg.avcodec_parameters_copy(to->codecpar, from->codecpar), "Copying the webcam's codec settings");
+            FfmpegException.Check(ffmpeg.avcodec_parameters_copy(to->codecpar, from->codecpar), MediaStrings.CopyingWebcamCodecSettings);
             to->codecpar->codec_tag = 0;
             to->time_base = from->time_base;
             to->disposition = 0;
@@ -423,7 +424,7 @@ public static unsafe class Remuxer
                 _packet->stream_index = _to->index;
                 _packet->pos = -1;
                 end = Math.Max(end, (_packet->pts + _packet->duration) * ffmpeg.av_q2d(_to->time_base));
-                FfmpegException.Check(ffmpeg.av_interleaved_write_frame(output, _packet), "Writing the webcam's track");
+                FfmpegException.Check(ffmpeg.av_interleaved_write_frame(output, _packet), MediaStrings.WritingWebcamTrack);
             }
 
             return end;

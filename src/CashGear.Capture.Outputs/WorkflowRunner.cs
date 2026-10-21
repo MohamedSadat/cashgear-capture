@@ -1,4 +1,5 @@
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Outputs.Resources;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Outputs;
@@ -24,7 +25,7 @@ public sealed record WorkflowSummary(IReadOnlyList<StepOutcome> Steps, IReadOnly
     /// <summary>One line per step that did or tried something: "Office: uploaded", "Word: the document is open in Word".</summary>
     public IEnumerable<string> Lines => Steps
         .Where(s => !s.Result.Skipped && !DestinationIds.Same(s.Destination, DestinationIds.Editor))
-        .Select(s => s.Result.Succeeded ? s.Result.Message : $"{s.Name} failed: {s.Result.Message}");
+        .Select(s => s.Result.Succeeded ? s.Result.Message : OutputsStrings.StepFailed(s.Name, s.Result.Message));
 }
 
 /// <summary>
@@ -48,13 +49,13 @@ public sealed partial class WorkflowRunner(DestinationRegistry registry, ILogger
             var destination = registry.Find(step.Destination, settings);
             if (destination is null)
             {
-                outcomes.Add(new StepOutcome(step.Destination, step.Destination, OutputResult.Failed($"\"{step.Destination}\" isn't set up any more (Settings › Destinations).")));
+                outcomes.Add(new StepOutcome(step.Destination, step.Destination, OutputResult.Failed(OutputsStrings.DestinationGone(step.Destination))));
                 continue;
             }
 
             if (item.Kind == OutputKind.Video && !destination.SupportsVideo)
             {
-                outcomes.Add(new StepOutcome(destination.Id, destination.DisplayName, OutputResult.Skip($"{destination.DisplayName} doesn't take recordings.")));
+                outcomes.Add(new StepOutcome(destination.Id, destination.DisplayName, OutputResult.Skip(OutputsStrings.NoRecordings(destination.DisplayName))));
                 continue;
             }
 

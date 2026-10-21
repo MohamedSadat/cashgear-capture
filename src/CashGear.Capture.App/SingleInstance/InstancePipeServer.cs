@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
@@ -88,7 +89,7 @@ internal sealed partial class InstancePipeServer(
     private partial void LogReceived(InstanceCommand command);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Ignored unknown instance command {Text}")]
-    private partial void LogUnknownCommand(string text);
+    private partial void LogUnknownCommand([Localizable(false)] string text); // only logged
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Instance pipe connection failed")]
     private partial void LogConnectionFailed(Exception ex);

@@ -2,6 +2,7 @@ using System.IO;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.History;
@@ -21,13 +22,13 @@ public sealed partial class HistoryActions(
     ILogger<HistoryActions> logger)
 {
     /// <summary>Opens the capture in a new editor. If it was saved and the file is still there, Ctrl+S updates that file.</summary>
-    public Task OpenAsync(CaptureHistoryEntry entry) => RunAsync("open", entry, async () =>
+    public Task OpenAsync(CaptureHistoryEntry entry) => RunAsync("open", HistoryText.CouldNotOpen, entry, async () =>
     {
         using var image = await LoadAsync(entry).ConfigureAwait(false);
         await editor.OpenAsync(image, SavedFile(entry)).ConfigureAwait(false);
     });
 
-    public Task CopyAsync(CaptureHistoryEntry entry) => RunAsync("copy", entry, async () =>
+    public Task CopyAsync(CaptureHistoryEntry entry) => RunAsync("copy", HistoryText.CouldNotCopy, entry, async () =>
     {
         using var image = await LoadAsync(entry).ConfigureAwait(false);
         await output.CopyToClipboardAsync(image).ConfigureAwait(false);
@@ -37,7 +38,7 @@ public sealed partial class HistoryActions(
     public void ShowInFolder(CaptureHistoryEntry entry) => shell.ShowInFolder(SavedFile(entry) ?? history.ImagePath(entry));
 
     /// <summary>Writes the capture to <paramref name="path"/> in the format its extension names (PNG when unknown).</summary>
-    public Task SaveAsAsync(CaptureHistoryEntry entry, string path) => RunAsync("save", entry, async () =>
+    public Task SaveAsAsync(CaptureHistoryEntry entry, string path) => RunAsync("save", HistoryText.CouldNotSave, entry, async () =>
     {
         var format = ImageFileFormatExtensions.FromPath(path) ?? ImageFileFormat.Png;
         if (format == ImageFileFormat.Png)
@@ -50,7 +51,7 @@ public sealed partial class HistoryActions(
             await output.SaveToFileAsync(image, path, format, 90).ConfigureAwait(false);
         }
 
-        notifier.Notify("Capture saved", $"{Path.GetFileName(path)}\nin {Path.GetDirectoryName(path)}", onClick: () => shell.ShowInFolder(path));
+        notifier.Notify(HistoryText.CaptureSaved, HistoryText.SavedIn(Path.GetFileName(path), Path.GetDirectoryName(path)), onClick: () => shell.ShowInFolder(path));
     });
 
     /// <summary>The file the capture was saved to, if it still exists.</summary>
@@ -66,7 +67,9 @@ public sealed partial class HistoryActions(
             WindowTitle = entry.Title,
         }));
 
-    private async Task RunAsync(string action, CaptureHistoryEntry entry, Func<Task> work)
+    /// <param name="action">What was done, for the log ("open").</param>
+    /// <param name="failed">The message for the user, from the reason.</param>
+    private async Task RunAsync(string action, Func<object?, string> failed, CaptureHistoryEntry entry, Func<Task> work)
     {
         try
         {
@@ -76,7 +79,7 @@ public sealed partial class HistoryActions(
             or System.Runtime.InteropServices.COMException)
         {
             LogFailed(ex, action, entry.Id);
-            notifier.Notify("Capture history", $"Couldn't {action} the capture: {ex.Message}", NotificationKind.Error);
+            notifier.Notify(HistoryText.NotificationTitle, failed(ex.Message), NotificationKind.Error);
         }
     }
 

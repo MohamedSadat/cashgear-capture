@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -40,6 +41,10 @@ internal enum DialogKind
 /// </summary>
 internal static class AppDialog
 {
+    /// <summary>The icons' font.</summary>
+    [Localizable(false)] // a font's name
+    private static readonly FontFamily SymbolFont = new("Segoe MDL2 Assets");
+
     /// <summary>Shows the dialog and waits for an answer. UI (STA) thread.</summary>
     public static DialogAnswer Show(
         Window? owner,
@@ -136,7 +141,7 @@ internal static class AppDialog
                 DialogKind.Question => "",
                 _ => "",
             },
-            FontFamily = new FontFamily("Segoe MDL2 Assets"),
+            FontFamily = SymbolFont,
             FontSize = 28,
             Margin = new Thickness(0, 0, 14, 0),
             VerticalAlignment = VerticalAlignment.Top,

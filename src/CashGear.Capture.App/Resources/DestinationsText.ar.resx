@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NewFileEachCaptureFormat" xml:space="preserve">
+    <value>ملف {0} جديد في مجلد اللقطات لكل لقطة</value>
+  </data>
+  <data name="MillimetresFormat" xml:space="preserve">
+    <value>{0} مم</value>
+  </data>
+  <data name="TestTip" xml:space="preserve">
+    <value>التحقق من الإعداد كما هو في هذه النافذة (لا يُطبع شيء ولا يُفتح ولا يبقى شيء بعده)</value>
+  </data>
+  <data name="AppendToFile" xml:space="preserve">
+    <value>إضافتها إلى نهاية هذا الملف:</value>
+  </data>
+  <data name="AppendFileName" xml:space="preserve">
+    <value>الملف الذي تُضاف إليه اللقطات</value>
+  </data>
+  <data name="DestinationsTab" xml:space="preserve">
+    <value>الوجهات</value>
+  </data>
+  <data name="Intro" xml:space="preserve">
+    <value>الأماكن التي يمكن أن يرسل إليها سير العمل (علامة التبويب «الإخراج») والأمر «إرسال إلى» في المحرر اللقطات. تُحفظ كلمات المرور والرموز المميزة مشفّرة لحساب Windows الخاص بك (DPAPI)، ولا تُحفظ أبدًا في settings.json.</value>
+  </data>
+  <data name="Printer" xml:space="preserve">
+    <value>الطابعة</value>
+  </data>
+  <data name="SizeOnPage" xml:space="preserve">
+    <value>الحجم على الصفحة</value>
+  </data>
+  <data name="Orientation" xml:space="preserve">
+    <value>الاتجاه</value>
+  </data>
+  <data name="Margins" xml:space="preserve">
+    <value>الهوامش</value>
+  </data>
+  <data name="MarginsInMillimetres" xml:space="preserve">
+    <value>الهوامش بالمليمتر</value>
+  </data>
+  <data name="ShowPrintDialog" xml:space="preserve">
+    <value>إظهار مربع حوار الطباعة في كل مرة (الطابعة، النسخ، الاتجاه)</value>
+  </data>
+  <data name="WordSection" xml:space="preserve">
+    <value>Word</value>
+  </data>
+  <data name="PowerPointSection" xml:space="preserve">
+    <value>PowerPoint</value>
+  </data>
+  <data name="PdfSection" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+  <data name="PdfHint" xml:space="preserve">
+    <value>تصبح كل لقطة ملف PDF من صفحة واحدة في مجلد اللقطات، يحمل اسم اللقطة. لوضع عدة صور في ملف PDF واحد، استخدم «الصور إلى PDF» (قائمة منطقة الإعلامات › الأدوات).</value>
+  </data>
+  <data name="Paper" xml:space="preserve">
+    <value>الورق</value>
+  </data>
+  <data name="SizeOnPdfPage" xml:space="preserve">
+    <value>الحجم على صفحة PDF</value>
+  </data>
+  <data name="PdfOrientation" xml:space="preserve">
+    <value>اتجاه PDF</value>
+  </data>
+  <data name="PdfMarginsInMillimetres" xml:space="preserve">
+    <value>هوامش PDF بالمليمتر</value>
+  </data>
+  <data name="ServersSection" xml:space="preserve">
+    <value>خوادم FTP وFTPS وSFTP</value>
+  </data>
+  <data name="Servers" xml:space="preserve">
+    <value>الخوادم</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="ServerName" xml:space="preserve">
+    <value>اسم الخادم</value>
+  </data>
+  <data name="Protocol" xml:space="preserve">
+    <value>البروتوكول</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>الخادم</value>
+  </data>
+  <data name="ServerAddress" xml:space="preserve">
+    <value>عنوان الخادم</value>
+  </data>
+  <data name="ServerAddressExample" xml:space="preserve">
+    <value>ftp.example.com</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>المنفذ</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>اسم المستخدم</value>
+  </data>
+  <data name="UserNameTip" xml:space="preserve">
+    <value>عند تركه فارغًا يُسجَّل الدخول كمستخدم مجهول (FTP)</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>كلمة المرور</value>
+  </data>
+  <data name="Forget" xml:space="preserve">
+    <value>نسيان</value>
+  </data>
+  <data name="KeyFile" xml:space="preserve">
+    <value>ملف المفتاح</value>
+  </data>
+  <data name="PrivateKeyFile" xml:space="preserve">
+    <value>ملف المفتاح الخاص</value>
+  </data>
+  <data name="KeyFileTip" xml:space="preserve">
+    <value>مفتاح خاص (OpenSSH أو PEM) لتسجيل الدخول به بدلًا من كلمة المرور</value>
+  </data>
+  <data name="KeyPassphrase" xml:space="preserve">
+    <value>عبارة مرور المفتاح</value>
+  </data>
+  <data name="ServerFolder" xml:space="preserve">
+    <value>المجلد</value>
+  </data>
+  <data name="FolderOnServer" xml:space="preserve">
+    <value>المجلد على الخادم</value>
+  </data>
+  <data name="ServerFolderTip" xml:space="preserve">
+    <value>اتركه فارغًا للمجلد الذي تسجّل الدخول إليه، أو اكتب ‎/path من جذر الخادم، ويُنشأ المجلد إن لم يكن موجودًا</value>
+  </data>
+  <data name="PublicAddress" xml:space="preserve">
+    <value>العنوان العام</value>
+  </data>
+  <data name="PublicAddressTip" xml:space="preserve">
+    <value>العنوان الذي تُشاهَد فيه الملفات المرفوعة على الويب، مع {{file}} مكان اسم الملف، مثل https://example.com/shots/{{file}}. عند تركه فارغًا: لا رابط.</value>
+  </data>
+  <data name="PassiveMode" xml:space="preserve">
+    <value>الوضع السلبي (يعمل عبر جدران الحماية وأجهزة التوجيه)</value>
+  </data>
+  <data name="Trusted" xml:space="preserve">
+    <value>موثوق:</value>
+  </data>
+  <data name="TrustIt" xml:space="preserve">
+    <value>الوثوق به</value>
+  </data>
+  <data name="TrustItTip" xml:space="preserve">
+    <value>فقط إذا أخبرك مالك الخادم أن هذه البصمة له</value>
+  </data>
+  <data name="UploadsSection" xml:space="preserve">
+    <value>الرفع عبر HTTP</value>
+  </data>
+  <data name="UploadName" xml:space="preserve">
+    <value>اسم وجهة الرفع</value>
+  </data>
+  <data name="Address" xml:space="preserve">
+    <value>العنوان</value>
+  </data>
+  <data name="UploadAddress" xml:space="preserve">
+    <value>عنوان الرفع</value>
+  </data>
+  <data name="UploadAddressTip" xml:space="preserve">
+    <value>https://example.com/api/upload: تُرسَل اللقطة إلى هنا كنموذج (multipart/form-data)</value>
+  </data>
+  <data name="FileField" xml:space="preserve">
+    <value>حقل الملف</value>
+  </data>
+  <data name="FormFields" xml:space="preserve">
+    <value>حقول النموذج</value>
+  </data>
+  <data name="FormFieldsTip" xml:space="preserve">
+    <value>حقل في كل سطر: name=value</value>
+  </data>
+  <data name="Headers" xml:space="preserve">
+    <value>الرؤوس</value>
+  </data>
+  <data name="HeadersTip" xml:space="preserve">
+    <value>رأس في كل سطر: Name: value (غير سري؛ ضع المفتاح أو الرمز المميز أدناه)</value>
+  </data>
+  <data name="SecretHeader" xml:space="preserve">
+    <value>الرأس السري</value>
+  </data>
+  <data name="SecretHeaderName" xml:space="preserve">
+    <value>اسم الرأس السري</value>
+  </data>
+  <data name="SecretHeaderTip" xml:space="preserve">
+    <value>عادةً Authorization، واتركه فارغًا إن لم يوجد</value>
+  </data>
+  <data name="SecretValue" xml:space="preserve">
+    <value>قيمته</value>
+  </data>
+  <data name="SecretHeaderValue" xml:space="preserve">
+    <value>قيمة الرأس السري</value>
+  </data>
+  <data name="SecretValueTip" xml:space="preserve">
+    <value>مثل Bearer abc123 أو Client-ID abc123</value>
+  </data>
+  <data name="LinkInReply" xml:space="preserve">
+    <value>الرابط في الرد</value>
+  </data>
+  <data name="LinkInReplyName" xml:space="preserve">
+    <value>موضع الرابط في الرد</value>
+  </data>
+  <data name="LinkInReplyTip" xml:space="preserve">
+    <value>موضع الرابط في رد JSON، مثل data.link أو files[0].url. اتركه فارغًا إذا كان الرد كله هو الرابط.</value>
+  </data>
+  <data name="UploadTestHint" xml:space="preserve">
+    <value>يرفع الاختبار صورة بحجم 1 × 1 اسمها cashgear-test.png.</value>
+  </data>
+  <data name="AppsSection" xml:space="preserve">
+    <value>الفتح بتطبيق آخر</value>
+  </data>
+  <data name="Apps" xml:space="preserve">
+    <value>التطبيقات</value>
+  </data>
+  <data name="AppName" xml:space="preserve">
+    <value>اسم التطبيق</value>
+  </data>
+  <data name="Program" xml:space="preserve">
+    <value>البرنامج</value>
+  </data>
+  <data name="CommandLine" xml:space="preserve">
+    <value>سطر الأوامر</value>
+  </data>
+  <data name="CommandLineTip" xml:space="preserve">
+    <value>{{file}} هو ملف اللقطة (بين علامتي اقتباس افتراضيًا)، و{{folder}} مجلده</value>
+  </data>
+  <data name="PasswordsNotSaved" xml:space="preserve">
+    <value>تعذّر حفظ كلمات المرور: {0}</value>
+  </data>
+  <data name="CantTestHere" xml:space="preserve">
+    <value>لا يمكن اختبار هذا هنا.</value>
+  </data>
+  <data name="OpenInEditor" xml:space="preserve">
+    <value>فتح في المحرر</value>
+  </data>
+  <data name="OpenInVideoEditor" xml:space="preserve">
+    <value>فتح في محرر الفيديو</value>
+  </data>
+  <data name="MakeGif" xml:space="preserve">
+    <value>إنشاء GIF</value>
+  </data>
+  <data name="SaveToFile" xml:space="preserve">
+    <value>حفظ في ملف</value>
+  </data>
+  <data name="CopyToClipboard" xml:space="preserve">
+    <value>نسخ إلى الحافظة</value>
+  </data>
+  <data name="Print" xml:space="preserve">
+    <value>طباعة</value>
+  </data>
+  <data name="WordDocument" xml:space="preserve">
+    <value>مستند Word</value>
+  </data>
+  <data name="PowerPointSlide" xml:space="preserve">
+    <value>شريحة PowerPoint</value>
+  </data>
+  <data name="CopyLink" xml:space="preserve">
+    <value>نسخ الرابط</value>
+  </data>
+  <data name="PrintFitToPage" xml:space="preserve">
+    <value>أكبر حجم يتسع (الصورة كاملة)</value>
+  </data>
+  <data name="PrintFillPage" xml:space="preserve">
+    <value>ملء الصفحة (قد تُقصّ الحواف)</value>
+  </data>
+  <data name="PrintActualSize" xml:space="preserve">
+    <value>بالحجم الظاهر على الشاشة</value>
+  </data>
+  <data name="OrientationAuto" xml:space="preserve">
+    <value>أفقي للقطات العريضة، وإلا فعمودي</value>
+  </data>
+  <data name="OrientationPortrait" xml:space="preserve">
+    <value>عمودي</value>
+  </data>
+  <data name="OrientationLandscape" xml:space="preserve">
+    <value>أفقي</value>
+  </data>
+  <data name="PaperAuto" xml:space="preserve">
+    <value>A4 أو Letter (حسب المستخدم هنا)</value>
+  </data>
+  <data name="PaperPicture" xml:space="preserve">
+    <value>بحجم اللقطة</value>
+  </data>
+  <data name="ProtocolFtpLabel" xml:space="preserve">
+    <value>FTP (غير مشفّر)</value>
+  </data>
+  <data name="ProtocolFtpsExplicitLabel" xml:space="preserve">
+    <value>FTPS (FTP مع TLS، المنفذ 21)</value>
+  </data>
+  <data name="ProtocolFtpsImplicitLabel" xml:space="preserve">
+    <value>FTPS، مع TLS ضمني (المنفذ 990)</value>
+  </data>
+  <data name="ProtocolSftpLabel" xml:space="preserve">
+    <value>SFTP (عبر SSH، المنفذ 22)</value>
+  </data>
+  <data name="NotSetUp" xml:space="preserve">
+    <value>{0} (غير مُعَدّ)</value>
+  </data>
+  <data name="Testing" xml:space="preserve">
+    <value>جارٍ الاختبار…</value>
+  </data>
+  <data name="DefaultPrinter" xml:space="preserve">
+    <value>طابعة Windows الافتراضية</value>
+  </data>
+  <data name="PrinterNotInstalled" xml:space="preserve">
+    <value>{0} (غير مثبّتة)</value>
+  </data>
+  <data name="ChooseOfficeFile" xml:space="preserve">
+    <value>اختر ملف {0} الذي تُضاف إليه اللقطات</value>
+  </data>
+  <data name="WordFilter" xml:space="preserve">
+    <value>مستندات Word|*.docx</value>
+  </data>
+  <data name="PowerPointFilter" xml:space="preserve">
+    <value>عروض PowerPoint التقديمية|*.pptx</value>
+  </data>
+  <data name="NewServer" xml:space="preserve">
+    <value>خادم جديد</value>
+  </data>
+  <data name="ProtocolFtp" xml:space="preserve">
+    <value>FTP</value>
+  </data>
+  <data name="ProtocolFtps" xml:space="preserve">
+    <value>FTPS</value>
+  </data>
+  <data name="ProtocolFtpsImplicit" xml:space="preserve">
+    <value>FTPS، ضمني</value>
+  </data>
+  <data name="ProtocolSftp" xml:space="preserve">
+    <value>SFTP</value>
+  </data>
+  <data name="PortEmptyFor" xml:space="preserve">
+    <value>اتركه فارغًا لاستخدام {0}</value>
+  </data>
+  <data name="NoPasswordSaved" xml:space="preserve">
+    <value>لا توجد كلمة مرور محفوظة</value>
+  </data>
+  <data name="PasswordSaved" xml:space="preserve">
+    <value>توجد كلمة مرور محفوظة (اكتب لتغييرها)</value>
+  </data>
+  <data name="NoPassphraseSaved" xml:space="preserve">
+    <value>لا توجد عبارة مرور محفوظة</value>
+  </data>
+  <data name="PassphraseSaved" xml:space="preserve">
+    <value>توجد عبارة مرور محفوظة</value>
+  </data>
+  <data name="ChoosePrivateKey" xml:space="preserve">
+    <value>اختر المفتاح الخاص</value>
+  </data>
+  <data name="PrivateKeyFilter" xml:space="preserve">
+    <value>المفاتيح الخاصة|*.*</value>
+  </data>
+  <data name="ServerNoAddress" xml:space="preserve">
+    <value>{0}: أدخل عنوان الخادم.</value>
+  </data>
+  <data name="ServerBadPort" xml:space="preserve">
+    <value>{0}: المنفذ رقم من 1 إلى 65535 (أو فارغ).</value>
+  </data>
+  <data name="ServerBadPublicUrl" xml:space="preserve">
+    <value>{0}: يبدأ العنوان العام بـ https:// (أو يكون فارغًا).</value>
+  </data>
+  <data name="NewUpload" xml:space="preserve">
+    <value>وجهة رفع جديدة</value>
+  </data>
+  <data name="NoValueSaved" xml:space="preserve">
+    <value>لا توجد قيمة محفوظة</value>
+  </data>
+  <data name="ValueSaved" xml:space="preserve">
+    <value>توجد قيمة محفوظة (اكتب لتغييرها)</value>
+  </data>
+  <data name="UploadBadUrl" xml:space="preserve">
+    <value>{0}: يبدأ العنوان بـ https:// (أو http://).</value>
+  </data>
+  <data name="UploadBadLinkPath" xml:space="preserve">
+    <value>{0}: موضع الرابط: {1}</value>
+  </data>
+  <data name="UploadBadHeader" xml:space="preserve">
+    <value>{0}: اكتب كل رأس بالشكل Name: value («{1}»).</value>
+  </data>
+  <data name="UploadBadField" xml:space="preserve">
+    <value>{0}: اكتب كل حقل نموذج بالشكل name=value («{1}»).</value>
+  </data>
+  <data name="NewApp" xml:space="preserve">
+    <value>تطبيق جديد</value>
+  </data>
+  <data name="ChooseProgram" xml:space="preserve">
+    <value>اختر البرنامج</value>
+  </data>
+  <data name="ProgramFilter" xml:space="preserve">
+    <value>البرامج|*.exe</value>
+  </data>
+  <data name="AppNoProgram" xml:space="preserve">
+    <value>{0}: اختر البرنامج.</value>
+  </data>
+  <data name="PaperLetter" xml:space="preserve">
+    <value>Letter</value>
+  </data>
+  <data name="PaperLegal" xml:space="preserve">
+    <value>Legal</value>
+  </data>
+</root>

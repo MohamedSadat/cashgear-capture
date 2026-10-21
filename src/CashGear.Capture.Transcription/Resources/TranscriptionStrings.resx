@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ModelBase" xml:space="preserve">
+    <value>Base</value>
+    <comment>a Whisper speech model's size</comment>
+  </data>
+  <data name="ModelSmall" xml:space="preserve">
+    <value>Small</value>
+    <comment>a Whisper speech model's size</comment>
+  </data>
+  <data name="ModelMedium" xml:space="preserve">
+    <value>Medium</value>
+    <comment>a Whisper speech model's size</comment>
+  </data>
+  <data name="AboutBase" xml:space="preserve">
+    <value>fast; good for clear English</value>
+    <comment>after the model's name</comment>
+  </data>
+  <data name="AboutSmall" xml:space="preserve">
+    <value>better; the least for Arabic</value>
+    <comment>after the model's name</comment>
+  </data>
+  <data name="AboutMedium" xml:space="preserve">
+    <value>best; slow without a graphics card</value>
+    <comment>after the model's name</comment>
+  </data>
+  <data name="SizeInMegabytes" xml:space="preserve">
+    <value>{0} MB</value>
+    <comment>a model's download size</comment>
+  </data>
+  <data name="ModelDamaged" xml:space="preserve">
+    <value>The download of the {0} model is damaged (its checksum doesn't match). Try again.</value>
+    <comment>{0}: the model's name</comment>
+  </data>
+</root>

@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.Editor"
         xmlns:tools="clr-namespace:CashGear.Capture.Editor.Interaction;assembly=CashGear.Capture.Editor"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:EditorViewModel}"
         Title="{Binding Title}"
@@ -63,146 +64,146 @@
     <!-- ============================== Toolbar ============================== -->
     <Border DockPanel.Dock="Top" Padding="8,6" BorderThickness="0,0,0,1" BorderBrush="#40808080">
       <WrapPanel>
-        <local:ToolButton ToolTip="Select and move (V)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolSelectTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Select}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Fill="{Binding Stroke, RelativeSource={RelativeSource Self}}" StrokeThickness="0.8"
                   Data="M6,2 L6,16 L9.5,12.8 L12,18 L14,17 L11.6,11.9 L16,11.6 Z" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Select" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolSelect}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Arrow (A)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolArrowTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Arrow}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M4,16 L15,5 M8.5,4.5 L15.5,4.5 L15.5,11.5" StrokeThickness="2" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Arrow" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolArrow}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Line (L)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolLineTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Line}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M4,16 L16,4" StrokeThickness="2" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Line" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolLine}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Rectangle (R)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolRectangleTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Rectangle}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M3,5 H17 V15 H3 Z" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Rectangle" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolRectangle}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Ellipse (E)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolEllipseTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Ellipse}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M2,10 A8,6 0 1 1 18,10 A8,6 0 1 1 2,10 Z" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Ellipse" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolEllipse}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Pen (D)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolPenTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Freehand}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M3,15 C5,5 8,4 10,10 S15,16 17,5" StrokeThickness="1.8" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Pen" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolPen}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Highlighter (H)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolHighlightTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Highlight}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M7,12 L13,3 L17,6 L11,15 Z M7,12 L5,16 L9,16 L11,15 M3,18 H17" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Highlight" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolHighlight}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Text (T)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolTextTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Text}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M4,5 V3.5 H16 V5 M10,3.5 V16.5 M7.5,16.5 H12.5" StrokeThickness="1.8" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Text" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolText}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Step number (N)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolStepTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.StepNumber}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M10,2 A8,8 0 1 1 9.99,2 Z M8.5,7.5 L10.5,6 V14" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Step" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolStep}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Blur (B)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolBlurTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Blur}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M10,2.5 C10,2.5 4.5,9 4.5,12.5 A5.5,5.5 0 0 0 15.5,12.5 C15.5,9 10,2.5 10,2.5 Z" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Blur" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolBlur}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Pixelate (X)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolPixelateTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Pixelate}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Fill="{Binding Stroke, RelativeSource={RelativeSource Self}}" StrokeThickness="0"
                   Data="M3,3 H8 V8 H3 Z M12,3 H17 V8 H12 Z M8,8 H12 V12 H8 Z M3,12 H8 V17 H3 Z M12,12 H17 V17 H12 Z" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Pixelate" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolPixelate}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Crop (C)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolCropTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Crop}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M6,2 V14 H18 M2,6 H14 V18" StrokeThickness="1.8" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Crop" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolCrop}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Select an area for effects (M)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolAreaTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Area}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M3,3 H7 M10,3 H13 M16,3 H17 V7 M17,10 V13 M17,16 V17 H13 M10,17 H7 M4,17 H3 V13 M3,10 V7 M3,4 V3" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Area" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolArea}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Spotlight (O)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolSpotlightTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Spotlight}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Fill="#60808080" Data="M1,1 H19 V19 H1 Z M6,6 V14 H14 V6 Z" StrokeThickness="0.8" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Spotlight" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolSpotlight}" />
           </StackPanel>
         </local:ToolButton>
-        <local:ToolButton ToolTip="Magnify (G)"
+        <local:ToolButton ToolTip="{x:Static r:EditorText.ToolMagnifyTip}"
                      IsChecked="{Binding Tool, Converter={StaticResource ToolIs}, ConverterParameter={x:Static tools:EditorTool.Magnify}}">
           <StackPanel>
             <Path Style="{StaticResource ToolIcon}" Data="M2,14 A2.5,2.5 0 1 1 7,14 A2.5,2.5 0 1 1 2,14 Z M6.5,12 L9.5,9.5 M9,7 A5,5 0 1 1 19,7 A5,5 0 1 1 9,7 Z" />
-            <TextBlock Style="{StaticResource ToolLabel}" Text="Magnify" />
+            <TextBlock Style="{StaticResource ToolLabel}" Text="{x:Static r:EditorText.ToolMagnify}" />
           </StackPanel>
         </local:ToolButton>
 
         <Rectangle Width="1" Margin="8,4" Fill="#40808080" />
 
-        <Button Content="Undo" Command="{Binding UndoCommand}" ToolTip="{Binding UndoTip}" Margin="0,0,4,0" Focusable="False" VerticalAlignment="Center" />
-        <Button Content="Redo" Command="{Binding RedoCommand}" ToolTip="{Binding RedoTip}" Margin="0,0,4,0" Focusable="False" VerticalAlignment="Center" />
+        <Button Content="{x:Static r:CommonText.Undo}" Command="{Binding UndoCommand}" ToolTip="{Binding UndoTip}" Margin="0,0,4,0" Focusable="False" VerticalAlignment="Center" />
+        <Button Content="{x:Static r:CommonText.Redo}" Command="{Binding RedoCommand}" ToolTip="{Binding RedoTip}" Margin="0,0,4,0" Focusable="False" VerticalAlignment="Center" />
         <Menu VerticalAlignment="Center" Margin="0,0,4,0" Background="Transparent">
-          <MenuItem Header="Image ▾">
-            <MenuItem Header="Rotate left" Command="{Binding RotateLeftCommand}" />
-            <MenuItem Header="Rotate right" Command="{Binding RotateRightCommand}" />
-            <MenuItem Header="Rotate by an angle…" Command="{Binding RotateByCommand}" />
-            <MenuItem Header="Flip horizontally" Command="{Binding FlipHorizontalCommand}" />
-            <MenuItem Header="Flip vertically" Command="{Binding FlipVerticalCommand}" />
+          <MenuItem Header="{x:Static r:EditorText.ImageMenu}">
+            <MenuItem Header="{x:Static r:EditorText.RotateLeft}" Command="{Binding RotateLeftCommand}" />
+            <MenuItem Header="{x:Static r:EditorText.RotateRight}" Command="{Binding RotateRightCommand}" />
+            <MenuItem Header="{x:Static r:EditorText.RotateByAngle}" Command="{Binding RotateByCommand}" />
+            <MenuItem Header="{x:Static r:EditorText.FlipHorizontally}" Command="{Binding FlipHorizontalCommand}" />
+            <MenuItem Header="{x:Static r:EditorText.FlipVertically}" Command="{Binding FlipVerticalCommand}" />
             <Separator />
-            <MenuItem Header="Resize…" Command="{Binding ResizeImageCommand}" />
-            <MenuItem Header="Canvas size…" Command="{Binding CanvasSizeCommand}" />
-            <MenuItem Header="Trim plain borders" Command="{Binding AutoTrimCommand}" />
+            <MenuItem Header="{x:Static r:EditorText.ResizeMenu}" Command="{Binding ResizeImageCommand}" />
+            <MenuItem Header="{x:Static r:EditorText.CanvasSizeMenu}" Command="{Binding CanvasSizeCommand}" />
+            <MenuItem Header="{x:Static r:EditorText.TrimPlainBorders}" Command="{Binding AutoTrimCommand}" />
           </MenuItem>
-          <MenuItem Header="Effects ▾" SubmenuOpened="OnEffectsOpened" AutomationProperties.Name="Effects"
-                    ToolTip="Effects change the whole image, or the area selected with the Area tool">
-            <MenuItem Header="Drop shadow…" Command="{Binding OpenEffectsCommand}" CommandParameter="shadow" />
-            <MenuItem Header="Torn edge…" Command="{Binding OpenEffectsCommand}" CommandParameter="tornEdge" />
-            <MenuItem Header="Faded edges…" Command="{Binding OpenEffectsCommand}" CommandParameter="fadeEdge" />
-            <MenuItem Header="Border…" Command="{Binding OpenEffectsCommand}" CommandParameter="border" />
-            <MenuItem Header="Rounded corners…" Command="{Binding OpenEffectsCommand}" CommandParameter="roundedCorners" />
-            <MenuItem Header="Perspective…" Command="{Binding OpenEffectsCommand}" CommandParameter="perspective" />
+          <MenuItem Header="{x:Static r:EditorText.EffectsMenu}" SubmenuOpened="OnEffectsOpened" AutomationProperties.Name="{x:Static r:EditorText.Effects}"
+                    ToolTip="{x:Static r:EditorText.EffectsMenuTip}">
+            <MenuItem Header="{x:Static r:EditorText.DropShadowMenu}" Command="{Binding OpenEffectsCommand}" CommandParameter="shadow" />
+            <MenuItem Header="{x:Static r:EditorText.TornEdgeMenu}" Command="{Binding OpenEffectsCommand}" CommandParameter="tornEdge" />
+            <MenuItem Header="{x:Static r:EditorText.FadedEdgesMenu}" Command="{Binding OpenEffectsCommand}" CommandParameter="fadeEdge" />
+            <MenuItem Header="{x:Static r:EditorText.BorderMenu}" Command="{Binding OpenEffectsCommand}" CommandParameter="border" />
+            <MenuItem Header="{x:Static r:EditorText.RoundedCornersMenu}" Command="{Binding OpenEffectsCommand}" CommandParameter="roundedCorners" />
+            <MenuItem Header="{x:Static r:EditorText.PerspectiveMenu}" Command="{Binding OpenEffectsCommand}" CommandParameter="perspective" />
             <Separator />
-            <MenuItem Header="Brightness and contrast…" Command="{Binding OpenEffectsCommand}" CommandParameter="adjust" />
-            <MenuItem Header="Grayscale" Command="{Binding GrayscaleCommand}" />
-            <MenuItem Header="Sharpen…" Command="{Binding OpenEffectsCommand}" CommandParameter="sharpen" />
+            <MenuItem Header="{x:Static r:EditorText.BrightnessContrastMenu}" Command="{Binding OpenEffectsCommand}" CommandParameter="adjust" />
+            <MenuItem Header="{x:Static r:EditorText.Grayscale}" Command="{Binding GrayscaleCommand}" />
+            <MenuItem Header="{x:Static r:EditorText.SharpenMenu}" Command="{Binding OpenEffectsCommand}" CommandParameter="sharpen" />
             <Separator />
-            <MenuItem Header="Watermark…" Command="{Binding OpenEffectsCommand}" CommandParameter="watermark" />
+            <MenuItem Header="{x:Static r:EditorText.WatermarkMenu}" Command="{Binding OpenEffectsCommand}" CommandParameter="watermark" />
             <Separator />
-            <MenuItem Header="Presets" ItemsSource="{Binding EffectPresets}" Visibility="{Binding HasPresets, Converter={StaticResource Visible}}">
+            <MenuItem Header="{x:Static r:EditorText.Presets}" ItemsSource="{Binding EffectPresets}" Visibility="{Binding HasPresets, Converter={StaticResource Visible}}">
               <MenuItem.ItemContainerStyle>
                 <Style TargetType="MenuItem">
                   <Setter Property="Header" Value="{Binding Name}" />
@@ -210,18 +211,18 @@
                 </Style>
               </MenuItem.ItemContainerStyle>
             </MenuItem>
-            <MenuItem Header="Effects and presets…" Command="{Binding OpenEffectsCommand}" />
+            <MenuItem Header="{x:Static r:EditorText.EffectsAndPresets}" Command="{Binding OpenEffectsCommand}" />
           </MenuItem>
         </Menu>
 
         <Rectangle Width="1" Margin="8,4" Fill="#40808080" />
 
-        <Button Content="Copy" Command="{Binding CopyCommand}" ToolTip="Copy the image with its annotations (Ctrl+C)" Margin="0,0,4,0" Focusable="False" VerticalAlignment="Center" />
-        <Button Content="Save" Command="{Binding SaveCommand}" ToolTip="Save (Ctrl+S)" Margin="0,0,4,0" Focusable="False" VerticalAlignment="Center" />
-        <Button Content="Save as…" Command="{Binding SaveAsCommand}" ToolTip="Save as (Ctrl+Shift+S)" Focusable="False" VerticalAlignment="Center" />
+        <Button Content="{x:Static r:CommonText.Copy}" Command="{Binding CopyCommand}" ToolTip="{x:Static r:EditorText.CopyTip}" Margin="0,0,4,0" Focusable="False" VerticalAlignment="Center" />
+        <Button Content="{x:Static r:CommonText.Save}" Command="{Binding SaveCommand}" ToolTip="{x:Static r:EditorText.SaveTip}" Margin="0,0,4,0" Focusable="False" VerticalAlignment="Center" />
+        <Button Content="{x:Static r:EditorText.SaveAs}" Command="{Binding SaveAsCommand}" ToolTip="{x:Static r:EditorText.SaveAsTip}" Focusable="False" VerticalAlignment="Center" />
         <Menu VerticalAlignment="Center" Margin="4,0,0,0" Background="Transparent" Visibility="{Binding CanSend, Converter={StaticResource Visible}}">
-          <MenuItem Header="Send to ▾" ItemsSource="{Binding SendTargets}" SubmenuOpened="OnSendToOpened"
-                    ToolTip="Send the image with its annotations to a printer, Word, a server, an app…" AutomationProperties.Name="Send to">
+          <MenuItem Header="{x:Static r:EditorText.SendToMenu}" ItemsSource="{Binding SendTargets}" SubmenuOpened="OnSendToOpened"
+                    ToolTip="{x:Static r:EditorText.SendToTip}" AutomationProperties.Name="{x:Static r:EditorText.SendTo}">
             <MenuItem.ItemContainerStyle>
               <Style TargetType="MenuItem">
                 <Setter Property="Header" Value="{Binding Name}" />
@@ -231,7 +232,7 @@
           </MenuItem>
         </Menu>
         <Button Content="{Binding ContinueText}" Command="{Binding ContinueCommand}" Visibility="{Binding HasPending, Converter={StaticResource Visible}}"
-                ToolTip="The rest of the after-capture workflow, with the image as it is now" FontWeight="SemiBold"
+                ToolTip="{x:Static r:EditorText.ContinueTip}" FontWeight="SemiBold"
                 Margin="8,0,0,0" Padding="8,2" Focusable="False" VerticalAlignment="Center" />
       </WrapPanel>
     </Border>
@@ -242,11 +243,11 @@
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
           <TextBlock Text="{Binding PointerText}" VerticalAlignment="Center" MinWidth="90" Opacity="0.75" />
           <TextBlock Text="{Binding ImageSizeText}" VerticalAlignment="Center" Margin="0,0,16,0" Opacity="0.75" />
-          <Button Content="−" Command="{Binding ZoomOutCommand}" ToolTip="Zoom out (Ctrl+−)" MinWidth="32" Padding="4,2" Focusable="False" />
+          <Button Content="−" Command="{Binding ZoomOutCommand}" ToolTip="{x:Static r:EditorText.ZoomOutTip}" MinWidth="32" Padding="4,2" Focusable="False" />
           <TextBlock Text="{Binding ZoomText}" VerticalAlignment="Center" MinWidth="52" TextAlignment="Center" />
-          <Button Content="+" Command="{Binding ZoomInCommand}" ToolTip="Zoom in (Ctrl++)" MinWidth="32" Padding="4,2" Focusable="False" />
-          <Button Content="Fit" Command="{Binding ZoomFitCommand}" ToolTip="Fit in the window (Ctrl+0)" Margin="6,0,0,0" Padding="8,2" Focusable="False" />
-          <Button Content="100%" Command="{Binding ZoomActualCommand}" ToolTip="Actual size (Ctrl+1)" Margin="4,0,0,0" Padding="8,2" Focusable="False" />
+          <Button Content="+" Command="{Binding ZoomInCommand}" ToolTip="{x:Static r:EditorText.ZoomInTip}" MinWidth="32" Padding="4,2" Focusable="False" />
+          <Button Content="{x:Static r:EditorText.Fit}" Command="{Binding ZoomFitCommand}" ToolTip="{x:Static r:EditorText.FitTip}" Margin="6,0,0,0" Padding="8,2" Focusable="False" />
+          <Button Content="100%" Command="{Binding ZoomActualCommand}" ToolTip="{x:Static r:EditorText.ActualSizeTip}" Margin="4,0,0,0" Padding="8,2" Focusable="False" />
         </StackPanel>
         <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
           <Run Text="{Binding Message, Mode=OneWay}" FontWeight="SemiBold" />
@@ -262,7 +263,7 @@
           <TextBlock Text="{Binding PanelTitle}" FontSize="15" FontWeight="SemiBold" Margin="0,10,0,0" />
 
           <StackPanel Visibility="{Binding ShowColor, Converter={StaticResource Visible}}">
-            <TextBlock Style="{StaticResource Section}" Text="Colour" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:EditorText.Colour}" />
             <ItemsControl ItemsSource="{Binding Palette}" Focusable="False">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -280,16 +281,16 @@
             </ItemsControl>
             <DockPanel Margin="0,4,0,0">
               <Border DockPanel.Dock="Left" Width="28" Height="28" CornerRadius="4" Background="{Binding ColorBrush}" BorderBrush="#80808080" BorderThickness="1" Margin="0,0,8,0" />
-              <TextBox Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Colour (hex)" />
+              <TextBox Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:EditorText.ColourHex}" />
             </DockPanel>
           </StackPanel>
 
           <StackPanel Visibility="{Binding ShowFill, Converter={StaticResource Visible}}">
-            <TextBlock Style="{StaticResource Section}" Text="Fill" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:EditorText.Fill}" />
             <WrapPanel>
-              <Button Content="None" Command="{Binding SetFillCommand}" CommandParameter="{x:Null}" Padding="6,1" MinHeight="0" Margin="0,0,4,4" Focusable="False" />
+              <Button Content="{x:Static r:CommonText.None}" Command="{Binding SetFillCommand}" CommandParameter="{x:Null}" Padding="6,1" MinHeight="0" Margin="0,0,4,4" Focusable="False" />
               <Border Width="22" Height="22" CornerRadius="3" Margin="0,0,4,4" Background="{Binding FillBrush}" BorderBrush="#80808080" BorderThickness="1"
-                      Visibility="{Binding FillBrush, Converter={StaticResource VisibleIfSet}}" ToolTip="Current fill" />
+                      Visibility="{Binding FillBrush, Converter={StaticResource VisibleIfSet}}" ToolTip="{x:Static r:EditorText.CurrentFill}" />
             </WrapPanel>
             <ItemsControl ItemsSource="{Binding Palette}" Focusable="False">
               <ItemsControl.ItemsPanel>
@@ -310,15 +311,15 @@
 
           <StackPanel Visibility="{Binding ShowStrokeWidth, Converter={StaticResource Visible}}">
             <TextBlock Style="{StaticResource Section}">
-              <Run Text="Line width:" />
+              <Run Text="{x:Static r:EditorText.LineWidthLabel}" />
               <Run Text="{Binding StrokeWidth, Mode=OneWay}" />
             </TextBlock>
-            <Slider Minimum="1" Maximum="40" Value="{Binding StrokeWidth}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="Line width" />
+            <Slider Minimum="1" Maximum="40" Value="{Binding StrokeWidth}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="{x:Static r:EditorText.LineWidth}" />
           </StackPanel>
 
           <StackPanel Visibility="{Binding ShowFont, Converter={StaticResource Visible}}">
-            <TextBlock Style="{StaticResource Section}" Text="Font" />
-            <ComboBox ItemsSource="{Binding FontFamilies}" SelectedItem="{Binding FontFamily}" AutomationProperties.Name="Font"
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:EditorText.Font}" />
+            <ComboBox ItemsSource="{Binding FontFamilies}" SelectedItem="{Binding FontFamily}" AutomationProperties.Name="{x:Static r:EditorText.Font}"
                       VirtualizingPanel.IsVirtualizing="True">
               <ComboBox.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -326,7 +327,7 @@
                 </ItemsPanelTemplate>
               </ComboBox.ItemsPanel>
             </ComboBox>
-            <CheckBox Content="Bold" IsChecked="{Binding Bold}" Margin="0,6,0,0" Focusable="False" />
+            <CheckBox Content="{x:Static r:EditorText.Bold}" IsChecked="{Binding Bold}" Margin="0,6,0,0" Focusable="False" />
           </StackPanel>
 
           <StackPanel Visibility="{Binding ShowFontSize, Converter={StaticResource Visible}}">
@@ -334,7 +335,7 @@
               <Run Text="{Binding FontSizeLabel, Mode=OneWay}" /><Run Text=":" />
               <Run Text="{Binding FontSize, Mode=OneWay}" />
             </TextBlock>
-            <Slider Minimum="8" Maximum="120" Value="{Binding FontSize}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="Size" />
+            <Slider Minimum="8" Maximum="120" Value="{Binding FontSize}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="{x:Static r:EditorText.Size}" />
           </StackPanel>
 
           <StackPanel Visibility="{Binding ShowStrength, Converter={StaticResource Visible}}">
@@ -351,26 +352,26 @@
               <Run Text="{Binding OpacityLabel, Mode=OneWay}" /><Run Text=":" />
               <Run Text="{Binding Opacity, Mode=OneWay}" /><Run Text="%" />
             </TextBlock>
-            <Slider Minimum="10" Maximum="100" Value="{Binding Opacity}" IsSnapToTickEnabled="True" TickFrequency="5" AutomationProperties.Name="Opacity" />
+            <Slider Minimum="10" Maximum="100" Value="{Binding Opacity}" IsSnapToTickEnabled="True" TickFrequency="5" AutomationProperties.Name="{x:Static r:EditorText.Opacity}" />
           </StackPanel>
 
           <StackPanel Visibility="{Binding HasSelection, Converter={StaticResource Visible}}">
-            <TextBlock Style="{StaticResource Section}" Text="Arrange" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:EditorText.Arrange}" />
             <WrapPanel>
-              <Button Content="Bring to front" Command="{Binding BringToFrontCommand}" Margin="0,0,6,6" Focusable="False" />
-              <Button Content="Send to back" Command="{Binding SendToBackCommand}" Margin="0,0,6,6" Focusable="False" />
-              <Button Content="Delete" Command="{Binding DeleteCommand}" ToolTip="Delete" Margin="0,0,6,6" Focusable="False" />
+              <Button Content="{x:Static r:EditorText.BringToFront}" Command="{Binding BringToFrontCommand}" Margin="0,0,6,6" Focusable="False" />
+              <Button Content="{x:Static r:EditorText.SendToBack}" Command="{Binding SendToBackCommand}" Margin="0,0,6,6" Focusable="False" />
+              <Button Content="{x:Static r:CommonText.Delete}" Command="{Binding DeleteCommand}" ToolTip="{x:Static r:CommonText.Delete}" Margin="0,0,6,6" Focusable="False" />
             </WrapPanel>
           </StackPanel>
 
           <StackPanel Visibility="{Binding IsCropping, Converter={StaticResource Visible}}">
             <TextBlock Style="{StaticResource Section}">
-              <Run Text="Crop to" />
+              <Run Text="{x:Static r:EditorText.CropTo}" />
               <Run Text="{Binding CropSizeText, Mode=OneWay}" />
             </TextBlock>
             <WrapPanel>
-              <Button Content="Apply crop" Command="{Binding ApplyCropCommand}" ToolTip="Enter" Margin="0,0,6,6" Focusable="False" />
-              <Button Content="Cancel" Command="{Binding CancelCropCommand}" ToolTip="Esc" Margin="0,0,6,6" Focusable="False" />
+              <Button Content="{x:Static r:EditorText.ApplyCrop}" Command="{Binding ApplyCropCommand}" ToolTip="{x:Static r:EditorText.EnterKey}" Margin="0,0,6,6" Focusable="False" />
+              <Button Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelCropCommand}" ToolTip="{x:Static r:EditorText.EscKey}" Margin="0,0,6,6" Focusable="False" />
             </WrapPanel>
           </StackPanel>
         </StackPanel>
@@ -383,7 +384,7 @@
       <Canvas x:Name="Overlay" ClipToBounds="True">
         <TextBox x:Name="TextEditor" Visibility="Collapsed" AcceptsReturn="True" MinWidth="40" MinHeight="0"
                  BorderBrush="#0078D4" BorderThickness="1" CaretBrush="Black" FocusVisualStyle="{x:Null}"
-                 AutomationProperties.Name="Annotation text">
+                 AutomationProperties.Name="{x:Static r:EditorText.AnnotationText}">
           <TextBox.Template>
             <ControlTemplate TargetType="TextBox">
               <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">

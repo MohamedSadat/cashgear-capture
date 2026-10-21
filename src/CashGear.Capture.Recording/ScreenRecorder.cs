@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using CashGear.Capture.Audio;
 using CashGear.Capture.Core.Audio;
@@ -14,6 +15,7 @@ using CashGear.Capture.Media;
 using CashGear.Capture.Overlays.Input;
 using CashGear.Capture.Overlays.Rendering;
 using CashGear.Capture.Overlays.Webcam;
+using CashGear.Capture.Recording.Resources;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -38,14 +40,20 @@ internal sealed partial class ScreenRecorder(
     IPowerEvents? power = null) : IScreenRecorder
 {
     /// <summary>The note a recording made over Remote Desktop gets.</summary>
-    public const string RemoteNote =
-        "This was recorded in a Remote Desktop session: Windows sends pictures only as often as the connection allows, and the graphics card's encoder may not be available.";
+    public static string RemoteNote => RecordingStrings.RemoteNote;
 
     private readonly IDesktopState _desktop = desktop ?? Engine.Display.Win32DesktopState.Instance;
     private readonly IPowerEvents? _power = power;
     private readonly MicrophoneProcessors _processors = processors ?? new MicrophoneProcessors();
 
     private static readonly TimeSpan FinishTimeout = TimeSpan.FromSeconds(60);
+
+    // Threads' names, for debuggers and dumps.
+    [Localizable(false)]
+    private const string VideoThreadName = "Recording video";
+
+    [Localizable(false)]
+    private const string SoundThreadName = "Recording sound";
 
     /// <summary>How long after its time a frame is made when keystrokes are shown (see <see cref="FrameGrid.Lag"/>).</summary>
     private static readonly TimeSpan KeystrokeLag = TimeSpan.FromMilliseconds(100);
@@ -177,15 +185,15 @@ internal sealed partial class ScreenRecorder(
 
             if (encoders.Problem is { } problem)
             {
-                throw new CaptureException("Screen recording isn't available. " + problem);
+                throw new CaptureException(RecordingStrings.RecordingUnavailable(problem));
             }
 
             var detected = await encoders.DetectAsync(ct: ct).ConfigureAwait(false);
             var usable = EncoderService.Usable(options.Encoder, detected);
             if (usable.Count == 0)
             {
-                throw new CaptureException("No video encoder works on this PC: " +
-                    string.Join(" ", detected.Where(p => !p.Works).Select(p => $"{p.Id}: {p.Detail}")));
+                throw new CaptureException(RecordingStrings.NoVideoEncoderDetail(
+                    string.Join(" ", detected.Where(p => !p.Works).Select(p => $"{p.Id}: {p.Detail}"))));
             }
 
             var (width, height) = EncoderPresets.EvenSize(options.Area.Width, options.Area.Height);
@@ -228,7 +236,7 @@ internal sealed partial class ScreenRecorder(
                 {
                     var settings = withWebcam.WebcamSettings;
                     var opened = webcams is null
-                        ? WebcamOpenResult.Failed("Webcams aren't available in this copy of the app.")
+                        ? WebcamOpenResult.Failed(RecordingStrings.WebcamsUnavailable)
                         : await webcams.OpenAsync(settings.Device, settings.Width, settings.Height, settings.Fps, ct).ConfigureAwait(false);
                     camera = opened.Source;
                     webcamNote = opened.Note;
@@ -251,7 +259,7 @@ internal sealed partial class ScreenRecorder(
                     }
                     catch (Exception e) when (e is TimeoutException or InvalidOperationException or System.Runtime.InteropServices.COMException)
                     {
-                        webcamNote = $"{camera.Name} sent no picture ({e.Message}), so the recording has no webcam.";
+                        webcamNote = RecordingStrings.WebcamSentNoPicture(camera.Name, e.Message);
                         parts.Webcam.Dispose();
                         parts.Webcam = null;
                         manifest = manifest with { Webcam = null };
@@ -385,7 +393,7 @@ internal sealed partial class ScreenRecorder(
             }
         }
 
-        throw new CaptureException($"No video encoder could record {format.Width}x{format.Height}. {string.Join(" ", problems)}");
+        throw new CaptureException(RecordingStrings.NoEncoderCouldRecord(format.Width, format.Height, string.Join(" ", problems)));
     }
 
     private static VideoEncoder Open(EncoderCandidate candidate, EncoderProbe probe, VideoFormat format, QualityPreset quality) =>
@@ -396,6 +404,7 @@ internal sealed partial class ScreenRecorder(
         WebcamFeed.TrackTitle, settings.Shape, settings.Size, settings.CenterX, settings.CenterY, settings.BorderColor, settings.BorderWidth, settings.Mirror, feed.Width, feed.Height);
 
     /// <summary>A track's title: "Microphone", "System audio", or the app's name when only its sound is recorded.</summary>
+    [Localizable(false)] // stored in the MP4 in English: the video editor matches these titles
     private static string SourceTitle(IAudioSource source, RecordingOptions options) =>
         source.Kind == RecordingSound.Microphone ? "Microphone"
         : options.SystemAudioScope == SystemAudioScope.OnlyApp && source is AppAudioSource ? options.SystemAudioAppName ?? "System audio"
@@ -415,7 +424,7 @@ internal sealed partial class ScreenRecorder(
                 if (opened.Source is null && exclude)
                 {
                     // Leaving one app out isn't possible here: recording everything is closer than nothing.
-                    problems.Add($"{opened.Note} All system audio is recorded instead.");
+                    problems.Add(RecordingStrings.AllSystemAudioInstead(opened.Note));
                     Add(audio.OpenSystemAudio(options.SystemAudioDevice));
                 }
                 else
@@ -439,7 +448,7 @@ internal sealed partial class ScreenRecorder(
             return (sources, null);
         }
 
-        var note = string.Join(" ", problems) + (sources.Count == 0 ? " The video has no sound." : string.Empty);
+        var note = sources.Count == 0 ? RecordingStrings.VideoHasNoSound(string.Join(" ", problems)) : string.Join(" ", problems);
         return (sources, note);
 
         void Add(AudioOpenResult opened)
@@ -743,7 +752,7 @@ internal sealed partial class ScreenRecorder(
             Clock.Start();
             StartInput();
             _webcam?.StartTrack();
-            _videoThread = new Thread(WriteVideo) { IsBackground = true, Name = "Recording video", Priority = ThreadPriority.AboveNormal };
+            _videoThread = new Thread(WriteVideo) { IsBackground = true, Name = VideoThreadName, Priority = ThreadPriority.AboveNormal };
             _videoThread.Start();
             _watchdog = new Timer(_ => Watch(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
             if (_owner._power is { } power)
@@ -757,7 +766,7 @@ internal sealed partial class ScreenRecorder(
                 return;
             }
 
-            _soundThread = new Thread(WriteSound) { IsBackground = true, Name = "Recording sound", Priority = ThreadPriority.AboveNormal };
+            _soundThread = new Thread(WriteSound) { IsBackground = true, Name = SoundThreadName, Priority = ThreadPriority.AboveNormal };
             _soundThread.Start();
             foreach (var source in _parts.Sources)
             {
@@ -841,7 +850,7 @@ internal sealed partial class ScreenRecorder(
             var videoDone = await JoinAsync(_videoThread, _failure is null ? timeout : HungEncoder).ConfigureAwait(false);
             if (!videoDone)
             {
-                Fail(new CaptureException("The video encoder stopped responding."));
+                Fail(new CaptureException(RecordingStrings.VideoEncoderHung));
             }
 
             LogStopStep($"video done ({videoDone}), {_grid.Written} frames");
@@ -899,8 +908,8 @@ internal sealed partial class ScreenRecorder(
             {
                 _folder.Dispose();
                 RecordingStore.Delete(_folder.Directory);
-                var reason = _failure?.Message ?? "no frames were recorded";
-                throw new CaptureException($"The recording could not be saved ({reason}).", _failure ?? new InvalidOperationException(reason));
+                var reason = _failure?.Message ?? RecordingStrings.NoFramesRecorded;
+                throw new CaptureException(RecordingStrings.NotSaved(reason), _failure ?? new InvalidOperationException(reason));
             }
 
             RecoveredRecording saved;
@@ -912,20 +921,20 @@ internal sealed partial class ScreenRecorder(
             catch (Exception e) when (e is FfmpegException or IOException or UnauthorizedAccessException)
             {
                 _folder.Dispose();
-                throw new CaptureException($"The recording could not be saved ({e.Message}). It was kept and can be recovered from the tray menu.", e);
+                throw new CaptureException(RecordingStrings.NotSavedKept(e.Message), e);
             }
 
             _folder.Dispose();
             RecordingStore.Delete(_folder.Directory);
             if (saved.Files.Count == 0)
             {
-                throw new CaptureException("The recording could not be saved: nothing in it could be read.");
+                throw new CaptureException(RecordingStrings.NotSavedUnreadable);
             }
 
             string? note;
             lock (_noteGate)
             {
-                note = _failure is { } failure ? $"Recording stopped early: {failure.Message}" + (_note is null ? string.Empty : " " + _note) : _note;
+                note = _failure is { } failure ? RecordingStrings.StoppedEarly(failure.Message) + (_note is null ? string.Empty : " " + _note) : _note;
             }
             return new RecordingResult(
                 saved.Files[0],
@@ -933,7 +942,7 @@ internal sealed partial class ScreenRecorder(
                 _grid.Written,
                 _grid.Dropped,
                 _grid.Repeated,
-                string.Join(", then ", _encoderNames),
+                string.Join(RecordingStrings.ThenSeparator, _encoderNames),
                 saved.Files.Sum(f => new FileInfo(f).Length),
                 Sound,
                 _soundNote,
@@ -964,7 +973,7 @@ internal sealed partial class ScreenRecorder(
             catch (InvalidOperationException e)
             {
                 LogInputFailed(e);
-                _note = "Clicks and keys couldn't be followed (" + e.Message + ").";
+                _note = RecordingStrings.InputNotFollowed(e.Message);
             }
         }
 
@@ -1146,8 +1155,8 @@ internal sealed partial class ScreenRecorder(
             _nextRecovery = 0;
             var at = Clock.Elapsed;
             LogDeviceLost(lost, at);
-            AddNote($"At {Time(at)} the graphics card was reset or switched; the picture held still until it was back.");
-            _owner.OnWarning("The graphics card stopped responding (it was reset or switched). The recording goes on, and the picture holds still until it is back.");
+            AddNote(RecordingStrings.DeviceLostNote(Time(at)));
+            _owner.OnWarning(RecordingStrings.DeviceLostWarning);
         }
 
         /// <summary>Tries to rebuild the stream on the new device (at most every 250 ms); gives up after <see cref="DeviceGiveUp"/>.</summary>
@@ -1166,13 +1175,13 @@ internal sealed partial class ScreenRecorder(
                 var lostFor = Stopwatch.GetElapsedTime(_lostSince);
                 _lostSince = 0;
                 LogDeviceBack(lostFor.TotalSeconds);
-                _owner.OnNotice($"The graphics card is back after {lostFor.TotalSeconds:0.#} s; the recording carries on.");
+                _owner.OnNotice(RecordingStrings.DeviceBack(lostFor.TotalSeconds));
                 return;
             }
 
             if (Stopwatch.GetElapsedTime(_lostSince) > _owner.DeviceGiveUp)
             {
-                throw new CaptureException($"The graphics card stopped working and wasn't back within {_owner.DeviceGiveUp.TotalSeconds:0} s, so the recording stopped.");
+                throw new CaptureException(RecordingStrings.DeviceGaveUp(_owner.DeviceGiveUp.TotalSeconds));
             }
 
             _nextRecovery = now + (Stopwatch.Frequency / 4);
@@ -1224,8 +1233,8 @@ internal sealed partial class ScreenRecorder(
             _segmentBegun = false;
             _awaitingPicture = true;
             LogNewSize(width, height, at);
-            AddNote($"At {Time(at)} {_options.Monitor.ShortName} changed resolution, so from there the recording is {width}x{height}, saved as another file.");
-            _owner.OnWarning($"{_options.Monitor.ShortName} changed resolution. The recording goes on at {width}x{height} and is saved as another file.");
+            AddNote(RecordingStrings.ResolutionChangedNote(Time(at), _options.Monitor.ShortName, width, height));
+            _owner.OnWarning(RecordingStrings.ResolutionChangedWarning(_options.Monitor.ShortName, width, height));
         }
 
         /// <summary>A button was pressed (input thread): its click sound goes on the click track at that time.</summary>
@@ -1327,12 +1336,12 @@ internal sealed partial class ScreenRecorder(
                 _segmentBegun = false;
                 _encoderNames.Add(next.Candidate.DisplayName);
                 var at = Clock.Elapsed;
-                AddNote($"{failed.Candidate.DisplayName} stopped working at {(int)at.TotalMinutes}:{at.Seconds:00}; {next.Candidate.DisplayName} recorded the rest, saved as another file.");
-                _owner.OnWarning($"{failed.Candidate.DisplayName} stopped working ({ex.Message}). Recording continues with {next.Candidate.DisplayName}; it will be saved as another file.");
+                AddNote(RecordingStrings.EncoderSwitchedNote(failed.Candidate.DisplayName, Time(at), next.Candidate.DisplayName));
+                _owner.OnWarning(RecordingStrings.EncoderSwitchedWarning(failed.Candidate.DisplayName, ex.Message, next.Candidate.DisplayName));
                 return;
             }
 
-            throw new CaptureException($"The video encoder stopped working and no other could take over ({ex.Message}).", ex);
+            throw new CaptureException(RecordingStrings.EncoderFailedNoFallback(ex.Message), ex);
         }
 
         /// <summary>Hands packets to the writer, starting a segment for the current encoder with its first packet.</summary>
@@ -1388,7 +1397,7 @@ internal sealed partial class ScreenRecorder(
         private void OnSoundStatus(AudioSourceStatus status, string message)
         {
             var at = Clock.Elapsed;
-            var note = $"At {(int)at.TotalMinutes}:{at.Seconds:00}: {message}";
+            var note = RecordingStrings.SoundNoteAt(Time(at), message);
             _soundNote = _soundNote is null ? note : _soundNote + " " + note;
             if (status == AudioSourceStatus.Lost)
             {
@@ -1486,7 +1495,7 @@ internal sealed partial class ScreenRecorder(
             var since = Volatile.Read(ref _encodingSince);
             if (since != 0 && Stopwatch.GetElapsedTime(since) > HungEncoder)
             {
-                Fail(new CaptureException($"{_video.Candidate.DisplayName} stopped responding."));
+                Fail(new CaptureException(RecordingStrings.EncoderHung(_video.Candidate.DisplayName)));
             }
 
             try
@@ -1513,13 +1522,13 @@ internal sealed partial class ScreenRecorder(
         }
 
         private void NoteSecureScreen(TimeSpan from, TimeSpan to) =>
-            AddNote($"From {Time(from)} to {Time(to)} Windows showed a secure screen (a UAC prompt or the lock screen), which no app can capture: the video holds the last picture there.");
+            AddNote(RecordingStrings.SecureScreenNote(Time(from), Time(to)));
 
         private static string Time(TimeSpan at) => $"{(int)at.TotalMinutes}:{at.Seconds:00}";
 
         /// <summary>The monitor went away (disconnected): the recording can't go on.</summary>
         private void OnStreamClosed(object? sender, EventArgs e) =>
-            Fail(new CaptureException($"{_options.Monitor.ShortName} was disconnected, so the recording stopped."));
+            Fail(new CaptureException(RecordingStrings.MonitorDisconnected(_options.Monitor.ShortName)));
 
         /// <summary>
         /// The PC is going to sleep: pause, so the time asleep isn't recorded (hours of a still picture and silence
@@ -1534,7 +1543,7 @@ internal sealed partial class ScreenRecorder(
 
             _owner.Pause();
             _pausedForSleep = true;
-            AddNote($"At {Time(Clock.Elapsed)} the PC went to sleep, so the recording was paused.");
+            AddNote(RecordingStrings.SleepNote(Time(Clock.Elapsed)));
             LogSleep(Clock.Elapsed);
         }
 
@@ -1546,7 +1555,7 @@ internal sealed partial class ScreenRecorder(
             }
 
             _pausedForSleep = false;
-            _owner.OnNotice($"The PC woke up. The recording was paused at {Time(Clock.Elapsed)} when it went to sleep: resume or stop it from the toolbar.");
+            _owner.OnNotice(RecordingStrings.WokeUp(Time(Clock.Elapsed)));
         }
 
         /// <summary>The overlay planner for the area at a size (null when the overlays draw nothing live).</summary>
@@ -1596,7 +1605,7 @@ internal sealed partial class ScreenRecorder(
         private partial void LogPicture(long slot, long pictureSlot);
 
         [LoggerMessage(Level = LogLevel.Debug, Message = "Stop: {Step}")]
-        private partial void LogStopStep(string step);
+        private partial void LogStopStep([Localizable(false)] string step);
 
         [LoggerMessage(Level = LogLevel.Information, Message = "Recording sound: {Duration}, {Frames} frames, {Late} arrived late, {Overflow} overflowed")]
         private partial void LogSound(TimeSpan duration, long frames, long late, long overflow);

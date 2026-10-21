@@ -5,6 +5,7 @@ using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Editor.Document;
 using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Editor.Rendering;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Imaging;
@@ -236,7 +237,7 @@ public static class ImageOperations
         var height = (int)Math.Ceiling((w * sin) + (h * cos) - 1e-6);
         if (width > MaxDimension || height > MaxDimension)
         {
-            throw new ArgumentException("The turned image would be too large.", nameof(degrees));
+            throw new ArgumentException(EditorStrings.TurnedImageTooLarge, nameof(degrees));
         }
 
         var flat = state.Annotations.IsEmpty ? state.Image : DocumentRenderer.Flatten(state);

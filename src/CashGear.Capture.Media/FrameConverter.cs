@@ -1,3 +1,4 @@
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -25,14 +26,14 @@ public sealed unsafe class FrameConverter : IDisposable
             (int)SwsFlags.SWS_POINT, null, null, null);
         if (_context is null)
         {
-            throw new FfmpegException($"swscale can't convert BGRA to {destination} at {width}x{height}.");
+            throw new FfmpegException(MediaStrings.CantConvertFromBgra(destination, width, height));
         }
 
         var rgb = *(int4*)ffmpeg.sws_getCoefficients(ffmpeg.SWS_CS_DEFAULT);
         var yuv = *(int4*)ffmpeg.sws_getCoefficients(ffmpeg.SWS_CS_ITU709);
         FfmpegException.Check(
             ffmpeg.sws_setColorspaceDetails(_context, in rgb, 1, in yuv, 0, 0, 1 << 16, 1 << 16),
-            "Setting BT.709 conversion");
+            MediaStrings.SettingBt709Conversion);
     }
 
     /// <summary>Converts one picture (<paramref name="stride"/> bytes per row) into <paramref name="frame"/>'s planes.</summary>
@@ -52,7 +53,7 @@ public sealed unsafe class FrameConverter : IDisposable
             var result = ffmpeg.sws_scale(_context, _sourcePlanes, _sourceStrides, 0, _height, _planes, _strides);
             if (result != _height)
             {
-                throw new FfmpegException("Converting a frame", result < 0 ? result : ffmpeg.AVERROR_UNKNOWN);
+                throw new FfmpegException(MediaStrings.ConvertingFrame, result < 0 ? result : ffmpeg.AVERROR_UNKNOWN);
             }
         }
     }

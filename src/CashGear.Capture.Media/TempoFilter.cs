@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.Globalization;
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -41,8 +43,8 @@ public sealed unsafe class TempoFilter : IDisposable
             AVFilterContext* source = null;
             AVFilterContext* sink = null;
             using var log = FfmpegLog.Capture();
-            Check(ffmpeg.avfilter_graph_create_filter(&source, ffmpeg.avfilter_get_by_name("abuffer"), "in", args, null, _graph), "Creating the tempo filter's input", log);
-            Check(ffmpeg.avfilter_graph_create_filter(&sink, ffmpeg.avfilter_get_by_name("abuffersink"), "out", null, null, _graph), "Creating the tempo filter's output", log);
+            Check(ffmpeg.avfilter_graph_create_filter(&source, ffmpeg.avfilter_get_by_name("abuffer"), "in", args, null, _graph), MediaStrings.CreatingTempoFilterInput, log);
+            Check(ffmpeg.avfilter_graph_create_filter(&sink, ffmpeg.avfilter_get_by_name("abuffersink"), "out", null, null, _graph), MediaStrings.CreatingTempoFilterOutput, log);
             var outputs = ffmpeg.avfilter_inout_alloc();
             var inputs = ffmpeg.avfilter_inout_alloc();
             outputs->name = ffmpeg.av_strdup("in");
@@ -53,8 +55,8 @@ public sealed unsafe class TempoFilter : IDisposable
             var parsed = ffmpeg.avfilter_graph_parse_ptr(_graph, description, &inputs, &outputs, null);
             ffmpeg.avfilter_inout_free(&inputs);
             ffmpeg.avfilter_inout_free(&outputs);
-            Check(parsed, $"Setting up the tempo filter ({description})", log);
-            Check(ffmpeg.avfilter_graph_config(_graph, null), "Starting the tempo filter", log);
+            Check(parsed, MediaStrings.SettingUpTempoFilter(description), log);
+            Check(ffmpeg.avfilter_graph_config(_graph, null), MediaStrings.StartingTempoFilter, log);
             _source = source;
             _sink = sink;
         }
@@ -96,13 +98,13 @@ public sealed unsafe class TempoFilter : IDisposable
         _in->sample_rate = AudioEncoder.SampleRate;
         _in->nb_samples = samples;
         ffmpeg.av_channel_layout_default(&_in->ch_layout, AudioEncoder.Channels);
-        FfmpegException.Check(ffmpeg.av_frame_get_buffer(_in, 0), "Allocating sound for the tempo filter");
+        FfmpegException.Check(ffmpeg.av_frame_get_buffer(_in, 0), MediaStrings.AllocatingTempoSound);
         interleaved[..(samples * AudioEncoder.Channels)].CopyTo(new Span<float>(_in->data[0], samples * AudioEncoder.Channels));
         _in->pts = _next;
         _next += samples;
         var added = ffmpeg.av_buffersrc_add_frame_flags(_source, _in, 0); // takes the frame's buffers
         ffmpeg.av_frame_unref(_in);
-        FfmpegException.Check(added, "Changing the sound's tempo");
+        FfmpegException.Check(added, MediaStrings.ChangingTempo);
         Drain(output);
     }
 
@@ -115,7 +117,7 @@ public sealed unsafe class TempoFilter : IDisposable
             return;
         }
 
-        FfmpegException.Check(ffmpeg.av_buffersrc_add_frame_flags(_source, null, 0), "Changing the sound's tempo");
+        FfmpegException.Check(ffmpeg.av_buffersrc_add_frame_flags(_source, null, 0), MediaStrings.ChangingTempo);
         Drain(output);
     }
 
@@ -149,7 +151,7 @@ public sealed unsafe class TempoFilter : IDisposable
         }
     }
 
-    private static void Check(int result, string what, FfmpegLog.Scope log)
+    private static void Check(int result, [Localizable(true)] string what, FfmpegLog.Scope log)
     {
         if (result < 0)
         {

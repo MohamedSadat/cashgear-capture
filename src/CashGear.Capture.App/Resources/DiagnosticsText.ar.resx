@@ -16,13 +16,7 @@
     <value>ساعد في تحسين CashGear Capture</value>
   </data>
   <data name="ConsentMessage" xml:space="preserve">
-    <value>عندما يتعطل CashGear Capture، يمكنه إرسال تقرير حتى يمكن العثور على المشكلة وإصلاحها.
-
-يتضمن التقرير ما حدث من خطأ وموضعه في شيفرة التطبيق، وإصدارَي التطبيق وWindows، وما فعله التطبيق قبله مباشرة (سجله، دون أسماء أو تفاصيل).
-
-لا يتضمن أبدًا لقطات الشاشة أو التسجيلات أو ما تكتبه أو عناوين النوافذ أو أسماء الملفات أو كلمات المرور. يمكنك تغيير ذلك من الإعدادات › عام › الخصوصية.
-
-هل تريد إرسال تقارير الأعطال؟</value>
+    <value>عندما يتعطل CashGear Capture، يمكنه إرسال تقرير حتى يمكن العثور على المشكلة وإصلاحها.&#10;&#10;يتضمن التقرير ما حدث من خطأ وموضعه في شيفرة التطبيق، وإصدارَي التطبيق وWindows، وما فعله التطبيق قبله مباشرة (سجله، دون أسماء أو تفاصيل).&#10;&#10;لا يتضمن أبدًا لقطات الشاشة أو التسجيلات أو ما تكتبه أو عناوين النوافذ أو أسماء الملفات أو كلمات المرور. يمكنك تغيير ذلك من الإعدادات › عام › الخصوصية.&#10;&#10;هل تريد إرسال تقارير الأعطال؟</value>
   </data>
   <data name="SendReports" xml:space="preserve">
     <value>إرسال تقارير الأعطال (_S)</value>
@@ -41,5 +35,20 @@
   </data>
   <data name="NoCrashReportAddress" xml:space="preserve">
     <value>ليس لهذه النسخة عنوان لإرسال تقارير الأعطال إليه، لذا لا يُرسل أي تقرير أبدًا.</value>
+  </data>
+  <data name="ExportTitle" xml:space="preserve">
+    <value>تصدير معلومات التشخيص</value>
+  </data>
+  <data name="ZipFilter" xml:space="preserve">
+    <value>ملفات Zip (*.zip)|*.zip</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>تم حفظ معلومات التشخيص</value>
+  </data>
+  <data name="SavedMessage" xml:space="preserve">
+    <value>{0} ({1:0} KB): السجلات، والإعدادات دون العناوين أو الأسماء أو كلمات المرور، ومعلومات عن هذا الكمبيوتر. لم يُرسل أي شيء إلى أي مكان.</value>
+  </data>
+  <data name="NotSaved" xml:space="preserve">
+    <value>تعذر حفظ معلومات التشخيص</value>
   </data>
 </root>

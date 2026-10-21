@@ -1,4 +1,5 @@
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Resources;
 
 namespace CashGear.Capture.Core.Selection;
 
@@ -56,8 +57,8 @@ public sealed class FixedRegionSelectionModel : ISelectionModel
         Lit = Selection,
         Label = $"{Selection.Width} × {Selection.Height}",
         Hint = Phase == SelectionPhase.Hovering
-            ? "Click to place · Tab: another size · Enter: capture here"
-            : "Drag to move · arrows nudge · Tab: another size · Enter or double-click: capture",
+            ? CoreStrings.FixedRegionHintHovering
+            : CoreStrings.FixedRegionHintPlaced,
         Tracking = Phase is SelectionPhase.Hovering or SelectionPhase.Dragging,
     };
 

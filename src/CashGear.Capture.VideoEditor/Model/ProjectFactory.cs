@@ -1,7 +1,9 @@
+using System.ComponentModel;
 using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Media;
+using CashGear.Capture.VideoEditor.Resources;
 
 namespace CashGear.Capture.VideoEditor.Model;
 
@@ -138,7 +140,7 @@ public static class ProjectFactory
         var pictures = new List<Track>();
         if (MainVideo(asset) is { } main)
         {
-            pictures.Add(new Track(Ids.New(), TrackKind.Video, main.Title ?? (metadata is null ? "Video" : "Screen"), [ClipOf(main)]));
+            pictures.Add(new Track(Ids.New(), TrackKind.Video, main.Title ?? (metadata is null ? VideoEditorStrings.TrackVideo : VideoEditorStrings.TrackScreen), [ClipOf(main)]));
         }
 
         if (WebcamVideo(asset) is { } webcam)
@@ -154,7 +156,7 @@ public static class ProjectFactory
                     recorded.Mirror)
                 : DefaultWebcam;
             var clip = ClipOf(webcam) with { Placement = placement };
-            pictures.Add(new Track(Ids.New(), TrackKind.Webcam, "Webcam", [clip], Hidden: metadata?.OverlaysInVideo == true && metadata.Webcam is not null));
+            pictures.Add(new Track(Ids.New(), TrackKind.Webcam, VideoEditorStrings.TrackWebcam, [clip], Hidden: metadata?.OverlaysInVideo == true && metadata.Webcam is not null));
         }
 
         // Sound tracks go first (drawn at the bottom of the timeline), the pictures above the existing ones.
@@ -186,7 +188,7 @@ public static class ProjectFactory
 
             if (effects.Count > 0)
             {
-                tracks.Add(new Track(Ids.New(), TrackKind.Effect, "Effects", effects));
+                tracks.Add(new Track(Ids.New(), TrackKind.Effect, VideoEditorStrings.TrackEffects, effects));
             }
         }
 
@@ -216,8 +218,10 @@ public static class ProjectFactory
         return project.WithAsset(asset) with { Tracks = [track, .. project.Tracks] };
     }
 
+    /// <summary>The webcam stream's title in a recording, matched as the file has it.</summary>
+    [Localizable(false)]
     private const string WebcamTitle = "Webcam";
 
     private static string SoundName(AssetStream stream, MediaAsset asset) =>
-        stream.Title is { Length: > 0 } title ? title : asset.Streams.Count(s => s.Kind == StreamKind.Audio) > 1 ? $"Sound {stream.Index}" : "Sound";
+        stream.Title is { Length: > 0 } title ? title : asset.Streams.Count(s => s.Kind == StreamKind.Audio) > 1 ? VideoEditorStrings.TrackSoundNumbered(stream.Index) : VideoEditorStrings.TrackSound;
 }

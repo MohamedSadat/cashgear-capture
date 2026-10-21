@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Interop.Com;
+using CashGear.Capture.Overlays.Resources;
 using Microsoft.Extensions.Logging;
 using Windows.Devices.Enumeration;
 using Windows.Graphics.Imaging;
@@ -90,8 +91,8 @@ public sealed partial class MediaCaptureWebcams(ILoggerFactory loggers) : IWebca
         if (camera is null)
         {
             return WebcamOpenResult.Failed(deviceId is null
-                ? "No webcam is connected, so the recording has none."
-                : "The webcam chosen in Settings isn't connected, so the recording has none.");
+                ? OverlaysStrings.NoWebcam
+                : OverlaysStrings.ChosenWebcamMissing);
         }
 
         var capture = new MediaCapture();
@@ -117,7 +118,7 @@ public sealed partial class MediaCaptureWebcams(ILoggerFactory loggers) : IWebca
             if (source is null)
             {
                 capture.Dispose();
-                return WebcamOpenResult.Failed($"{camera.Name} gives no colour pictures, so the recording has no webcam.");
+                return WebcamOpenResult.Failed(OverlaysStrings.WebcamNoColour(camera.Name));
             }
 
             if (!shared && Nearest(source.SupportedFormats, width, height, fps) is { } format)
@@ -136,13 +137,13 @@ public sealed partial class MediaCaptureWebcams(ILoggerFactory loggers) : IWebca
         {
             capture.Dispose();
             LogOpenFailed(e, camera.Name);
-            return WebcamOpenResult.Failed("Windows doesn't let apps use the camera (Settings › Privacy › Camera), so the recording has no webcam.");
+            return WebcamOpenResult.Failed(OverlaysStrings.CameraNotAllowed);
         }
         catch (Exception e) when (e is COMException or InvalidOperationException or ArgumentException)
         {
             capture.Dispose();
             LogOpenFailed(e, camera.Name);
-            return WebcamOpenResult.Failed($"{camera.Name} couldn't be opened ({e.Message.Trim()}), so the recording has no webcam.");
+            return WebcamOpenResult.Failed(OverlaysStrings.WebcamNotOpened(camera.Name, e.Message.Trim()));
         }
     }
 
@@ -193,7 +194,7 @@ public sealed partial class MediaCaptureWebcams(ILoggerFactory loggers) : IWebca
             var status = reader.StartAsync().AsTask().GetAwaiter().GetResult();
             if (status != MediaFrameReaderStartStatus.Success)
             {
-                throw new InvalidOperationException($"{name} didn't start ({status}).");
+                throw new InvalidOperationException(OverlaysStrings.WebcamNotStarted(name, status));
             }
         }
 

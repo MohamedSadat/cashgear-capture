@@ -1,3 +1,4 @@
+using CashGear.Capture.Audio.Resources;
 using CashGear.Capture.Core.Settings;
 
 namespace CashGear.Capture.Audio;
@@ -12,7 +13,7 @@ public sealed class MicrophoneProcessors
     public bool CanSuppressNoise { get; }
 
     /// <summary>Why noise suppression can't be offered, or null.</summary>
-    public string? NoiseSuppressionProblem => CanSuppressNoise ? null : RnnoiseLibrary.Problem ?? "Noise suppression is turned off.";
+    public string? NoiseSuppressionProblem => CanSuppressNoise ? null : RnnoiseLibrary.Problem ?? AudioStrings.NoiseSuppressionOff;
 
     /// <summary>A chain for live sound, stamped with <see cref="System.Diagnostics.Stopwatch"/> timestamps.</summary>
     public MicrophoneChain Create(MicrophoneProcessing settings) => new(settings, Suppressor());

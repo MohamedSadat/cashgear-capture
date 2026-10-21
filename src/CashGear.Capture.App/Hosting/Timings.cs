@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace CashGear.Capture.App.Hosting;
@@ -27,7 +28,7 @@ internal static class Timings
     }
 
     /// <summary>A step on the way from a hotkey to its overlay, with the time since the hotkey (nothing without one).</summary>
-    public static void Step(string step)
+    public static void Step([Localizable(false)] string step) // a name in the log, which tools/Bench reads
     {
         if (Interlocked.Read(ref _hotkeyAt) is var at and not 0)
         {

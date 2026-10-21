@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using NAudio.CoreAudioApi;
@@ -39,6 +40,7 @@ internal sealed partial class AudioDeviceWatcher : IAudioDeviceEvents, IDisposab
     private Action<string>? _departed;
     private bool _disposed;
 
+    [Localizable(false)] // the thread's name, for debuggers
     public AudioDeviceWatcher(ILogger<AudioDeviceWatcher> logger)
     {
         _logger = logger;

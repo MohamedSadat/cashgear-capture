@@ -98,4 +98,652 @@
   <data name="TransferFailed" xml:space="preserve">
     <value>That didn't work: {0}</value>
   </data>
+  <data name="DefaultFolderFormat" xml:space="preserve">
+    <value>Empty means the default: {0}</value>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>CashGear Capture Settings</value>
+  </data>
+  <data name="StepMissingTip" xml:space="preserve">
+    <value>Its destination was deleted on the Destinations tab; the step is skipped.</value>
+  </data>
+  <data name="StepEarlier" xml:space="preserve">
+    <value>Earlier</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="StepLater" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="RemoveStep" xml:space="preserve">
+    <value>Remove this step</value>
+  </data>
+  <data name="StepToAdd" xml:space="preserve">
+    <value>Step to add</value>
+  </data>
+  <data name="AddStep" xml:space="preserve">
+    <value>Add step</value>
+  </data>
+  <data name="ResetToDefaults" xml:space="preserve">
+    <value>Reset to defaults</value>
+  </data>
+  <data name="OutputTab" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="AfterCaptureSection" xml:space="preserve">
+    <value>After capture, in this order</value>
+  </data>
+  <data name="AfterCaptureHint" xml:space="preserve">
+    <value>Steps after "Open in the editor" wait for its Continue button, so they get the edited image. Servers, uploads, Word and the rest are set up on the Destinations tab.</value>
+  </data>
+  <data name="AfterRecordingSection" xml:space="preserve">
+    <value>After a recording is saved</value>
+  </data>
+  <data name="AfterRecordingHint" xml:space="preserve">
+    <value>A recording is always saved to the folder below first; these steps then send it on.</value>
+  </data>
+  <data name="FolderSection" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="CaptureFolder" xml:space="preserve">
+    <value>Capture folder</value>
+  </data>
+  <data name="FormatSection" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="ImageFormat" xml:space="preserve">
+    <value>Image format</value>
+  </data>
+  <data name="JpegQuality" xml:space="preserve">
+    <value>JPEG quality</value>
+  </data>
+  <data name="FileNameSection" xml:space="preserve">
+    <value>File name</value>
+  </data>
+  <data name="FileNameTemplate" xml:space="preserve">
+    <value>File name template</value>
+  </data>
+  <data name="FileNameExample" xml:space="preserve">
+    <value>Example:</value>
+  </data>
+  <data name="CaptureTab" xml:space="preserve">
+    <value>Capture</value>
+  </data>
+  <data name="TimingSection" xml:space="preserve">
+    <value>Timing</value>
+  </data>
+  <data name="CaptureDelay" xml:space="preserve">
+    <value>Capture delay</value>
+  </data>
+  <data name="WaitForWindowsToHide" xml:space="preserve">
+    <value>Wait for app windows to hide</value>
+  </data>
+  <data name="HideDelay" xml:space="preserve">
+    <value>Hide delay</value>
+  </data>
+  <data name="CaptureDelayHint" xml:space="preserve">
+    <value>The capture delay gives you time to open a menu or hover a tooltip before the screen is taken.</value>
+  </data>
+  <data name="DelayPerKind" xml:space="preserve">
+    <value>Delay per kind of capture</value>
+  </data>
+  <data name="DelayPerKindHint" xml:space="preserve">
+    <value>Repeat Last Capture waits as long as the kind of capture it repeats. An open menu is captured 3 seconds after you ask, unless set otherwise: time to open it.</value>
+  </data>
+  <data name="ContentSection" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="IncludeCursor" xml:space="preserve">
+    <value>Include the mouse cursor</value>
+  </data>
+  <data name="IncludeWindowShadow" xml:space="preserve">
+    <value>Add a drop shadow to window captures</value>
+  </data>
+  <data name="CaptureToolbarSection" xml:space="preserve">
+    <value>Capture toolbar</value>
+  </data>
+  <data name="ShowToolbarAtStartup" xml:space="preserve">
+    <value>Show the capture toolbar when the app starts</value>
+  </data>
+  <data name="CaptureToolbarHint" xml:space="preserve">
+    <value>A small bar with a button for every kind of capture, always on top and never in a capture. Tray › Capture Toolbar shows it now; drag it by its grip, and drop it at the edge of a screen to dock it there.</value>
+  </data>
+  <data name="ShapesSection" xml:space="preserve">
+    <value>Shapes</value>
+  </data>
+  <data name="FixedSizeRegion" xml:space="preserve">
+    <value>Fixed-size region</value>
+  </data>
+  <data name="RoundedCorners" xml:space="preserve">
+    <value>Rounded region corners</value>
+  </data>
+  <data name="CornerRadius" xml:space="preserve">
+    <value>Corner radius</value>
+  </data>
+  <data name="ShapesHint" xml:space="preserve">
+    <value>Any size can be typed (width × height). On the screen, Tab switches between the sizes and the mouse wheel changes the corner radius; the last ones used are kept. Freehand, polygon, rounded and menu captures are transparent outside their shape, so they are saved as PNG whatever the format on the Output tab.</value>
+  </data>
+  <data name="FullScreenSection" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="FullScreenOutput" xml:space="preserve">
+    <value>Full screen output</value>
+  </data>
+  <data name="ScrollingSection" xml:space="preserve">
+    <value>Scrolling capture</value>
+  </data>
+  <data name="WaitAfterScroll" xml:space="preserve">
+    <value>Wait after each scroll</value>
+  </data>
+  <data name="StopAtHeight" xml:space="preserve">
+    <value>Stop at a height of</value>
+  </data>
+  <data name="PixelsN0Format" xml:space="preserve">
+    <value>{0:N0} px</value>
+  </data>
+  <data name="MaximumHeight" xml:space="preserve">
+    <value>Maximum height</value>
+  </data>
+  <data name="ScrollingHint" xml:space="preserve">
+    <value>Pick a window, then click where it scrolls. It is scrolled from where it is down to the bottom; Esc cancels. Allow more time for pages that load as they scroll.</value>
+  </data>
+  <data name="CaptureMethod" xml:space="preserve">
+    <value>Capture method</value>
+  </data>
+  <data name="CaptureMethodHint" xml:space="preserve">
+    <value>Automatic avoids the yellow capture border on Windows 10 and still captures covered windows correctly.</value>
+  </data>
+  <data name="HdrSection" xml:space="preserve">
+    <value>HDR monitors</value>
+  </data>
+  <data name="RecordingTab" xml:space="preserve">
+    <value>Recording</value>
+  </data>
+  <data name="VideoSection" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="FramesPerSecond" xml:space="preserve">
+    <value>Frames per second</value>
+  </data>
+  <data name="Quality" xml:space="preserve">
+    <value>Quality</value>
+  </data>
+  <data name="Encoder" xml:space="preserve">
+    <value>Encoder</value>
+  </data>
+  <data name="CheckAgain" xml:space="preserve">
+    <value>Check again</value>
+  </data>
+  <data name="CheckAgainTip" xml:space="preserve">
+    <value>Test every encoder again (after a driver update or a new graphics card)</value>
+  </data>
+  <data name="EncoderHint" xml:space="preserve">
+    <value>Automatic uses the graphics card's encoder when it works here, which leaves the CPU free; otherwise the encoder built into Windows. If an encoder stops working during a recording, another takes over and the rest is saved as a second file.</value>
+  </data>
+  <data name="MouseSection" xml:space="preserve">
+    <value>Mouse</value>
+  </data>
+  <data name="ShowMousePointer" xml:space="preserve">
+    <value>Show the mouse pointer</value>
+  </data>
+  <data name="MouseHint" xml:space="preserve">
+    <value>Clicks, pointer effects, keystrokes and the webcam are on the Overlays tab.</value>
+  </data>
+  <data name="SoundSection" xml:space="preserve">
+    <value>Sound</value>
+  </data>
+  <data name="RecordSystemAudio" xml:space="preserve">
+    <value>Record system audio (what you hear)</value>
+  </data>
+  <data name="SystemAudio" xml:space="preserve">
+    <value>System audio</value>
+  </data>
+  <data name="WhichSystemAudio" xml:space="preserve">
+    <value>Which system audio</value>
+  </data>
+  <data name="App" xml:space="preserve">
+    <value>App</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="RefreshAppsTip" xml:space="preserve">
+    <value>List the apps running now (start the app first if it isn't listed)</value>
+  </data>
+  <data name="SystemAudioFrom" xml:space="preserve">
+    <value>System audio from</value>
+  </data>
+  <data name="Microphone" xml:space="preserve">
+    <value>Microphone</value>
+  </data>
+  <data name="MicrophoneProcessing" xml:space="preserve">
+    <value>Microphone processing</value>
+  </data>
+  <data name="NoiseSuppression" xml:space="preserve">
+    <value>Noise suppression (RNNoise): remove fans, hum and typing, strength</value>
+  </data>
+  <data name="NoiseSuppressionStrength" xml:space="preserve">
+    <value>Noise suppression strength</value>
+  </data>
+  <data name="NoiseGate" xml:space="preserve">
+    <value>Noise gate: silence the microphone between words, below</value>
+  </data>
+  <data name="NoiseGateThreshold" xml:space="preserve">
+    <value>Noise gate threshold</value>
+  </data>
+  <data name="Compressor" xml:space="preserve">
+    <value>Compressor: even out loud and quiet speech</value>
+  </data>
+  <data name="Limiter" xml:space="preserve">
+    <value>Limiter: never let the microphone go above −1 dB (no clipping)</value>
+  </data>
+  <data name="ProcessingHint" xml:space="preserve">
+    <value>Applied to the microphone as it is recorded, in this order. The gate threshold is a peak level: set it between the room's noise and your quietest word. The microphone is held back 2 ms (10 ms more with noise suppression), and the recording takes that out, so it stays in sync.</value>
+  </data>
+  <data name="LevelsSection" xml:space="preserve">
+    <value>Levels</value>
+  </data>
+  <data name="MicrophoneProcessed" xml:space="preserve">
+    <value>Microphone (processed)</value>
+  </data>
+  <data name="MicrophoneLevel" xml:space="preserve">
+    <value>Microphone level</value>
+  </data>
+  <data name="SystemAudioLevel" xml:space="preserve">
+    <value>System audio level</value>
+  </data>
+  <data name="LevelsHint" xml:space="preserve">
+    <value>The meters listen while this page is open, to what a recording would record with the choices above. Speech peaking around −12 dB is right; the mark at the right end turns red when the sound clipped.</value>
+  </data>
+  <data name="MicrophoneTestSection" xml:space="preserve">
+    <value>Microphone test</value>
+  </data>
+  <data name="Record5Seconds" xml:space="preserve">
+    <value>Record 5 seconds</value>
+  </data>
+  <data name="PlayAsRecorded" xml:space="preserve">
+    <value>Play as recorded</value>
+  </data>
+  <data name="PlayWithProcessing" xml:space="preserve">
+    <value>Play with processing</value>
+  </data>
+  <data name="LoudnessSection" xml:space="preserve">
+    <value>Loudness</value>
+  </data>
+  <data name="NormalizeLoudness" xml:space="preserve">
+    <value>Even out the loudness to −16 LUFS when a recording is saved</value>
+  </data>
+  <data name="LoudnessHint" xml:space="preserve">
+    <value>Every recording then plays at the same loudness, the usual level for speech online, however loud the microphone or the sound was. Each sound track is measured, then encoded again (EBU R128, FFmpeg's loudnorm in two passes); the video is copied as it is. Peaks are kept below −1.5 dB. A silent track is left alone. Saving takes a few seconds more per 10 minutes.</value>
+  </data>
+  <data name="AppAudioHint" xml:space="preserve">
+    <value>Only one app records that app's sound (and that of the programs it starts) on whichever device it plays, and nothing else: no notifications, no other apps. All sound except one app leaves out, say, a call or music you don't want in the video. The app is found by its program when the recording starts, and followed if it starts or restarts later.</value>
+  </data>
+  <data name="WithBoth" xml:space="preserve">
+    <value>With both</value>
+  </data>
+  <data name="SoundTracks" xml:space="preserve">
+    <value>Sound tracks</value>
+  </data>
+  <data name="TracksHint" xml:space="preserve">
+    <value>Sound is saved in the MP4 as AAC. Players play the first track only, so a track per source is for video editors. Volume and mute for each source are on the recording toolbar. Pause pauses the sound too. Without a sound device the video is recorded without sound, and the notification says so.</value>
+  </data>
+  <data name="FfmpegSection" xml:space="preserve">
+    <value>FFmpeg</value>
+  </data>
+  <data name="RecordingHint" xml:space="preserve">
+    <value>Start and stop a recording from the tray or with the recording hotkey. Recordings are saved as MP4 in the capture folder. While recording, the video is written to a temporary file, so if the app or the PC stops, the recording can be saved from the tray menu afterwards.</value>
+  </data>
+  <data name="HotkeysTab" xml:space="preserve">
+    <value>Hotkeys</value>
+  </data>
+  <data name="HotkeysHint" xml:space="preserve">
+    <value>Click a box and press the keys. Backspace clears it. Hotkeys are paused while a box is selected, so PrintScreen can be recorded.</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="PushToTalk" xml:space="preserve">
+    <value>Push to talk</value>
+  </data>
+  <data name="HoldToTalk" xml:space="preserve">
+    <value>Hold to talk while recording</value>
+  </data>
+  <data name="PushToTalkHint" xml:space="preserve">
+    <value>With a key set, the microphone is silent in recordings except while the key is held (and a quarter of a second after, so words aren't cut). The key isn't taken from other apps, so a key that does nothing in them works best: F13 to F24, Scroll Lock, Pause, or a mouse button mapped to one of those. A key on its own is fine here.</value>
+  </data>
+  <data name="GeneralTab" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="StartupSection" xml:space="preserve">
+    <value>Startup</value>
+  </data>
+  <data name="StartWithWindows" xml:space="preserve">
+    <value>Start CashGear Capture when I sign in to Windows</value>
+  </data>
+  <data name="OcrSection" xml:space="preserve">
+    <value>Capture Text (OCR)</value>
+  </data>
+  <data name="OcrLanguage" xml:space="preserve">
+    <value>Text recognition language</value>
+  </data>
+  <data name="OcrHint" xml:space="preserve">
+    <value>Automatic reads the area with each of your Windows languages and takes every line from the language that matches its script, so Arabic and English in one area both work. More languages: Windows Settings › Time &amp; language › Language › (language) › Options › Optical character recognition.</value>
+  </data>
+  <data name="ScreenToolsSection" xml:space="preserve">
+    <value>Screen tools</value>
+  </data>
+  <data name="RulerDpi" xml:space="preserve">
+    <value>Ruler: pixels per inch</value>
+  </data>
+  <data name="RulerDpiName" xml:space="preserve">
+    <value>Ruler pixels per inch</value>
+  </data>
+  <data name="ColorCopyFormat" xml:space="preserve">
+    <value>Colour picker copies as</value>
+  </data>
+  <data name="ScreenToolsHint" xml:space="preserve">
+    <value>Inches and centimetres on the ruler follow Windows' scale of the monitor it is on. To measure real inches on the glass, set your screen's pixels per inch (its width in pixels divided by its width in inches). Tools are in tray › Tools and on the capture toolbar; set hotkeys for them on the Hotkeys tab.</value>
+  </data>
+  <data name="AppearanceSection" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="HistorySection" xml:space="preserve">
+    <value>Capture history</value>
+  </data>
+  <data name="HistorySize" xml:space="preserve">
+    <value>Captures kept in the history</value>
+  </data>
+  <data name="HistoryHint" xml:space="preserve">
+    <value>Recent captures are kept (with thumbnails) for tray › Recent Captures and Capture History, even ones you didn't save. Lowering the number removes the oldest straight away.</value>
+  </data>
+  <data name="UpdatesSection" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Check for updates automatically (once a day) and download them in the background</value>
+  </data>
+  <data name="CheckNow" xml:space="preserve">
+    <value>Check now</value>
+  </data>
+  <data name="AdvancedSection" xml:space="preserve">
+    <value>Advanced</value>
+  </data>
+  <data name="OpenSettingsFile" xml:space="preserve">
+    <value>Open settings file</value>
+  </data>
+  <data name="OpenSettingsFileHint" xml:space="preserve">
+    <value>Edits saved in the file apply immediately.</value>
+  </data>
+  <data name="ExportDiagnostics" xml:space="preserve">
+    <value>Export diagnostics…</value>
+  </data>
+  <data name="DiagnosticsHint" xml:space="preserve">
+    <value>Saves a zip for a bug report: the last week's logs, the settings without server addresses, user names or passwords, and facts about this PC (Windows, graphics cards, monitors, sound devices). Nothing is sent anywhere.</value>
+  </data>
+  <data name="ListSeparator" xml:space="preserve">
+    <value>, </value>
+  </data>
+  <data name="OcrAutomatic" xml:space="preserve">
+    <value>Automatic (your Windows languages)</value>
+  </data>
+  <data name="RecordingUnavailable" xml:space="preserve">
+    <value>Screen recording isn't available.</value>
+  </data>
+  <data name="RecordingUnavailableBecause" xml:space="preserve">
+    <value>Screen recording isn't available. {0}</value>
+  </data>
+  <data name="FfmpegBuiltIn" xml:space="preserve">
+    <value>FFmpeg {0}, built into the app (LGPL; see THIRD-PARTY-NOTICES.txt).</value>
+  </data>
+  <data name="DefaultMicrophone" xml:space="preserve">
+    <value>Default microphone (Windows setting)</value>
+  </data>
+  <data name="DefaultOutputDevice" xml:space="preserve">
+    <value>Default output device (follows Windows)</value>
+  </data>
+  <data name="DefaultOutputIs" xml:space="preserve">
+    <value>The default output device is {0} now. If another becomes the default during a recording, system audio follows it; a device that is unplugged is recorded again when it is back.</value>
+  </data>
+  <data name="NoOutputDevice" xml:space="preserve">
+    <value>No sound output device was found; system audio is silent until one is connected.</value>
+  </data>
+  <data name="SameAsCaptureDelay" xml:space="preserve">
+    <value>Same as the capture delay</value>
+  </data>
+  <data name="HistoryOff" xml:space="preserve">
+    <value>Off (keep none)</value>
+  </data>
+  <data name="Captures_one" xml:space="preserve">
+    <value>{0} capture</value>
+  </data>
+  <data name="Captures_other" xml:space="preserve">
+    <value>{0} captures</value>
+  </data>
+  <data name="EncoderAutomatic" xml:space="preserve">
+    <value>Automatic: the best that works here (recommended)</value>
+  </data>
+  <data name="EncoderSoftware" xml:space="preserve">
+    <value>Software only (uses the CPU)</value>
+  </data>
+  <data name="EncoderNotAvailable" xml:space="preserve">
+    <value>{0} (not available here)</value>
+  </data>
+  <data name="EncoderUnknown" xml:space="preserve">
+    <value>{0} (unknown)</value>
+  </data>
+  <data name="CheckingEncoders" xml:space="preserve">
+    <value>Checking which encoders work on this PC…</value>
+  </data>
+  <data name="NoEncoderWorks" xml:space="preserve">
+    <value>No encoder works on this PC, so recording is unavailable.</value>
+  </data>
+  <data name="EncodersWorking" xml:space="preserve">
+    <value>Works on this PC: {0}.</value>
+  </data>
+  <data name="AppPlayingSound" xml:space="preserve">
+    <value>{0} (playing sound)</value>
+  </data>
+  <data name="AppNotRunning" xml:space="preserve">
+    <value>{0} (not running)</value>
+  </data>
+  <data name="PushToTalkNotSet" xml:space="preserve">
+    <value>Not set: the microphone is always recorded</value>
+  </data>
+  <data name="PushToTalkInvalid" xml:space="preserve">
+    <value>Not a valid key</value>
+  </data>
+  <data name="PushToTalkInvalidError" xml:space="preserve">
+    <value>Push to talk: "{0}" is not a valid key.</value>
+  </data>
+  <data name="SameAs" xml:space="preserve">
+    <value>Same as {0}</value>
+  </data>
+  <data name="PushToTalkClash" xml:space="preserve">
+    <value>Push to talk: {0} is already the hotkey for {1}.</value>
+  </data>
+  <data name="PushToTalkReady" xml:space="preserve">
+    <value>Hold it while recording</value>
+  </data>
+  <data name="Decibels" xml:space="preserve">
+    <value>{0:0} dB</value>
+  </data>
+  <data name="MicTestIntro" xml:space="preserve">
+    <value>Records 5 seconds of the microphone, then plays them back as recorded or as processed.</value>
+  </data>
+  <data name="MicTestRecording" xml:space="preserve">
+    <value>Recording 5 seconds: say something, and let the room be heard too…</value>
+  </data>
+  <data name="MicTestRecorded" xml:space="preserve">
+    <value>Recorded. Play it as recorded, or with the processing above; change the processing and play again to compare.</value>
+  </data>
+  <data name="MicTestFailed" xml:space="preserve">
+    <value>The microphone couldn't be recorded: {0}</value>
+  </data>
+  <data name="MicTestPlayingProcessed" xml:space="preserve">
+    <value>Playing with the processing…</value>
+  </data>
+  <data name="MicTestPlayingOriginal" xml:space="preserve">
+    <value>Playing as recorded…</value>
+  </data>
+  <data name="MicTestPlayed" xml:space="preserve">
+    <value>Played. Play again, or record a new test.</value>
+  </data>
+  <data name="MicTestStopped" xml:space="preserve">
+    <value>Stopped.</value>
+  </data>
+  <data name="MicTestPlayFailed" xml:space="preserve">
+    <value>It couldn't be played: {0}</value>
+  </data>
+  <data name="RulerDpiAutomatic" xml:space="preserve">
+    <value>Automatic (each monitor's scale: 96 at 100%)</value>
+  </data>
+  <data name="HdrNoMonitor" xml:space="preserve">
+    <value>No monitor is in HDR mode now.</value>
+  </data>
+  <data name="HdrMonitor" xml:space="preserve">
+    <value>{0} is in HDR mode (SDR content at {1:0} nits)</value>
+  </data>
+  <data name="HdrMonitorList" xml:space="preserve">
+    <value>{0}.</value>
+  </data>
+  <data name="HdrExplanation" xml:space="preserve">
+    <value>{0} On a monitor in HDR mode, captures, recordings and the magnifier read the screen in 16-bit float and turn it into SDR the way an SDR monitor would show it; HDR highlights brighter than SDR white become white. This uses Windows.Graphics.Capture, so Windows 10 shows its yellow border on that monitor.</value>
+  </data>
+  <data name="StartupFailed" xml:space="preserve">
+    <value>Could not change "Start with Windows": {0}</value>
+  </data>
+  <data name="OcrNotInstalled" xml:space="preserve">
+    <value>{0} (not installed)</value>
+  </data>
+  <data name="MicrophoneNotConnected" xml:space="preserve">
+    <value>The microphone chosen before (not connected)</value>
+  </data>
+  <data name="OutputDeviceNotConnected" xml:space="preserve">
+    <value>The output device chosen before (not connected)</value>
+  </data>
+  <data name="FileNameError" xml:space="preserve">
+    <value>File name: {0}</value>
+  </data>
+  <data name="FolderError" xml:space="preserve">
+    <value>Folder: use a full path such as D:\Screenshots (or leave it empty for the default).</value>
+  </data>
+  <data name="FixedSizeError" xml:space="preserve">
+    <value>Fixed-size region: write the size as width × height in pixels, e.g. 800 × 600.</value>
+  </data>
+  <data name="WorkflowEmptyError" xml:space="preserve">
+    <value>After capture: switch on at least one step, such as "Open in the editor" or "Save to file".</value>
+  </data>
+  <data name="AppNotChosenError" xml:space="preserve">
+    <value>Sound: choose the app whose sound is recorded (or left out), or record all sound.</value>
+  </data>
+  <data name="HotkeyNotSet" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="HotkeyInvalid" xml:space="preserve">
+    <value>Not a valid hotkey</value>
+  </data>
+  <data name="HotkeyInvalidError" xml:space="preserve">
+    <value>{0}: "{1}" is not a valid hotkey.</value>
+  </data>
+  <data name="HotkeyNeedsModifier" xml:space="preserve">
+    <value>Add Ctrl, Alt, Shift or Win</value>
+  </data>
+  <data name="HotkeyAloneError" xml:space="preserve">
+    <value>{0}: {1} on its own would block that key in every app; add Ctrl, Alt, Shift or Win.</value>
+  </data>
+  <data name="HotkeyClashError" xml:space="preserve">
+    <value>{0}: {1} is already used for {2}.</value>
+  </data>
+  <data name="HotkeyAppliesOnSave" xml:space="preserve">
+    <value>Applies when you save</value>
+  </data>
+  <data name="HotkeyWhileRecording" xml:space="preserve">
+    <value>Works while recording</value>
+  </data>
+  <data name="HotkeyActive" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="ChooseCaptureFolder" xml:space="preserve">
+    <value>Choose where captures are saved</value>
+  </data>
+  <data name="FormatPng" xml:space="preserve">
+    <value>PNG (lossless)</value>
+  </data>
+  <data name="QualitySmall" xml:space="preserve">
+    <value>Small files</value>
+  </data>
+  <data name="QualityBalanced" xml:space="preserve">
+    <value>Balanced (recommended)</value>
+  </data>
+  <data name="QualityHigh" xml:space="preserve">
+    <value>High quality</value>
+  </data>
+  <data name="QualityLossless" xml:space="preserve">
+    <value>Near lossless (very large files)</value>
+  </data>
+  <data name="TracksMixed" xml:space="preserve">
+    <value>One track with everything (plays everywhere)</value>
+  </data>
+  <data name="TracksSeparate" xml:space="preserve">
+    <value>One track per source (for editing)</value>
+  </data>
+  <data name="TracksBoth" xml:space="preserve">
+    <value>The mix, then one track per source</value>
+  </data>
+  <data name="AudioAll" xml:space="preserve">
+    <value>All sound</value>
+  </data>
+  <data name="AudioOnlyApp" xml:space="preserve">
+    <value>Only one app</value>
+  </data>
+  <data name="AudioAllExceptApp" xml:space="preserve">
+    <value>All sound except one app</value>
+  </data>
+  <data name="BackendAuto" xml:space="preserve">
+    <value>Automatic (recommended)</value>
+  </data>
+  <data name="BackendGdi" xml:space="preserve">
+    <value>GDI (classic)</value>
+  </data>
+  <data name="HdrAuto" xml:space="preserve">
+    <value>Tone-map to SDR, as on the screen (recommended)</value>
+  </data>
+  <data name="HdrOff" xml:space="preserve">
+    <value>As Windows gives it to older apps (8-bit)</value>
+  </data>
+  <data name="FullScreenAll" xml:space="preserve">
+    <value>One image of all monitors</value>
+  </data>
+  <data name="FullScreenEach" xml:space="preserve">
+    <value>One image per monitor</value>
+  </data>
+  <data name="FullScreenBoth" xml:space="preserve">
+    <value>Both</value>
+  </data>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>Use the Windows setting</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="RulerPixels" xml:space="preserve">
+    <value>Pixels</value>
+  </data>
+  <data name="RulerInches" xml:space="preserve">
+    <value>Inches</value>
+  </data>
+  <data name="RulerCentimetres" xml:space="preserve">
+    <value>Centimetres</value>
+  </data>
+  <data name="PreviewWindowTitle" xml:space="preserve">
+    <value>Untitled - Notepad</value>
+  </data>
 </root>

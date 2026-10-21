@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Interop;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Settings;
@@ -17,13 +18,22 @@ public sealed partial class ScrollProgressViewModel(IUiDispatcher ui, Action can
     private volatile bool _stopRequested;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Summary))]
     private int _frames;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Summary))]
     private int _height;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MethodText))]
     private string _method = string.Empty;
+
+    /// <summary>"12 parts · 4800 px".</summary>
+    public string Summary => CapturingText.ScrollProgress(Frames, Height);
+
+    /// <summary>"Scrolling with the mouse wheel".</summary>
+    public string MethodText => CapturingText.ScrollingWith(Method);
 
     public bool StopRequested => _stopRequested;
 

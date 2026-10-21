@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="SystemAudio" xml:space="preserve">
+    <value>System audio</value>
+    <comment>a recording's sound source while no device is recorded</comment>
+  </data>
+  <data name="Microphone" xml:space="preserve">
+    <value>Microphone</value>
+    <comment>a recording's sound source while no device is recorded</comment>
+  </data>
+  <data name="SystemAudioDevice" xml:space="preserve">
+    <value>system audio ({0})</value>
+    <comment>a sound source in messages; {0}: the output device's name (Headphones (H5))</comment>
+  </data>
+  <data name="SystemAudioExcept" xml:space="preserve">
+    <value>system audio except {0}</value>
+    <comment>a sound source in messages; {0}: an app's name</comment>
+  </data>
+  <data name="AppSound" xml:space="preserve">
+    <value>{0}'s sound</value>
+    <comment>a sound source in messages; {0}: an app's name</comment>
+  </data>
+  <data name="ExcludeAppNeedsNewerWindows" xml:space="preserve">
+    <value>Recording all sound except one app needs Windows 10 version 2004 or later.</value>
+  </data>
+  <data name="OneAppNeedsNewerWindows" xml:space="preserve">
+    <value>Recording one app's sound needs Windows 10 version 2004 or later.</value>
+  </data>
+  <data name="NotRunning" xml:space="preserve">
+    <value>not running</value>
+    <comment>why an app's sound can't be recorded</comment>
+  </data>
+  <data name="ExcludedAppNotRunning" xml:space="preserve">
+    <value>{0} isn't running, so all sound is recorded; once it starts, its sound is left out.</value>
+    <comment>{0}: an app's name</comment>
+  </data>
+  <data name="RecordedAppNotRunning" xml:space="preserve">
+    <value>{0} isn't running, so its sound is silent until it starts.</value>
+    <comment>{0}: an app's name</comment>
+  </data>
+  <data name="CouldNotRecord" xml:space="preserve">
+    <value>{0} couldn't be recorded ({1}).</value>
+    <comment>{0}: a sound source; {1}: Windows' error message</comment>
+  </data>
+  <data name="NoOutputDevice" xml:space="preserve">
+    <value>No sound output device is connected, so system audio is silent until one is.</value>
+  </data>
+  <data name="NoMicrophone" xml:space="preserve">
+    <value>No microphone is connected, so the microphone is silent until one is.</value>
+  </data>
+  <data name="ChosenOutputDeviceMissing" xml:space="preserve">
+    <value>The output device chosen in Settings isn't connected, so system audio is silent until it is.</value>
+  </data>
+  <data name="ChosenMicrophoneMissing" xml:space="preserve">
+    <value>The microphone chosen in Settings isn't connected, so it is silent until it is.</value>
+  </data>
+  <data name="DevicesNotListed" xml:space="preserve">
+    <value>Windows' sound devices couldn't be listed ({0}).</value>
+    <comment>{0}: Windows' error message</comment>
+  </data>
+  <data name="DeviceNotAllowed" xml:space="preserve">
+    <value>Windows doesn't let apps use {0} (Settings › Privacy › Microphone › Allow desktop apps to access your microphone), so it isn't recorded.</value>
+    <comment>{0}: a sound source; the path is the one of Windows' Settings app</comment>
+  </data>
+  <data name="DeviceUnusable" xml:space="preserve">
+    <value>{0} couldn't be used ({1}), so it isn't recorded.</value>
+    <comment>{0}: a sound source; {1}: Windows' error message</comment>
+  </data>
+  <data name="NoOtherMicrophone" xml:space="preserve">
+    <value>{0} stopped working, and no other microphone took over. Its sound is silent in the recording until one does.</value>
+    <comment>{0}: a sound source</comment>
+  </data>
+  <data name="NoOtherOutputDevice" xml:space="preserve">
+    <value>{0} stopped working, and no other output device took over. Its sound is silent in the recording until one does.</value>
+    <comment>{0}: a sound source</comment>
+  </data>
+  <data name="NewDefaultMicrophone" xml:space="preserve">
+    <value>The microphone recorded is now {0}, the new default microphone.</value>
+    <comment>{0}: a microphone's name</comment>
+  </data>
+  <data name="NewDefaultOutputDevice" xml:space="preserve">
+    <value>System audio now comes from {0}, the new default output device.</value>
+    <comment>{0}: an output device's name</comment>
+  </data>
+  <data name="DeviceConnected" xml:space="preserve">
+    <value>{0} is connected now and is being recorded.</value>
+    <comment>{0}: a sound source</comment>
+  </data>
+  <data name="DeviceWorksAgain" xml:space="preserve">
+    <value>{0} works again and is being recorded.</value>
+    <comment>{0}: a sound source</comment>
+  </data>
+  <data name="DeviceStopped" xml:space="preserve">
+    <value>{0} stopped working ({1}). Its sound is silent in the recording until it is back.</value>
+    <comment>{0}: a sound source; {1}: Windows' error message</comment>
+  </data>
+  <data name="DeviceDisconnected" xml:space="preserve">
+    <value>{0} was disconnected. Its sound is silent in the recording until it is back.</value>
+    <comment>{0}: a sound source</comment>
+  </data>
+  <data name="NoDefaultMicrophone" xml:space="preserve">
+    <value>There is no default microphone any more, so {0} isn't recorded. Its sound is silent in the recording until there is one.</value>
+    <comment>{0}: a sound source</comment>
+  </data>
+  <data name="NoDefaultOutputDevice" xml:space="preserve">
+    <value>There is no default output device any more, so {0} isn't recorded. Its sound is silent in the recording until there is one.</value>
+    <comment>{0}: a sound source</comment>
+  </data>
+  <data name="AppNotRecordable" xml:space="preserve">
+    <value>{0} couldn't be recorded ({1}). It is silent in the recording until it can be.</value>
+    <comment>{0}: a sound source (an app's sound); {1}: why</comment>
+  </data>
+  <data name="AppLeftOut" xml:space="preserve">
+    <value>{0} is running now, so its sound is left out of the recording.</value>
+    <comment>{0}: an app's name</comment>
+  </data>
+  <data name="RecordedAgain" xml:space="preserve">
+    <value>{0} is being recorded again.</value>
+    <comment>{0}: a sound source (an app's sound)</comment>
+  </data>
+  <data name="AppStartedAgain" xml:space="preserve">
+    <value>{0} was started again; its sound is being recorded again.</value>
+    <comment>{0}: an app's name</comment>
+  </data>
+  <data name="AppStarted" xml:space="preserve">
+    <value>{0} started; its sound is being recorded.</value>
+    <comment>{0}: an app's name</comment>
+  </data>
+  <data name="AppSoundStopped" xml:space="preserve">
+    <value>{0} stopped ({1}). It is silent in the recording until it can be recorded again.</value>
+    <comment>{0}: a sound source (an app's sound); {1}: Windows' error message</comment>
+  </data>
+  <data name="NoiseSuppressionOff" xml:space="preserve">
+    <value>Noise suppression is turned off.</value>
+  </data>
+  <data name="RnnoiseMissing" xml:space="preserve">
+    <value>Noise suppression needs RNNoise ({0}), which isn't in this copy of the app.</value>
+    <comment>{0}: the path of rnnoise.dll</comment>
+  </data>
+  <data name="RnnoiseFrameSize" xml:space="preserve">
+    <value>This rnnoise.dll uses another frame size.</value>
+  </data>
+  <data name="RnnoiseNotLoaded" xml:space="preserve">
+    <value>RNNoise couldn't be loaded ({0}).</value>
+    <comment>{0}: the error message (English)</comment>
+  </data>
+  <data name="RnnoiseNotStarted" xml:space="preserve">
+    <value>RNNoise couldn't start.</value>
+  </data>
+  <data name="MicrophoneUnusable" xml:space="preserve">
+    <value>The microphone can't be used.</value>
+    <comment>microphone test in Settings</comment>
+  </data>
+  <data name="MicrophoneSentNoSound" xml:space="preserve">
+    <value>The microphone sent no sound.</value>
+    <comment>microphone test in Settings</comment>
+  </data>
+</root>

@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WholePixelsFormat" xml:space="preserve">
+    <value>{0:0} px</value>
+  </data>
+  <data name="WholePercentFormat" xml:space="preserve">
+    <value>{0:0}%</value>
+  </data>
+  <data name="WholeSecondsFormat" xml:space="preserve">
+    <value>{0:0} ث</value>
+  </data>
+  <data name="WholePointsFormat" xml:space="preserve">
+    <value>{0:0} pt</value>
+  </data>
+  <data name="SecondsOneDecimalFormat" xml:space="preserve">
+    <value>{0:0.0} ث</value>
+  </data>
+  <data name="OverlaysTab" xml:space="preserve">
+    <value>التراكبات</value>
+  </data>
+  <data name="WhileRecording" xml:space="preserve">
+    <value>أثناء التسجيل</value>
+  </data>
+  <data name="BurnIn" xml:space="preserve">
+    <value>رسم التراكبات داخل الفيديو</value>
+  </data>
+  <data name="AddLater" xml:space="preserve">
+    <value>إبقاء الفيديو نظيفًا، وإضافة التراكبات لاحقًا</value>
+  </data>
+  <data name="AddLaterHint" xml:space="preserve">
+    <value>الإضافة لاحقًا: قائمة منطقة الإعلامات › إضافة التراكبات إلى تسجيل…، ويحتاج ذلك إلى ملف البيانات الوصفية. تُرسم التراكبات بالطريقة نفسها في الحالتين.</value>
+  </data>
+  <data name="WriteMetadata" xml:space="preserve">
+    <value>حفظ ملف بيانات وصفية بجانب كل تسجيل (name.cgmeta.json)</value>
+  </data>
+  <data name="MetadataHint" xml:space="preserve">
+    <value>موضع المؤشر في كل إطار، والنقرات، والمفاتيح كما يعرضها تراكب ضغطات المفاتيح، والتطبيق الذي كان في المقدمة، بحسب توقيت الفيديو: لإضافة التراكبات لاحقًا وللتحرير.</value>
+  </data>
+  <data name="ClicksSection" xml:space="preserve">
+    <value>النقرات</value>
+  </data>
+  <data name="ShowClicks" xml:space="preserve">
+    <value>إظهار النقرات بحلقة تتسع</value>
+  </data>
+  <data name="LeftButton" xml:space="preserve">
+    <value>الزر الأيسر</value>
+  </data>
+  <data name="LeftButtonColour" xml:space="preserve">
+    <value>لون الزر الأيسر</value>
+  </data>
+  <data name="RightButton" xml:space="preserve">
+    <value>الزر الأيمن</value>
+  </data>
+  <data name="RightButtonColour" xml:space="preserve">
+    <value>لون الزر الأيمن</value>
+  </data>
+  <data name="MiddleButtons" xml:space="preserve">
+    <value>الزر الأوسط والأزرار الجانبية</value>
+  </data>
+  <data name="MiddleButtonColour" xml:space="preserve">
+    <value>لون الزر الأوسط</value>
+  </data>
+  <data name="RingSize" xml:space="preserve">
+    <value>حجم الحلقة</value>
+  </data>
+  <data name="ClickSound" xml:space="preserve">
+    <value>إضافة صوت نقرة إلى صوت التسجيل</value>
+  </data>
+  <data name="ClickSoundHint" xml:space="preserve">
+    <value>طقّة قصيرة عند كل ضغطة، تُمزج في التسجيل (ولا تُشغَّل بصوت مسموع)، ومع مسار لكل مصدر يكون لها مسار خاص بها.</value>
+  </data>
+  <data name="PointerSection" xml:space="preserve">
+    <value>المؤشر</value>
+  </data>
+  <data name="Effect" xml:space="preserve">
+    <value>التأثير</value>
+  </data>
+  <data name="PointerEffect" xml:space="preserve">
+    <value>تأثير المؤشر</value>
+  </data>
+  <data name="HaloColour" xml:space="preserve">
+    <value>لون الهالة</value>
+  </data>
+  <data name="Radius" xml:space="preserve">
+    <value>نصف القطر</value>
+  </data>
+  <data name="EffectRadius" xml:space="preserve">
+    <value>نصف قطر التأثير</value>
+  </data>
+  <data name="DimBy" xml:space="preserve">
+    <value>تعتيم الباقي بنسبة</value>
+  </data>
+  <data name="SpotlightDimming" xml:space="preserve">
+    <value>تعتيم الضوء المسلّط</value>
+  </data>
+  <data name="PointerSize" xml:space="preserve">
+    <value>حجم المؤشر</value>
+  </data>
+  <data name="HideIdlePointer" xml:space="preserve">
+    <value>إخفاء المؤشر عند سكونه لمدة</value>
+  </data>
+  <data name="IdleTime" xml:space="preserve">
+    <value>مدة السكون</value>
+  </data>
+  <data name="PointerHint" xml:space="preserve">
+    <value>تكبير المؤشر أو إخفاؤه يعني أن التطبيق يرسم المؤشر بنفسه بدلًا من Windows (يُرسم مؤشر النص بالأسود بحافة بيضاء). يحتاج ذلك إلى التسجيل › إظهار مؤشر الماوس.</value>
+  </data>
+  <data name="KeystrokesSection" xml:space="preserve">
+    <value>ضغطات المفاتيح</value>
+  </data>
+  <data name="Show" xml:space="preserve">
+    <value>ما يُعرض</value>
+  </data>
+  <data name="KeystrokesShown" xml:space="preserve">
+    <value>ضغطات المفاتيح المعروضة</value>
+  </data>
+  <data name="Where" xml:space="preserve">
+    <value>الموضع</value>
+  </data>
+  <data name="KeystrokePosition" xml:space="preserve">
+    <value>موضع ضغطات المفاتيح</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>الخط</value>
+  </data>
+  <data name="KeystrokeFont" xml:space="preserve">
+    <value>خط ضغطات المفاتيح</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>الحجم</value>
+  </data>
+  <data name="KeystrokeSize" xml:space="preserve">
+    <value>حجم ضغطات المفاتيح</value>
+  </data>
+  <data name="StayAfterLastKey" xml:space="preserve">
+    <value>البقاء بعد آخر مفتاح</value>
+  </data>
+  <data name="KeystrokeTime" xml:space="preserve">
+    <value>مدة عرض ضغطات المفاتيح</value>
+  </data>
+  <data name="KeystrokesHint" xml:space="preserve">
+    <value>لا تُعرض المفاتيح المكتوبة في حقل كلمة مرور ولا يُحتفظ بها أبدًا، ولا المفاتيح المكتوبة في التطبيقات أدناه. لا توجد المفاتيح إلا في التسجيل وملف بياناته الوصفية، ولا في أي مكان آخر. يمكن لشريط الأدوات إخفاؤها لبعض الوقت أثناء التسجيل.</value>
+  </data>
+  <data name="ExcludedAppsLabel" xml:space="preserve">
+    <value>عدم إظهار المفاتيح المكتوبة أبدًا في</value>
+  </data>
+  <data name="ExcludedApps" xml:space="preserve">
+    <value>التطبيقات التي لا تُعرض مفاتيحها أبدًا</value>
+  </data>
+  <data name="AppToAdd" xml:space="preserve">
+    <value>التطبيق المراد إضافته</value>
+  </data>
+  <data name="AppToAddTip" xml:space="preserve">
+    <value>تطبيق قيد التشغيل، أو اكتب اسم ملف برنامج مثل keepass.exe</value>
+  </data>
+  <data name="WebcamSection" xml:space="preserve">
+    <value>كاميرا الويب</value>
+  </data>
+  <data name="RecordWebcam" xml:space="preserve">
+    <value>تسجيل كاميرا الويب: تُرسم فوق التسجيل، وتُحفظ في مسار فيديو خاص بها</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>الكاميرا</value>
+  </data>
+  <data name="Picture" xml:space="preserve">
+    <value>الصورة</value>
+  </data>
+  <data name="WebcamPictureSize" xml:space="preserve">
+    <value>حجم صورة كاميرا الويب</value>
+  </data>
+  <data name="WebcamFrameRate" xml:space="preserve">
+    <value>معدل إطارات كاميرا الويب</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>الشكل</value>
+  </data>
+  <data name="WebcamShape" xml:space="preserve">
+    <value>شكل كاميرا الويب</value>
+  </data>
+  <data name="WebcamSizeLabel" xml:space="preserve">
+    <value>الحجم (نسبة من الارتفاع)</value>
+  </data>
+  <data name="WebcamSize" xml:space="preserve">
+    <value>حجم كاميرا الويب</value>
+  </data>
+  <data name="Border" xml:space="preserve">
+    <value>الإطار</value>
+  </data>
+  <data name="WebcamBorderColour" xml:space="preserve">
+    <value>لون إطار كاميرا الويب</value>
+  </data>
+  <data name="WebcamBorderWidth" xml:space="preserve">
+    <value>عرض إطار كاميرا الويب</value>
+  </data>
+  <data name="Mirror" xml:space="preserve">
+    <value>عكسها (يبقى مسارها الخاص كما تراه الكاميرا)</value>
+  </data>
+  <data name="RecordedArea" xml:space="preserve">
+    <value>المنطقة المسجَّلة</value>
+  </data>
+  <data name="WebcamPlacement" xml:space="preserve">
+    <value>موضع كاميرا الويب</value>
+  </data>
+  <data name="WebcamHint" xml:space="preserve">
+    <value>اسحب كاميرا الويب إلى موضعها. عند وجود كاميرا، تظهر صورتها هنا ما دامت هذه الصفحة مفتوحة.</value>
+  </data>
+  <data name="DrawingSection" xml:space="preserve">
+    <value>الرسم على الشاشة</value>
+  </data>
+  <data name="PenColour" xml:space="preserve">
+    <value>لون القلم</value>
+  </data>
+  <data name="PenWidth" xml:space="preserve">
+    <value>عرض القلم</value>
+  </data>
+  <data name="FadeAfter" xml:space="preserve">
+    <value>تتلاشى الرسوم بعد</value>
+  </data>
+  <data name="FadeAfterName" xml:space="preserve">
+    <value>تلاشي الرسوم بعد</value>
+  </data>
+  <data name="DrawingHint" xml:space="preserve">
+    <value>أثناء التسجيل، يتيح لك مفتاح اختصار «الرسم على الشاشة» (الإعدادات › مفاتيح الاختصار) أو القلم في شريط الأدوات الرسم فوق المنطقة المسجَّلة، فيُسجَّل الرسم ولا يُسجَّل شريط الأدوات. ينهي Esc الرسم، ويمسحه Delete، ويتراجع Ctrl+Z، وتختار المفاتيح من 1 إلى 4 القلم أو قلم التمييز أو السهم أو المستطيل.</value>
+  </data>
+  <data name="PointerHalo" xml:space="preserve">
+    <value>هالة حوله</value>
+  </data>
+  <data name="PointerSpotlight" xml:space="preserve">
+    <value>ضوء مسلّط عليه (مع تعتيم الباقي)</value>
+  </data>
+  <data name="KeystrokesOff" xml:space="preserve">
+    <value>لا شيء</value>
+  </data>
+  <data name="KeystrokesShortcuts" xml:space="preserve">
+    <value>الاختصارات (Ctrl أو Alt أو Win + مفتاح، ومفاتيح F، وEsc)</value>
+  </data>
+  <data name="KeystrokesAll" xml:space="preserve">
+    <value>كل المفاتيح، بما فيها الكتابة</value>
+  </data>
+  <data name="AnchorBottomCenter" xml:space="preserve">
+    <value>أسفل الوسط</value>
+  </data>
+  <data name="AnchorBottomLeft" xml:space="preserve">
+    <value>أسفل اليسار</value>
+  </data>
+  <data name="AnchorBottomRight" xml:space="preserve">
+    <value>أسفل اليمين</value>
+  </data>
+  <data name="AnchorTopCenter" xml:space="preserve">
+    <value>أعلى الوسط</value>
+  </data>
+  <data name="AnchorTopLeft" xml:space="preserve">
+    <value>أعلى اليسار</value>
+  </data>
+  <data name="AnchorTopRight" xml:space="preserve">
+    <value>أعلى اليمين</value>
+  </data>
+  <data name="ShapeCircle" xml:space="preserve">
+    <value>دائرة</value>
+  </data>
+  <data name="ShapeRoundedRectangle" xml:space="preserve">
+    <value>مستطيل بزوايا مستديرة</value>
+  </data>
+  <data name="FirstCamera" xml:space="preserve">
+    <value>أول كاميرا يُعثر عليها</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>أبدًا</value>
+  </data>
+  <data name="NoCamera" xml:space="preserve">
+    <value>لا توجد كاميرا موصولة الآن.</value>
+  </data>
+  <data name="CameraNotConnected" xml:space="preserve">
+    <value>الكاميرا المختارة سابقًا (غير موصولة)</value>
+  </data>
+  <data name="ColorYellow" xml:space="preserve">
+    <value>أصفر</value>
+  </data>
+  <data name="ColorOrange" xml:space="preserve">
+    <value>برتقالي</value>
+  </data>
+  <data name="ColorRed" xml:space="preserve">
+    <value>أحمر</value>
+  </data>
+  <data name="ColorPink" xml:space="preserve">
+    <value>وردي</value>
+  </data>
+  <data name="ColorGreen" xml:space="preserve">
+    <value>أخضر</value>
+  </data>
+  <data name="ColorCyan" xml:space="preserve">
+    <value>سماوي</value>
+  </data>
+  <data name="ColorBlue" xml:space="preserve">
+    <value>أزرق</value>
+  </data>
+  <data name="ColorWhite" xml:space="preserve">
+    <value>أبيض</value>
+  </data>
+  <data name="ColorBlack" xml:space="preserve">
+    <value>أسود</value>
+  </data>
+  <data name="ColorCustom" xml:space="preserve">
+    <value>مخصص ({0})</value>
+  </data>
+</root>

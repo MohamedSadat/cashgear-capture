@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -5,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
@@ -53,7 +55,7 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
         Unit = placement?.Unit ?? RulerUnit.Pixels;
         Origin = placement is null ? null : new PixelPoint(placement.X, placement.Y);
 
-        Title = "CashGear Capture - ruler";
+        Title = ToolsText.RulerWindowTitle;
         WindowStyle = WindowStyle.None;
         ResizeMode = ResizeMode.NoResize;
         Background = RulerVisual.Body;
@@ -274,25 +276,29 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
         return new PixelPoint(area.X + Math.Max(0, (area.Width - Length) / 2), area.Y + (area.Height / 3));
     }
 
+    /// <summary>The key that closes the ruler, as on its keycap.</summary>
+    [Localizable(false)]
+    private const string EscKey = "Esc";
+
     private ContextMenu BuildMenu()
     {
         var menu = new ContextMenu();
-        var across = new MenuItem { Header = "_Across" };
+        var across = new MenuItem { Header = ToolsText.RulerAcross };
         across.Click += (_, _) => { if (IsVertical) Turn(); };
-        var down = new MenuItem { Header = "_Down" };
+        var down = new MenuItem { Header = ToolsText.RulerDown };
         down.Click += (_, _) => { if (!IsVertical) Turn(); };
         menu.Items.Add(across);
         menu.Items.Add(down);
         menu.Items.Add(new Separator());
         foreach (var unit in Enum.GetValues<RulerUnit>())
         {
-            var item = new MenuItem { Header = unit switch { RulerUnit.Pixels => "_Pixels", RulerUnit.Inches => "_Inches", _ => "_Centimetres" } };
+            var item = new MenuItem { Header = unit switch { RulerUnit.Pixels => ToolsText.RulerPixels, RulerUnit.Inches => ToolsText.RulerInches, _ => ToolsText.RulerCentimetres } };
             item.Click += (_, _) => SetUnit(unit);
             menu.Items.Add(item);
         }
 
         menu.Items.Add(new Separator());
-        var close = new MenuItem { Header = "C_lose", InputGestureText = "Esc" };
+        var close = new MenuItem { Header = ToolsText.RulerClose, InputGestureText = EscKey };
         close.Click += (_, _) => Close();
         menu.Items.Add(close);
         menu.Opened += (_, _) =>
@@ -314,6 +320,7 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
         private static readonly Brush Ink = Frozen(new SolidColorBrush(Color.FromRgb(0x30, 0x30, 0x30)));
         private static readonly Brush Marker = Frozen(new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23)));
         private static readonly Brush Readout = Frozen(new SolidColorBrush(Color.FromArgb(0xF0, 0x1C, 0x1C, 0x1C)));
+        [Localizable(false)] // a font's name
         private static readonly Typeface Face = new("Segoe UI");
 
         protected override void OnRender(DrawingContext dc)
@@ -354,7 +361,8 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
                 }
             }
 
-            var unitText = Text($"{UnitName(ruler.Unit)}{(ruler.Unit == RulerUnit.Pixels ? string.Empty : string.Create(CultureInfo.InvariantCulture, $" at {dpi:0} dpi"))}", 9, scale, Ink);
+            var unitName = UnitName(ruler.Unit);
+            var unitText = Text(ruler.Unit == RulerUnit.Pixels ? unitName : ToolsText.UnitAtDpi(unitName, dpi.ToString("0", CultureInfo.InvariantCulture)), 9, scale, Ink);
             dc.DrawText(unitText, vertical ? new Point(thickness - unitText.Width - 3, length - unitText.Height - 16) : new Point(length - unitText.Width - 18, thickness - unitText.Height - 2));
 
             if (ruler.Pointer is { } pointer)

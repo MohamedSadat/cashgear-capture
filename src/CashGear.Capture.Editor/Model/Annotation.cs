@@ -1,4 +1,5 @@
 using CashGear.Capture.Editor.Rendering;
+using CashGear.Capture.Editor.Resources;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Model;
@@ -104,13 +105,21 @@ public abstract record Annotation(AnnotationId Id, AnnotationStyle Style)
 
 public static class AnnotationKindExtensions
 {
-    /// <summary>Lower-case name for undo descriptions ("Undo add arrow").</summary>
+    /// <summary>Lower-case name for undo descriptions ("Undo add arrow"), in the UI language.</summary>
     public static string DisplayName(this AnnotationKind kind) => kind switch
     {
-        AnnotationKind.Freehand => "drawing",
-        AnnotationKind.StepNumber => "step number",
-        AnnotationKind.Pixelate => "pixelation",
-        AnnotationKind.Magnify => "magnifier",
+        AnnotationKind.Arrow => EditorStrings.KindArrow,
+        AnnotationKind.Line => EditorStrings.KindLine,
+        AnnotationKind.Rectangle => EditorStrings.KindRectangle,
+        AnnotationKind.Ellipse => EditorStrings.KindEllipse,
+        AnnotationKind.Freehand => EditorStrings.KindDrawing,
+        AnnotationKind.Highlight => EditorStrings.KindHighlight,
+        AnnotationKind.Text => EditorStrings.KindText,
+        AnnotationKind.StepNumber => EditorStrings.KindStepNumber,
+        AnnotationKind.Blur => EditorStrings.KindBlur,
+        AnnotationKind.Pixelate => EditorStrings.KindPixelation,
+        AnnotationKind.Spotlight => EditorStrings.KindSpotlight,
+        AnnotationKind.Magnify => EditorStrings.KindMagnifier,
         _ => kind.ToString().ToLowerInvariant(),
     };
 }

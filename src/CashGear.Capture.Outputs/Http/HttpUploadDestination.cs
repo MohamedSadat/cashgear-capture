@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Outputs.Credentials;
+using CashGear.Capture.Outputs.Resources;
 
 namespace CashGear.Capture.Outputs.Http;
 
@@ -45,7 +46,7 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
         var path = await item.GetFileAsync(ct).ConfigureAwait(false);
         await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
         var result = await PostAsync(file, Path.GetFileName(path), ct).ConfigureAwait(false);
-        return result.Succeeded ? result with { Message = $"Uploaded to {DisplayName}: {result.Link}" } : result;
+        return result.Succeeded ? result with { Message = OutputsStrings.UploadedTo(DisplayName, result.Link) } : result;
     }
 
     /// <summary>Uploads a 1 × 1 PNG called <c>cashgear-test.png</c> and shows the link the reply gives.</summary>
@@ -53,14 +54,14 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
     {
         using var probe = new MemoryStream(TestImage.Png);
         var result = await PostAsync(probe, "cashgear-test.png", ct).ConfigureAwait(false);
-        return result.Succeeded ? result with { Message = $"Uploaded a 1 × 1 test picture; the link is {result.Link}" } : result;
+        return result.Succeeded ? result with { Message = OutputsStrings.TestPictureUploaded(result.Link) } : result;
     }
 
     private async Task<OutputResult> PostAsync(Stream content, string fileName, CancellationToken ct)
     {
         if (!Uri.TryCreate(upload.Url, UriKind.Absolute, out var url) || (url.Scheme != Uri.UriSchemeHttps && url.Scheme != Uri.UriSchemeHttp))
         {
-            return OutputResult.Failed("The address must start with https:// (or http://).");
+            return OutputResult.Failed(OutputsStrings.AddressNotHttp);
         }
 
         using var form = new MultipartFormDataContent();
@@ -78,7 +79,7 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
         {
             if (!request.Headers.TryAddWithoutValidation(header.Name, header.Value))
             {
-                return OutputResult.Failed($"\"{header.Name}\" can't be sent as a header.");
+                return OutputResult.Failed(OutputsStrings.BadHeader(header.Name));
             }
         }
 
@@ -86,12 +87,12 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
         {
             if (credentials.Get(CredentialKeys.Token(upload)) is not { } token)
             {
-                return OutputResult.Failed($"No value is saved for the {authHeader} header (Settings › Destinations).");
+                return OutputResult.Failed(OutputsStrings.NoHeaderValue(authHeader));
             }
 
             if (!request.Headers.TryAddWithoutValidation(authHeader, token))
             {
-                return OutputResult.Failed($"\"{authHeader}\" can't be sent as a header.");
+                return OutputResult.Failed(OutputsStrings.BadHeader(authHeader));
             }
         }
 
@@ -102,11 +103,11 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
         }
         catch (HttpRequestException ex)
         {
-            return OutputResult.Failed($"Couldn't reach {url.Host}: {ex.Message}");
+            return OutputResult.Failed(OutputsStrings.CouldNotReach(url.Host, ex.Message));
         }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {
-            return OutputResult.Failed($"{url.Host} didn't answer within {http.Client.Timeout.TotalMinutes:0} minutes.");
+            return OutputResult.Failed(OutputsStrings.NoAnswer((long)Math.Round(http.Client.Timeout.TotalMinutes, MidpointRounding.AwayFromZero), url.Host));
         }
 
         using (response)
@@ -114,7 +115,7 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
             var reply = await ReadAsync(response, ct).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                return OutputResult.Failed($"{url.Host} answered {(int)response.StatusCode} {response.ReasonPhrase}: {LinkPath.Start(reply)}");
+                return OutputResult.Failed(OutputsStrings.ServerAnswered(url.Host, (int)response.StatusCode, response.ReasonPhrase, LinkPath.Start(reply)));
             }
 
             string link;
@@ -124,14 +125,14 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
             }
             catch (FormatException ex)
             {
-                return OutputResult.Failed("The link isn't in the reply. " + ex.Message);
+                return OutputResult.Failed(OutputsStrings.LinkNotInReply(ex.Message));
             }
 
             return Uri.TryCreate(link, UriKind.Absolute, out var linkUri) && (linkUri.Scheme == Uri.UriSchemeHttps || linkUri.Scheme == Uri.UriSchemeHttp)
-                ? new OutputResult(true, "Uploaded") { Link = linkUri.ToString() }
+                ? new OutputResult(true, OutputsStrings.Uploaded) { Link = linkUri.ToString() }
                 : OutputResult.Failed(upload.LinkPath is null
-                    ? $"The reply isn't a link (set where the link is in Settings › Destinations): {LinkPath.Start(reply)}"
-                    : $"{upload.LinkPath} isn't a web address: {LinkPath.Start(link)}");
+                    ? OutputsStrings.ReplyNotLink(LinkPath.Start(reply))
+                    : OutputsStrings.NotWebAddress(upload.LinkPath, LinkPath.Start(link)));
         }
     }
 
@@ -170,7 +171,7 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
         _ => "application/octet-stream",
     };
 
-    private static string HostOf(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.Host : "HTTP upload";
+    private static string HostOf(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.Host : OutputsStrings.HttpUpload;
 }
 
 /// <summary>A 1 × 1 transparent PNG, for tests of uploads.</summary>

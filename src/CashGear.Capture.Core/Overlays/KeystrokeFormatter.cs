@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using CashGear.Capture.Core.Settings;
 
@@ -15,6 +16,8 @@ public delegate string? KeyCharacters(uint virtualKey, bool shift, bool altGr);
 /// text gathered into one caption. Modifier keys alone show nothing. Fed every key press and release in order, from
 /// one thread; it remembers which modifiers are held.
 /// </summary>
+// Key names stay English on purpose: they match the keycaps (docs\localization.md).
+[Localizable(false)]
 public sealed class KeystrokeFormatter(KeystrokeMode mode, TimeSpan hold, KeyCharacters? characters = null)
 {
     public const int MaxTypedLength = 40;

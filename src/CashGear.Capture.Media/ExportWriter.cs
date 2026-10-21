@@ -1,3 +1,4 @@
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -96,8 +97,8 @@ public sealed unsafe class ExportWriter : IDisposable
             Start();
         }
 
-        FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_output, null), "Writing the export");
-        FfmpegException.Check(ffmpeg.av_write_trailer(_output), "Finishing the export");
+        FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_output, null), MediaStrings.WritingExport);
+        FfmpegException.Check(ffmpeg.av_write_trailer(_output), MediaStrings.FinishingExport);
         ffmpeg.avio_closep(&_output->pb);
         return new FileInfo(_path).Length;
     }
@@ -138,13 +139,13 @@ public sealed unsafe class ExportWriter : IDisposable
             _ => "mp4",
         };
         AVFormatContext* output = null;
-        FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&output, null, format, _path), "Creating the export");
+        FfmpegException.Check(ffmpeg.avformat_alloc_output_context2(&output, null, format, _path), MediaStrings.CreatingExport);
         _output = output;
         foreach (var (_, entry) in _entries.OrderBy(e => e.Key))
         {
             using var setup = entry.Video is { } video ? StreamSetup.From(video) : StreamSetup.From(entry.Audio!, entry.Title ?? "", false);
             var stream = ffmpeg.avformat_new_stream(output, null);
-            FfmpegException.Check(ffmpeg.avcodec_parameters_copy(stream->codecpar, setup.Parameters), "Copying codec settings");
+            FfmpegException.Check(ffmpeg.avcodec_parameters_copy(stream->codecpar, setup.Parameters), MediaStrings.CopyingCodecSettings);
             stream->codecpar->codec_tag = 0;
             if (_container == ExportContainer.Mp4 && stream->codecpar->codec_id == AVCodecID.AV_CODEC_ID_HEVC)
             {
@@ -167,7 +168,7 @@ public sealed unsafe class ExportWriter : IDisposable
             entry.TimeBase = stream->time_base;
         }
 
-        FfmpegException.Check(ffmpeg.avio_open(&output->pb, _path, ffmpeg.AVIO_FLAG_WRITE), $"Creating {_path}");
+        FfmpegException.Check(ffmpeg.avio_open(&output->pb, _path, ffmpeg.AVIO_FLAG_WRITE), MediaStrings.Creating(_path));
         AVDictionary* options = null;
         if (_container is ExportContainer.Mp4 or ExportContainer.M4a)
         {
@@ -179,7 +180,7 @@ public sealed unsafe class ExportWriter : IDisposable
         ffmpeg.av_dict_free(&options);
         if (header < 0)
         {
-            throw new FfmpegException("Starting the export", header, log.Summary());
+            throw new FfmpegException(MediaStrings.StartingExport, header, log.Summary());
         }
 
         foreach (var entry in _entries.Values)
@@ -214,7 +215,7 @@ public sealed unsafe class ExportWriter : IDisposable
             End = Math.Max(End, (raw->pts + raw->duration) * ffmpeg.av_q2d(entry.TimeBase));
         }
 
-        FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_output, raw), "Writing the export");
+        FfmpegException.Check(ffmpeg.av_interleaved_write_frame(_output, raw), MediaStrings.WritingExport);
     }
 
     private sealed class Entry(VideoEncoder? video, AudioEncoder? audio, string? title)

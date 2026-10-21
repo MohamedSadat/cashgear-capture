@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="StepFailed" xml:space="preserve">
+    <value>فشل «{0}»: {1}</value>
+  </data>
+  <data name="DestinationGone" xml:space="preserve">
+    <value>لم يعد «{0}» معدًّا (الإعدادات › الوجهات).</value>
+  </data>
+  <data name="NoRecordings" xml:space="preserve">
+    <value>لا يقبل «{0}» التسجيلات.</value>
+  </data>
+  <data name="NotSetUp" xml:space="preserve">
+    <value>{0} (غير معدّ)</value>
+  </data>
+  <data name="OpenWith" xml:space="preserve">
+    <value>فتح باستخدام {0}</value>
+  </data>
+  <data name="OpenedWith" xml:space="preserve">
+    <value>تم الفتح باستخدام {0}</value>
+  </data>
+  <data name="ProgramGoneSettings" xml:space="preserve">
+    <value>{0} غير موجود (الإعدادات › الوجهات).</value>
+  </data>
+  <data name="ProgramGone" xml:space="preserve">
+    <value>{0} غير موجود.</value>
+  </data>
+  <data name="ProgramNotStarted" xml:space="preserve">
+    <value>تعذّر تشغيل {0}: {1}</value>
+  </data>
+  <data name="ProgramFound" xml:space="preserve">
+    <value>تم العثور على {0}. سيُشغَّل هكذا: {1} {2}</value>
+  </data>
+  <data name="ChooseProgram" xml:space="preserve">
+    <value>اختر البرنامج.</value>
+  </data>
+  <data name="CopyLink" xml:space="preserve">
+    <value>نسخ الرابط</value>
+  </data>
+  <data name="NoLinkToCopy" xml:space="preserve">
+    <value>لا يوجد رابط لنسخه (ضع خطوة رفع قبل «نسخ الرابط»).</value>
+  </data>
+  <data name="LinksCopied_zero" xml:space="preserve">
+    <value>لم يُنسخ أي رابط إلى الحافظة</value>
+  </data>
+  <data name="LinksCopied_one" xml:space="preserve">
+    <value>تم نسخ الرابط إلى الحافظة</value>
+  </data>
+  <data name="LinksCopied_two" xml:space="preserve">
+    <value>تم نسخ رابطين إلى الحافظة</value>
+  </data>
+  <data name="LinksCopied_few" xml:space="preserve">
+    <value>تم نسخ {0} روابط إلى الحافظة</value>
+  </data>
+  <data name="LinksCopied_many" xml:space="preserve">
+    <value>تم نسخ {0} رابطًا إلى الحافظة</value>
+  </data>
+  <data name="LinksCopied_other" xml:space="preserve">
+    <value>تم نسخ {0} رابط إلى الحافظة</value>
+  </data>
+  <data name="NothingToSetUp" xml:space="preserve">
+    <value>لا يوجد ما يلزم إعداده.</value>
+  </data>
+  <data name="HttpUpload" xml:space="preserve">
+    <value>رفع HTTP</value>
+  </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>تم الرفع</value>
+  </data>
+  <data name="UploadedTo" xml:space="preserve">
+    <value>تم الرفع إلى «{0}»: {1}</value>
+  </data>
+  <data name="TestPictureUploaded" xml:space="preserve">
+    <value>تم رفع صورة اختبار بحجم 1 × 1؛ الرابط هو {0}</value>
+  </data>
+  <data name="AddressNotHttp" xml:space="preserve">
+    <value>يجب أن يبدأ العنوان بـ https:// (أو http://).</value>
+  </data>
+  <data name="BadHeader" xml:space="preserve">
+    <value>لا يمكن إرسال «{0}» كرأس HTTP.</value>
+  </data>
+  <data name="NoHeaderValue" xml:space="preserve">
+    <value>لا توجد قيمة محفوظة للرأس {0} (الإعدادات › الوجهات).</value>
+  </data>
+  <data name="CouldNotReach" xml:space="preserve">
+    <value>تعذّر الوصول إلى {0}: {1}</value>
+  </data>
+  <data name="NoAnswer_zero" xml:space="preserve">
+    <value>لم يستجب {1} خلال {0} دقيقة.</value>
+  </data>
+  <data name="NoAnswer_one" xml:space="preserve">
+    <value>لم يستجب {1} خلال دقيقة واحدة.</value>
+  </data>
+  <data name="NoAnswer_two" xml:space="preserve">
+    <value>لم يستجب {1} خلال دقيقتين.</value>
+  </data>
+  <data name="NoAnswer_few" xml:space="preserve">
+    <value>لم يستجب {1} خلال {0} دقائق.</value>
+  </data>
+  <data name="NoAnswer_many" xml:space="preserve">
+    <value>لم يستجب {1} خلال {0} دقيقة.</value>
+  </data>
+  <data name="NoAnswer_other" xml:space="preserve">
+    <value>لم يستجب {1} خلال {0} دقيقة.</value>
+  </data>
+  <data name="ServerAnswered" xml:space="preserve">
+    <value>أجاب {0} بالرمز {1} {2}: {3}</value>
+  </data>
+  <data name="LinkNotInReply" xml:space="preserve">
+    <value>الرابط غير موجود في الرد. {0}</value>
+  </data>
+  <data name="ReplyNotLink" xml:space="preserve">
+    <value>الرد ليس رابطًا (حدّد مكان الرابط في الإعدادات › الوجهات): {0}</value>
+  </data>
+  <data name="NotWebAddress" xml:space="preserve">
+    <value>{0} ليس عنوان ويب: {1}</value>
+  </data>
+  <data name="PathBadIndex" xml:space="preserve">
+    <value>يحتوي «{0}» على [ لا يتبعها رقم ثم ].</value>
+  </data>
+  <data name="PathEndsWithDot" xml:space="preserve">
+    <value>ينتهي «{0}» بنقطة.</value>
+  </data>
+  <data name="PathEmptyName" xml:space="preserve">
+    <value>يحتوي «{0}» على اسم فارغ (نقطتان متتاليتان، أو نقطة في البداية أو النهاية).</value>
+  </data>
+  <data name="ReplyNotJson" xml:space="preserve">
+    <value>الرد ليس بتنسيق JSON: {0}</value>
+  </data>
+  <data name="ReplyNotList" xml:space="preserve">
+    <value>الرد ليس قائمة.</value>
+  </data>
+  <data name="PathNotList" xml:space="preserve">
+    <value>«{0}» ليس قائمة.</value>
+  </data>
+  <data name="ReplyTooShort" xml:space="preserve">
+    <value>عدد عناصر الرد {0}، لذا لا يوجد [{1}].</value>
+  </data>
+  <data name="PathTooShort" xml:space="preserve">
+    <value>عدد عناصر «{0}» هو {1}، لذا لا يوجد [{2}].</value>
+  </data>
+  <data name="ReplyHasNo" xml:space="preserve">
+    <value>لا يحتوي الرد على «{0}»: {1}</value>
+  </data>
+  <data name="PathHasNo" xml:space="preserve">
+    <value>لا يحتوي «{0}» على «{1}».</value>
+  </data>
+  <data name="ReplyNotText" xml:space="preserve">
+    <value>الرد ليس نصًا بل {0}.</value>
+  </data>
+  <data name="PathNotText" xml:space="preserve">
+    <value>«{0}» ليس نصًا بل {1}.</value>
+  </data>
+  <data name="JsonObject" xml:space="preserve">
+    <value>كائن</value>
+  </data>
+  <data name="JsonList" xml:space="preserve">
+    <value>قائمة</value>
+  </data>
+  <data name="JsonBoolean" xml:space="preserve">
+    <value>true أو false</value>
+  </data>
+  <data name="JsonNull" xml:space="preserve">
+    <value>null</value>
+  </data>
+  <data name="ChooseOfficeFile" xml:space="preserve">
+    <value>اختر ملف {0} الذي تُضاف إليه اللقطات (الإعدادات › الوجهات).</value>
+  </data>
+  <data name="FileGone" xml:space="preserve">
+    <value>لم يعد «{0}» موجودًا ({1}).</value>
+  </data>
+  <data name="NewFileEachCapture" xml:space="preserve">
+    <value>يُنشأ ملف جديد لكل لقطة في {0}.</value>
+  </data>
+  <data name="CantWriteTo" xml:space="preserve">
+    <value>تتعذّر الكتابة في {0}: {1}</value>
+  </data>
+  <data name="FileOpenInApp" xml:space="preserve">
+    <value>«{0}» مفتوح في {1} (أو في تطبيق آخر)؛ أغلقه هناك أولًا.</value>
+  </data>
+  <data name="FileReadOnly" xml:space="preserve">
+    <value>لا يمكن تغيير «{0}» (إنه للقراءة فقط، أو ليس ملكك).</value>
+  </data>
+  <data name="NotAppendable" xml:space="preserve">
+    <value>«{0}» ليس ملف {1} تمكن الإضافة إليه ({2}).</value>
+  </data>
+  <data name="NoSlidesPart" xml:space="preserve">
+    <value>لا يحتوي على جزء الشرائح.</value>
+  </data>
+  <data name="NoPresentation" xml:space="preserve">
+    <value>لا يحتوي على عرض تقديمي.</value>
+  </data>
+  <data name="NoSlideLayouts" xml:space="preserve">
+    <value>لا يحتوي على تخطيطات شرائح.</value>
+  </data>
+  <data name="PutIn" xml:space="preserve">
+    <value>أُدرجت في «{0}»</value>
+  </data>
+  <data name="WordDocument" xml:space="preserve">
+    <value>مستند Word</value>
+  </data>
+  <data name="AddTo" xml:space="preserve">
+    <value>إضافة إلى «{0}»</value>
+  </data>
+  <data name="AddedTo" xml:space="preserve">
+    <value>تمت الإضافة إلى «{0}»</value>
+  </data>
+  <data name="WordPicturesOnly" xml:space="preserve">
+    <value>لا يقبل Word إلا الصور.</value>
+  </data>
+  <data name="AddedAtEnd" xml:space="preserve">
+    <value>ستُضاف اللقطات في نهاية «{0}».</value>
+  </data>
+  <data name="PictureName" xml:space="preserve">
+    <value>لقطة {0}</value>
+  </data>
+  <data name="PowerPointSlide" xml:space="preserve">
+    <value>شريحة PowerPoint</value>
+  </data>
+  <data name="AddSlideTo" xml:space="preserve">
+    <value>إضافة شريحة إلى «{0}»</value>
+  </data>
+  <data name="AddedSlideTo" xml:space="preserve">
+    <value>تمت إضافة شريحة إلى «{0}»</value>
+  </data>
+  <data name="PowerPointPicturesOnly" xml:space="preserve">
+    <value>لا يقبل PowerPoint إلا الصور.</value>
+  </data>
+  <data name="SlidesAddedAtEnd" xml:space="preserve">
+    <value>ستُضاف اللقطات كشرائح في نهاية «{0}».</value>
+  </data>
+  <data name="Pdf" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+  <data name="PdfPicturesOnly" xml:space="preserve">
+    <value>لا يقبل ملف PDF إلا الصور.</value>
+  </data>
+  <data name="PdfNotSaved" xml:space="preserve">
+    <value>تعذّر حفظ ملف PDF: {0}</value>
+  </data>
+  <data name="PdfNotSavedNamed" xml:space="preserve">
+    <value>تعذّر حفظ ملف PDF «{0}»: {1}</value>
+  </data>
+  <data name="SavedFile" xml:space="preserve">
+    <value>تم حفظ «{0}»</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>خادم</value>
+  </data>
+  <data name="LoginFolder" xml:space="preserve">
+    <value>مجلد تسجيل الدخول</value>
+  </data>
+  <data name="UploadedAs" xml:space="preserve">
+    <value>تم الرفع إلى «{0}» باسم «{1}»</value>
+  </data>
+  <data name="FileNotTaken" xml:space="preserve">
+    <value>لم يقبل «{0}» الملف.</value>
+  </data>
+  <data name="LoggedInCantWrite" xml:space="preserve">
+    <value>تم تسجيل الدخول، لكن تعذّرت الكتابة في {0}.</value>
+  </data>
+  <data name="FtpTestPlain" xml:space="preserve">
+    <value>تم الاتصال بالخادم {0} باسم المستخدم {1}، دون تشفير؛ وكُتب ملف اختبار في {2} ثم حُذف.</value>
+  </data>
+  <data name="FtpTestTls" xml:space="preserve">
+    <value>تم الاتصال بالخادم {0} باسم المستخدم {1}، بتشفير TLS؛ وكُتب ملف اختبار في {2} ثم حُذف.</value>
+  </data>
+  <data name="SftpTest" xml:space="preserve">
+    <value>تم الاتصال بالخادم {0} باسم المستخدم {1} (مفتاح الخادم {2})؛ وكُتب ملف اختبار في {3} ثم حُذف.</value>
+  </data>
+  <data name="CertificateNotTrusted" xml:space="preserve">
+    <value>لا يثق Windows بشهادة {0} ({1}). بصمتها هي {2}؛ لا تثق بها إلا إذا أكّدها مالك الخادم.</value>
+  </data>
+  <data name="CertificateChanged" xml:space="preserve">
+    <value>تغيّرت شهادة {0}: أصبحت {1}، وليست التي وثقت بها. قد يكون هناك طرف دخيل بينكما؛ تحقّق من الأمر مع مالك الخادم.</value>
+  </data>
+  <data name="CertificateWrongNameAndAuthority" xml:space="preserve">
+    <value>إنها لاسم آخر وليست صادرة عن جهة معروفة</value>
+  </data>
+  <data name="CertificateWrongName" xml:space="preserve">
+    <value>إنها لاسم آخر</value>
+  </data>
+  <data name="CertificateUnknownAuthority" xml:space="preserve">
+    <value>ليست صادرة عن جهة معروفة، كأن تكون موقّعة ذاتيًا</value>
+  </data>
+  <data name="NoCertificate" xml:space="preserve">
+    <value>لا توجد شهادة</value>
+  </data>
+  <data name="FtpLoginRefused" xml:space="preserve">
+    <value>رفض {0} اسم المستخدم أو كلمة المرور ({1}).</value>
+  </data>
+  <data name="NoTls" xml:space="preserve">
+    <value>لا يوفّر {0} التشفير (TLS)؛ لا تختر FTP دون تشفير إلا إذا كان ذلك مقبولًا.</value>
+  </data>
+  <data name="ServerSaid" xml:space="preserve">
+    <value>ردّ {0}: {1}</value>
+  </data>
+  <data name="TlsFailed" xml:space="preserve">
+    <value>فشل الاتصال المشفّر بالخادم {0}: {1}</value>
+  </data>
+  <data name="CouldNotReachPort" xml:space="preserve">
+    <value>تعذّر الوصول إلى {0}:{1}: {2}</value>
+  </data>
+  <data name="SftpNeedsUserName" xml:space="preserve">
+    <value>يحتاج SFTP إلى اسم مستخدم.</value>
+  </data>
+  <data name="KeyNeedsPassphrase" xml:space="preserve">
+    <value>المفتاح {0} محمي بعبارة مرور؛ أدخلها في الإعدادات › الوجهات.</value>
+  </data>
+  <data name="KeyFileUnusable" xml:space="preserve">
+    <value>يتعذّر استخدام ملف المفتاح {0}: {1}</value>
+  </data>
+  <data name="KeyFileUnusablePassphrase" xml:space="preserve">
+    <value>يتعذّر استخدام ملف المفتاح {0} (هل عبارة المرور صحيحة؟): {1}</value>
+  </data>
+  <data name="NoPasswordOrKey" xml:space="preserve">
+    <value>أدخل كلمة مرور أو اختر ملف مفتاح لهذا الخادم.</value>
+  </data>
+  <data name="HostKeyNotTrusted" xml:space="preserve">
+    <value>مفتاح {0} غير موثوق به بعد. بصمته هي {1}؛ لا تثق به إلا إذا كانت هي البصمة التي يعطيها مالك الخادم.</value>
+  </data>
+  <data name="HostKeyChanged" xml:space="preserve">
+    <value>تغيّر مفتاح {0}: أصبح {1}، وليس الذي وثقت به. قد يكون هناك طرف دخيل بينكما؛ تحقّق من الأمر مع مالك الخادم.</value>
+  </data>
+  <data name="SftpLoginRefused" xml:space="preserve">
+    <value>رفض {0} اسم المستخدم أو كلمة المرور أو المفتاح ({1}).</value>
+  </data>
+  <data name="NotAllowed" xml:space="preserve">
+    <value>لم يسمح {0} بذلك: {1}</value>
+  </data>
+  <data name="NoSuchFolder" xml:space="preserve">
+    <value>لا يوجد مجلد كهذا على {0}: {1}</value>
+  </data>
+</root>

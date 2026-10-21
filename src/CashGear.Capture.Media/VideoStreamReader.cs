@@ -1,3 +1,4 @@
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -56,18 +57,18 @@ public sealed unsafe class VideoStreamReader : IDisposable
             var opened = ffmpeg.avformat_open_input(&input, path, null, null);
             if (opened < 0)
             {
-                throw new FfmpegException($"Opening {Path.GetFileName(path)}", opened, log.Summary());
+                throw new FfmpegException(MediaStrings.Opening(Path.GetFileName(path)), opened, log.Summary());
             }
         }
 
         _input = input;
         try
         {
-            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), $"Reading {Path.GetFileName(path)}");
+            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), MediaStrings.Reading(Path.GetFileName(path)));
             _stream = streamIndex >= 0 ? streamIndex : ffmpeg.av_find_best_stream(input, AVMediaType.AVMEDIA_TYPE_VIDEO, -1, -1, null, 0);
             if (_stream < 0 || _stream >= input->nb_streams || input->streams[_stream]->codecpar->codec_type != AVMediaType.AVMEDIA_TYPE_VIDEO)
             {
-                throw new FfmpegException($"{Path.GetFileName(path)} has no video stream {streamIndex}.");
+                throw new FfmpegException(MediaStrings.NoVideoStream(Path.GetFileName(path), streamIndex));
             }
 
             for (var i = 0; i < input->nb_streams; i++)
@@ -82,11 +83,11 @@ public sealed unsafe class VideoStreamReader : IDisposable
             var codec = ffmpeg.avcodec_find_decoder(stream->codecpar->codec_id);
             if (codec is null)
             {
-                throw new FfmpegException($"No decoder for {ffmpeg.avcodec_get_name(stream->codecpar->codec_id)}.");
+                throw new FfmpegException(MediaStrings.NoDecoder(ffmpeg.avcodec_get_name(stream->codecpar->codec_id)));
             }
 
             _context = ffmpeg.avcodec_alloc_context3(codec);
-            FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(_context, stream->codecpar), "Setting up the video decoder");
+            FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(_context, stream->codecpar), MediaStrings.SettingUpVideoDecoder);
             _context->pkt_timebase = stream->time_base;
             if (keyframesOnly)
             {
@@ -103,7 +104,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
                 _context->thread_count = 0; // as many as the processors
             }
 
-            FfmpegException.Check(ffmpeg.avcodec_open2(_context, codec, null), "Opening the video decoder");
+            FfmpegException.Check(ffmpeg.avcodec_open2(_context, codec, null), MediaStrings.OpeningVideoDecoder);
             _packet = ffmpeg.av_packet_alloc();
             _decoded = ffmpeg.av_frame_alloc();
             _transfer = ffmpeg.av_frame_alloc();
@@ -163,7 +164,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
         var target = (long)Math.Floor((time + Tolerance) / _timeBase);
         if (ffmpeg.avformat_seek_file(_input, _stream, long.MinValue, target, target, 0) < 0)
         {
-            FfmpegException.Check(ffmpeg.av_seek_frame(_input, _stream, long.MinValue, ffmpeg.AVSEEK_FLAG_BACKWARD), "Seeking in the video");
+            FfmpegException.Check(ffmpeg.av_seek_frame(_input, _stream, long.MinValue, ffmpeg.AVSEEK_FLAG_BACKWARD), MediaStrings.SeekingInVideo);
         }
 
         ffmpeg.avcodec_flush_buffers(_context);
@@ -292,7 +293,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
                 var result = ffmpeg.av_hwdevice_ctx_create(&device, AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA, null, null, 0);
                 if (result < 0)
                 {
-                    _deviceProblem = new FfmpegException("Creating a Direct3D 11 video device", result, log.Summary()).Message;
+                    _deviceProblem = new FfmpegException(MediaStrings.CreatingD3D11Device, result, log.Summary()).Message;
                 }
                 else
                 {
@@ -368,7 +369,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
 
             if (received != -ffmpeg.EAGAIN)
             {
-                FfmpegException.Check(received, "Decoding the video");
+                FfmpegException.Check(received, MediaStrings.DecodingVideo);
             }
 
             while (true)
@@ -390,7 +391,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
                 ffmpeg.av_packet_unref(_packet);
                 if (sent < 0 && sent != ffmpeg.AVERROR_INVALIDDATA)
                 {
-                    FfmpegException.Check(sent, "Decoding the video");
+                    FfmpegException.Check(sent, MediaStrings.DecodingVideo);
                 }
 
                 break;
@@ -408,7 +409,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
                 ffmpeg.av_frame_unref(_transfer);
             }
 
-            FfmpegException.Check(ffmpeg.av_hwframe_transfer_data(_transfer, frame, 0), "Copying a picture from the graphics card");
+            FfmpegException.Check(ffmpeg.av_hwframe_transfer_data(_transfer, frame, 0), MediaStrings.CopyingFromGraphicsCard);
             source = _transfer;
             IsHardware = true;
         }
@@ -426,7 +427,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
                 (int)(scaling ? SwsFlags.SWS_BILINEAR : SwsFlags.SWS_POINT), null, null, null);
             if (_scaler is null)
             {
-                throw new FfmpegException($"swscale can't convert {(AVPixelFormat)source->format} to BGRA.");
+                throw new FfmpegException(MediaStrings.CantConvertToBgra((AVPixelFormat)source->format));
             }
 
             // The recordings are BT.709 limited range; other videos say what they are (unsaid: 709 for HD, else 601).
@@ -458,7 +459,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
             var rows = ffmpeg.sws_scale(_scaler, _sourcePlanes, _sourceStrides, 0, source->height, _planes, _strides);
             if (rows != height)
             {
-                throw new FfmpegException("Converting a picture", rows < 0 ? rows : ffmpeg.AVERROR_UNKNOWN);
+                throw new FfmpegException(MediaStrings.ConvertingPicture, rows < 0 ? rows : ffmpeg.AVERROR_UNKNOWN);
             }
         }
     }

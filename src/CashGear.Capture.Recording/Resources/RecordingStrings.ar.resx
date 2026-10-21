@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="RemoteNote" xml:space="preserve">
+    <value>سُجّل هذا في جلسة سطح مكتب بعيد: لا يرسل Windows الصور إلا بالقدر الذي يسمح به الاتصال، وقد لا يتوفر مرمّز بطاقة الرسومات.</value>
+  </data>
+  <data name="RecordingUnavailable" xml:space="preserve">
+    <value>تسجيل الشاشة غير متاح. {0}</value>
+  </data>
+  <data name="NoVideoEncoderDetail" xml:space="preserve">
+    <value>لا يعمل أي مرمّز فيديو على هذا الكمبيوتر: {0}</value>
+  </data>
+  <data name="NoVideoEncoder" xml:space="preserve">
+    <value>لا يعمل أي مرمّز فيديو على هذا الكمبيوتر.</value>
+  </data>
+  <data name="NoEncoderCouldRecord" xml:space="preserve">
+    <value>لم يتمكن أي مرمّز فيديو من التسجيل بحجم {0}x{1}. {2}</value>
+  </data>
+  <data name="NoEncoderCouldEncode" xml:space="preserve">
+    <value>لم يتمكن أي مرمّز فيديو من الترميز بحجم {0}x{1}. {2}</value>
+  </data>
+  <data name="WebcamsUnavailable" xml:space="preserve">
+    <value>كاميرات الويب غير متاحة في هذه النسخة من التطبيق.</value>
+  </data>
+  <data name="WebcamSentNoPicture" xml:space="preserve">
+    <value>لم تُرسل الكاميرا «{0}» أي صورة ({1})، لذا لا يتضمّن التسجيل كاميرا الويب.</value>
+  </data>
+  <data name="WebcamTrackStopped" xml:space="preserve">
+    <value>توقف مسار كاميرا الويب الخاص بها ({0})؛ ولا تزال كاميرا الويب مرسومة فوق التسجيل.</value>
+  </data>
+  <data name="AllSystemAudioInstead" xml:space="preserve">
+    <value>{0} يُسجَّل كل صوت النظام بدلًا من ذلك.</value>
+  </data>
+  <data name="VideoHasNoSound" xml:space="preserve">
+    <value>{0} لا يحتوي الفيديو على صوت.</value>
+  </data>
+  <data name="SoundNoteAt" xml:space="preserve">
+    <value>عند {0}: {1}</value>
+  </data>
+  <data name="VideoEncoderHung" xml:space="preserve">
+    <value>توقف مرمّز الفيديو عن الاستجابة.</value>
+  </data>
+  <data name="EncoderHung" xml:space="preserve">
+    <value>توقف «{0}» عن الاستجابة.</value>
+  </data>
+  <data name="NoFramesRecorded" xml:space="preserve">
+    <value>لم يُسجَّل أي إطار</value>
+  </data>
+  <data name="NotSaved" xml:space="preserve">
+    <value>تعذّر حفظ التسجيل ({0}).</value>
+  </data>
+  <data name="NotSavedKept" xml:space="preserve">
+    <value>تعذّر حفظ التسجيل ({0}). تم الاحتفاظ به ويمكن استرداده من قائمة منطقة الإعلامات.</value>
+  </data>
+  <data name="NotSavedUnreadable" xml:space="preserve">
+    <value>تعذّر حفظ التسجيل: تعذّرت قراءة أي شيء فيه.</value>
+  </data>
+  <data name="StoppedEarly" xml:space="preserve">
+    <value>توقف التسجيل مبكرًا: {0}</value>
+  </data>
+  <data name="ThenSeparator" xml:space="preserve">
+    <value>، ثم </value>
+  </data>
+  <data name="InputNotFollowed" xml:space="preserve">
+    <value>تعذّرت متابعة النقرات والمفاتيح ({0}).</value>
+  </data>
+  <data name="DeviceLostNote" xml:space="preserve">
+    <value>عند {0} أُعيد تعيين بطاقة الرسومات أو تبديلها؛ وبقيت الصورة ثابتة حتى عودتها.</value>
+  </data>
+  <data name="DeviceLostWarning" xml:space="preserve">
+    <value>توقفت بطاقة الرسومات عن الاستجابة (أُعيد تعيينها أو تبديلها). يستمر التسجيل، وتبقى الصورة ثابتة حتى تعود.</value>
+  </data>
+  <data name="DeviceBack" xml:space="preserve">
+    <value>عادت بطاقة الرسومات بعد {0:0.#} ث؛ ويستمر التسجيل.</value>
+  </data>
+  <data name="DeviceGaveUp" xml:space="preserve">
+    <value>توقفت بطاقة الرسومات عن العمل ولم تعد خلال {0:0} ث، لذا توقف التسجيل.</value>
+  </data>
+  <data name="ResolutionChangedNote" xml:space="preserve">
+    <value>عند {0} تغيّرت دقة «{1}»، لذا أصبح التسجيل من تلك النقطة بحجم {2}x{3}، وحُفظ في ملف آخر.</value>
+  </data>
+  <data name="ResolutionChangedWarning" xml:space="preserve">
+    <value>تغيّرت دقة «{0}». يستمر التسجيل بحجم {1}x{2} ويُحفظ في ملف آخر.</value>
+  </data>
+  <data name="EncoderSwitchedNote" xml:space="preserve">
+    <value>توقف «{0}» عن العمل عند {1}؛ وسجّل «{2}» الباقي، وحُفظ في ملف آخر.</value>
+  </data>
+  <data name="EncoderSwitchedWarning" xml:space="preserve">
+    <value>توقف «{0}» عن العمل ({1}). يستمر التسجيل باستخدام «{2}»؛ وسيُحفظ في ملف آخر.</value>
+  </data>
+  <data name="EncoderFailedNoFallback" xml:space="preserve">
+    <value>توقف مرمّز الفيديو عن العمل ولم يتمكن أي مرمّز آخر من مواصلة التسجيل ({0}).</value>
+  </data>
+  <data name="SecureScreenNote" xml:space="preserve">
+    <value>من {0} إلى {1} عرض Windows شاشة آمنة (مطالبة UAC أو شاشة القفل) لا يمكن لأي تطبيق التقاطها: يعرض الفيديو آخر صورة خلال تلك المدة.</value>
+  </data>
+  <data name="MonitorDisconnected" xml:space="preserve">
+    <value>تم فصل «{0}»، لذا توقف التسجيل.</value>
+  </data>
+  <data name="SleepNote" xml:space="preserve">
+    <value>عند {0} دخل الكمبيوتر في وضع السكون، لذا أُوقف التسجيل مؤقتًا.</value>
+  </data>
+  <data name="WokeUp" xml:space="preserve">
+    <value>استيقظ الكمبيوتر. أُوقف التسجيل مؤقتًا عند {0} عندما دخل في وضع السكون: استأنفه أو أوقفه من شريط الأدوات.</value>
+  </data>
+  <data name="ProbeTimedOut" xml:space="preserve">
+    <value>لم يستجب خلال {0:0} ث.</value>
+  </data>
+  <data name="OverlaysUnavailable" xml:space="preserve">
+    <value>تتعذّر إضافة التراكبات: {0}</value>
+  </data>
+  <data name="NoMetadataFile" xml:space="preserve">
+    <value>ليس لـ«{0}» ملف بيانات وصفية ({1})، لذا نقراته ومفاتيحه غير معروفة.</value>
+  </data>
+  <data name="OverlaysAlreadyDrawn" xml:space="preserve">
+    <value>التراكبات مرسومة بالفعل في «{0}».</value>
+  </data>
+  <data name="OverlaysFailed" xml:space="preserve">
+    <value>تعذّرت إضافة التراكبات إلى «{0}»: {1}</value>
+  </data>
+  <data name="NoPictureFromWindows" xml:space="preserve">
+    <value>لم يرسل Windows أي صورة من «{0}» خلال {1:0} ث.</value>
+  </data>
+  <data name="CaptureStopped" xml:space="preserve">
+    <value>توقف التقاط الشاشة: {0}</value>
+  </data>
+  <data name="AreaOffMonitor" xml:space="preserve">
+    <value>أصبح حجم «{0}» {1}x{2}، ولم تعد المنطقة المسجَّلة ضمنه، لذا توقف التسجيل.</value>
+  </data>
+</root>

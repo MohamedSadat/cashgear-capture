@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows.Media;
 using CashGear.Capture.App.Output;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
@@ -112,9 +113,9 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
 
     public string DocumentName => FilePath is { } path
         ? Path.GetFileName(path)
-        : $"Capture {_metadata.CapturedAt.ToLocalTime():HH.mm.ss}";
+        : EditorText.CaptureName(_metadata.CapturedAt.ToLocalTime());
 
-    public string Title => $"{(IsDirty ? "• " : string.Empty)}{DocumentName} – CashGear Capture";
+    public string Title => (IsDirty ? "• " : string.Empty) + EditorText.WindowTitle(DocumentName);
 
     /// <summary>The image's size, or the previewed one's while an image dialog is open.</summary>
     public string ImageSizeText => Session.Preview is { } preview
@@ -130,9 +131,9 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _message = string.Empty;
 
-    public string UndoTip => Document.History.UndoName is { } name ? $"Undo {name} (Ctrl+Z)" : "Undo (Ctrl+Z)";
+    public string UndoTip => Document.History.UndoName is { } name ? EditorText.UndoTip(name) : EditorText.UndoNothingTip;
 
-    public string RedoTip => Document.History.RedoName is { } name ? $"Redo {name} (Ctrl+Y)" : "Redo (Ctrl+Y)";
+    public string RedoTip => Document.History.RedoName is { } name ? EditorText.RedoTip(name) : EditorText.RedoNothingTip;
 
     // ---------------------------------------------------------------- tool and properties panel
 
@@ -148,26 +149,26 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
 
     /// <summary>What the panel edits: the selected annotation, or the next one the tool will draw.</summary>
     public string PanelTitle => Session.Selected is { } selected
-        ? "Selected " + selected.Kind.DisplayName()
-        : Tool.Creates() is { } kind ? "New " + kind.DisplayName() : Tool switch
+        ? EditorText.PanelSelected(selected.Kind.DisplayName())
+        : Tool.Creates() is { } kind ? EditorText.PanelNew(kind.DisplayName()) : Tool switch
         {
-            EditorTool.Crop => "Crop",
-            EditorTool.Area => "Area",
-            _ => "Select",
+            EditorTool.Crop => EditorText.ToolCrop,
+            EditorTool.Area => EditorText.ToolArea,
+            _ => EditorText.ToolSelect,
         };
 
     public string ToolHint => Tool switch
     {
-        EditorTool.Select => "Click to select, drag to move; grips resize (Shift keeps proportions). Delete removes, arrow keys nudge.",
-        EditorTool.Arrow or EditorTool.Line => "Drag to draw. Shift snaps to 45°.",
-        EditorTool.Freehand => "Drag to draw freehand.",
-        EditorTool.Text => "Click to type. Click outside or press Esc to finish.",
-        EditorTool.StepNumber => "Click to place the next number; drag a number to move it.",
-        EditorTool.Crop => "Drag the area to keep, adjust it, then press Enter (Esc cancels).",
-        EditorTool.Area => "Drag over the part that the Effects menu should change (Esc clears it).",
-        EditorTool.Spotlight => "Drag over what to light up; the rest of the image is dimmed.",
-        EditorTool.Magnify => "Drag over the part to magnify. Drag the round callout to move it; its grip sets the zoom.",
-        _ => "Drag to draw. Shift makes a square or circle.",
+        EditorTool.Select => EditorText.HintSelect,
+        EditorTool.Arrow or EditorTool.Line => EditorText.HintLine,
+        EditorTool.Freehand => EditorText.HintFreehand,
+        EditorTool.Text => EditorText.HintText,
+        EditorTool.StepNumber => EditorText.HintStep,
+        EditorTool.Crop => EditorText.HintCrop,
+        EditorTool.Area => EditorText.HintArea,
+        EditorTool.Spotlight => EditorText.HintSpotlight,
+        EditorTool.Magnify => EditorText.HintMagnify,
+        _ => EditorText.HintShape,
     };
 
     private StyleParts Parts => Session.Selected?.StyleParts ?? Tool.Parts();
@@ -186,13 +187,13 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
 
     public bool ShowStrength => Parts.HasFlag(StyleParts.Strength);
 
-    public string FontSizeLabel => (Session.Selected?.Kind ?? Tool.Creates()) == AnnotationKind.StepNumber ? "Size" : "Font size";
+    public string FontSizeLabel => (Session.Selected?.Kind ?? Tool.Creates()) == AnnotationKind.StepNumber ? EditorText.Size : EditorText.FontSize;
 
     public string StrengthLabel => (Session.Selected?.Kind ?? Tool.Creates()) switch
     {
-        AnnotationKind.Pixelate => "Cell size",
-        AnnotationKind.Magnify => "Zoom",
-        _ => "Strength",
+        AnnotationKind.Pixelate => EditorText.CellSize,
+        AnnotationKind.Magnify => EditorText.Zoom,
+        _ => EditorText.Strength,
     };
 
     private bool IsMagnifier => (Session.Selected?.Kind ?? Tool.Creates()) == AnnotationKind.Magnify;
@@ -204,7 +205,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     public double StrengthStep => IsMagnifier ? 0.5 : 1;
 
     /// <summary>A spotlight's opacity is how dark the rest of the image gets.</summary>
-    public string OpacityLabel => (Session.Selected?.Kind ?? Tool.Creates()) == AnnotationKind.Spotlight ? "Dim" : "Opacity";
+    public string OpacityLabel => (Session.Selected?.Kind ?? Tool.Creates()) == AnnotationKind.Spotlight ? EditorText.Dim : EditorText.Opacity;
 
     [ObservableProperty]
     private SolidColorBrush _colorBrush = Brushes.Red;
@@ -409,7 +410,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
 
     /// <summary>Crops away plain borders around the picture, and says when there were none.</summary>
     [RelayCommand]
-    private void AutoTrim() => ImageEdit(() => ShowMessage(Session.AutoTrim() ? $"Trimmed to {Document.Width} × {Document.Height}" : "There are no plain borders to trim"));
+    private void AutoTrim() => ImageEdit(() => ShowMessage(Session.AutoTrim() ? EditorText.TrimmedTo(Document.Width, Document.Height) : EditorText.NoBordersToTrim));
 
     [RelayCommand]
     private void CanvasSize() => ShowImageDialog(new CanvasSizeViewModel(Session));
@@ -477,7 +478,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             LogEditFailed(ex);
-            _dialogs.ShowError("That change could not be made: " + ex.Message);
+            _dialogs.ShowError(EditorText.ChangeFailed(ex.Message));
         }
     }
 
@@ -523,12 +524,12 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         {
             using var image = Flatten();
             await _output.CopyToClipboardAsync(image);
-            ShowMessage("Copied to the clipboard");
+            ShowMessage(EditorText.CopiedToClipboard);
         }
         catch (Exception ex) when (ex is System.Runtime.InteropServices.ExternalException or InvalidOperationException)
         {
             LogCopyFailed(ex);
-            _dialogs.ShowError("Could not copy to the clipboard: " + ex.Message);
+            _dialogs.ShowError(EditorText.CopyFailed(ex.Message));
         }
     }
 
@@ -552,7 +553,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     public bool HasPending => _pending.Count > 0 && _outputs is not null;
 
     /// <summary>"Continue: Save to file → Office → Copy the link".</summary>
-    public string ContinueText => HasPending ? "Continue: " + _outputs!.Describe(_pending) : string.Empty;
+    public string ContinueText => HasPending ? EditorText.ContinueTo(_outputs!.Describe(_pending)) : string.Empty;
 
     /// <summary>Runs the rest of the workflow on the image as it is now; once.</summary>
     [RelayCommand(CanExecute = nameof(HasPending))]
@@ -590,7 +591,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Runtime.InteropServices.ExternalException)
         {
             LogSendFailed(ex);
-            _dialogs.ShowError("Could not send the image: " + ex.Message);
+            _dialogs.ShowError(EditorText.SendFailed(ex.Message));
         }
     }
 
@@ -641,13 +642,13 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException or System.Runtime.InteropServices.ExternalException)
         {
             LogSaveFailed(ex, path);
-            _dialogs.ShowError($"Could not save {Path.GetFileName(path)}: {ex.Message}");
+            _dialogs.ShowError(EditorText.SaveFailed(Path.GetFileName(path), ex.Message));
             return false;
         }
 
         FilePath = path;
         Document.History.MarkSaved();
-        ShowMessage("Saved " + Path.GetFileName(path));
+        ShowMessage(EditorText.SavedFile(Path.GetFileName(path)));
         return true;
     }
 

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>سجل اللقطات</value>
+  </data>
+  <data name="OpenInEditor" xml:space="preserve">
+    <value>فتح في المحرر</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>إظهار في المجلد</value>
+  </data>
+  <data name="SaveAs" xml:space="preserve">
+    <value>حفظ باسم…</value>
+  </data>
+  <data name="ClearHistory" xml:space="preserve">
+    <value>مسح السجل…</value>
+  </data>
+  <data name="Captures" xml:space="preserve">
+    <value>اللقطات</value>
+  </data>
+  <data name="NothingYet" xml:space="preserve">
+    <value>لا يوجد شيء هنا بعد.</value>
+  </data>
+  <data name="NoCaptures" xml:space="preserve">
+    <value>لا توجد لقطات بعد. تظهر اللقطات هنا عند التقاطها.</value>
+  </data>
+  <data name="CaptureCount_zero" xml:space="preserve">
+    <value>لا توجد لقطات.</value>
+  </data>
+  <data name="CaptureCount_one" xml:space="preserve">
+    <value>لقطة واحدة. انقر فوقها نقرًا مزدوجًا لفتحها في المحرر.</value>
+  </data>
+  <data name="CaptureCount_two" xml:space="preserve">
+    <value>لقطتان، الأحدث أولًا. انقر نقرًا مزدوجًا فوق إحداهما لفتحها في المحرر.</value>
+  </data>
+  <data name="CaptureCount_few" xml:space="preserve">
+    <value>{0} لقطات، الأحدث أولًا. انقر نقرًا مزدوجًا فوق إحداها لفتحها في المحرر.</value>
+  </data>
+  <data name="CaptureCount_many" xml:space="preserve">
+    <value>{0} لقطة، الأحدث أولًا. انقر نقرًا مزدوجًا فوق إحداها لفتحها في المحرر.</value>
+  </data>
+  <data name="CaptureCount_other" xml:space="preserve">
+    <value>{0} لقطة، الأحدث أولًا. انقر نقرًا مزدوجًا فوق إحداها لفتحها في المحرر.</value>
+  </data>
+  <data name="TodayAt" xml:space="preserve">
+    <value>اليوم {0:t}</value>
+  </data>
+  <data name="YesterdayAt" xml:space="preserve">
+    <value>أمس {0:t}</value>
+  </data>
+  <data name="DayAt" xml:space="preserve">
+    <value>{0:d MMM} {0:t}</value>
+  </data>
+  <data name="DefaultFileName" xml:space="preserve">
+    <value>لقطة_{0:yyyy-MM-dd_HH-mm-ss}</value>
+  </data>
+  <data name="ClearConfirm_zero" xml:space="preserve">
+    <value>هل تريد إزالة كل اللقطات ({0}) من السجل؟ لن تُحذف الملفات التي حفظتها.</value>
+  </data>
+  <data name="ClearConfirm_one" xml:space="preserve">
+    <value>هل تريد إزالة اللقطة الوحيدة من السجل؟ لن تُحذف الملفات التي حفظتها.</value>
+  </data>
+  <data name="ClearConfirm_two" xml:space="preserve">
+    <value>هل تريد إزالة اللقطتين من السجل؟ لن تُحذف الملفات التي حفظتها.</value>
+  </data>
+  <data name="ClearConfirm_few" xml:space="preserve">
+    <value>هل تريد إزالة كل اللقطات ({0}) من السجل؟ لن تُحذف الملفات التي حفظتها.</value>
+  </data>
+  <data name="ClearConfirm_many" xml:space="preserve">
+    <value>هل تريد إزالة كل اللقطات ({0}) من السجل؟ لن تُحذف الملفات التي حفظتها.</value>
+  </data>
+  <data name="ClearConfirm_other" xml:space="preserve">
+    <value>هل تريد إزالة كل اللقطات ({0}) من السجل؟ لن تُحذف الملفات التي حفظتها.</value>
+  </data>
+  <data name="NotificationTitle" xml:space="preserve">
+    <value>سجل اللقطات</value>
+  </data>
+  <data name="CaptureSaved" xml:space="preserve">
+    <value>تم حفظ اللقطة</value>
+  </data>
+  <data name="SavedIn" xml:space="preserve">
+    <value>{0}&#10;في {1}</value>
+  </data>
+  <data name="CouldNotOpen" xml:space="preserve">
+    <value>تعذّر فتح اللقطة: {0}</value>
+  </data>
+  <data name="CouldNotCopy" xml:space="preserve">
+    <value>تعذّر نسخ اللقطة: {0}</value>
+  </data>
+  <data name="CouldNotSave" xml:space="preserve">
+    <value>تعذّر حفظ اللقطة: {0}</value>
+  </data>
+</root>

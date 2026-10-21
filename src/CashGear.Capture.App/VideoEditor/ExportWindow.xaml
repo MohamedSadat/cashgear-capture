@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.VideoEditor"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ExportViewModel}"
-        Title="Export"
+        Title="{x:Static r:VideoEditorText.Export}"
         Width="560" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
   <Window.Resources>
@@ -27,10 +28,10 @@
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
-      <TextBlock Grid.Row="0" Text="Format" VerticalAlignment="Center" Margin="0,0,12,8" />
+      <TextBlock Grid.Row="0" Text="{x:Static r:VideoEditorText.FileFormat}" VerticalAlignment="Center" Margin="0,0,12,8" />
       <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" DisplayMemberPath="Name" Margin="0,0,0,8" />
 
-      <TextBlock Grid.Row="1" Text="Quality" VerticalAlignment="Center" Margin="0,0,12,8" Visibility="{Binding HasQuality, Converter={StaticResource Visible}}" />
+      <TextBlock Grid.Row="1" Text="{x:Static r:VideoEditorText.Quality}" VerticalAlignment="Center" Margin="0,0,12,8" Visibility="{Binding HasQuality, Converter={StaticResource Visible}}" />
       <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding Qualities}" SelectedItem="{Binding Quality}" DisplayMemberPath="Name" Margin="0,0,0,8" Visibility="{Binding HasQuality, Converter={StaticResource Visible}}" />
 
       <Grid Grid.Row="1" Grid.ColumnSpan="3" Visibility="{Binding IsGif, Converter={StaticResource Visible}}" Margin="0,0,0,8">
@@ -45,29 +46,29 @@
           <RowDefinition Height="Auto" />
           <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock Text="Frames a second" VerticalAlignment="Center" Margin="0,0,12,8" />
+        <TextBlock Text="{x:Static r:VideoEditorText.FramesASecond}" VerticalAlignment="Center" Margin="0,0,12,8" />
         <ComboBox Grid.Column="1" ItemsSource="{Binding GifRates}" SelectedItem="{Binding GifFps}" Margin="0,0,12,8" />
-        <TextBlock Grid.Column="2" Text="Width (px)" VerticalAlignment="Center" Margin="0,0,12,8" />
+        <TextBlock Grid.Column="2" Text="{x:Static r:VideoEditorText.WidthPixels}" VerticalAlignment="Center" Margin="0,0,12,8" />
         <ComboBox Grid.Column="3" ItemsSource="{Binding GifWidths}" SelectedItem="{Binding GifWidth}" Margin="0,0,0,8" />
-        <TextBlock Grid.Row="1" Text="Dithering" VerticalAlignment="Center" Margin="0,0,12,8" />
+        <TextBlock Grid.Row="1" Text="{x:Static r:VideoEditorText.Dithering}" VerticalAlignment="Center" Margin="0,0,12,8" />
         <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" ItemsSource="{Binding GifDithers}" SelectedItem="{Binding GifDithering}" DisplayMemberPath="Name" Margin="0,0,0,8" />
-        <TextBlock Grid.Row="2" Text="Keep it under" VerticalAlignment="Center" Margin="0,0,12,0" />
+        <TextBlock Grid.Row="2" Text="{x:Static r:VideoEditorText.KeepItUnder}" VerticalAlignment="Center" Margin="0,0,12,0" />
         <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding GifLimits}" SelectedItem="{Binding GifLimit}" DisplayMemberPath="Name" Margin="0,0,12,0" />
-        <CheckBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Content="Play over and over" IsChecked="{Binding GifLoop}" VerticalAlignment="Center" />
+        <CheckBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Content="{x:Static r:VideoEditorText.PlayOverAndOver}" IsChecked="{Binding GifLoop}" VerticalAlignment="Center" />
       </Grid>
 
       <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding SizeText}" Opacity="0.75" Margin="0,0,0,8" />
 
-      <TextBlock Grid.Row="3" Text="File" VerticalAlignment="Center" Margin="0,0,12,0" />
+      <TextBlock Grid.Row="3" Text="{x:Static r:VideoEditorText.File}" VerticalAlignment="Center" Margin="0,0,12,0" />
       <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" />
-      <Button Grid.Row="3" Grid.Column="2" Content="Browse…" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
+      <Button Grid.Row="3" Grid.Column="2" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
 
       <StackPanel Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
         <CheckBox Content="{Binding RangeText}" IsChecked="{Binding OnlyRange}" Visibility="{Binding HasRange, Converter={StaticResource Visible}}" Margin="0,0,0,4" />
         <StackPanel Visibility="{Binding HasCaptions, Converter={StaticResource Visible}}">
-          <CheckBox Content="Burn the captions into the video (the caption tracks that are shown)" IsChecked="{Binding BurnCaptions}" Margin="0,0,0,4" />
-          <CheckBox Content="Also save the captions as an SRT file beside it" IsChecked="{Binding SaveSrt}" Margin="0,0,0,4" />
-          <CheckBox Content="Also save the captions as a WebVTT file beside it" IsChecked="{Binding SaveVtt}" />
+          <CheckBox Content="{x:Static r:VideoEditorText.BurnCaptions}" IsChecked="{Binding BurnCaptions}" Margin="0,0,0,4" />
+          <CheckBox Content="{x:Static r:VideoEditorText.SaveSrt}" IsChecked="{Binding SaveSrt}" Margin="0,0,0,4" />
+          <CheckBox Content="{x:Static r:VideoEditorText.SaveVtt}" IsChecked="{Binding SaveVtt}" />
         </StackPanel>
       </StackPanel>
     </Grid>
@@ -77,9 +78,9 @@
     <TextBlock Text="{Binding Error}" TextWrapping="Wrap" Foreground="#D13438" Margin="0,6,0,0" />
 
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-      <Button Content="Open" Command="{Binding OpenCommand}" Visibility="{Binding IsDone, Converter={StaticResource Visible}}" Margin="0,0,8,0" />
-      <Button Content="Show in folder" Command="{Binding ShowInFolderCommand}" Visibility="{Binding IsDone, Converter={StaticResource Visible}}" Margin="0,0,8,0" />
-      <Button Content="Export" Command="{Binding StartCommand}" IsDefault="True" MinWidth="88" Margin="0,0,8,0" />
+      <Button Content="{x:Static r:CommonText.Open}" Command="{Binding OpenCommand}" Visibility="{Binding IsDone, Converter={StaticResource Visible}}" Margin="0,0,8,0" />
+      <Button Content="{x:Static r:VideoEditorText.ShowInFolder}" Command="{Binding ShowInFolderCommand}" Visibility="{Binding IsDone, Converter={StaticResource Visible}}" Margin="0,0,8,0" />
+      <Button Content="{x:Static r:VideoEditorText.Export}" Command="{Binding StartCommand}" IsDefault="True" MinWidth="88" Margin="0,0,8,0" />
       <Button x:Name="CancelButton" Command="{Binding CancelCommand}" MinWidth="88" />
     </StackPanel>
   </StackPanel>

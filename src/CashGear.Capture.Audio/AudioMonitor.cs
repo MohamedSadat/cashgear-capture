@@ -1,3 +1,4 @@
+using CashGear.Capture.Audio.Resources;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
@@ -155,7 +156,7 @@ internal sealed partial class AudioMonitor(IAudioSourceFactory sources, Micropho
         if (_tap is null)
         {
             var opened = sources.OpenMicrophone(microphone);
-            own = opened.Source ?? throw new InvalidOperationException(opened.Note ?? "The microphone can't be used.");
+            own = opened.Source ?? throw new InvalidOperationException(opened.Note ?? AudioStrings.MicrophoneUnusable);
             own.Start((samples, _, _) => Tap(samples), (_, _) => { });
         }
 
@@ -163,7 +164,7 @@ internal sealed partial class AudioMonitor(IAudioSourceFactory sources, Micropho
         {
             using var registration = ct.Register(() => done.TrySetCanceled(ct));
             using var timeout = new CancellationTokenSource(length + TimeSpan.FromSeconds(5));
-            using var late = timeout.Token.Register(() => done.TrySetException(new TimeoutException("The microphone sent no sound.")));
+            using var late = timeout.Token.Register(() => done.TrySetException(new TimeoutException(AudioStrings.MicrophoneSentNoSound)));
             await done.Task.ConfigureAwait(false);
         }
         finally

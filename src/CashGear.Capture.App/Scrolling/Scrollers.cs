@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Interop.Native;
 using Microsoft.Extensions.Logging;
@@ -73,7 +74,7 @@ public sealed class WheelScroller(IScrollPlatform platform, PixelPoint at) : ISc
     private double _pixelsPerNotch;
     private int _lastNotches;
 
-    public string Name => "the mouse wheel";
+    public string Name => CapturingText.MouseWheel;
 
     public IScroller? Fallback => null;
 
@@ -106,7 +107,7 @@ public sealed partial class UiaScroller(ScrollPattern pattern, IScroller fallbac
 {
     private bool _failed;
 
-    public string Name => _failed ? fallback.Name : "UI Automation";
+    public string Name => _failed ? fallback.Name : CapturingText.UiAutomation;
 
     public IScroller? Fallback => _failed ? null : fallback;
 

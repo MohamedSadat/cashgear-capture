@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AddFiles" xml:space="preserve">
+    <value>Add files…</value>
+  </data>
+  <data name="AddFolder" xml:space="preserve">
+    <value>Add a folder…</value>
+  </data>
+  <data name="Earlier" xml:space="preserve">
+    <value>Earlier</value>
+    <comment>moves the picture up the list</comment>
+  </data>
+  <data name="Later" xml:space="preserve">
+    <value>Later</value>
+    <comment>moves the picture down the list</comment>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="WithSubfolders" xml:space="preserve">
+    <value>With subfolders</value>
+  </data>
+  <data name="Pictures" xml:space="preserve">
+    <value>Pictures</value>
+    <comment>the list of pictures</comment>
+  </data>
+  <data name="NoPicturesYet" xml:space="preserve">
+    <value>No pictures yet: add files or a folder, or drag them here.</value>
+  </data>
+  <data name="PictureCount_one" xml:space="preserve">
+    <value>{0} picture</value>
+  </data>
+  <data name="PictureCount_other" xml:space="preserve">
+    <value>{0} pictures</value>
+  </data>
+  <data name="AddPictures" xml:space="preserve">
+    <value>Add pictures</value>
+  </data>
+  <data name="AddFolderPictures" xml:space="preserve">
+    <value>Add the pictures in a folder</value>
+  </data>
+  <data name="BatchTitle" xml:space="preserve">
+    <value>Batch Process – CashGear Capture</value>
+  </data>
+  <data name="NoPreset" xml:space="preserve">
+    <value>(none)</value>
+    <comment>no effects or watermark preset</comment>
+  </data>
+  <data name="ResizeKeep" xml:space="preserve">
+    <value>Keep the size</value>
+  </data>
+  <data name="ResizePercent" xml:space="preserve">
+    <value>To a percentage</value>
+  </data>
+  <data name="ResizeFit" xml:space="preserve">
+    <value>To fit in a box (in proportion)</value>
+  </data>
+  <data name="ResizeWidth" xml:space="preserve">
+    <value>To a width (in proportion)</value>
+  </data>
+  <data name="ResizeHeight" xml:space="preserve">
+    <value>To a height (in proportion)</value>
+  </data>
+  <data name="FormatKeep" xml:space="preserve">
+    <value>Keep each file's format</value>
+  </data>
+  <data name="ExistingNumber" xml:space="preserve">
+    <value>Add a number: name (2)</value>
+  </data>
+  <data name="ExistingReplace" xml:space="preserve">
+    <value>Replace it</value>
+  </data>
+  <data name="ExistingSkip" xml:space="preserve">
+    <value>Skip that picture</value>
+  </data>
+  <data name="WhereResultsGo" xml:space="preserve">
+    <value>Where the results go</value>
+  </data>
+  <data name="Starting" xml:space="preserve">
+    <value>Starting…</value>
+  </data>
+  <data name="ProgressCount" xml:space="preserve">
+    <value>{0} of {1}</value>
+    <comment>pictures finished of all</comment>
+  </data>
+  <data name="SavedCount_one" xml:space="preserve">
+    <value>{0} saved</value>
+  </data>
+  <data name="SavedCount_other" xml:space="preserve">
+    <value>{0} saved</value>
+  </data>
+  <data name="SkippedCount_one" xml:space="preserve">
+    <value>{0} skipped</value>
+  </data>
+  <data name="SkippedCount_other" xml:space="preserve">
+    <value>{0} skipped</value>
+  </data>
+  <data name="FailedCount_one" xml:space="preserve">
+    <value>{0} failed</value>
+  </data>
+  <data name="FailedCount_other" xml:space="preserve">
+    <value>{0} failed</value>
+  </data>
+  <data name="ListSeparator" xml:space="preserve">
+    <value>, </value>
+    <comment>between the counts of a batch summary</comment>
+  </data>
+  <data name="DoneIn" xml:space="preserve">
+    <value>Done in {0:0.#} s: {1}.</value>
+    <comment>{0} seconds, {1} the counts (2 saved, 1 failed)</comment>
+  </data>
+  <data name="BatchCancelled" xml:space="preserve">
+    <value>Cancelled: {0}.</value>
+    <comment>{0} the counts (2 saved, 1 failed)</comment>
+  </data>
+  <data name="CouldNotStart" xml:space="preserve">
+    <value>Could not start: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="ShowResults" xml:space="preserve">
+    <value>Show the results</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="SectionSize" xml:space="preserve">
+    <value>1. Size</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Percent" xml:space="preserve">
+    <value>Percent</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>Width</value>
+  </data>
+  <data name="Height" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="NeverLarger" xml:space="preserve">
+    <value>Never make a picture larger</value>
+  </data>
+  <data name="SectionEffects" xml:space="preserve">
+    <value>2. Effects (saved in the editor's Effects window)</value>
+  </data>
+  <data name="EffectsPreset" xml:space="preserve">
+    <value>Effects preset</value>
+  </data>
+  <data name="SectionWatermark" xml:space="preserve">
+    <value>3. Watermark (saved in the editor's Effects window)</value>
+  </data>
+  <data name="WatermarkPreset" xml:space="preserve">
+    <value>Watermark preset</value>
+  </data>
+  <data name="SectionFormat" xml:space="preserve">
+    <value>4. Format</value>
+  </data>
+  <data name="FileFormat" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="JpegQuality" xml:space="preserve">
+    <value>JPEG quality</value>
+  </data>
+  <data name="SectionNames" xml:space="preserve">
+    <value>5. Names</value>
+  </data>
+  <data name="NameTemplate" xml:space="preserve">
+    <value>Name template</value>
+  </data>
+  <data name="ForExample" xml:space="preserve">
+    <value>For example:</value>
+    <comment>followed by a file name</comment>
+  </data>
+  <data name="TokensHelp" xml:space="preserve">
+    <value>{{name}} the original name · {{counter}} 1, 2, 3… · {{yyyy}} {{MM}} {{dd}} {{HH}} {{mm}} {{ss}} the file's date · {{width}} {{height}} the new size</value>
+    <comment>the name template's tokens (in braces) stay as they are</comment>
+  </data>
+  <data name="SectionOutput" xml:space="preserve">
+    <value>6. Where the results go</value>
+  </data>
+  <data name="OutputFolder" xml:space="preserve">
+    <value>Output folder</value>
+  </data>
+  <data name="WhenNameTaken" xml:space="preserve">
+    <value>When a name is taken</value>
+  </data>
+  <data name="CombineTitle" xml:space="preserve">
+    <value>Combine Images – CashGear Capture</value>
+  </data>
+  <data name="OpenInEditor" xml:space="preserve">
+    <value>Open in the editor</value>
+  </data>
+  <data name="Layout" xml:space="preserve">
+    <value>Layout</value>
+  </data>
+  <data name="Columns" xml:space="preserve">
+    <value>Columns</value>
+  </data>
+  <data name="Aligned" xml:space="preserve">
+    <value>Aligned</value>
+  </data>
+  <data name="SpaceBetweenFormat" xml:space="preserve">
+    <value>Space between: {0} px</value>
+  </data>
+  <data name="SpaceBetween" xml:space="preserve">
+    <value>Space between</value>
+  </data>
+  <data name="BorderAroundFormat" xml:space="preserve">
+    <value>Border around: {0} px</value>
+  </data>
+  <data name="BorderAround" xml:space="preserve">
+    <value>Border around</value>
+  </data>
+  <data name="Background" xml:space="preserve">
+    <value>Background</value>
+  </data>
+  <data name="SideBySide" xml:space="preserve">
+    <value>Side by side</value>
+  </data>
+  <data name="OneUnderAnother" xml:space="preserve">
+    <value>One under another</value>
+  </data>
+  <data name="InAGrid" xml:space="preserve">
+    <value>In a grid</value>
+  </data>
+  <data name="TopOrLeft" xml:space="preserve">
+    <value>Top or left</value>
+  </data>
+  <data name="Centred" xml:space="preserve">
+    <value>Centred</value>
+  </data>
+  <data name="BottomOrRight" xml:space="preserve">
+    <value>Bottom or right</value>
+  </data>
+  <data name="SaveCombinedTitle" xml:space="preserve">
+    <value>Save the combined picture</value>
+  </data>
+  <data name="CombinedFileName" xml:space="preserve">
+    <value>Combined</value>
+    <comment>suggested file name</comment>
+  </data>
+  <data name="CombinedPicturesTitle" xml:space="preserve">
+    <value>Combined pictures</value>
+    <comment>what the combined picture is, as a capture's window title</comment>
+  </data>
+  <data name="SavedFile" xml:space="preserve">
+    <value>Saved {0}</value>
+    <comment>{0} file name</comment>
+  </data>
+  <data name="PixelSize" xml:space="preserve">
+    <value>{0} × {1} pixels</value>
+    <comment>width and height</comment>
+  </data>
+  <data name="PdfTitle" xml:space="preserve">
+    <value>Images to PDF – CashGear Capture</value>
+  </data>
+  <data name="OpenPdf" xml:space="preserve">
+    <value>Open the PDF</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>Show in folder</value>
+  </data>
+  <data name="MakePdf" xml:space="preserve">
+    <value>Make the PDF…</value>
+  </data>
+  <data name="Paper" xml:space="preserve">
+    <value>Paper</value>
+  </data>
+  <data name="Orientation" xml:space="preserve">
+    <value>Orientation</value>
+  </data>
+  <data name="SizeOnPage" xml:space="preserve">
+    <value>Size on the page</value>
+  </data>
+  <data name="MarginsFormat" xml:space="preserve">
+    <value>Margins: {0} mm</value>
+  </data>
+  <data name="MarginsInMm" xml:space="preserve">
+    <value>Margins in millimetres</value>
+  </data>
+  <data name="Across" xml:space="preserve">
+    <value>Across</value>
+    <comment>pictures side by side on a page</comment>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>Down</value>
+    <comment>pictures one under another on a page</comment>
+  </data>
+  <data name="PicturesAcross" xml:space="preserve">
+    <value>Pictures across</value>
+  </data>
+  <data name="PicturesDown" xml:space="preserve">
+    <value>Pictures down</value>
+  </data>
+  <data name="SpaceBetweenPicturesFormat" xml:space="preserve">
+    <value>Space between pictures: {0} mm</value>
+  </data>
+  <data name="SpaceBetweenPictures" xml:space="preserve">
+    <value>Space between pictures</value>
+  </data>
+  <data name="SmallerFile" xml:space="preserve">
+    <value>Smaller file (pictures stored as JPEG)</value>
+  </data>
+  <data name="OnePicturePerPage" xml:space="preserve">
+    <value>One picture per page</value>
+  </data>
+  <data name="PicturesPerPage_one" xml:space="preserve">
+    <value>{0} pictures per page ({1} across, {2} down)</value>
+    <comment>{1} pictures across, {2} down</comment>
+  </data>
+  <data name="PicturesPerPage_other" xml:space="preserve">
+    <value>{0} pictures per page ({1} across, {2} down)</value>
+    <comment>{1} pictures across, {2} down</comment>
+  </data>
+  <data name="SavePdfTitle" xml:space="preserve">
+    <value>Save the PDF</value>
+  </data>
+  <data name="PdfFilter" xml:space="preserve">
+    <value>PDF document (*.pdf)|*.pdf</value>
+    <comment>save-file dialog filter: translate the description only</comment>
+  </data>
+  <data name="PdfFileName" xml:space="preserve">
+    <value>Pictures</value>
+    <comment>suggested file name</comment>
+  </data>
+  <data name="MakingPdf" xml:space="preserve">
+    <value>Making the PDF…</value>
+  </data>
+  <data name="PdfProgress_one" xml:space="preserve">
+    <value>{1} of {0} pictures</value>
+    <comment>{0} all the pictures, {1} the ones done</comment>
+  </data>
+  <data name="PdfProgress_other" xml:space="preserve">
+    <value>{1} of {0} pictures</value>
+    <comment>{0} all the pictures, {1} the ones done</comment>
+  </data>
+  <data name="PdfSaved_one" xml:space="preserve">
+    <value>Saved {1} ({0} pictures).</value>
+    <comment>{0} the number of pictures, {1} the file name</comment>
+  </data>
+  <data name="PdfSaved_other" xml:space="preserve">
+    <value>Saved {1} ({0} pictures).</value>
+    <comment>{0} the number of pictures, {1} the file name</comment>
+  </data>
+  <data name="PdfCancelled" xml:space="preserve">
+    <value>Cancelled; no PDF was saved.</value>
+  </data>
+  <data name="PdfFailed" xml:space="preserve">
+    <value>Could not make the PDF: {0}</value>
+    <comment>{0} is the reason</comment>
+  </data>
+  <data name="FormatPng" xml:space="preserve">
+    <value>PNG</value>
+    <comment>a file format's name, which stays as it is</comment>
+  </data>
+  <data name="FormatJpeg" xml:space="preserve">
+    <value>JPEG</value>
+    <comment>a file format's name, which stays as it is</comment>
+  </data>
+  <data name="FormatBmp" xml:space="preserve">
+    <value>BMP</value>
+    <comment>a file format's name, which stays as it is</comment>
+  </data>
+</root>

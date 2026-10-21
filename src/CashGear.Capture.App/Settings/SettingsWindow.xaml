@@ -9,7 +9,7 @@
         xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SettingsViewModel}"
-        Title="CashGear Capture Settings"
+        Title="{x:Static r:SettingsText.WindowTitle}"
         Width="680" Height="600" MinWidth="560" MinHeight="500"
         WindowStartupLocation="CenterScreen">
   <Window.Resources>
@@ -46,17 +46,17 @@
                     <Style.Triggers>
                       <DataTrigger Binding="{Binding IsMissing}" Value="True">
                         <Setter Property="Opacity" Value="0.6" />
-                        <Setter Property="ToolTip" Value="Its destination was deleted on the Destinations tab; the step is skipped." />
+                        <Setter Property="ToolTip" Value="{x:Static r:SettingsText.StepMissingTip}" />
                       </DataTrigger>
                     </Style.Triggers>
                   </Style>
                 </DockPanel.Style>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                  <Button Content="↑" ToolTip="Earlier" MinWidth="28" Margin="4,0,0,0" AutomationProperties.Name="Move up"
+                  <Button Content="↑" ToolTip="{x:Static r:SettingsText.StepEarlier}" MinWidth="28" Margin="4,0,0,0" AutomationProperties.Name="{x:Static r:SettingsText.MoveUp}"
                           Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
-                  <Button Content="↓" ToolTip="Later" MinWidth="28" Margin="4,0,0,0" AutomationProperties.Name="Move down"
+                  <Button Content="↓" ToolTip="{x:Static r:SettingsText.StepLater}" MinWidth="28" Margin="4,0,0,0" AutomationProperties.Name="{x:Static r:SettingsText.MoveDown}"
                           Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
-                  <Button Content="✕" ToolTip="Remove this step" MinWidth="28" Margin="4,0,0,0" AutomationProperties.Name="Remove"
+                  <Button Content="✕" ToolTip="{x:Static r:SettingsText.RemoveStep}" MinWidth="28" Margin="4,0,0,0" AutomationProperties.Name="{x:Static r:CommonText.Remove}"
                           Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
                 </StackPanel>
                 <CheckBox IsChecked="{Binding Enabled}" Content="{Binding Name}" VerticalAlignment="Center" />
@@ -65,8 +65,8 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-          <ComboBox ItemsSource="{Binding Addable}" SelectedItem="{Binding ToAdd}" MinWidth="240" AutomationProperties.Name="Step to add" />
-          <Button Content="Add step" Command="{Binding AddCommand}" Margin="8,0,0,0" />
+          <ComboBox ItemsSource="{Binding Addable}" SelectedItem="{Binding ToAdd}" MinWidth="240" AutomationProperties.Name="{x:Static r:SettingsText.StepToAdd}" />
+          <Button Content="{x:Static r:SettingsText.AddStep}" Command="{Binding AddCommand}" Margin="8,0,0,0" />
         </StackPanel>
       </StackPanel>
     </DataTemplate>
@@ -74,8 +74,8 @@
     <!-- A destination's Test button and what it found. -->
     <DataTemplate x:Key="TestRow" DataType="{x:Type local:TestableViewModel}">
       <DockPanel Margin="0,6,0,0">
-        <Button DockPanel.Dock="Left" Content="Test" Command="{Binding TestCommand}" MinWidth="80" VerticalAlignment="Top"
-                ToolTip="Check the set-up as it is in this window (nothing is printed, opened or left behind)" />
+        <Button DockPanel.Dock="Left" Content="{x:Static r:CommonText.Test}" Command="{Binding TestCommand}" MinWidth="80" VerticalAlignment="Top"
+                ToolTip="{x:Static r:DestinationsText.TestTip}" />
         <TextBlock Text="{Binding TestStatus}" TextWrapping="Wrap" Margin="10,2,0,0">
           <TextBlock.Style>
             <Style TargetType="TextBlock">
@@ -94,12 +94,12 @@
     <DataTemplate x:Key="OfficeEditor" DataType="{x:Type local:OfficeViewModel}">
       <StackPanel>
         <RadioButton Margin="0,2" IsChecked="{Binding Append, Converter={x:Static local:InverseBooleanConverter.Instance}}">
-          <TextBlock><Run Text="A new" /> <Run Text="{Binding App, Mode=OneWay}" /> <Run Text="file in the capture folder for each capture" /></TextBlock>
+          <TextBlock Text="{Binding App, Mode=OneWay, StringFormat={x:Static r:DestinationsText.NewFileEachCaptureFormat}}" />
         </RadioButton>
-        <RadioButton Margin="0,2" Content="Added at the end of this file:" IsChecked="{Binding Append}" />
+        <RadioButton Margin="0,2" Content="{x:Static r:DestinationsText.AppendToFile}" IsChecked="{Binding Append}" />
         <DockPanel Margin="20,2,0,0" IsEnabled="{Binding Append}">
-          <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
-          <TextBox Text="{Binding AppendPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="File to add captures to" />
+          <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
+          <TextBox Text="{Binding AppendPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.AppendFileName}" />
         </DockPanel>
         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
       </StackPanel>
@@ -108,11 +108,11 @@
 
   <DockPanel Margin="16">
     <Grid DockPanel.Dock="Bottom" Margin="0,12,0,0">
-      <Button Content="Reset to defaults" Command="{Binding ResetToDefaultsCommand}" HorizontalAlignment="Left" />
+      <Button Content="{x:Static r:SettingsText.ResetToDefaults}" Command="{Binding ResetToDefaultsCommand}" HorizontalAlignment="Left" />
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-        <Button Content="OK" IsDefault="True" Command="{Binding SaveCommand}" MinWidth="90" Margin="0,0,8,0" />
-        <Button Content="Cancel" IsCancel="True" Command="{Binding CancelCommand}" MinWidth="90" Margin="0,0,8,0" />
-        <Button Content="Apply" Command="{Binding ApplyCommand}" MinWidth="90" />
+        <Button Content="{x:Static r:CommonText.Ok}" IsDefault="True" Command="{Binding SaveCommand}" MinWidth="90" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:CommonText.Cancel}" IsCancel="True" Command="{Binding CancelCommand}" MinWidth="90" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:CommonText.Apply}" Command="{Binding ApplyCommand}" MinWidth="90" />
       </StackPanel>
     </Grid>
 
@@ -121,51 +121,48 @@
 
     <TabControl x:Name="Tabs" SelectionChanged="OnTabChanged">
       <!-- ============================== Output ============================== -->
-      <TabItem Header="Output" x:Name="OutputTab">
+      <TabItem Header="{x:Static r:SettingsText.OutputTab}" x:Name="OutputTab">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,4,12,12">
-            <TextBlock Style="{StaticResource Section}" Text="After capture, in this order" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.AfterCaptureSection}" />
             <ContentControl Content="{Binding CaptureWorkflow}" ContentTemplate="{StaticResource WorkflowList}" Focusable="False" />
             <TextBlock Style="{StaticResource Hint}"
-                       Text="Steps after &quot;Open in the editor&quot; wait for its Continue button, so they get the edited image. Servers, uploads, Word and the rest are set up on the Destinations tab." />
+                       Text="{x:Static r:SettingsText.AfterCaptureHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="After a recording is saved" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.AfterRecordingSection}" />
             <ContentControl Content="{Binding RecordingWorkflow}" ContentTemplate="{StaticResource WorkflowList}" Focusable="False" />
-            <TextBlock Style="{StaticResource Hint}" Text="A recording is always saved to the folder below first; these steps then send it on." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.AfterRecordingHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Folder" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.FolderSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <TextBox x:Name="FolderBox" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Capture folder" />
-              <Button Grid.Column="1" Content="Browse…" Command="{Binding BrowseFolderCommand}" Margin="8,0,0,0" />
-              <Button Grid.Column="2" Content="Open" Command="{Binding OpenCaptureFolderCommand}" Margin="8,0,0,0" />
+              <TextBox x:Name="FolderBox" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:SettingsText.CaptureFolder}" />
+              <Button Grid.Column="1" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseFolderCommand}" Margin="8,0,0,0" />
+              <Button Grid.Column="2" Content="{x:Static r:CommonText.Open}" Command="{Binding OpenCaptureFolderCommand}" Margin="8,0,0,0" />
             </Grid>
-            <TextBlock Style="{StaticResource Hint}">
-              <Run Text="Empty means the default:" />
-              <Run Text="{Binding DefaultFolder, Mode=OneWay}" />
-            </TextBlock>
+            <TextBlock Style="{StaticResource Hint}" Text="{Binding DefaultFolder, Mode=OneWay, StringFormat={x:Static r:SettingsText.DefaultFolderFormat}}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Format" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.FormatSection}" />
             <StackPanel Orientation="Horizontal">
               <ComboBox ItemsSource="{Binding Formats}" SelectedItem="{Binding Format}" ItemTemplate="{StaticResource EnumItem}" MinWidth="160"
-                        AutomationProperties.Name="Image format" />
-              <TextBlock Text="JPEG quality" VerticalAlignment="Center" Margin="20,0,8,0"
+                        AutomationProperties.Name="{x:Static r:SettingsText.ImageFormat}" />
+              <TextBlock Text="{x:Static r:SettingsText.JpegQuality}" VerticalAlignment="Center" Margin="20,0,8,0"
                          Visibility="{Binding IsJpeg, Converter={StaticResource Visible}}" />
               <Slider Minimum="1" Maximum="100" Value="{Binding JpegQuality}" Width="160" VerticalAlignment="Center"
-                      IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="JPEG quality"
+                      IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="{x:Static r:SettingsText.JpegQuality}"
                       Visibility="{Binding IsJpeg, Converter={StaticResource Visible}}" />
               <TextBlock Text="{Binding JpegQuality}" VerticalAlignment="Center" Margin="8,0,0,0" MinWidth="28"
                          Visibility="{Binding IsJpeg, Converter={StaticResource Visible}}" />
             </StackPanel>
 
-            <TextBlock Style="{StaticResource Section}" Text="File name" />
-            <TextBox Text="{Binding FileNameTemplate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="File name template" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.FileNameSection}" />
+            <TextBox Text="{Binding FileNameTemplate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:SettingsText.FileNameTemplate}" />
             <TextBlock Style="{StaticResource Hint}">
-              <Run Text="Example:" />
+              <Run Text="{x:Static r:SettingsText.FileNameExample}" />
               <Run Text="{Binding FileNamePreview, Mode=OneWay}" FontWeight="SemiBold" />
             </TextBlock>
             <ItemsControl ItemsSource="{Binding TokenHelp}" Margin="0,8,0,0" Opacity="0.7" FontFamily="Consolas" FontSize="12" />
@@ -174,14 +171,14 @@
       </TabItem>
 
       <!-- ============================== Destinations ============================== -->
-      <TabItem Header="Destinations" x:Name="DestinationsTab">
+      <TabItem Header="{x:Static r:DestinationsText.DestinationsTab}" x:Name="DestinationsTab">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,4,12,12" DataContext="{Binding Destinations}">
             <TextBlock Style="{StaticResource Hint}"
-                       Text="Where the workflow (Output tab) and the editor's Send to can send captures. Passwords and tokens are kept encrypted for your Windows account (DPAPI), never in settings.json." />
+                       Text="{x:Static r:DestinationsText.Intro}" />
 
             <!-- Printer -->
-            <TextBlock Style="{StaticResource Section}" Text="Printer" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DestinationsText.Printer}" />
             <Grid DataContext="{Binding Printer}">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150" />
@@ -194,30 +191,30 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
               </Grid.RowDefinitions>
-              <TextBlock Style="{StaticResource FieldLabel}" Text="Printer" />
-              <ComboBox Grid.Column="1" Margin="0,3" ItemsSource="{Binding Printers}" SelectedItem="{Binding Printer}" AutomationProperties.Name="Printer" />
-              <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Size on the page" />
-              <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Fits}" SelectedItem="{Binding Fit}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Size on the page" />
-              <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="Orientation" />
-              <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Orientations}" SelectedItem="{Binding Orientation}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Orientation" />
-              <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="Margins" />
+              <TextBlock Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Printer}" />
+              <ComboBox Grid.Column="1" Margin="0,3" ItemsSource="{Binding Printers}" SelectedItem="{Binding Printer}" AutomationProperties.Name="{x:Static r:DestinationsText.Printer}" />
+              <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.SizeOnPage}" />
+              <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Fits}" SelectedItem="{Binding Fit}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:DestinationsText.SizeOnPage}" />
+              <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Orientation}" />
+              <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Orientations}" SelectedItem="{Binding Orientation}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:DestinationsText.Orientation}" />
+              <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Margins}" />
               <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,3">
-                <Slider Minimum="0" Maximum="50" Value="{Binding MarginMm}" Width="200" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" AutomationProperties.Name="Margins in millimetres" />
-                <TextBlock VerticalAlignment="Center" Margin="8,0,0,0"><Run Text="{Binding MarginMm, Mode=OneWay}" /> <Run Text="mm" /></TextBlock>
+                <Slider Minimum="0" Maximum="50" Value="{Binding MarginMm}" Width="200" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:DestinationsText.MarginsInMillimetres}" />
+                <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Text="{Binding MarginMm, Mode=OneWay, StringFormat={x:Static r:DestinationsText.MillimetresFormat}}" />
               </StackPanel>
-              <CheckBox Grid.Row="4" Grid.Column="1" Margin="0,3" Content="Show the print dialog each time (printer, copies, orientation)" IsChecked="{Binding ShowDialog}" />
+              <CheckBox Grid.Row="4" Grid.Column="1" Margin="0,3" Content="{x:Static r:DestinationsText.ShowPrintDialog}" IsChecked="{Binding ShowDialog}" />
             </Grid>
             <ContentControl Content="{Binding Printer}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
 
             <!-- Word and PowerPoint -->
-            <TextBlock Style="{StaticResource Section}" Text="Word" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DestinationsText.WordSection}" />
             <ContentControl Content="{Binding Word}" ContentTemplate="{StaticResource OfficeEditor}" Focusable="False" />
-            <TextBlock Style="{StaticResource Section}" Text="PowerPoint" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DestinationsText.PowerPointSection}" />
             <ContentControl Content="{Binding PowerPoint}" ContentTemplate="{StaticResource OfficeEditor}" Focusable="False" />
 
             <!-- PDF -->
-            <TextBlock Style="{StaticResource Section}" Text="PDF" />
-            <TextBlock Style="{StaticResource Hint}" Text="Each capture becomes a one-page PDF in the capture folder, named like the capture. To put several pictures in one PDF, use Images to PDF (tray › Tools)." />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DestinationsText.PdfSection}" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:DestinationsText.PdfHint}" />
             <Grid DataContext="{Binding Pdf}">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150" />
@@ -229,22 +226,22 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
               </Grid.RowDefinitions>
-              <TextBlock Style="{StaticResource FieldLabel}" Text="Paper" />
-              <ComboBox Grid.Column="1" Margin="0,3" ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Paper" />
-              <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Size on the page" />
-              <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Fits}" SelectedItem="{Binding Fit}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Size on the PDF page" />
-              <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="Orientation" />
-              <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Orientations}" SelectedItem="{Binding Orientation}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="PDF orientation" />
-              <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="Margins" />
+              <TextBlock Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Paper}" />
+              <ComboBox Grid.Column="1" Margin="0,3" ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:DestinationsText.Paper}" />
+              <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.SizeOnPage}" />
+              <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Fits}" SelectedItem="{Binding Fit}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:DestinationsText.SizeOnPdfPage}" />
+              <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Orientation}" />
+              <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Orientations}" SelectedItem="{Binding Orientation}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:DestinationsText.PdfOrientation}" />
+              <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Margins}" />
               <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,3">
-                <Slider Minimum="0" Maximum="50" Value="{Binding MarginMm}" Width="200" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" AutomationProperties.Name="PDF margins in millimetres" />
-                <TextBlock VerticalAlignment="Center" Margin="8,0,0,0"><Run Text="{Binding MarginMm, Mode=OneWay}" /> <Run Text="mm" /></TextBlock>
+                <Slider Minimum="0" Maximum="50" Value="{Binding MarginMm}" Width="200" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:DestinationsText.PdfMarginsInMillimetres}" />
+                <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Text="{Binding MarginMm, Mode=OneWay, StringFormat={x:Static r:DestinationsText.MillimetresFormat}}" />
               </StackPanel>
             </Grid>
             <ContentControl Content="{Binding Pdf}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
 
             <!-- Servers -->
-            <TextBlock Style="{StaticResource Section}" Text="FTP, FTPS and SFTP servers" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DestinationsText.ServersSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="170" />
@@ -252,10 +249,10 @@
               </Grid.ColumnDefinitions>
               <DockPanel Margin="0,0,12,0">
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
-                  <Button Content="Add" Command="{Binding AddServerCommand}" MinWidth="70" />
-                  <Button Content="Remove" Command="{Binding RemoveServerCommand}" MinWidth="70" Margin="6,0,0,0" />
+                  <Button Content="{x:Static r:CommonText.Add}" Command="{Binding AddServerCommand}" MinWidth="70" />
+                  <Button Content="{x:Static r:CommonText.Remove}" Command="{Binding RemoveServerCommand}" MinWidth="70" Margin="6,0,0,0" />
                 </StackPanel>
-                <ListBox ItemsSource="{Binding Servers}" SelectedItem="{Binding SelectedServer}" DisplayMemberPath="Label" MinHeight="120" AutomationProperties.Name="Servers" />
+                <ListBox ItemsSource="{Binding Servers}" SelectedItem="{Binding SelectedServer}" DisplayMemberPath="Label" MinHeight="120" AutomationProperties.Name="{x:Static r:DestinationsText.Servers}" />
               </DockPanel>
               <ContentControl Grid.Column="1" Content="{Binding SelectedServer}" Focusable="False">
                 <ContentControl.ContentTemplate>
@@ -279,56 +276,56 @@
                           <RowDefinition Height="Auto" />
                           <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Style="{StaticResource FieldLabel}" Text="Name" />
-                        <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Server name" />
-                        <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Protocol" />
-                        <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Protocols}" SelectedItem="{Binding Protocol}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Protocol" />
-                        <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="Server" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Server address" ToolTip="ftp.example.com" />
-                        <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="Port" />
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Name}" />
+                        <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.ServerName}" />
+                        <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Protocol}" />
+                        <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Protocols}" SelectedItem="{Binding Protocol}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:DestinationsText.Protocol}" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Server}" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.ServerAddress}" ToolTip="{x:Static r:DestinationsText.ServerAddressExample}" />
+                        <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Port}" />
                         <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,3">
-                          <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Width="70" AutomationProperties.Name="Port" />
+                          <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Width="70" AutomationProperties.Name="{x:Static r:DestinationsText.Port}" />
                           <TextBlock Text="{Binding PortHint}" Opacity="0.7" VerticalAlignment="Center" Margin="8,0,0,0" />
                         </StackPanel>
-                        <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="User name" />
-                        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,3" Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="User name" ToolTip="Empty logs in anonymously (FTP)" />
-                        <TextBlock Grid.Row="5" Style="{StaticResource FieldLabel}" Text="Password" />
+                        <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.UserName}" />
+                        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,3" Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.UserName}" ToolTip="{x:Static r:DestinationsText.UserNameTip}" />
+                        <TextBlock Grid.Row="5" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Password}" />
                         <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,3">
-                          <PasswordBox Tag="password" PasswordChanged="OnSecretChanged" AutomationProperties.Name="Password" />
+                          <PasswordBox Tag="password" PasswordChanged="OnSecretChanged" AutomationProperties.Name="{x:Static r:DestinationsText.Password}" />
                           <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                             <TextBlock Text="{Binding PasswordState}" Opacity="0.7" VerticalAlignment="Center" />
-                            <Button Content="Forget" Command="{Binding ForgetPasswordCommand}" Margin="8,0,0,0" Padding="6,0" />
+                            <Button Content="{x:Static r:DestinationsText.Forget}" Command="{Binding ForgetPasswordCommand}" Margin="8,0,0,0" Padding="6,0" />
                           </StackPanel>
                         </StackPanel>
-                        <TextBlock Grid.Row="6" Style="{StaticResource FieldLabel}" Text="Key file" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}" />
+                        <TextBlock Grid.Row="6" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.KeyFile}" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}" />
                         <DockPanel Grid.Row="6" Grid.Column="1" Margin="0,3" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}">
-                          <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding BrowseKeyFileCommand}" Margin="8,0,0,0" />
-                          <TextBox Text="{Binding KeyFile, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Private key file" ToolTip="A private key (OpenSSH or PEM) to log in with instead of the password" />
+                          <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseKeyFileCommand}" Margin="8,0,0,0" />
+                          <TextBox Text="{Binding KeyFile, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.PrivateKeyFile}" ToolTip="{x:Static r:DestinationsText.KeyFileTip}" />
                         </DockPanel>
-                        <TextBlock Grid.Row="7" Style="{StaticResource FieldLabel}" Text="Key passphrase" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}" />
+                        <TextBlock Grid.Row="7" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.KeyPassphrase}" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}" />
                         <StackPanel Grid.Row="7" Grid.Column="1" Margin="0,3" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}">
-                          <PasswordBox Tag="passphrase" PasswordChanged="OnSecretChanged" AutomationProperties.Name="Key passphrase" />
+                          <PasswordBox Tag="passphrase" PasswordChanged="OnSecretChanged" AutomationProperties.Name="{x:Static r:DestinationsText.KeyPassphrase}" />
                           <TextBlock Text="{Binding PassphraseState}" Opacity="0.7" Margin="0,2,0,0" />
                         </StackPanel>
-                        <TextBlock Grid.Row="8" Style="{StaticResource FieldLabel}" Text="Folder" />
-                        <TextBox Grid.Row="8" Grid.Column="1" Margin="0,3" Text="{Binding RemoteFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Folder on the server"
-                                 ToolTip="Empty for the folder you log in to; /path from the server's root; made if it isn't there" />
-                        <TextBlock Grid.Row="9" Style="{StaticResource FieldLabel}" Text="Public address" />
-                        <TextBox Grid.Row="9" Grid.Column="1" Margin="0,3" Text="{Binding PublicUrl, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Public address"
-                                 ToolTip="Where uploads can be seen on the web, with {file} for the file name, e.g. https://example.com/shots/{file}. Empty: no link." />
-                        <CheckBox Grid.Row="10" Grid.Column="1" Margin="0,3" Content="Passive mode (works through firewalls and routers)" IsChecked="{Binding Passive}"
+                        <TextBlock Grid.Row="8" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.ServerFolder}" />
+                        <TextBox Grid.Row="8" Grid.Column="1" Margin="0,3" Text="{Binding RemoteFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.FolderOnServer}"
+                                 ToolTip="{x:Static r:DestinationsText.ServerFolderTip}" />
+                        <TextBlock Grid.Row="9" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.PublicAddress}" />
+                        <TextBox Grid.Row="9" Grid.Column="1" Margin="0,3" Text="{Binding PublicUrl, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.PublicAddress}"
+                                 ToolTip="{x:Static r:DestinationsText.PublicAddressTip}" />
+                        <CheckBox Grid.Row="10" Grid.Column="1" Margin="0,3" Content="{x:Static r:DestinationsText.PassiveMode}" IsChecked="{Binding Passive}"
                                   Visibility="{Binding IsFtp, Converter={StaticResource Visible}}" />
                       </Grid>
                       <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding HasTrustedFingerprint, Converter={StaticResource Visible}}">
                         <TextBlock Opacity="0.7" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="330">
-                          <Run Text="Trusted:" /> <Run Text="{Binding TrustedFingerprint, Mode=OneWay}" />
+                          <Run Text="{x:Static r:DestinationsText.Trusted}" /> <Run Text="{Binding TrustedFingerprint, Mode=OneWay}" />
                         </TextBlock>
-                        <Button Content="Forget" Command="{Binding ForgetFingerprintCommand}" Margin="8,0,0,0" Padding="6,0" />
+                        <Button Content="{x:Static r:DestinationsText.Forget}" Command="{Binding ForgetFingerprintCommand}" Margin="8,0,0,0" Padding="6,0" />
                       </StackPanel>
                       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
-                      <Button Content="Trust it" Command="{Binding TrustCommand}" HorizontalAlignment="Left" Margin="90,4,0,0" MinWidth="80"
+                      <Button Content="{x:Static r:DestinationsText.TrustIt}" Command="{Binding TrustCommand}" HorizontalAlignment="Left" Margin="90,4,0,0" MinWidth="80"
                               Visibility="{Binding UntrustedFingerprint, Converter={StaticResource VisibleIfSet}}"
-                              ToolTip="Only if the server's owner tells you this fingerprint is theirs" />
+                              ToolTip="{x:Static r:DestinationsText.TrustItTip}" />
                     </StackPanel>
                   </DataTemplate>
                 </ContentControl.ContentTemplate>
@@ -336,7 +333,7 @@
             </Grid>
 
             <!-- HTTP uploads -->
-            <TextBlock Style="{StaticResource Section}" Text="HTTP uploads" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DestinationsText.UploadsSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="170" />
@@ -344,10 +341,10 @@
               </Grid.ColumnDefinitions>
               <DockPanel Margin="0,0,12,0">
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
-                  <Button Content="Add" Command="{Binding AddUploadCommand}" MinWidth="70" />
-                  <Button Content="Remove" Command="{Binding RemoveUploadCommand}" MinWidth="70" Margin="6,0,0,0" />
+                  <Button Content="{x:Static r:CommonText.Add}" Command="{Binding AddUploadCommand}" MinWidth="70" />
+                  <Button Content="{x:Static r:CommonText.Remove}" Command="{Binding RemoveUploadCommand}" MinWidth="70" Margin="6,0,0,0" />
                 </StackPanel>
-                <ListBox ItemsSource="{Binding Uploads}" SelectedItem="{Binding SelectedUpload}" DisplayMemberPath="Label" MinHeight="120" AutomationProperties.Name="HTTP uploads" />
+                <ListBox ItemsSource="{Binding Uploads}" SelectedItem="{Binding SelectedUpload}" DisplayMemberPath="Label" MinHeight="120" AutomationProperties.Name="{x:Static r:DestinationsText.UploadsSection}" />
               </DockPanel>
               <ContentControl Grid.Column="1" Content="{Binding SelectedUpload}" Focusable="False">
                 <ContentControl.ContentTemplate>
@@ -368,34 +365,34 @@
                           <RowDefinition Height="Auto" />
                           <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Style="{StaticResource FieldLabel}" Text="Name" />
-                        <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Upload name" />
-                        <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Address" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,3" Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Upload address" ToolTip="https://example.com/api/upload: the capture is posted here as a form (multipart/form-data)" />
-                        <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="File field" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding FileField, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="File field" />
-                        <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="Form fields" VerticalAlignment="Top" />
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Name}" />
+                        <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.UploadName}" />
+                        <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Address}" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,3" Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.UploadAddress}" ToolTip="{x:Static r:DestinationsText.UploadAddressTip}" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.FileField}" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding FileField, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.FileField}" />
+                        <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.FormFields}" VerticalAlignment="Top" />
                         <TextBox Grid.Row="3" Grid.Column="1" Margin="0,3" Text="{Binding FieldsText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="44" VerticalScrollBarVisibility="Auto"
-                                 AutomationProperties.Name="Form fields" ToolTip="One a line: name=value" />
-                        <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="Headers" VerticalAlignment="Top" />
+                                 AutomationProperties.Name="{x:Static r:DestinationsText.FormFields}" ToolTip="{x:Static r:DestinationsText.FormFieldsTip}" />
+                        <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Headers}" VerticalAlignment="Top" />
                         <TextBox Grid.Row="4" Grid.Column="1" Margin="0,3" Text="{Binding HeadersText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="44" VerticalScrollBarVisibility="Auto"
-                                 AutomationProperties.Name="Headers" ToolTip="One a line: Name: value (not secret; put a key or token below)" />
-                        <TextBlock Grid.Row="5" Style="{StaticResource FieldLabel}" Text="Secret header" />
-                        <TextBox Grid.Row="5" Grid.Column="1" Margin="0,3" Text="{Binding AuthHeader, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Secret header name" ToolTip="Usually Authorization; empty for none" />
-                        <TextBlock Grid.Row="6" Style="{StaticResource FieldLabel}" Text="Its value" />
+                                 AutomationProperties.Name="{x:Static r:DestinationsText.Headers}" ToolTip="{x:Static r:DestinationsText.HeadersTip}" />
+                        <TextBlock Grid.Row="5" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.SecretHeader}" />
+                        <TextBox Grid.Row="5" Grid.Column="1" Margin="0,3" Text="{Binding AuthHeader, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.SecretHeaderName}" ToolTip="{x:Static r:DestinationsText.SecretHeaderTip}" />
+                        <TextBlock Grid.Row="6" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.SecretValue}" />
                         <StackPanel Grid.Row="6" Grid.Column="1" Margin="0,3">
-                          <PasswordBox Tag="token" PasswordChanged="OnSecretChanged" AutomationProperties.Name="Secret header value" ToolTip="e.g. Bearer abc123 or Client-ID abc123" />
+                          <PasswordBox Tag="token" PasswordChanged="OnSecretChanged" AutomationProperties.Name="{x:Static r:DestinationsText.SecretHeaderValue}" ToolTip="{x:Static r:DestinationsText.SecretValueTip}" />
                           <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                             <TextBlock Text="{Binding TokenState}" Opacity="0.7" VerticalAlignment="Center" />
-                            <Button Content="Forget" Command="{Binding ForgetTokenCommand}" Margin="8,0,0,0" Padding="6,0" />
+                            <Button Content="{x:Static r:DestinationsText.Forget}" Command="{Binding ForgetTokenCommand}" Margin="8,0,0,0" Padding="6,0" />
                           </StackPanel>
                         </StackPanel>
-                        <TextBlock Grid.Row="7" Style="{StaticResource FieldLabel}" Text="Link in the reply" />
-                        <TextBox Grid.Row="7" Grid.Column="1" Margin="0,3" Text="{Binding LinkPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Where the link is in the reply"
-                                 ToolTip="Where the link is in the JSON reply, e.g. data.link or files[0].url. Empty when the whole reply is the link." />
+                        <TextBlock Grid.Row="7" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.LinkInReply}" />
+                        <TextBox Grid.Row="7" Grid.Column="1" Margin="0,3" Text="{Binding LinkPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.LinkInReplyName}"
+                                 ToolTip="{x:Static r:DestinationsText.LinkInReplyTip}" />
                       </Grid>
                       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
-                      <TextBlock Style="{StaticResource Hint}" Text="Test uploads a 1 × 1 picture called cashgear-test.png." />
+                      <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:DestinationsText.UploadTestHint}" />
                     </StackPanel>
                   </DataTemplate>
                 </ContentControl.ContentTemplate>
@@ -403,7 +400,7 @@
             </Grid>
 
             <!-- Apps -->
-            <TextBlock Style="{StaticResource Section}" Text="Open with another app" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DestinationsText.AppsSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="170" />
@@ -411,10 +408,10 @@
               </Grid.ColumnDefinitions>
               <DockPanel Margin="0,0,12,0">
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
-                  <Button Content="Add" Command="{Binding AddAppCommand}" MinWidth="70" />
-                  <Button Content="Remove" Command="{Binding RemoveAppCommand}" MinWidth="70" Margin="6,0,0,0" />
+                  <Button Content="{x:Static r:CommonText.Add}" Command="{Binding AddAppCommand}" MinWidth="70" />
+                  <Button Content="{x:Static r:CommonText.Remove}" Command="{Binding RemoveAppCommand}" MinWidth="70" Margin="6,0,0,0" />
                 </StackPanel>
-                <ListBox ItemsSource="{Binding Apps}" SelectedItem="{Binding SelectedApp}" DisplayMemberPath="Label" MinHeight="90" AutomationProperties.Name="Apps" />
+                <ListBox ItemsSource="{Binding Apps}" SelectedItem="{Binding SelectedApp}" DisplayMemberPath="Label" MinHeight="90" AutomationProperties.Name="{x:Static r:DestinationsText.Apps}" />
               </DockPanel>
               <ContentControl Grid.Column="1" Content="{Binding SelectedApp}" Focusable="False">
                 <ContentControl.ContentTemplate>
@@ -430,16 +427,16 @@
                           <RowDefinition Height="Auto" />
                           <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock Style="{StaticResource FieldLabel}" Text="Name" />
-                        <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="App name" />
-                        <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Program" />
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Name}" />
+                        <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.AppName}" />
+                        <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Program}" />
                         <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,3">
-                          <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
-                          <TextBox Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Program" />
+                          <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
+                          <TextBox Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.Program}" />
                         </DockPanel>
-                        <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="Command line" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Arguments, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Command line"
-                                 ToolTip="{}{file} is the capture's file (in quotes by default), {folder} its folder" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.CommandLine}" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Arguments, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.CommandLine}"
+                                 ToolTip="{x:Static r:DestinationsText.CommandLineTip}" />
                       </Grid>
                       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
                     </StackPanel>
@@ -452,10 +449,10 @@
       </TabItem>
 
       <!-- ============================== Capture ============================== -->
-      <TabItem Header="Capture">
+      <TabItem Header="{x:Static r:SettingsText.CaptureTab}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,4,12,12">
-            <TextBlock Style="{StaticResource Section}" Text="Timing" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.TimingSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -465,15 +462,15 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="Capture delay" VerticalAlignment="Center" />
-              <ComboBox Grid.Column="1" ItemsSource="{Binding DelayChoices}" SelectedItem="{Binding DelaySeconds}" ItemStringFormat="{}{0} s"
-                        HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="Capture delay" />
-              <TextBlock Grid.Row="1" Text="Wait for app windows to hide" VerticalAlignment="Center" Margin="0,8,0,0" />
-              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding HideDelayChoices}" SelectedItem="{Binding HideDelayMs}" ItemStringFormat="{}{0} ms"
-                        HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="Hide delay" />
+              <TextBlock Text="{x:Static r:SettingsText.CaptureDelay}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding DelayChoices}" SelectedItem="{Binding DelaySeconds}" ItemStringFormat="{x:Static r:CommonText.SecondsFormat}"
+                        HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="{x:Static r:SettingsText.CaptureDelay}" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:SettingsText.WaitForWindowsToHide}" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding HideDelayChoices}" SelectedItem="{Binding HideDelayMs}" ItemStringFormat="{x:Static r:CommonText.MillisecondsFormat}"
+                        HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="{x:Static r:SettingsText.HideDelay}" />
             </Grid>
-            <TextBlock Style="{StaticResource Hint}" Text="The capture delay gives you time to open a menu or hover a tooltip before the screen is taken." />
-            <Expander Header="Delay per kind of capture" Margin="0,8,0,0">
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.CaptureDelayHint}" />
+            <Expander Header="{x:Static r:SettingsText.DelayPerKind}" Margin="0,8,0,0">
               <StackPanel Margin="0,6,0,0">
                 <ItemsControl ItemsSource="{Binding ModeDelays}">
                   <ItemsControl.ItemTemplate>
@@ -491,19 +488,19 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <TextBlock Style="{StaticResource Hint}" Text="Repeat Last Capture waits as long as the kind of capture it repeats. An open menu is captured 3 seconds after you ask, unless set otherwise: time to open it." />
+                <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.DelayPerKindHint}" />
               </StackPanel>
             </Expander>
 
-            <TextBlock Style="{StaticResource Section}" Text="Content" />
-            <CheckBox Margin="0,2" Content="Include the mouse cursor" IsChecked="{Binding IncludeCursor}" />
-            <CheckBox Margin="0,2" Content="Add a drop shadow to window captures" IsChecked="{Binding IncludeWindowShadow}" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.ContentSection}" />
+            <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.IncludeCursor}" IsChecked="{Binding IncludeCursor}" />
+            <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.IncludeWindowShadow}" IsChecked="{Binding IncludeWindowShadow}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Capture toolbar" />
-            <CheckBox Margin="0,2" Content="Show the capture toolbar when the app starts" IsChecked="{Binding ShowToolbarAtStartup}" />
-            <TextBlock Style="{StaticResource Hint}" Text="A small bar with a button for every kind of capture, always on top and never in a capture. Tray › Capture Toolbar shows it now; drag it by its grip, and drop it at the edge of a screen to dock it there." />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.CaptureToolbarSection}" />
+            <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.ShowToolbarAtStartup}" IsChecked="{Binding ShowToolbarAtStartup}" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.CaptureToolbarHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Shapes" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.ShapesSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -513,20 +510,20 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="Fixed-size region" VerticalAlignment="Center" />
+              <TextBlock Text="{x:Static r:SettingsText.FixedSizeRegion}" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" ItemsSource="{Binding FixedSizeChoices}" IsEditable="True" Text="{Binding FixedRegionSize, UpdateSourceTrigger=PropertyChanged}"
-                        HorizontalAlignment="Left" MinWidth="160" AutomationProperties.Name="Fixed-size region" />
-              <TextBlock Grid.Row="1" Text="Rounded region corners" VerticalAlignment="Center" Margin="0,8,0,0" />
-              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CornerRadiusChoices}" SelectedItem="{Binding CornerRadius}" ItemStringFormat="{}{0} px"
-                        HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="Corner radius" />
+                        HorizontalAlignment="Left" MinWidth="160" AutomationProperties.Name="{x:Static r:SettingsText.FixedSizeRegion}" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:SettingsText.RoundedCorners}" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CornerRadiusChoices}" SelectedItem="{Binding CornerRadius}" ItemStringFormat="{x:Static r:CommonText.PixelsFormat}"
+                        HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="{x:Static r:SettingsText.CornerRadius}" />
             </Grid>
-            <TextBlock Style="{StaticResource Hint}" Text="Any size can be typed (width × height). On the screen, Tab switches between the sizes and the mouse wheel changes the corner radius; the last ones used are kept. Freehand, polygon, rounded and menu captures are transparent outside their shape, so they are saved as PNG whatever the format on the Output tab." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.ShapesHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Full screen" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.FullScreenSection}" />
             <ComboBox ItemsSource="{Binding FullScreenOutputs}" SelectedItem="{Binding FullScreenOutput}" ItemTemplate="{StaticResource EnumItem}"
-                      HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Full screen output" />
+                      HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="{x:Static r:SettingsText.FullScreenOutput}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Scrolling capture" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.ScrollingSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -536,33 +533,33 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="Wait after each scroll" VerticalAlignment="Center" />
-              <ComboBox Grid.Column="1" ItemsSource="{Binding ScrollSettleChoices}" SelectedItem="{Binding ScrollSettleMs}" ItemStringFormat="{}{0} ms"
-                        HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="Wait after each scroll" />
-              <TextBlock Grid.Row="1" Text="Stop at a height of" VerticalAlignment="Center" Margin="0,8,0,0" />
-              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding ScrollMaxHeightChoices}" SelectedItem="{Binding ScrollMaxHeight}" ItemStringFormat="{}{0:N0} px"
-                        HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="Maximum height" />
+              <TextBlock Text="{x:Static r:SettingsText.WaitAfterScroll}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding ScrollSettleChoices}" SelectedItem="{Binding ScrollSettleMs}" ItemStringFormat="{x:Static r:CommonText.MillisecondsFormat}"
+                        HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="{x:Static r:SettingsText.WaitAfterScroll}" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:SettingsText.StopAtHeight}" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding ScrollMaxHeightChoices}" SelectedItem="{Binding ScrollMaxHeight}" ItemStringFormat="{x:Static r:SettingsText.PixelsN0Format}"
+                        HorizontalAlignment="Left" MinWidth="120" Margin="0,8,0,0" AutomationProperties.Name="{x:Static r:SettingsText.MaximumHeight}" />
             </Grid>
-            <TextBlock Style="{StaticResource Hint}" Text="Pick a window, then click where it scrolls. It is scrolled from where it is down to the bottom; Esc cancels. Allow more time for pages that load as they scroll." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.ScrollingHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Capture method" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.CaptureMethod}" />
             <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" ItemTemplate="{StaticResource EnumItem}"
-                      HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Capture method" />
-            <TextBlock Style="{StaticResource Hint}" Text="Automatic avoids the yellow capture border on Windows 10 and still captures covered windows correctly." />
+                      HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="{x:Static r:SettingsText.CaptureMethod}" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.CaptureMethodHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="HDR monitors" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.HdrSection}" />
             <ComboBox ItemsSource="{Binding HdrChoices}" SelectedItem="{Binding Hdr}" ItemTemplate="{StaticResource EnumItem}"
-                      HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="HDR monitors" />
+                      HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="{x:Static r:SettingsText.HdrSection}" />
             <TextBlock Style="{StaticResource Hint}" Text="{Binding HdrStatus}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>
 
       <!-- ============================== Recording ============================== -->
-      <TabItem Header="Recording" x:Name="RecordingTab">
+      <TabItem Header="{x:Static r:SettingsText.RecordingTab}" x:Name="RecordingTab">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,4,12,12">
-            <TextBlock Style="{StaticResource Section}" Text="Video" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.VideoSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -573,29 +570,29 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="Frames per second" VerticalAlignment="Center" />
-              <ComboBox Grid.Column="1" ItemsSource="{Binding FrameRates}" SelectedItem="{Binding RecordingFps}" ItemStringFormat="{}{0} fps"
-                        HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="Frames per second" />
-              <TextBlock Grid.Row="1" Text="Quality" VerticalAlignment="Center" Margin="0,10,0,0" />
+              <TextBlock Text="{x:Static r:SettingsText.FramesPerSecond}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding FrameRates}" SelectedItem="{Binding RecordingFps}" ItemStringFormat="{x:Static r:CommonText.FpsFormat}"
+                        HorizontalAlignment="Left" MinWidth="120" AutomationProperties.Name="{x:Static r:SettingsText.FramesPerSecond}" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:SettingsText.Quality}" VerticalAlignment="Center" Margin="0,10,0,0" />
               <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding QualityPresets}" SelectedItem="{Binding RecordingQuality}" ItemTemplate="{StaticResource EnumItem}"
-                        HorizontalAlignment="Left" MinWidth="260" Margin="0,10,0,0" AutomationProperties.Name="Quality" />
-              <TextBlock Grid.Row="2" Text="Encoder" VerticalAlignment="Center" Margin="0,10,0,0" />
+                        HorizontalAlignment="Left" MinWidth="260" Margin="0,10,0,0" AutomationProperties.Name="{x:Static r:SettingsText.Quality}" />
+              <TextBlock Grid.Row="2" Text="{x:Static r:SettingsText.Encoder}" VerticalAlignment="Center" Margin="0,10,0,0" />
               <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,10,0,0">
                 <ComboBox ItemsSource="{Binding Encoders}" SelectedItem="{Binding RecordingEncoder}" DisplayMemberPath="Label"
-                          MinWidth="260" MaxWidth="420" AutomationProperties.Name="Encoder" />
-                <Button Content="Check again" Command="{Binding RedetectEncodersCommand}" Margin="8,0,0,0" Padding="10,2"
-                        ToolTip="Test every encoder again (after a driver update or a new graphics card)" />
+                          MinWidth="260" MaxWidth="420" AutomationProperties.Name="{x:Static r:SettingsText.Encoder}" />
+                <Button Content="{x:Static r:SettingsText.CheckAgain}" Command="{Binding RedetectEncodersCommand}" Margin="8,0,0,0" Padding="10,2"
+                        ToolTip="{x:Static r:SettingsText.CheckAgainTip}" />
               </StackPanel>
             </Grid>
             <TextBlock Style="{StaticResource Hint}" Text="{Binding EncoderStatus}" />
-            <TextBlock Style="{StaticResource Hint}" Text="Automatic uses the graphics card's encoder when it works here, which leaves the CPU free; otherwise the encoder built into Windows. If an encoder stops working during a recording, another takes over and the rest is saved as a second file." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.EncoderHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Mouse" />
-            <CheckBox Margin="0,2" Content="Show the mouse pointer" IsChecked="{Binding RecordingIncludeCursor}" />
-            <TextBlock Style="{StaticResource Hint}" Text="Clicks, pointer effects, keystrokes and the webcam are on the Overlays tab." />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.MouseSection}" />
+            <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.ShowMousePointer}" IsChecked="{Binding RecordingIncludeCursor}" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.MouseHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Sound" />
-            <CheckBox Margin="0,2" Content="Record system audio (what you hear)" IsChecked="{Binding RecordSystemAudio}" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.SoundSection}" />
+            <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.RecordSystemAudio}" IsChecked="{Binding RecordSystemAudio}" />
             <Grid Margin="0,8,0,0">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -607,49 +604,49 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="System audio" VerticalAlignment="Center" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}" />
+              <TextBlock Text="{x:Static r:SettingsText.SystemAudio}" VerticalAlignment="Center" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}" />
               <ComboBox Grid.Column="1" ItemsSource="{Binding SystemAudioScopes}" SelectedItem="{Binding RecordingSystemAudioScope}" ItemTemplate="{StaticResource EnumItem}"
-                        HorizontalAlignment="Left" MinWidth="260" IsEnabled="{Binding RecordSystemAudio}" AutomationProperties.Name="Which system audio"
+                        HorizontalAlignment="Left" MinWidth="260" IsEnabled="{Binding RecordSystemAudio}" AutomationProperties.Name="{x:Static r:SettingsText.WhichSystemAudio}"
                         Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}" />
-              <TextBlock Grid.Row="1" Text="App" VerticalAlignment="Center" Margin="0,8,0,0" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:SettingsText.App}" VerticalAlignment="Center" Margin="0,8,0,0" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}" />
               <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}">
                 <ComboBox ItemsSource="{Binding Apps}" SelectedItem="{Binding RecordingApp}" DisplayMemberPath="Label"
-                          MinWidth="260" MaxWidth="420" IsEnabled="{Binding IsAppChoiceEnabled}" AutomationProperties.Name="App" />
-                <Button Content="Refresh" Command="{Binding RefreshAppsCommand}" Margin="8,0,0,0" Padding="10,2" IsEnabled="{Binding IsAppChoiceEnabled}"
-                        ToolTip="List the apps running now (start the app first if it isn't listed)" />
+                          MinWidth="260" MaxWidth="420" IsEnabled="{Binding IsAppChoiceEnabled}" AutomationProperties.Name="{x:Static r:SettingsText.App}" />
+                <Button Content="{x:Static r:SettingsText.Refresh}" Command="{Binding RefreshAppsCommand}" Margin="8,0,0,0" Padding="10,2" IsEnabled="{Binding IsAppChoiceEnabled}"
+                        ToolTip="{x:Static r:SettingsText.RefreshAppsTip}" />
               </StackPanel>
-              <TextBlock Grid.Row="2" Text="System audio from" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <TextBlock Grid.Row="2" Text="{x:Static r:SettingsText.SystemAudioFrom}" VerticalAlignment="Center" Margin="0,8,0,0" />
               <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding RecordingOutput}" DisplayMemberPath="Label"
-                        HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" Margin="0,8,0,0" IsEnabled="{Binding IsOutputChoiceEnabled}" AutomationProperties.Name="System audio from" />
-              <TextBlock Grid.Row="3" Text="Microphone" VerticalAlignment="Center" Margin="0,8,0,0" />
+                        HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" Margin="0,8,0,0" IsEnabled="{Binding IsOutputChoiceEnabled}" AutomationProperties.Name="{x:Static r:SettingsText.SystemAudioFrom}" />
+              <TextBlock Grid.Row="3" Text="{x:Static r:SettingsText.Microphone}" VerticalAlignment="Center" Margin="0,8,0,0" />
               <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Microphones}" SelectedItem="{Binding RecordingMicrophone}" DisplayMemberPath="Label"
-                        HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" Margin="0,8,0,0" AutomationProperties.Name="Microphone" />
+                        HorizontalAlignment="Left" MinWidth="260" MaxWidth="420" Margin="0,8,0,0" AutomationProperties.Name="{x:Static r:SettingsText.Microphone}" />
             </Grid>
             <TextBlock Style="{StaticResource Hint}" Text="{Binding SpeakersStatus}" />
 
-            <TextBlock Text="Microphone processing" FontWeight="SemiBold" Margin="0,12,0,4" />
+            <TextBlock Text="{x:Static r:SettingsText.MicrophoneProcessing}" FontWeight="SemiBold" Margin="0,12,0,4" />
             <StackPanel IsEnabled="{Binding HasMicrophone}">
               <StackPanel Orientation="Horizontal" Margin="0,2" Visibility="{Binding CanSuppressNoise, Converter={StaticResource Visible}}">
-                <CheckBox Content="Noise suppression (RNNoise): remove fans, hum and typing, strength" IsChecked="{Binding MicrophoneNoiseSuppression}" VerticalAlignment="Center" />
+                <CheckBox Content="{x:Static r:SettingsText.NoiseSuppression}" IsChecked="{Binding MicrophoneNoiseSuppression}" VerticalAlignment="Center" />
                 <Slider Width="140" Margin="8,0,0,0" Minimum="0" Maximum="100" SmallChange="5" LargeChange="10" Value="{Binding NoiseSuppressionStrength}"
                         IsSnapToTickEnabled="True" TickFrequency="5" IsEnabled="{Binding MicrophoneNoiseSuppression}" VerticalAlignment="Center"
-                        AutomationProperties.Name="Noise suppression strength" />
+                        AutomationProperties.Name="{x:Static r:SettingsText.NoiseSuppressionStrength}" />
                 <TextBlock Text="{Binding NoiseSuppressionStrengthText}" Margin="8,0,0,0" VerticalAlignment="Center" MinWidth="44" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Margin="0,2">
-                <CheckBox Content="Noise gate: silence the microphone between words, below" IsChecked="{Binding MicrophoneGate}" VerticalAlignment="Center" />
+                <CheckBox Content="{x:Static r:SettingsText.NoiseGate}" IsChecked="{Binding MicrophoneGate}" VerticalAlignment="Center" />
                 <Slider Width="140" Margin="8,0,0,0" Minimum="{Binding MinGateThresholdDb}" Maximum="{Binding MaxGateThresholdDb}" SmallChange="1" LargeChange="5"
                         Value="{Binding GateThresholdDb}" IsSnapToTickEnabled="True" TickFrequency="1" IsEnabled="{Binding MicrophoneGate}" VerticalAlignment="Center"
-                        AutomationProperties.Name="Noise gate threshold" />
+                        AutomationProperties.Name="{x:Static r:SettingsText.NoiseGateThreshold}" />
                 <TextBlock Text="{Binding GateThresholdText}" Margin="8,0,0,0" VerticalAlignment="Center" MinWidth="44" />
               </StackPanel>
-              <CheckBox Margin="0,2" Content="Compressor: even out loud and quiet speech" IsChecked="{Binding MicrophoneCompressor}" />
-              <CheckBox Margin="0,2" Content="Limiter: never let the microphone go above −1 dB (no clipping)" IsChecked="{Binding MicrophoneLimiter}" />
+              <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.Compressor}" IsChecked="{Binding MicrophoneCompressor}" />
+              <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.Limiter}" IsChecked="{Binding MicrophoneLimiter}" />
             </StackPanel>
-            <TextBlock Style="{StaticResource Hint}" Text="Applied to the microphone as it is recorded, in this order. The gate threshold is a peak level: set it between the room's noise and your quietest word. The microphone is held back 2 ms (10 ms more with noise suppression), and the recording takes that out, so it stays in sync." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.ProcessingHint}" />
 
             <StackPanel Visibility="{Binding CanMonitor, Converter={StaticResource Visible}}">
-              <TextBlock Text="Levels" FontWeight="SemiBold" Margin="0,12,0,4" />
+              <TextBlock Text="{x:Static r:SettingsText.LevelsSection}" FontWeight="SemiBold" Margin="0,12,0,4" />
               <Grid>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="220" />
@@ -660,45 +657,45 @@
                   <RowDefinition />
                   <RowDefinition />
                 </Grid.RowDefinitions>
-                <TextBlock Text="Microphone (processed)" VerticalAlignment="Center" />
-                <wpf:LevelMeter Grid.Column="1" Height="10" VerticalAlignment="Center" AutomationProperties.Name="Microphone level"
+                <TextBlock Text="{x:Static r:SettingsText.MicrophoneProcessed}" VerticalAlignment="Center" />
+                <wpf:LevelMeter Grid.Column="1" Height="10" VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:SettingsText.MicrophoneLevel}"
                                 Peak="{Binding MicrophoneLevel.Peak}" Rms="{Binding MicrophoneLevel.Rms}" Hold="{Binding MicrophoneLevel.Hold}" Clipping="{Binding MicrophoneLevel.Clipping}" />
                 <TextBlock Grid.Column="2" Text="{Binding MicrophoneLevel.Text}" Margin="10,0,0,0" VerticalAlignment="Center" Opacity="0.75" />
-                <TextBlock Grid.Row="1" Text="System audio" VerticalAlignment="Center" Margin="0,8,0,0" />
-                <wpf:LevelMeter Grid.Row="1" Grid.Column="1" Height="10" VerticalAlignment="Center" Margin="0,8,0,0" AutomationProperties.Name="System audio level"
+                <TextBlock Grid.Row="1" Text="{x:Static r:SettingsText.SystemAudio}" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <wpf:LevelMeter Grid.Row="1" Grid.Column="1" Height="10" VerticalAlignment="Center" Margin="0,8,0,0" AutomationProperties.Name="{x:Static r:SettingsText.SystemAudioLevel}"
                                 Peak="{Binding SystemAudioLevel.Peak}" Rms="{Binding SystemAudioLevel.Rms}" Hold="{Binding SystemAudioLevel.Hold}" Clipping="{Binding SystemAudioLevel.Clipping}" />
                 <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding SystemAudioLevel.Text}" Margin="10,8,0,0" VerticalAlignment="Center" Opacity="0.75" />
               </Grid>
               <TextBlock Style="{StaticResource Hint}" Text="{Binding MonitorStatus}" Foreground="#D13438" />
-              <TextBlock Style="{StaticResource Hint}" Text="The meters listen while this page is open, to what a recording would record with the choices above. Speech peaking around −12 dB is right; the mark at the right end turns red when the sound clipped." />
+              <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.LevelsHint}" />
 
-              <TextBlock Text="Microphone test" FontWeight="SemiBold" Margin="0,12,0,4" />
+              <TextBlock Text="{x:Static r:SettingsText.MicrophoneTestSection}" FontWeight="SemiBold" Margin="0,12,0,4" />
               <StackPanel Orientation="Horizontal">
-                <Button Content="Record 5 seconds" Command="{Binding TestMicrophoneCommand}" Padding="10,2" />
-                <Button Content="Play as recorded" Command="{Binding PlayOriginalCommand}" Padding="10,2" Margin="8,0,0,0" />
-                <Button Content="Play with processing" Command="{Binding PlayProcessedCommand}" Padding="10,2" Margin="8,0,0,0" />
-                <Button Content="Stop" Command="{Binding StopPlaybackCommand}" Padding="10,2" Margin="8,0,0,0" />
+                <Button Content="{x:Static r:SettingsText.Record5Seconds}" Command="{Binding TestMicrophoneCommand}" Padding="10,2" />
+                <Button Content="{x:Static r:SettingsText.PlayAsRecorded}" Command="{Binding PlayOriginalCommand}" Padding="10,2" Margin="8,0,0,0" />
+                <Button Content="{x:Static r:SettingsText.PlayWithProcessing}" Command="{Binding PlayProcessedCommand}" Padding="10,2" Margin="8,0,0,0" />
+                <Button Content="{x:Static r:CommonText.Stop}" Command="{Binding StopPlaybackCommand}" Padding="10,2" Margin="8,0,0,0" />
               </StackPanel>
               <TextBlock Style="{StaticResource Hint}" Text="{Binding MicrophoneTestStatus}" />
             </StackPanel>
 
-            <TextBlock Text="Loudness" FontWeight="SemiBold" Margin="0,12,0,4" />
-            <CheckBox Margin="0,2" Content="Even out the loudness to −16 LUFS when a recording is saved" IsChecked="{Binding NormalizeLoudness}" />
-            <TextBlock Style="{StaticResource Hint}" Text="Every recording then plays at the same loudness, the usual level for speech online, however loud the microphone or the sound was. Each sound track is measured, then encoded again (EBU R128, FFmpeg's loudnorm in two passes); the video is copied as it is. Peaks are kept below −1.5 dB. A silent track is left alone. Saving takes a few seconds more per 10 minutes." />
+            <TextBlock Text="{x:Static r:SettingsText.LoudnessSection}" FontWeight="SemiBold" Margin="0,12,0,4" />
+            <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.NormalizeLoudness}" IsChecked="{Binding NormalizeLoudness}" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.LoudnessHint}" />
             <TextBlock Style="{StaticResource Hint}" Visibility="{Binding IsAppAudioSupported, Converter={StaticResource Visible}}"
-                       Text="Only one app records that app's sound (and that of the programs it starts) on whichever device it plays, and nothing else: no notifications, no other apps. All sound except one app leaves out, say, a call or music you don't want in the video. The app is found by its program when the recording starts, and followed if it starts or restarts later." />
+                       Text="{x:Static r:SettingsText.AppAudioHint}" />
             <Grid Margin="0,8,0,0">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
                 <ColumnDefinition />
               </Grid.ColumnDefinitions>
-              <TextBlock Text="With both" VerticalAlignment="Center" />
+              <TextBlock Text="{x:Static r:SettingsText.WithBoth}" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" ItemsSource="{Binding TrackLayouts}" SelectedItem="{Binding RecordingTracks}" ItemTemplate="{StaticResource EnumItem}"
-                        HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Sound tracks" />
+                        HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="{x:Static r:SettingsText.SoundTracks}" />
             </Grid>
-            <TextBlock Style="{StaticResource Hint}" Text="Sound is saved in the MP4 as AAC. Players play the first track only, so a track per source is for video editors. Volume and mute for each source are on the recording toolbar. Pause pauses the sound too. Without a sound device the video is recorded without sound, and the notification says so." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.TracksHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="FFmpeg" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.FfmpegSection}" />
             <TextBlock Text="{Binding FfmpegStatus}" TextWrapping="Wrap">
               <TextBlock.Style>
                 <Style TargetType="TextBlock">
@@ -712,25 +709,25 @@
                 </Style>
               </TextBlock.Style>
             </TextBlock>
-            <TextBlock Style="{StaticResource Hint}" Text="Start and stop a recording from the tray or with the recording hotkey. Recordings are saved as MP4 in the capture folder. While recording, the video is written to a temporary file, so if the app or the PC stops, the recording can be saved from the tray menu afterwards." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.RecordingHint}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>
 
       <!-- ============================== Overlays ============================== -->
-      <TabItem Header="Overlays" x:Name="OverlaysTab">
+      <TabItem Header="{x:Static r:OverlaysText.OverlaysTab}" x:Name="OverlaysTab">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="12,4,12,12" DataContext="{Binding Overlays}">
-            <TextBlock Style="{StaticResource Section}" Text="While recording" />
-            <RadioButton Margin="0,2" Content="Draw the overlays into the video" IsChecked="{Binding BurnIn}" GroupName="BurnIn" />
-            <RadioButton Margin="0,2" Content="Keep the video clean, and add the overlays later" GroupName="BurnIn"
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:OverlaysText.WhileRecording}" />
+            <RadioButton Margin="0,2" Content="{x:Static r:OverlaysText.BurnIn}" IsChecked="{Binding BurnIn}" GroupName="BurnIn" />
+            <RadioButton Margin="0,2" Content="{x:Static r:OverlaysText.AddLater}" GroupName="BurnIn"
                          IsChecked="{Binding BurnIn, Converter={x:Static local:InverseBooleanConverter.Instance}}" />
-            <TextBlock Style="{StaticResource Hint}" Text="Added later: tray menu › Add overlays to a recording…, which needs the metadata file. The overlays are drawn the same way either way." />
-            <CheckBox Margin="0,8,0,2" Content="Save a metadata file next to each recording (name.cgmeta.json)" IsChecked="{Binding WriteMetadata}" />
-            <TextBlock Style="{StaticResource Hint}" Text="The pointer on every frame, the clicks, the keys as the keystroke overlay shows them, and which app was in front, on the video's clock: for adding overlays later and for editing." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:OverlaysText.AddLaterHint}" />
+            <CheckBox Margin="0,8,0,2" Content="{x:Static r:OverlaysText.WriteMetadata}" IsChecked="{Binding WriteMetadata}" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:OverlaysText.MetadataHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Clicks" />
-            <CheckBox Margin="0,2" Content="Show clicks with an expanding ring" IsChecked="{Binding ClicksEnabled}" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:OverlaysText.ClicksSection}" />
+            <CheckBox Margin="0,2" Content="{x:Static r:OverlaysText.ShowClicks}" IsChecked="{Binding ClicksEnabled}" />
             <Grid Margin="0,6,0,0" IsEnabled="{Binding ClicksEnabled}">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -742,26 +739,26 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="Left button" VerticalAlignment="Center" />
+              <TextBlock Text="{x:Static r:OverlaysText.LeftButton}" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" ItemsSource="{Binding Colors}" SelectedItem="{Binding LeftColor}" HorizontalAlignment="Left" MinWidth="160"
-                        AutomationProperties.Name="Left button colour" />
-              <TextBlock Grid.Row="1" Text="Right button" VerticalAlignment="Center" Margin="0,6,0,0" />
+                        AutomationProperties.Name="{x:Static r:OverlaysText.LeftButtonColour}" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:OverlaysText.RightButton}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Colors}" SelectedItem="{Binding RightColor}" HorizontalAlignment="Left" MinWidth="160"
-                        Margin="0,6,0,0" AutomationProperties.Name="Right button colour" />
-              <TextBlock Grid.Row="2" Text="Middle and side buttons" VerticalAlignment="Center" Margin="0,6,0,0" />
+                        Margin="0,6,0,0" AutomationProperties.Name="{x:Static r:OverlaysText.RightButtonColour}" />
+              <TextBlock Grid.Row="2" Text="{x:Static r:OverlaysText.MiddleButtons}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Colors}" SelectedItem="{Binding MiddleColor}" HorizontalAlignment="Left" MinWidth="160"
-                        Margin="0,6,0,0" AutomationProperties.Name="Middle button colour" />
-              <TextBlock Grid.Row="3" Text="Ring size" VerticalAlignment="Center" Margin="0,6,0,0" />
+                        Margin="0,6,0,0" AutomationProperties.Name="{x:Static r:OverlaysText.MiddleButtonColour}" />
+              <TextBlock Grid.Row="3" Text="{x:Static r:OverlaysText.RingSize}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
                 <Slider Minimum="16" Maximum="80" Width="200" Value="{Binding ClickSize}" IsSnapToTickEnabled="True" TickFrequency="2"
-                        VerticalAlignment="Center" AutomationProperties.Name="Ring size" />
-                <TextBlock Text="{Binding ClickSize, StringFormat={}{0:0} px}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.RingSize}" />
+                <TextBlock Text="{Binding ClickSize, StringFormat={x:Static r:OverlaysText.WholePixelsFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
             </Grid>
-            <CheckBox Margin="0,8,0,2" Content="Add a click sound to the recording's sound" IsChecked="{Binding ClickSound}" />
-            <TextBlock Style="{StaticResource Hint}" Text="A short tick at each press, mixed into the recording (it isn't played aloud); with a track per source it gets a track of its own." />
+            <CheckBox Margin="0,8,0,2" Content="{x:Static r:OverlaysText.ClickSound}" IsChecked="{Binding ClickSound}" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:OverlaysText.ClickSoundHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Pointer" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:OverlaysText.PointerSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -774,40 +771,40 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="Effect" VerticalAlignment="Center" />
+              <TextBlock Text="{x:Static r:OverlaysText.Effect}" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" ItemsSource="{Binding PointerEffects}" SelectedItem="{Binding PointerEffect}" ItemTemplate="{StaticResource EnumItem}"
-                        HorizontalAlignment="Left" MinWidth="200" AutomationProperties.Name="Pointer effect" />
-              <TextBlock Grid.Row="1" Text="Halo colour" VerticalAlignment="Center" Margin="0,6,0,0" Visibility="{Binding IsHalo, Converter={StaticResource Visible}}" />
+                        HorizontalAlignment="Left" MinWidth="200" AutomationProperties.Name="{x:Static r:OverlaysText.PointerEffect}" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:OverlaysText.HaloColour}" VerticalAlignment="Center" Margin="0,6,0,0" Visibility="{Binding IsHalo, Converter={StaticResource Visible}}" />
               <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Colors}" SelectedItem="{Binding PointerColor}" HorizontalAlignment="Left" MinWidth="160"
-                        Margin="0,6,0,0" AutomationProperties.Name="Halo colour" Visibility="{Binding IsHalo, Converter={StaticResource Visible}}" />
-              <TextBlock Grid.Row="2" Text="Radius" VerticalAlignment="Center" Margin="0,6,0,0" Visibility="{Binding HasEffect, Converter={StaticResource Visible}}" />
+                        Margin="0,6,0,0" AutomationProperties.Name="{x:Static r:OverlaysText.HaloColour}" Visibility="{Binding IsHalo, Converter={StaticResource Visible}}" />
+              <TextBlock Grid.Row="2" Text="{x:Static r:OverlaysText.Radius}" VerticalAlignment="Center" Margin="0,6,0,0" Visibility="{Binding HasEffect, Converter={StaticResource Visible}}" />
               <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0" Visibility="{Binding HasEffect, Converter={StaticResource Visible}}">
                 <Slider Minimum="20" Maximum="400" Width="200" Value="{Binding PointerRadius}" IsSnapToTickEnabled="True" TickFrequency="5"
-                        VerticalAlignment="Center" AutomationProperties.Name="Effect radius" />
-                <TextBlock Text="{Binding PointerRadius, StringFormat={}{0:0} px}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.EffectRadius}" />
+                <TextBlock Text="{Binding PointerRadius, StringFormat={x:Static r:OverlaysText.WholePixelsFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
-              <TextBlock Grid.Row="3" Text="Dim the rest by" VerticalAlignment="Center" Margin="0,6,0,0" Visibility="{Binding IsSpotlight, Converter={StaticResource Visible}}" />
+              <TextBlock Grid.Row="3" Text="{x:Static r:OverlaysText.DimBy}" VerticalAlignment="Center" Margin="0,6,0,0" Visibility="{Binding IsSpotlight, Converter={StaticResource Visible}}" />
               <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0" Visibility="{Binding IsSpotlight, Converter={StaticResource Visible}}">
                 <Slider Minimum="10" Maximum="90" Width="200" Value="{Binding PointerDim}" IsSnapToTickEnabled="True" TickFrequency="5"
-                        VerticalAlignment="Center" AutomationProperties.Name="Spotlight dimming" />
-                <TextBlock Text="{Binding PointerDim, StringFormat={}{0:0}%}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.SpotlightDimming}" />
+                <TextBlock Text="{Binding PointerDim, StringFormat={x:Static r:OverlaysText.WholePercentFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
-              <TextBlock Grid.Row="4" Text="Pointer size" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBlock Grid.Row="4" Text="{x:Static r:OverlaysText.PointerSize}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
                 <Slider Minimum="1" Maximum="3" Width="200" Value="{Binding PointerScale}" IsSnapToTickEnabled="True" TickFrequency="0.25"
-                        VerticalAlignment="Center" AutomationProperties.Name="Pointer size" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.PointerSize}" />
                 <TextBlock Text="{Binding PointerScaleText}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
             </Grid>
             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-              <CheckBox Content="Hide the pointer when it stands still for" IsChecked="{Binding HideIdlePointer}" VerticalAlignment="Center" />
+              <CheckBox Content="{x:Static r:OverlaysText.HideIdlePointer}" IsChecked="{Binding HideIdlePointer}" VerticalAlignment="Center" />
               <Slider Minimum="1" Maximum="30" Width="120" Margin="8,0,0,0" Value="{Binding IdleSeconds}" IsSnapToTickEnabled="True" TickFrequency="1"
-                      VerticalAlignment="Center" IsEnabled="{Binding HideIdlePointer}" AutomationProperties.Name="Idle time" />
-              <TextBlock Text="{Binding IdleSeconds, StringFormat={}{0:0} s}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                      VerticalAlignment="Center" IsEnabled="{Binding HideIdlePointer}" AutomationProperties.Name="{x:Static r:OverlaysText.IdleTime}" />
+              <TextBlock Text="{Binding IdleSeconds, StringFormat={x:Static r:OverlaysText.WholeSecondsFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
             </StackPanel>
-            <TextBlock Style="{StaticResource Hint}" Text="A bigger pointer, or hiding it, means the app draws the pointer itself instead of Windows (a text cursor is drawn black with a white edge). Needs Recording › Show the mouse pointer." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:OverlaysText.PointerHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Keystrokes" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:OverlaysText.KeystrokesSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -820,37 +817,37 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="Show" VerticalAlignment="Center" />
+              <TextBlock Text="{x:Static r:OverlaysText.Show}" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" ItemsSource="{Binding KeystrokeModes}" SelectedItem="{Binding KeystrokeMode}" ItemTemplate="{StaticResource EnumItem}"
-                        HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="Keystrokes shown" />
-              <TextBlock Grid.Row="1" Text="Where" VerticalAlignment="Center" Margin="0,6,0,0" />
+                        HorizontalAlignment="Left" MinWidth="260" AutomationProperties.Name="{x:Static r:OverlaysText.KeystrokesShown}" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:OverlaysText.Where}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Positions}" SelectedItem="{Binding KeystrokePosition}" ItemTemplate="{StaticResource EnumItem}"
-                        HorizontalAlignment="Left" MinWidth="200" Margin="0,6,0,0" IsEnabled="{Binding KeystrokesOn}" AutomationProperties.Name="Keystroke position" />
-              <TextBlock Grid.Row="2" Text="Font" VerticalAlignment="Center" Margin="0,6,0,0" />
+                        HorizontalAlignment="Left" MinWidth="200" Margin="0,6,0,0" IsEnabled="{Binding KeystrokesOn}" AutomationProperties.Name="{x:Static r:OverlaysText.KeystrokePosition}" />
+              <TextBlock Grid.Row="2" Text="{x:Static r:OverlaysText.Font}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Fonts}" Text="{Binding KeystrokeFont, UpdateSourceTrigger=LostFocus}" IsEditable="True"
-                        HorizontalAlignment="Left" MinWidth="200" Margin="0,6,0,0" IsEnabled="{Binding KeystrokesOn}" AutomationProperties.Name="Keystroke font" />
-              <TextBlock Grid.Row="3" Text="Size" VerticalAlignment="Center" Margin="0,6,0,0" />
+                        HorizontalAlignment="Left" MinWidth="200" Margin="0,6,0,0" IsEnabled="{Binding KeystrokesOn}" AutomationProperties.Name="{x:Static r:OverlaysText.KeystrokeFont}" />
+              <TextBlock Grid.Row="3" Text="{x:Static r:OverlaysText.Size}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0" IsEnabled="{Binding KeystrokesOn}">
                 <Slider Minimum="10" Maximum="72" Width="200" Value="{Binding KeystrokeSize}" IsSnapToTickEnabled="True" TickFrequency="1"
-                        VerticalAlignment="Center" AutomationProperties.Name="Keystroke size" />
-                <TextBlock Text="{Binding KeystrokeSize, StringFormat={}{0:0} pt}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.KeystrokeSize}" />
+                <TextBlock Text="{Binding KeystrokeSize, StringFormat={x:Static r:OverlaysText.WholePointsFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
-              <TextBlock Grid.Row="4" Text="Stay after the last key" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBlock Grid.Row="4" Text="{x:Static r:OverlaysText.StayAfterLastKey}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0" IsEnabled="{Binding KeystrokesOn}">
                 <Slider Minimum="0.5" Maximum="10" Width="200" Value="{Binding KeystrokeFade}" IsSnapToTickEnabled="True" TickFrequency="0.5"
-                        VerticalAlignment="Center" AutomationProperties.Name="Keystroke time" />
-                <TextBlock Text="{Binding KeystrokeFade, StringFormat={}{0:0.0} s}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.KeystrokeTime}" />
+                <TextBlock Text="{Binding KeystrokeFade, StringFormat={x:Static r:OverlaysText.SecondsOneDecimalFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
             </Grid>
-            <TextBlock Style="{StaticResource Hint}" Text="Keys typed into a password field are never shown or kept, nor keys typed into the apps below. Keys are only in the recording and its metadata file, nowhere else. The toolbar can hide them for a while during a recording." />
-            <TextBlock Margin="0,10,0,4" Text="Never show keys typed into" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:OverlaysText.KeystrokesHint}" />
+            <TextBlock Margin="0,10,0,4" Text="{x:Static r:OverlaysText.ExcludedAppsLabel}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <ListBox x:Name="ExcludedAppList" ItemsSource="{Binding ExcludedApps}" Height="96" AutomationProperties.Name="Apps whose keys are never shown" />
-              <Button Grid.Column="1" Content="Remove" Margin="8,0,0,0" VerticalAlignment="Top" MinWidth="80"
+              <ListBox x:Name="ExcludedAppList" ItemsSource="{Binding ExcludedApps}" Height="96" AutomationProperties.Name="{x:Static r:OverlaysText.ExcludedApps}" />
+              <Button Grid.Column="1" Content="{x:Static r:CommonText.Remove}" Margin="8,0,0,0" VerticalAlignment="Top" MinWidth="80"
                       Command="{Binding RemoveExcludedAppCommand}" CommandParameter="{Binding SelectedItem, ElementName=ExcludedAppList}" />
             </Grid>
             <Grid Margin="0,6,0,0">
@@ -860,13 +857,13 @@
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
               <ComboBox ItemsSource="{Binding RunningApps}" Text="{Binding NewExcludedApp, UpdateSourceTrigger=PropertyChanged}" IsEditable="True"
-                        DropDownOpened="OnExcludedAppsOpened" AutomationProperties.Name="App to add" ToolTip="A running app, or type a program's file name such as keepass.exe" />
-              <Button Grid.Column="1" Content="Add" Margin="8,0,0,0" MinWidth="80" Command="{Binding AddExcludedAppCommand}" />
-              <Button Grid.Column="2" Content="Refresh" Margin="8,0,0,0" Command="{Binding RefreshRunningAppsCommand}" />
+                        DropDownOpened="OnExcludedAppsOpened" AutomationProperties.Name="{x:Static r:OverlaysText.AppToAdd}" ToolTip="{x:Static r:OverlaysText.AppToAddTip}" />
+              <Button Grid.Column="1" Content="{x:Static r:CommonText.Add}" Margin="8,0,0,0" MinWidth="80" Command="{Binding AddExcludedAppCommand}" />
+              <Button Grid.Column="2" Content="{x:Static r:SettingsText.Refresh}" Margin="8,0,0,0" Command="{Binding RefreshRunningAppsCommand}" />
             </Grid>
 
-            <TextBlock Style="{StaticResource Section}" Text="Webcam" />
-            <CheckBox Margin="0,2" Content="Record the webcam: drawn over the recording, and kept as a video track of its own" IsChecked="{Binding WebcamEnabled}" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:OverlaysText.WebcamSection}" />
+            <CheckBox Margin="0,2" Content="{x:Static r:OverlaysText.RecordWebcam}" IsChecked="{Binding WebcamEnabled}" />
             <Grid Margin="0,6,0,0" IsEnabled="{Binding WebcamEnabled}">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -880,51 +877,51 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="Camera" VerticalAlignment="Center" />
+              <TextBlock Text="{x:Static r:OverlaysText.Camera}" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <ComboBox ItemsSource="{Binding Cameras}" SelectedItem="{Binding Camera}" MinWidth="240" MaxWidth="340" AutomationProperties.Name="Camera" />
-                <Button Content="Refresh" Command="{Binding RefreshCamerasCommand}" Margin="8,0,0,0" Padding="10,2" />
+                <ComboBox ItemsSource="{Binding Cameras}" SelectedItem="{Binding Camera}" MinWidth="240" MaxWidth="340" AutomationProperties.Name="{x:Static r:OverlaysText.Camera}" />
+                <Button Content="{x:Static r:SettingsText.Refresh}" Command="{Binding RefreshCamerasCommand}" Margin="8,0,0,0" Padding="10,2" />
               </StackPanel>
-              <TextBlock Grid.Row="1" Text="Picture" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:OverlaysText.Picture}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
-                <ComboBox ItemsSource="{Binding WebcamSizes}" SelectedItem="{Binding WebcamSize}" MinWidth="120" AutomationProperties.Name="Webcam picture size" />
-                <ComboBox ItemsSource="{Binding WebcamRates}" SelectedItem="{Binding WebcamFps}" ItemStringFormat="{}{0} fps" MinWidth="80" Margin="8,0,0,0"
-                          AutomationProperties.Name="Webcam frame rate" />
+                <ComboBox ItemsSource="{Binding WebcamSizes}" SelectedItem="{Binding WebcamSize}" MinWidth="120" AutomationProperties.Name="{x:Static r:OverlaysText.WebcamPictureSize}" />
+                <ComboBox ItemsSource="{Binding WebcamRates}" SelectedItem="{Binding WebcamFps}" ItemStringFormat="{x:Static r:CommonText.FpsFormat}" MinWidth="80" Margin="8,0,0,0"
+                          AutomationProperties.Name="{x:Static r:OverlaysText.WebcamFrameRate}" />
               </StackPanel>
-              <TextBlock Grid.Row="2" Text="Shape" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBlock Grid.Row="2" Text="{x:Static r:OverlaysText.Shape}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding WebcamShapes}" SelectedItem="{Binding WebcamShape}" ItemTemplate="{StaticResource EnumItem}"
-                        HorizontalAlignment="Left" MinWidth="160" Margin="0,6,0,0" AutomationProperties.Name="Webcam shape" />
-              <TextBlock Grid.Row="3" Text="Size (share of the height)" VerticalAlignment="Center" Margin="0,6,0,0" />
+                        HorizontalAlignment="Left" MinWidth="160" Margin="0,6,0,0" AutomationProperties.Name="{x:Static r:OverlaysText.WebcamShape}" />
+              <TextBlock Grid.Row="3" Text="{x:Static r:OverlaysText.WebcamSizeLabel}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
                 <Slider Minimum="10" Maximum="60" Width="200" Value="{Binding WebcamHeight}" IsSnapToTickEnabled="True" TickFrequency="1"
-                        VerticalAlignment="Center" AutomationProperties.Name="Webcam size" />
-                <TextBlock Text="{Binding WebcamHeight, StringFormat={}{0:0}%}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.WebcamSize}" />
+                <TextBlock Text="{Binding WebcamHeight, StringFormat={x:Static r:OverlaysText.WholePercentFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
-              <TextBlock Grid.Row="4" Text="Border" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBlock Grid.Row="4" Text="{x:Static r:OverlaysText.Border}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
-                <ComboBox ItemsSource="{Binding Colors}" SelectedItem="{Binding WebcamBorderColor}" MinWidth="120" AutomationProperties.Name="Webcam border colour" />
+                <ComboBox ItemsSource="{Binding Colors}" SelectedItem="{Binding WebcamBorderColor}" MinWidth="120" AutomationProperties.Name="{x:Static r:OverlaysText.WebcamBorderColour}" />
                 <Slider Minimum="0" Maximum="12" Width="120" Margin="8,0,0,0" Value="{Binding WebcamBorderWidth}" IsSnapToTickEnabled="True" TickFrequency="1"
-                        VerticalAlignment="Center" AutomationProperties.Name="Webcam border width" />
-                <TextBlock Text="{Binding WebcamBorderWidth, StringFormat={}{0:0} px}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.WebcamBorderWidth}" />
+                <TextBlock Text="{Binding WebcamBorderWidth, StringFormat={x:Static r:OverlaysText.WholePixelsFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
-              <CheckBox Grid.Row="5" Grid.Column="1" Margin="0,8,0,0" Content="Mirror it (its own track stays as the camera sees)" IsChecked="{Binding WebcamMirror}" />
+              <CheckBox Grid.Row="5" Grid.Column="1" Margin="0,8,0,0" Content="{x:Static r:OverlaysText.Mirror}" IsChecked="{Binding WebcamMirror}" />
             </Grid>
             <TextBlock Style="{StaticResource Hint}" Text="{Binding WebcamStatus}" />
             <Border x:Name="WebcamArea" Width="320" Height="180" Margin="0,8,0,0" HorizontalAlignment="Left" Background="#FF2B2B2B" ClipToBounds="True"
                     BorderBrush="#60808080" BorderThickness="1" IsEnabled="{Binding WebcamEnabled}">
               <Canvas x:Name="WebcamCanvas">
-                <TextBlock Canvas.Left="8" Canvas.Top="6" Text="The recorded area" Foreground="#A0FFFFFF" FontSize="11" />
+                <TextBlock Canvas.Left="8" Canvas.Top="6" Text="{x:Static r:OverlaysText.RecordedArea}" Foreground="#A0FFFFFF" FontSize="11" />
                 <Border x:Name="WebcamBox" Cursor="SizeAll" MouseLeftButtonDown="OnWebcamDragStart" MouseMove="OnWebcamDrag" MouseLeftButtonUp="OnWebcamDragEnd"
-                        AutomationProperties.Name="Webcam placement">
+                        AutomationProperties.Name="{x:Static r:OverlaysText.WebcamPlacement}">
                   <Border.Background>
                     <ImageBrush x:Name="WebcamImage" Stretch="UniformToFill" />
                   </Border.Background>
                 </Border>
               </Canvas>
             </Border>
-            <TextBlock Style="{StaticResource Hint}" Text="Drag the webcam to where it goes. With a camera, its picture shows here while this page is open." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:OverlaysText.WebcamHint}" />
 
-            <TextBlock Style="{StaticResource Section}" Text="Drawing on the screen" />
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:OverlaysText.DrawingSection}" />
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
@@ -935,33 +932,33 @@
                 <RowDefinition />
                 <RowDefinition />
               </Grid.RowDefinitions>
-              <TextBlock Text="Pen colour" VerticalAlignment="Center" />
+              <TextBlock Text="{x:Static r:OverlaysText.PenColour}" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" ItemsSource="{Binding Colors}" SelectedItem="{Binding PenColor}" HorizontalAlignment="Left" MinWidth="160"
-                        AutomationProperties.Name="Pen colour" />
-              <TextBlock Grid.Row="1" Text="Pen width" VerticalAlignment="Center" Margin="0,6,0,0" />
+                        AutomationProperties.Name="{x:Static r:OverlaysText.PenColour}" />
+              <TextBlock Grid.Row="1" Text="{x:Static r:OverlaysText.PenWidth}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
                 <Slider Minimum="1" Maximum="20" Width="200" Value="{Binding PenWidth}" IsSnapToTickEnabled="True" TickFrequency="1"
-                        VerticalAlignment="Center" AutomationProperties.Name="Pen width" />
-                <TextBlock Text="{Binding PenWidth, StringFormat={}{0:0} px}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.PenWidth}" />
+                <TextBlock Text="{Binding PenWidth, StringFormat={x:Static r:OverlaysText.WholePixelsFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
-              <TextBlock Grid.Row="2" Text="Drawings fade away after" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <TextBlock Grid.Row="2" Text="{x:Static r:OverlaysText.FadeAfter}" VerticalAlignment="Center" Margin="0,6,0,0" />
               <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
                 <Slider Minimum="0" Maximum="30" Width="200" Value="{Binding PenFade}" IsSnapToTickEnabled="True" TickFrequency="1"
-                        VerticalAlignment="Center" AutomationProperties.Name="Drawings fade after" />
+                        VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:OverlaysText.FadeAfterName}" />
                 <TextBlock Text="{Binding PenFadeText}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
             </Grid>
-            <TextBlock Style="{StaticResource Hint}" Text="While recording, the Draw on Screen hotkey (Settings › Hotkeys) or the pen on the toolbar lets you draw over the recorded area; the drawing is recorded, the toolbar isn't. Esc ends drawing, Delete clears, Ctrl+Z undoes, 1 to 4 pick pen, highlighter, arrow or rectangle." />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:OverlaysText.DrawingHint}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>
 
       <!-- ============================== Hotkeys ============================== -->
-      <TabItem Header="Hotkeys">
+      <TabItem Header="{x:Static r:SettingsText.HotkeysTab}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="12,4,12,12">
           <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,8"
-                     Text="Click a box and press the keys. Backspace clears it. Hotkeys are paused while a box is selected, so PrintScreen can be recorded." />
+                     Text="{x:Static r:SettingsText.HotkeysHint}" />
           <ItemsControl ItemsSource="{Binding Hotkeys}">
             <ItemsControl.ItemTemplate>
               <DataTemplate DataType="{x:Type local:HotkeyRowViewModel}">
@@ -975,7 +972,7 @@
                   <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
                   <local:HotkeyBox Grid.Column="1" GestureText="{Binding Text}" AutomationProperties.Name="{Binding Label}"
                                    GotKeyboardFocus="OnHotkeyBoxGotFocus" LostKeyboardFocus="OnHotkeyBoxLostFocus" />
-                  <Button Grid.Column="2" Content="Clear" Command="{Binding ClearCommand}" Margin="8,0,0,0" />
+                  <Button Grid.Column="2" Content="{x:Static r:SettingsText.Clear}" Command="{Binding ClearCommand}" Margin="8,0,0,0" />
                   <TextBlock Grid.Column="3" Text="{Binding Status}" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap">
                     <TextBlock.Style>
                       <Style TargetType="TextBlock">
@@ -994,7 +991,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
-          <TextBlock Style="{StaticResource Section}" Text="Push to talk" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.PushToTalk}" />
           <Grid Margin="0,4">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="200" />
@@ -1002,10 +999,10 @@
               <ColumnDefinition Width="Auto" />
               <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Hold to talk while recording" VerticalAlignment="Center" />
-            <local:HotkeyBox Grid.Column="1" GestureText="{Binding PushToTalkText}" AutomationProperties.Name="Push to talk"
+            <TextBlock Text="{x:Static r:SettingsText.HoldToTalk}" VerticalAlignment="Center" />
+            <local:HotkeyBox Grid.Column="1" GestureText="{Binding PushToTalkText}" AutomationProperties.Name="{x:Static r:SettingsText.PushToTalk}"
                              GotKeyboardFocus="OnHotkeyBoxGotFocus" LostKeyboardFocus="OnHotkeyBoxLostFocus" />
-            <Button Grid.Column="2" Content="Clear" Command="{Binding ClearPushToTalkCommand}" Margin="8,0,0,0" />
+            <Button Grid.Column="2" Content="{x:Static r:SettingsText.Clear}" Command="{Binding ClearPushToTalkCommand}" Margin="8,0,0,0" />
             <TextBlock Grid.Column="3" Text="{Binding PushToTalkStatus}" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap">
               <TextBlock.Style>
                 <Style TargetType="TextBlock">
@@ -1020,24 +1017,24 @@
               </TextBlock.Style>
             </TextBlock>
           </Grid>
-          <TextBlock Style="{StaticResource Hint}" Text="With a key set, the microphone is silent in recordings except while the key is held (and a quarter of a second after, so words aren't cut). The key isn't taken from other apps, so a key that does nothing in them works best: F13 to F24, Scroll Lock, Pause, or a mouse button mapped to one of those. A key on its own is fine here." />
+          <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.PushToTalkHint}" />
         </StackPanel>
         </ScrollViewer>
       </TabItem>
 
       <!-- ============================== General ============================== -->
-      <TabItem Header="General">
+      <TabItem Header="{x:Static r:SettingsText.GeneralTab}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="12,4,12,12">
-          <TextBlock Style="{StaticResource Section}" Text="Startup" />
-          <CheckBox Margin="0,2" Content="Start CashGear Capture when I sign in to Windows" IsChecked="{Binding StartWithWindows}" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.StartupSection}" />
+          <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.StartWithWindows}" IsChecked="{Binding StartWithWindows}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="Capture Text (OCR)" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.OcrSection}" />
           <ComboBox ItemsSource="{Binding OcrLanguages}" SelectedItem="{Binding OcrLanguage}" DisplayMemberPath="Label"
-                    HorizontalAlignment="Left" MinWidth="320" AutomationProperties.Name="Text recognition language" />
-          <TextBlock Style="{StaticResource Hint}" Text="Automatic reads the area with each of your Windows languages and takes every line from the language that matches its script, so Arabic and English in one area both work. More languages: Windows Settings › Time &amp; language › Language › (language) › Options › Optical character recognition." />
+                    HorizontalAlignment="Left" MinWidth="320" AutomationProperties.Name="{x:Static r:SettingsText.OcrLanguage}" />
+          <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.OcrHint}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="Screen tools" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.ScreenToolsSection}" />
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="220" />
@@ -1047,16 +1044,16 @@
               <RowDefinition />
               <RowDefinition />
             </Grid.RowDefinitions>
-            <TextBlock Text="Ruler: pixels per inch" VerticalAlignment="Center" />
+            <TextBlock Text="{x:Static r:SettingsText.RulerDpi}" VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" ItemsSource="{Binding RulerDpiChoices}" SelectedItem="{Binding RulerDpi}" DisplayMemberPath="Label"
-                      HorizontalAlignment="Left" MinWidth="280" AutomationProperties.Name="Ruler pixels per inch" />
-            <TextBlock Grid.Row="1" Text="Colour picker copies as" VerticalAlignment="Center" Margin="0,8,0,0" />
+                      HorizontalAlignment="Left" MinWidth="280" AutomationProperties.Name="{x:Static r:SettingsText.RulerDpiName}" />
+            <TextBlock Grid.Row="1" Text="{x:Static r:SettingsText.ColorCopyFormat}" VerticalAlignment="Center" Margin="0,8,0,0" />
             <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding ColorFormats}" SelectedItem="{Binding ColorCopyFormat}" ItemTemplate="{StaticResource EnumItem}"
-                      HorizontalAlignment="Left" MinWidth="280" Margin="0,8,0,0" AutomationProperties.Name="Colour picker copies as" />
+                      HorizontalAlignment="Left" MinWidth="280" Margin="0,8,0,0" AutomationProperties.Name="{x:Static r:SettingsText.ColorCopyFormat}" />
           </Grid>
-          <TextBlock Style="{StaticResource Hint}" Text="Inches and centimetres on the ruler follow Windows' scale of the monitor it is on. To measure real inches on the glass, set your screen's pixels per inch (its width in pixels divided by its width in inches). Tools are in tray › Tools and on the capture toolbar; set hotkeys for them on the Hotkeys tab." />
+          <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.ScreenToolsHint}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="Appearance" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.AppearanceSection}" />
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="Auto" MinWidth="120" />
@@ -1075,17 +1072,17 @@
           </Grid>
           <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.LanguageHint}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="Capture history" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.HistorySection}" />
           <ComboBox ItemsSource="{Binding HistorySizes}" SelectedItem="{Binding HistorySize}" DisplayMemberPath="Label"
-                    HorizontalAlignment="Left" MinWidth="220" AutomationProperties.Name="Captures kept in the history" />
-          <TextBlock Style="{StaticResource Hint}" Text="Recent captures are kept (with thumbnails) for tray › Recent Captures and Capture History, even ones you didn't save. Lowering the number removes the oldest straight away." />
+                    HorizontalAlignment="Left" MinWidth="220" AutomationProperties.Name="{x:Static r:SettingsText.HistorySize}" />
+          <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.HistoryHint}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="Updates" />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.UpdatesSection}" />
           <TextBlock Text="{Binding VersionText}" />
-          <CheckBox Margin="0,6,0,2" Content="Check for updates automatically (once a day) and download them in the background"
+          <CheckBox Margin="0,6,0,2" Content="{x:Static r:SettingsText.CheckForUpdates}"
                     IsChecked="{Binding CheckForUpdates}" IsEnabled="{Binding CanCheckForUpdates}" />
           <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-            <Button Content="Check now" Command="{Binding CheckForUpdatesNowCommand}" MinWidth="100" />
+            <Button Content="{x:Static r:SettingsText.CheckNow}" Command="{Binding CheckForUpdatesNowCommand}" MinWidth="100" />
             <TextBlock Text="{Binding UpdateStatus}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="10,0,0,0" MaxWidth="440" Opacity="0.8" />
           </StackPanel>
           <Grid Margin="0,10,0,0">
@@ -1119,11 +1116,11 @@
                      Visibility="{Binding SettingsFileStatus, Converter={StaticResource VisibleIfSet}}" />
           <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.SettingsTransferHint}" />
 
-          <TextBlock Style="{StaticResource Section}" Text="Advanced" />
-          <Button Content="Open settings file" Command="{Binding OpenSettingsFileCommand}" HorizontalAlignment="Left" />
-          <TextBlock Style="{StaticResource Hint}" Text="Edits saved in the file apply immediately." />
-          <Button Content="Export diagnostics…" Command="{Binding ExportDiagnosticsCommand}" HorizontalAlignment="Left" Margin="0,10,0,0" />
-          <TextBlock Style="{StaticResource Hint}" Text="Saves a zip for a bug report: the last week's logs, the settings without server addresses, user names or passwords, and facts about this PC (Windows, graphics cards, monitors, sound devices). Nothing is sent anywhere." />
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.AdvancedSection}" />
+          <Button Content="{x:Static r:SettingsText.OpenSettingsFile}" Command="{Binding OpenSettingsFileCommand}" HorizontalAlignment="Left" />
+          <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.OpenSettingsFileHint}" />
+          <Button Content="{x:Static r:SettingsText.ExportDiagnostics}" Command="{Binding ExportDiagnosticsCommand}" HorizontalAlignment="Left" Margin="0,10,0,0" />
+          <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.DiagnosticsHint}" />
         </StackPanel>
         </ScrollViewer>
       </TabItem>

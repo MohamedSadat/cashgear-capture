@@ -1,7 +1,9 @@
+using System.ComponentModel;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Engine.Diagnostics;
 using CashGear.Capture.Media;
+using CashGear.Capture.Recording.Resources;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Recording;
@@ -69,7 +71,7 @@ internal sealed partial class EncoderService : IRecordingEncoders
                 }
                 catch (TimeoutException)
                 {
-                    results.Add(new EncoderProbe(candidate.Id, false, $"It didn't answer within {ProbeTimeout.TotalSeconds:0} s."));
+                    results.Add(new EncoderProbe(candidate.Id, false, RecordingStrings.ProbeTimedOut(ProbeTimeout.TotalSeconds)));
                 }
             }
 
@@ -97,6 +99,7 @@ internal sealed partial class EncoderService : IRecordingEncoders
         EncoderPresets.Usable(setting, detected);
 
     /// <summary>What detection results depend on: FFmpeg, every hardware adapter with its driver version, and Windows.</summary>
+    [Localizable(false)] // a cache key: compared, never shown
     internal static string CacheKey(string? ffmpegVersion)
     {
         var all = GraphicsAdapters.List();

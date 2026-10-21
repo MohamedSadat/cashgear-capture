@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -8,6 +9,7 @@ namespace CashGear.Capture.App.Diagnostics;
 /// What a diagnostics zip leaves out of the files it copies: the text that names a server, an account, an address
 /// or a person. Values are replaced by <see cref="Removed"/>, so the zip still shows that a setting was set.
 /// </summary>
+[Localizable(false)] // what it writes goes into the diagnostics zip, which stays in English
 internal static class DiagnosticsRedaction
 {
     public const string Removed = "(removed)";

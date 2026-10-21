@@ -1,3 +1,4 @@
+using CashGear.Capture.Media.Resources;
 using FFmpeg.AutoGen.Abstractions;
 
 namespace CashGear.Capture.Media;
@@ -44,18 +45,18 @@ public sealed unsafe class AudioStreamReader : IDisposable
             var opened = ffmpeg.avformat_open_input(&input, path, null, null);
             if (opened < 0)
             {
-                throw new FfmpegException($"Opening {Path.GetFileName(path)}", opened, log.Summary());
+                throw new FfmpegException(MediaStrings.Opening(Path.GetFileName(path)), opened, log.Summary());
             }
         }
 
         _input = input;
         try
         {
-            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), $"Reading {Path.GetFileName(path)}");
+            FfmpegException.Check(ffmpeg.avformat_find_stream_info(input, null), MediaStrings.Reading(Path.GetFileName(path)));
             _stream = streamIndex >= 0 ? streamIndex : ffmpeg.av_find_best_stream(input, AVMediaType.AVMEDIA_TYPE_AUDIO, -1, -1, null, 0);
             if (_stream < 0 || _stream >= input->nb_streams || input->streams[_stream]->codecpar->codec_type != AVMediaType.AVMEDIA_TYPE_AUDIO)
             {
-                throw new FfmpegException($"{Path.GetFileName(path)} has no sound stream {streamIndex}.");
+                throw new FfmpegException(MediaStrings.NoSoundStream(Path.GetFileName(path), streamIndex));
             }
 
             for (var i = 0; i < input->nb_streams; i++)
@@ -70,13 +71,13 @@ public sealed unsafe class AudioStreamReader : IDisposable
             var codec = ffmpeg.avcodec_find_decoder(stream->codecpar->codec_id);
             if (codec is null)
             {
-                throw new FfmpegException($"No decoder for the sound ({ffmpeg.avcodec_get_name(stream->codecpar->codec_id)}).");
+                throw new FfmpegException(MediaStrings.NoSoundDecoder(ffmpeg.avcodec_get_name(stream->codecpar->codec_id)));
             }
 
             _context = ffmpeg.avcodec_alloc_context3(codec);
-            FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(_context, stream->codecpar), "Setting up the sound decoder");
+            FfmpegException.Check(ffmpeg.avcodec_parameters_to_context(_context, stream->codecpar), MediaStrings.SettingUpSoundDecoder);
             _context->pkt_timebase = stream->time_base;
-            FfmpegException.Check(ffmpeg.avcodec_open2(_context, codec, null), "Opening the sound decoder");
+            FfmpegException.Check(ffmpeg.avcodec_open2(_context, codec, null), MediaStrings.OpeningSoundDecoder);
             _packet = ffmpeg.av_packet_alloc();
             _frame = ffmpeg.av_frame_alloc();
             _timeBase = ffmpeg.av_q2d(stream->time_base);
@@ -110,7 +111,7 @@ public sealed unsafe class AudioStreamReader : IDisposable
         var target = (long)Math.Floor((time - PreRoll) / _timeBase);
         if (time - PreRoll <= Start || ffmpeg.avformat_seek_file(_input, _stream, long.MinValue, target, target, 0) < 0)
         {
-            FfmpegException.Check(ffmpeg.av_seek_frame(_input, _stream, long.MinValue, ffmpeg.AVSEEK_FLAG_BACKWARD), "Seeking in the sound");
+            FfmpegException.Check(ffmpeg.av_seek_frame(_input, _stream, long.MinValue, ffmpeg.AVSEEK_FLAG_BACKWARD), MediaStrings.SeekingInSound);
         }
 
         ffmpeg.avcodec_flush_buffers(_context);
@@ -237,7 +238,7 @@ public sealed unsafe class AudioStreamReader : IDisposable
 
             if (received != -ffmpeg.EAGAIN)
             {
-                FfmpegException.Check(received, "Decoding the sound");
+                FfmpegException.Check(received, MediaStrings.DecodingTheSound);
             }
 
             while (true)
@@ -259,7 +260,7 @@ public sealed unsafe class AudioStreamReader : IDisposable
                 ffmpeg.av_packet_unref(_packet);
                 if (sent < 0 && sent != ffmpeg.AVERROR_INVALIDDATA)
                 {
-                    FfmpegException.Check(sent, "Decoding the sound");
+                    FfmpegException.Check(sent, MediaStrings.DecodingTheSound);
                 }
 
                 break;
@@ -281,8 +282,8 @@ public sealed unsafe class AudioStreamReader : IDisposable
                 ffmpeg.av_channel_layout_default(&stereo, Channels);
                 FfmpegException.Check(
                     ffmpeg.swr_alloc_set_opts2(&resampler, &stereo, AVSampleFormat.AV_SAMPLE_FMT_FLT, SampleRate, &frame->ch_layout, (AVSampleFormat)frame->format, frame->sample_rate, 0, null),
-                    "Setting up the sound resampler");
-                FfmpegException.Check(ffmpeg.swr_init(resampler), "Starting the sound resampler");
+                    MediaStrings.SettingUpSoundResampler);
+                FfmpegException.Check(ffmpeg.swr_init(resampler), MediaStrings.StartingSoundResampler);
                 _resampler = resampler;
                 _resamplerShape = shape;
             }
@@ -313,7 +314,7 @@ public sealed unsafe class AudioStreamReader : IDisposable
             produced = ffmpeg.swr_convert(_resampler, &planes, room, frame is null ? null : (byte**)frame->extended_data, frame is null ? 0 : frame->nb_samples);
         }
 
-        FfmpegException.Check(produced, "Resampling the sound");
+        FfmpegException.Check(produced, MediaStrings.ResamplingSound);
         Append(_converted.AsSpan(0, produced * Channels));
     }
 

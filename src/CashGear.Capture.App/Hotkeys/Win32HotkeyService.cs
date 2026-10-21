@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Hotkeys;
 using CashGear.Capture.Interop.Native;
 using Microsoft.Extensions.Logging;
@@ -30,8 +31,8 @@ public sealed partial class Win32HotkeyService(ILogger<Win32HotkeyService> logge
         {
             var code = Marshal.GetLastPInvokeError();
             error = code == User32.ErrorHotkeyAlreadyRegistered
-                ? $"{gesture} is already used by another app or by Windows."
-                : $"{gesture} could not be registered (Win32 error {code}).";
+                ? HotkeysText.AlreadyUsed(gesture)
+                : HotkeysText.RegisterFailed(gesture, code);
             LogRegisterFailed(action, gesture.ToString(), code);
             return false;
         }

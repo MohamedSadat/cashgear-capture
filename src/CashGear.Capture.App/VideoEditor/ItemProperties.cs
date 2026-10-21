@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using System.Windows.Media;
 using System.IO;
 using CashGear.Capture.App.Editor;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.VideoEditor.Model;
 using EffectKind = CashGear.Capture.VideoEditor.Model.EffectKind;
@@ -12,7 +14,8 @@ namespace CashGear.Capture.App.VideoEditor;
 /// <summary>
 /// The selected item's settings for the properties panel, as the image editor's <see cref="EditParameter"/>s (so the
 /// same templates show them). Changing one changes the item through <c>apply</c>: one undo step per setting,
-/// dragging a slider merging into it.
+/// dragging a slider merging into it. Each setting has a key that merges its steps (never translated) and the
+/// step's name shown after Undo (in the UI language).
 /// </summary>
 public static class ItemProperties
 {
@@ -30,17 +33,23 @@ public static class ItemProperties
 
     /// <summary>
     /// A caption's buttons and its track's look: split it at the playhead, merge it with the next, and change the
-    /// track's caption style ((track id, change, undo step's name)).
+    /// track's caption style ((track id, change, merge key, undo step's name)).
     /// </summary>
-    public sealed record CaptionActions(Action<string> Split, Action<string> Merge, Action<string, Func<CaptionStyle, CaptionStyle>, string> ChangeStyle);
+    public sealed record CaptionActions(Action<string> Split, Action<string> Merge, Action<string, Func<CaptionStyle, CaptionStyle>, string, string> ChangeStyle);
 
     private static readonly Lazy<IReadOnlyList<string>> FontFamilies =
         new(() => [.. System.Windows.Media.Fonts.SystemFontFamilies.Select(f => f.Source).Order(StringComparer.CurrentCultureIgnoreCase)]);
 
     public static string ShapeName(AnnotationShape shape) => shape switch
     {
-        AnnotationShape.Blur => "Blurred area",
-        AnnotationShape.Pixelate => "Pixelated area",
+        AnnotationShape.Text => VideoEditorText.ShapeText,
+        AnnotationShape.Arrow => VideoEditorText.ShapeArrow,
+        AnnotationShape.Line => VideoEditorText.ShapeLine,
+        AnnotationShape.Rectangle => VideoEditorText.ShapeRectangle,
+        AnnotationShape.Ellipse => VideoEditorText.ShapeEllipse,
+        AnnotationShape.Highlight => VideoEditorText.ShapeHighlight,
+        AnnotationShape.Blur => VideoEditorText.ShapeBlurredArea,
+        AnnotationShape.Pixelate => VideoEditorText.ShapePixelatedArea,
         _ => shape.ToString(),
     };
 
@@ -51,17 +60,17 @@ public static class ItemProperties
         {
             Clip clip when project.Find(clip.Id)?.Track is { } track => track.Kind switch
             {
-                TrackKind.Webcam => "Webcam clip",
-                TrackKind.Audio => "Sound clip",
-                _ => "Video clip",
+                TrackKind.Webcam => VideoEditorText.WebcamClip,
+                TrackKind.Audio => VideoEditorText.SoundClip,
+                _ => VideoEditorText.VideoClip,
             },
             AnnotationItem annotation => ShapeName(annotation.Shape),
-            EffectItem { Kind: EffectKind.Clicks } => "Click highlights",
-            EffectItem { Kind: EffectKind.Keystrokes } => "Keystrokes",
-            EffectItem => "Pointer effects",
-            ZoomItem => "Zoom",
-            CaptionItem => "Caption",
-            _ => "Item",
+            EffectItem { Kind: EffectKind.Clicks } => VideoEditorText.ClickHighlights,
+            EffectItem { Kind: EffectKind.Keystrokes } => VideoEditorText.Keystrokes,
+            EffectItem => VideoEditorText.PointerEffects,
+            ZoomItem => VideoEditorText.ZoomTitle,
+            CaptionItem => VideoEditorText.CaptionTitle,
+            _ => VideoEditorText.ItemTitle,
         };
     }
 
@@ -98,14 +107,14 @@ public static class ItemProperties
         }
 
         // Each change starts from the item as it is now (undo may have changed it since the panel was made).
-        void Change<T>(T parameter, string name, Func<Clip, Clip> update)
+        void Change<T>(T parameter, [Localizable(false)] string key, string name, Func<Clip, Clip> update)
             where T : EditParameter
         {
             parameter.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName is "Value" or "Selected" && current().Find(clip.Id)?.Item is Clip now)
                 {
-                    apply(update(now), name, $"property {clip.Id} {name}");
+                    apply(update(now), name, $"property {clip.Id} {key}");
                 }
             };
             list.Add(parameter);
@@ -115,15 +124,15 @@ public static class ItemProperties
 
         if (found.Track.HasSound)
         {
-            var volume = new NumberParameter("Volume", 0, 200, clip.Volume * 100, 1, " %");
-            Change(volume, "volume", c => c with { Volume = Fraction(volume) });
+            var volume = new NumberParameter(VideoEditorText.Volume, 0, 200, clip.Volume * 100, 1, " %");
+            Change(volume, "volume", VideoEditorText.UndoVolume, c => c with { Volume = Fraction(volume) });
         }
 
         if (actions is not null)
         {
             if (clip.IsFreeze)
             {
-                var hold = new NumberParameter("Hold the frame for", 0.1, 30, clip.FreezeLength, 0.1, " s");
+                var hold = new NumberParameter(VideoEditorText.HoldFrameFor, 0.1, 30, clip.FreezeLength, 0.1, VideoEditorText.SecondsUnit);
                 hold.PropertyChanged += (_, e) =>
                 {
                     if (e.PropertyName == "Value")
@@ -135,10 +144,10 @@ public static class ItemProperties
             }
             else
             {
-                var speed = new NumberParameter("Speed", Clip.SlowestSpeed, Clip.FastestSpeed, clip.Speed, 0.05, "×");
-                var ramp = new SwitchParameter("Change the speed along the clip", clip.IsRamp);
-                var end = new NumberParameter("Speed at the end", Clip.SlowestSpeed, Clip.FastestSpeed, clip.EndSpeed ?? clip.Speed, 0.05, "×") { IsVisible = clip.IsRamp };
-                void SetSpeed(string key) => actions.SetSpeed(clip.Id, Math.Round(speed.Value, 2), ramp.Value ? Math.Round(end.Value, 2) : null, $"property {clip.Id} {key}");
+                var speed = new NumberParameter(VideoEditorText.Speed, Clip.SlowestSpeed, Clip.FastestSpeed, clip.Speed, 0.05, "×");
+                var ramp = new SwitchParameter(VideoEditorText.SpeedRamp, clip.IsRamp);
+                var end = new NumberParameter(VideoEditorText.SpeedAtEnd, Clip.SlowestSpeed, Clip.FastestSpeed, clip.EndSpeed ?? clip.Speed, 0.05, "×") { IsVisible = clip.IsRamp };
+                void SetSpeed([Localizable(false)] string key) => actions.SetSpeed(clip.Id, Math.Round(speed.Value, 2), ramp.Value ? Math.Round(end.Value, 2) : null, $"property {clip.Id} {key}");
                 speed.PropertyChanged += (_, e) =>
                 {
                     if (e.PropertyName == "Value")
@@ -168,38 +177,38 @@ public static class ItemProperties
 
             if (CashGear.Capture.VideoEditor.Editing.TransitionEdits.CrossfadeLength(project, clip.Id) > 0)
             {
-                list.Add(new ActionParameter("Remove the crossfade into the next clip", new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.RemoveCrossfade(clip.Id))));
+                list.Add(new ActionParameter(VideoEditorText.RemoveCrossfade, new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.RemoveCrossfade(clip.Id))));
             }
             else if (CashGear.Capture.VideoEditor.Editing.TransitionEdits.Following(found.Track, clip) is not null)
             {
-                list.Add(new ActionParameter("Crossfade into the next clip (1 s)", new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.Crossfade(clip.Id))));
+                list.Add(new ActionParameter(VideoEditorText.AddCrossfade, new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.Crossfade(clip.Id))));
             }
         }
 
-        var fadeIn = new NumberParameter("Fade in", 0, Math.Min(10, clip.Duration), clip.FadeIn, 0.1, " s");
-        Change(fadeIn, "fade in", c => c with { FadeIn = Math.Round(fadeIn.Value, 2) });
-        var fadeOut = new NumberParameter("Fade out", 0, Math.Min(10, clip.Duration), clip.FadeOut, 0.1, " s");
-        Change(fadeOut, "fade out", c => c with { FadeOut = Math.Round(fadeOut.Value, 2) });
+        var fadeIn = new NumberParameter(VideoEditorText.FadeIn, 0, Math.Min(10, clip.Duration), clip.FadeIn, 0.1, VideoEditorText.SecondsUnit);
+        Change(fadeIn, "fade in", VideoEditorText.UndoFadeIn, c => c with { FadeIn = Math.Round(fadeIn.Value, 2) });
+        var fadeOut = new NumberParameter(VideoEditorText.FadeOut, 0, Math.Min(10, clip.Duration), clip.FadeOut, 0.1, VideoEditorText.SecondsUnit);
+        Change(fadeOut, "fade out", VideoEditorText.UndoFadeOut, c => c with { FadeOut = Math.Round(fadeOut.Value, 2) });
 
         if (found.Track.HasPictures)
         {
             var placement = clip.Placement ?? Placement.Fit;
-            var size = new NumberParameter("Size", 5, 100, placement.Size * 100, 1, " %");
-            Change(size, "size", c => c with { Placement = (c.Placement ?? Placement.Fit) with { Size = Fraction(size) } });
-            var x = new NumberParameter("Across", 0, 100, placement.CenterX * 100, 1, " %");
-            Change(x, "position", c => c with { Placement = (c.Placement ?? Placement.Fit) with { CenterX = Fraction(x) } });
-            var y = new NumberParameter("Down", 0, 100, placement.CenterY * 100, 1, " %");
-            Change(y, "position", c => c with { Placement = (c.Placement ?? Placement.Fit) with { CenterY = Fraction(y) } });
-            var shape = new ChoiceParameter("Shape", [new(PlacementShape.Rectangle, "Rectangle"), new(PlacementShape.Rounded, "Rounded rectangle"), new(PlacementShape.Circle, "Circle")], placement.Shape);
-            Change(shape, "shape", c => c with { Placement = (c.Placement ?? Placement.Fit) with { Shape = shape.As<PlacementShape>() } });
-            var border = new ColorParameter("Border", FrameCompositor.Color(placement.Border, SKColors.White));
-            Change(border, "border", c => c with { Placement = (c.Placement ?? Placement.Fit) with { Border = Hex(border.Value.Value) } });
-            var width = new NumberParameter("Border width", 0, 24, placement.BorderWidth, 1, " px");
-            Change(width, "border width", c => c with { Placement = (c.Placement ?? Placement.Fit) with { BorderWidth = width.Value, Border = (c.Placement ?? Placement.Fit).Border ?? "#FFFFFF" } });
-            var mirror = new SwitchParameter("Mirrored", placement.Mirror);
-            Change(mirror, "mirror", c => c with { Placement = (c.Placement ?? Placement.Fit) with { Mirror = mirror.Value } });
-            var opacity = new NumberParameter("Opacity", 0, 100, placement.Opacity * 100, 1, " %");
-            Change(opacity, "opacity", c => c with { Placement = (c.Placement ?? Placement.Fit) with { Opacity = Fraction(opacity) } });
+            var size = new NumberParameter(VideoEditorText.Size, 5, 100, placement.Size * 100, 1, " %");
+            Change(size, "size", VideoEditorText.UndoSize, c => c with { Placement = (c.Placement ?? Placement.Fit) with { Size = Fraction(size) } });
+            var x = new NumberParameter(VideoEditorText.Across, 0, 100, placement.CenterX * 100, 1, " %");
+            Change(x, "position", VideoEditorText.UndoPosition, c => c with { Placement = (c.Placement ?? Placement.Fit) with { CenterX = Fraction(x) } });
+            var y = new NumberParameter(VideoEditorText.Down, 0, 100, placement.CenterY * 100, 1, " %");
+            Change(y, "position", VideoEditorText.UndoPosition, c => c with { Placement = (c.Placement ?? Placement.Fit) with { CenterY = Fraction(y) } });
+            var shape = new ChoiceParameter(VideoEditorText.Shape, [new(PlacementShape.Rectangle, VideoEditorText.Rectangle), new(PlacementShape.Rounded, VideoEditorText.RoundedRectangle), new(PlacementShape.Circle, VideoEditorText.Circle)], placement.Shape);
+            Change(shape, "shape", VideoEditorText.UndoShape, c => c with { Placement = (c.Placement ?? Placement.Fit) with { Shape = shape.As<PlacementShape>() } });
+            var border = new ColorParameter(VideoEditorText.Border, FrameCompositor.Color(placement.Border, SKColors.White));
+            Change(border, "border", VideoEditorText.UndoBorder, c => c with { Placement = (c.Placement ?? Placement.Fit) with { Border = Hex(border.Value.Value) } });
+            var width = new NumberParameter(VideoEditorText.BorderWidth, 0, 24, placement.BorderWidth, 1, " px");
+            Change(width, "border width", VideoEditorText.UndoBorderWidth, c => c with { Placement = (c.Placement ?? Placement.Fit) with { BorderWidth = width.Value, Border = (c.Placement ?? Placement.Fit).Border ?? "#FFFFFF" } });
+            var mirror = new SwitchParameter(VideoEditorText.Mirrored, placement.Mirror);
+            Change(mirror, "mirror", VideoEditorText.UndoMirror, c => c with { Placement = (c.Placement ?? Placement.Fit) with { Mirror = mirror.Value } });
+            var opacity = new NumberParameter(VideoEditorText.Opacity, 0, 100, placement.Opacity * 100, 1, " %");
+            Change(opacity, "opacity", VideoEditorText.UndoOpacity, c => c with { Placement = (c.Placement ?? Placement.Fit) with { Opacity = Fraction(opacity) } });
         }
 
         return list;
@@ -208,14 +217,14 @@ public static class ItemProperties
     private static IReadOnlyList<EditParameter> ForAnnotation(AnnotationItem annotation, Func<VideoProject> current, Apply apply, Keyframes? keyframes)
     {
         var list = new List<EditParameter>();
-        void Change<T>(T parameter, string name, Func<AnnotationItem, AnnotationItem> update)
+        void Change<T>(T parameter, [Localizable(false)] string key, string name, Func<AnnotationItem, AnnotationItem> update)
             where T : EditParameter
         {
             parameter.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName is "Value" or "Selected" && current().Find(annotation.Id)?.Item is AnnotationItem now)
                 {
-                    apply(update(now), name, $"property {annotation.Id} {name}");
+                    apply(update(now), name, $"property {annotation.Id} {key}");
                 }
             };
             list.Add(parameter);
@@ -226,52 +235,52 @@ public static class ItemProperties
         var hidden = shape is AnnotationShape.Blur or AnnotationShape.Pixelate;
         if (shape == AnnotationShape.Text)
         {
-            var text = new TextParameter("Text", annotation.Text, multiline: true);
-            Change(text, "text", a => a with { Text = text.Value });
-            var font = new FontParameter("Font", FontFamilies.Value, look.FontFamily);
-            Change(font, "font", a => a with { Look = a.Look with { FontFamily = font.Value } });
-            var size = new NumberParameter("Size", 8, 200, look.FontSize, 1, " px");
-            Change(size, "text size", a => a with { Look = a.Look with { FontSize = size.Value } });
-            var bold = new SwitchParameter("Bold", look.Bold);
-            Change(bold, "bold", a => a with { Look = a.Look with { Bold = bold.Value } });
+            var text = new TextParameter(VideoEditorText.Text, annotation.Text, multiline: true);
+            Change(text, "text", VideoEditorText.UndoEditText, a => a with { Text = text.Value });
+            var font = new FontParameter(VideoEditorText.Font, FontFamilies.Value, look.FontFamily);
+            Change(font, "font", VideoEditorText.UndoFont, a => a with { Look = a.Look with { FontFamily = font.Value } });
+            var size = new NumberParameter(VideoEditorText.Size, 8, 200, look.FontSize, 1, " px");
+            Change(size, "text size", VideoEditorText.UndoTextSize, a => a with { Look = a.Look with { FontSize = size.Value } });
+            var bold = new SwitchParameter(VideoEditorText.Bold, look.Bold);
+            Change(bold, "bold", VideoEditorText.UndoBold, a => a with { Look = a.Look with { Bold = bold.Value } });
         }
 
         if (!hidden)
         {
-            var color = new ColorParameter(shape == AnnotationShape.Text ? "Text colour" : "Colour", FrameCompositor.Color(look.Color, SKColors.Red));
-            Change(color, "colour", a => a with { Look = a.Look with { Color = Hex(color.Value.Value) } });
+            var color = new ColorParameter(shape == AnnotationShape.Text ? VideoEditorText.TextColour : VideoEditorText.Colour, FrameCompositor.Color(look.Color, SKColors.Red));
+            Change(color, "colour", VideoEditorText.UndoColour, a => a with { Look = a.Look with { Color = Hex(color.Value.Value) } });
         }
 
         if (shape is AnnotationShape.Text or AnnotationShape.Rectangle or AnnotationShape.Ellipse)
         {
-            var fill = new ColorParameter(shape == AnnotationShape.Text ? "Background" : "Fill", look.Fill is null ? SKColors.Transparent : FrameCompositor.Color(look.Fill, SKColors.Transparent), allowTransparent: true);
-            Change(fill, "fill", a => a with { Look = a.Look with { Fill = fill.IsTransparent ? null : HexWithAlpha(fill.Value.Value, shape == AnnotationShape.Text ? (byte)0xB0 : (byte)0xFF) } });
+            var fill = new ColorParameter(shape == AnnotationShape.Text ? VideoEditorText.Background : VideoEditorText.Fill, look.Fill is null ? SKColors.Transparent : FrameCompositor.Color(look.Fill, SKColors.Transparent), allowTransparent: true);
+            Change(fill, "fill", VideoEditorText.UndoFill, a => a with { Look = a.Look with { Fill = fill.IsTransparent ? null : HexWithAlpha(fill.Value.Value, shape == AnnotationShape.Text ? (byte)0xB0 : (byte)0xFF) } });
         }
 
         if (shape is AnnotationShape.Arrow or AnnotationShape.Line or AnnotationShape.Rectangle or AnnotationShape.Ellipse)
         {
-            var width = new NumberParameter("Line width", 1, 40, look.StrokeWidth, 1, " px");
-            Change(width, "line width", a => a with { Look = a.Look with { StrokeWidth = width.Value } });
+            var width = new NumberParameter(VideoEditorText.LineWidth, 1, 40, look.StrokeWidth, 1, " px");
+            Change(width, "line width", VideoEditorText.UndoLineWidth, a => a with { Look = a.Look with { StrokeWidth = width.Value } });
         }
 
         if (hidden)
         {
-            var strength = new NumberParameter(shape == AnnotationShape.Blur ? "Blur" : "Cell size", 2, 60, look.Strength, 1, " px");
-            Change(strength, "strength", a => a with { Look = a.Look with { Strength = strength.Value } });
+            var strength = new NumberParameter(shape == AnnotationShape.Blur ? VideoEditorText.Blur : VideoEditorText.CellSize, 2, 60, look.Strength, 1, " px");
+            Change(strength, "strength", VideoEditorText.UndoStrength, a => a with { Look = a.Look with { Strength = strength.Value } });
         }
 
-        var opacity = new NumberParameter("Opacity", 5, 100, look.Opacity * 100, 1, " %");
-        Change(opacity, "opacity", a => a with { Look = a.Look with { Opacity = opacity.Value / 100 } });
-        var fadeIn = new NumberParameter("Fade in", 0, Math.Min(5, annotation.Length), annotation.FadeIn, 0.1, " s");
-        Change(fadeIn, "fade in", a => a with { FadeIn = Math.Round(fadeIn.Value, 2) });
-        var fadeOut = new NumberParameter("Fade out", 0, Math.Min(5, annotation.Length), annotation.FadeOut, 0.1, " s");
-        Change(fadeOut, "fade out", a => a with { FadeOut = Math.Round(fadeOut.Value, 2) });
-        var easing = new ChoiceParameter("Movement between keyframes", [new(Easing.Smooth, "Smooth"), new(Easing.Linear, "Even")], annotation.Easing);
-        Change(easing, "movement", a => a with { Easing = easing.As<Easing>() });
+        var opacity = new NumberParameter(VideoEditorText.Opacity, 5, 100, look.Opacity * 100, 1, " %");
+        Change(opacity, "opacity", VideoEditorText.UndoOpacity, a => a with { Look = a.Look with { Opacity = opacity.Value / 100 } });
+        var fadeIn = new NumberParameter(VideoEditorText.FadeIn, 0, Math.Min(5, annotation.Length), annotation.FadeIn, 0.1, VideoEditorText.SecondsUnit);
+        Change(fadeIn, "fade in", VideoEditorText.UndoFadeIn, a => a with { FadeIn = Math.Round(fadeIn.Value, 2) });
+        var fadeOut = new NumberParameter(VideoEditorText.FadeOut, 0, Math.Min(5, annotation.Length), annotation.FadeOut, 0.1, VideoEditorText.SecondsUnit);
+        Change(fadeOut, "fade out", VideoEditorText.UndoFadeOut, a => a with { FadeOut = Math.Round(fadeOut.Value, 2) });
+        var easing = new ChoiceParameter(VideoEditorText.Movement, [new(Easing.Smooth, VideoEditorText.Smooth), new(Easing.Linear, VideoEditorText.Even)], annotation.Easing);
+        Change(easing, "movement", VideoEditorText.UndoMovement, a => a with { Easing = easing.As<Easing>() });
         if (keyframes is not null)
         {
-            list.Add(new ActionParameter($"Add a keyframe at the playhead ({annotation.Keyframes.Count} now)", new CommunityToolkit.Mvvm.Input.RelayCommand(keyframes.Add)));
-            list.Add(new ActionParameter("Remove the keyframe at the playhead", new CommunityToolkit.Mvvm.Input.RelayCommand(keyframes.Remove)));
+            list.Add(new ActionParameter(VideoEditorText.AddKeyframe(annotation.Keyframes.Count), new CommunityToolkit.Mvvm.Input.RelayCommand(keyframes.Add)));
+            list.Add(new ActionParameter(VideoEditorText.RemoveKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(keyframes.Remove)));
         }
 
         return list;
@@ -306,14 +315,14 @@ public static class ItemProperties
     private static IReadOnlyList<EditParameter> ForEffect(VideoProject project, EffectItem effect, Func<VideoProject> current, Apply apply)
     {
         var list = new List<EditParameter>();
-        void Change<T>(T parameter, string name, Func<EffectItem, EffectItem> update)
+        void Change<T>(T parameter, [Localizable(false)] string key, string name, Func<EffectItem, EffectItem> update)
             where T : EditParameter
         {
             parameter.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName is "Value" or "Selected" && current().Find(effect.Id)?.Item is EffectItem now)
                 {
-                    apply(update(now), name, $"property {effect.Id} {name}");
+                    apply(update(now), name, $"property {effect.Id} {key}");
                 }
             };
             list.Add(parameter);
@@ -322,7 +331,7 @@ public static class ItemProperties
         var (hasMetadata, pointerInPictures) = MetadataOf(project);
         if (!hasMetadata)
         {
-            list.Add(new NoteParameter("No recording here has a metadata file, so there are no clicks, keys or pointer to show. Recordings get one when Settings › Overlays › Save a metadata file is on."));
+            list.Add(new NoteParameter(VideoEditorText.NoMetadataForEffects));
         }
 
         switch (effect.Kind)
@@ -330,56 +339,56 @@ public static class ItemProperties
             case EffectKind.Clicks:
             {
                 var clicks = effect.Clicks ?? new ClickOverlaySettings();
-                var left = new ColorParameter("Left button", FrameCompositor.Color(clicks.LeftColor, SKColors.Yellow));
-                Change(left, "left colour", e => e with { Clicks = (e.Clicks ?? new ClickOverlaySettings()) with { LeftColor = Hex(left.Value.Value) } });
-                var right = new ColorParameter("Right button", FrameCompositor.Color(clicks.RightColor, SKColors.Red));
-                Change(right, "right colour", e => e with { Clicks = (e.Clicks ?? new ClickOverlaySettings()) with { RightColor = Hex(right.Value.Value) } });
-                var size = new NumberParameter("Size", 20, 200, clicks.Size, 1, " px");
-                Change(size, "click size", e => e with { Clicks = (e.Clicks ?? new ClickOverlaySettings()) with { Size = (int)size.Value } });
+                var left = new ColorParameter(VideoEditorText.LeftButton, FrameCompositor.Color(clicks.LeftColor, SKColors.Yellow));
+                Change(left, "left colour", VideoEditorText.UndoLeftColour, e => e with { Clicks = (e.Clicks ?? new ClickOverlaySettings()) with { LeftColor = Hex(left.Value.Value) } });
+                var right = new ColorParameter(VideoEditorText.RightButton, FrameCompositor.Color(clicks.RightColor, SKColors.Red));
+                Change(right, "right colour", VideoEditorText.UndoRightColour, e => e with { Clicks = (e.Clicks ?? new ClickOverlaySettings()) with { RightColor = Hex(right.Value.Value) } });
+                var size = new NumberParameter(VideoEditorText.Size, 20, 200, clicks.Size, 1, " px");
+                Change(size, "click size", VideoEditorText.UndoClickSize, e => e with { Clicks = (e.Clicks ?? new ClickOverlaySettings()) with { Size = (int)size.Value } });
                 break;
             }
 
             case EffectKind.Keystrokes:
             {
                 var keys = effect.Keystrokes ?? new KeystrokeOverlaySettings();
-                var position = new ChoiceParameter("Position",
+                var position = new ChoiceParameter(VideoEditorText.Position,
                 [
-                    new(OverlayAnchor.BottomCenter, "Bottom centre"), new(OverlayAnchor.BottomLeft, "Bottom left"), new(OverlayAnchor.BottomRight, "Bottom right"),
-                    new(OverlayAnchor.TopCenter, "Top centre"), new(OverlayAnchor.TopLeft, "Top left"), new(OverlayAnchor.TopRight, "Top right"),
+                    new(OverlayAnchor.BottomCenter, VideoEditorText.BottomCentre), new(OverlayAnchor.BottomLeft, VideoEditorText.BottomLeft), new(OverlayAnchor.BottomRight, VideoEditorText.BottomRight),
+                    new(OverlayAnchor.TopCenter, VideoEditorText.TopCentre), new(OverlayAnchor.TopLeft, VideoEditorText.TopLeft), new(OverlayAnchor.TopRight, VideoEditorText.TopRight),
                 ], keys.Position);
-                Change(position, "keys position", e => e with { Keystrokes = (e.Keystrokes ?? new KeystrokeOverlaySettings()) with { Position = position.As<OverlayAnchor>() } });
-                var size = new NumberParameter("Size", 8, 72, keys.FontSize, 1, " pt");
-                Change(size, "keys size", e => e with { Keystrokes = (e.Keystrokes ?? new KeystrokeOverlaySettings()) with { FontSize = (int)size.Value } });
-                var fade = new NumberParameter("Shown for", 0.5, 10, keys.FadeSeconds, 0.1, " s");
-                Change(fade, "keys time", e => e with { Keystrokes = (e.Keystrokes ?? new KeystrokeOverlaySettings()) with { FadeSeconds = fade.Value } });
+                Change(position, "keys position", VideoEditorText.UndoKeysPosition, e => e with { Keystrokes = (e.Keystrokes ?? new KeystrokeOverlaySettings()) with { Position = position.As<OverlayAnchor>() } });
+                var size = new NumberParameter(VideoEditorText.Size, 8, 72, keys.FontSize, 1, " pt");
+                Change(size, "keys size", VideoEditorText.UndoKeysSize, e => e with { Keystrokes = (e.Keystrokes ?? new KeystrokeOverlaySettings()) with { FontSize = (int)size.Value } });
+                var fade = new NumberParameter(VideoEditorText.ShownFor, 0.5, 10, keys.FadeSeconds, 0.1, VideoEditorText.SecondsUnit);
+                Change(fade, "keys time", VideoEditorText.UndoKeysTime, e => e with { Keystrokes = (e.Keystrokes ?? new KeystrokeOverlaySettings()) with { FadeSeconds = fade.Value } });
                 break;
             }
 
             default:
             {
                 var pointer = effect.Pointer ?? new PointerOverlaySettings();
-                var highlight = new ChoiceParameter("Around the pointer", [new(PointerEffect.None, "Nothing"), new(PointerEffect.Halo, "A halo"), new(PointerEffect.Spotlight, "A spotlight (the rest dimmed)")], pointer.Effect);
-                Change(highlight, "pointer highlight", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Effect = highlight.As<PointerEffect>() } });
-                var color = new ColorParameter("Halo colour", FrameCompositor.Color(pointer.Color, SKColors.Yellow));
-                Change(color, "halo colour", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Color = Hex(color.Value.Value) } });
-                var radius = new NumberParameter("Radius", 20, 300, pointer.Radius, 1, " px");
-                Change(radius, "pointer radius", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Radius = (int)radius.Value } });
-                var dim = new NumberParameter("Dim the rest", 10, 90, pointer.Dim, 1, " %");
-                Change(dim, "dim", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Dim = (int)dim.Value } });
+                var highlight = new ChoiceParameter(VideoEditorText.AroundPointer, [new(PointerEffect.None, VideoEditorText.PointerNothing), new(PointerEffect.Halo, VideoEditorText.PointerHalo), new(PointerEffect.Spotlight, VideoEditorText.PointerSpotlight)], pointer.Effect);
+                Change(highlight, "pointer highlight", VideoEditorText.UndoPointerHighlight, e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Effect = highlight.As<PointerEffect>() } });
+                var color = new ColorParameter(VideoEditorText.HaloColour, FrameCompositor.Color(pointer.Color, SKColors.Yellow));
+                Change(color, "halo colour", VideoEditorText.UndoHaloColour, e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Color = Hex(color.Value.Value) } });
+                var radius = new NumberParameter(VideoEditorText.Radius, 20, 300, pointer.Radius, 1, " px");
+                Change(radius, "pointer radius", VideoEditorText.UndoPointerRadius, e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Radius = (int)radius.Value } });
+                var dim = new NumberParameter(VideoEditorText.DimTheRest, 10, 90, pointer.Dim, 1, " %");
+                Change(dim, "dim", VideoEditorText.UndoDim, e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Dim = (int)dim.Value } });
                 if (pointerInPictures)
                 {
-                    list.Add(new NoteParameter("The pointer is in this recording's pictures, so it can't be made bigger, smoother or hidden here. Recordings made with Settings › Overlays › Keep the video clean leave it out for the editor to draw."));
+                    list.Add(new NoteParameter(VideoEditorText.PointerInPictures));
                 }
                 else
                 {
-                    var scale = new NumberParameter("Pointer size", 50, 300, pointer.Scale * 100, 5, " %");
-                    Change(scale, "pointer size", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Scale = scale.Value / 100 } });
-                    var smoothing = new NumberParameter("Smooth its movement", 0, 100, effect.Smoothing * 100, 5, " %");
-                    Change(smoothing, "smoothing", e => e with { Smoothing = smoothing.Value / 100 });
-                    var idle = new SwitchParameter("Hide it when it stands still", pointer.HideWhenIdle);
-                    Change(idle, "hide when idle", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { HideWhenIdle = idle.Value } });
-                    var after = new NumberParameter("After", 0.5, 10, pointer.IdleSeconds, 0.5, " s");
-                    Change(after, "idle time", e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { IdleSeconds = after.Value } });
+                    var scale = new NumberParameter(VideoEditorText.PointerSize, 50, 300, pointer.Scale * 100, 5, " %");
+                    Change(scale, "pointer size", VideoEditorText.UndoPointerSize, e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Scale = scale.Value / 100 } });
+                    var smoothing = new NumberParameter(VideoEditorText.SmoothMovement, 0, 100, effect.Smoothing * 100, 5, " %");
+                    Change(smoothing, "smoothing", VideoEditorText.UndoSmoothing, e => e with { Smoothing = smoothing.Value / 100 });
+                    var idle = new SwitchParameter(VideoEditorText.HideWhenStill, pointer.HideWhenIdle);
+                    Change(idle, "hide when idle", VideoEditorText.UndoHideWhenIdle, e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { HideWhenIdle = idle.Value } });
+                    var after = new NumberParameter(VideoEditorText.After, 0.5, 10, pointer.IdleSeconds, 0.5, VideoEditorText.SecondsUnit);
+                    Change(after, "idle time", VideoEditorText.UndoIdleTime, e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { IdleSeconds = after.Value } });
                 }
 
                 break;
@@ -393,13 +402,13 @@ public static class ItemProperties
     private static IReadOnlyList<EditParameter> ForCaption(VideoProject project, CaptionItem caption, Func<VideoProject> current, Apply apply, CaptionActions? actions)
     {
         var list = new List<EditParameter>();
-        var text = new TextParameter("Text", caption.Text, multiline: true);
+        var text = new TextParameter(VideoEditorText.Text, caption.Text, multiline: true);
         text.PropertyChanged += (_, e) =>
         {
             // Words written by hand have no times of their own: the caption keeps its whole text from now on.
             if (e.PropertyName == "Value" && current().Find(caption.Id)?.Item is CaptionItem now && now.Text != text.Value)
             {
-                apply(now with { Text = text.Value, Words = null }, "caption text", $"property {caption.Id} text");
+                apply(now with { Text = text.Value, Words = null }, VideoEditorText.UndoCaptionText, $"property {caption.Id} text");
             }
         };
         list.Add(text);
@@ -408,38 +417,38 @@ public static class ItemProperties
             return list;
         }
 
-        list.Add(new ActionParameter("Split it at the playhead", new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.Split(caption.Id))));
-        list.Add(new ActionParameter("Merge it with the next caption", new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.Merge(caption.Id))));
-        list.Add(new NoteParameter("The look below is for every caption on this track. It is drawn into exported videos while the track is shown (the eye in its header); the export can also save the captions as SRT or VTT files."));
+        list.Add(new ActionParameter(VideoEditorText.SplitCaption, new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.Split(caption.Id))));
+        list.Add(new ActionParameter(VideoEditorText.MergeCaption, new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.Merge(caption.Id))));
+        list.Add(new NoteParameter(VideoEditorText.CaptionLookNote));
 
-        void Style<T>(T parameter, string name, Func<CaptionStyle, CaptionStyle> change)
+        void Style<T>(T parameter, [Localizable(false)] string key, string name, Func<CaptionStyle, CaptionStyle> change)
             where T : EditParameter
         {
             parameter.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName is "Value" or "Selected")
                 {
-                    actions.ChangeStyle(track.Id, change, name);
+                    actions.ChangeStyle(track.Id, change, key, name);
                 }
             };
             list.Add(parameter);
         }
 
         var style = track.Captions ?? new CaptionStyle();
-        var font = new FontParameter("Font", FontFamilies.Value, style.FontFamily);
-        Style(font, "caption font", s => s with { FontFamily = font.Value });
-        var size = new NumberParameter("Size", 12, 160, style.SizeFor(project.Canvas.Height), 1, " px");
-        Style(size, "caption size", s => s with { FontSize = size.Value });
-        var bold = new SwitchParameter("Bold", style.Bold);
-        Style(bold, "caption bold", s => s with { Bold = bold.Value });
-        var color = new ColorParameter("Text colour", FrameCompositor.Color(style.Color, SKColors.White));
-        Style(color, "caption colour", s => s with { Color = Hex(color.Value.Value) });
-        var box = new ColorParameter("Box", style.Box is null ? SKColors.Transparent : FrameCompositor.Color(style.Box, SKColors.Black), allowTransparent: true);
-        Style(box, "caption box", s => s with { Box = box.IsTransparent ? null : HexWithAlpha(box.Value.Value, 0xB4) });
-        var position = new ChoiceParameter("Position", [new(CaptionPosition.Bottom, "At the bottom"), new(CaptionPosition.Top, "At the top")], style.Position);
-        Style(position, "caption position", s => s with { Position = position.As<CaptionPosition>() });
-        var width = new NumberParameter("Lines up to", 30, 100, style.MaxWidth * 100, 5, " % of the width");
-        Style(width, "caption width", s => s with { MaxWidth = width.Value / 100 });
+        var font = new FontParameter(VideoEditorText.Font, FontFamilies.Value, style.FontFamily);
+        Style(font, "caption font", VideoEditorText.UndoCaptionFont, s => s with { FontFamily = font.Value });
+        var size = new NumberParameter(VideoEditorText.Size, 12, 160, style.SizeFor(project.Canvas.Height), 1, " px");
+        Style(size, "caption size", VideoEditorText.UndoCaptionSize, s => s with { FontSize = size.Value });
+        var bold = new SwitchParameter(VideoEditorText.Bold, style.Bold);
+        Style(bold, "caption bold", VideoEditorText.UndoCaptionBold, s => s with { Bold = bold.Value });
+        var color = new ColorParameter(VideoEditorText.TextColour, FrameCompositor.Color(style.Color, SKColors.White));
+        Style(color, "caption colour", VideoEditorText.UndoCaptionColour, s => s with { Color = Hex(color.Value.Value) });
+        var box = new ColorParameter(VideoEditorText.Box, style.Box is null ? SKColors.Transparent : FrameCompositor.Color(style.Box, SKColors.Black), allowTransparent: true);
+        Style(box, "caption box", VideoEditorText.UndoCaptionBox, s => s with { Box = box.IsTransparent ? null : HexWithAlpha(box.Value.Value, 0xB4) });
+        var position = new ChoiceParameter(VideoEditorText.Position, [new(CaptionPosition.Bottom, VideoEditorText.AtTheBottom), new(CaptionPosition.Top, VideoEditorText.AtTheTop)], style.Position);
+        Style(position, "caption position", VideoEditorText.UndoCaptionPosition, s => s with { Position = position.As<CaptionPosition>() });
+        var width = new NumberParameter(VideoEditorText.LinesUpTo, 30, 100, style.MaxWidth * 100, 5, VideoEditorText.PercentOfWidthUnit);
+        Style(width, "caption width", VideoEditorText.UndoCaptionWidth, s => s with { MaxWidth = width.Value / 100 });
         return list;
     }
 
@@ -447,24 +456,24 @@ public static class ItemProperties
     private static IReadOnlyList<EditParameter> ForZoom(VideoProject project, ZoomItem zoom, Func<VideoProject> current, Apply apply)
     {
         var list = new List<EditParameter>();
-        void Change<T>(T parameter, string name, Func<ZoomItem, ZoomItem> update)
+        void Change<T>(T parameter, [Localizable(false)] string key, string name, Func<ZoomItem, ZoomItem> update)
             where T : EditParameter
         {
             parameter.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName is "Value" or "Selected" && current().Find(zoom.Id)?.Item is ZoomItem now)
                 {
-                    apply(update(now) with { Auto = false }, name, $"property {zoom.Id} {name}");
+                    apply(update(now) with { Auto = false }, name, $"property {zoom.Id} {key}");
                 }
             };
             list.Add(parameter);
         }
 
-        var scale = new NumberParameter("Zoom", ZoomItem.SmallestScale * 100, ZoomItem.LargestScale * 100, zoom.ClampedScale * 100, 5, " %");
-        Change(scale, "zoom", z => z with { Scale = scale.Value / 100 });
-        var follow = new SwitchParameter("Follow the pointer", zoom.Focus == ZoomFocus.FollowPointer);
-        var across = new NumberParameter("Across", 0, 100, zoom.CenterX * 100, 1, " %") { IsVisible = !follow.Value };
-        var down = new NumberParameter("Down", 0, 100, zoom.CenterY * 100, 1, " %") { IsVisible = !follow.Value };
+        var scale = new NumberParameter(VideoEditorText.Zoom, ZoomItem.SmallestScale * 100, ZoomItem.LargestScale * 100, zoom.ClampedScale * 100, 5, " %");
+        Change(scale, "zoom", VideoEditorText.UndoZoom, z => z with { Scale = scale.Value / 100 });
+        var follow = new SwitchParameter(VideoEditorText.FollowPointer, zoom.Focus == ZoomFocus.FollowPointer);
+        var across = new NumberParameter(VideoEditorText.Across, 0, 100, zoom.CenterX * 100, 1, " %") { IsVisible = !follow.Value };
+        var down = new NumberParameter(VideoEditorText.Down, 0, 100, zoom.CenterY * 100, 1, " %") { IsVisible = !follow.Value };
         follow.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == "Value")
@@ -473,19 +482,19 @@ public static class ItemProperties
                 down.IsVisible = !follow.Value;
             }
         };
-        Change(follow, "follow the pointer", z => z with { Focus = follow.Value ? ZoomFocus.FollowPointer : ZoomFocus.Fixed });
+        Change(follow, "follow the pointer", VideoEditorText.UndoFollowPointer, z => z with { Focus = follow.Value ? ZoomFocus.FollowPointer : ZoomFocus.Fixed });
         if (!MetadataOf(project).HasMetadata)
         {
-            list.Add(new NoteParameter("No recording here has a metadata file, so there is no pointer to follow: the zoom stays on its centre."));
+            list.Add(new NoteParameter(VideoEditorText.NoMetadataForZoom));
         }
 
-        Change(across, "zoom across", z => z with { CenterX = across.Value / 100 });
-        Change(down, "zoom down", z => z with { CenterY = down.Value / 100 });
-        var easeIn = new NumberParameter("Zoom in over", 0, 3, zoom.EaseIn, 0.1, " s");
-        Change(easeIn, "zoom in time", z => z with { EaseIn = Math.Round(easeIn.Value, 2) });
-        var easeOut = new NumberParameter("Zoom out over", 0, 3, zoom.EaseOut, 0.1, " s");
-        Change(easeOut, "zoom out time", z => z with { EaseOut = Math.Round(easeOut.Value, 2) });
-        list.Add(new NoteParameter("While it is selected, the preview shows the whole picture and the zoom's frame: drag the frame to place the zoom (it then stays there), or its corner to zoom in or out."));
+        Change(across, "zoom across", VideoEditorText.UndoZoomAcross, z => z with { CenterX = across.Value / 100 });
+        Change(down, "zoom down", VideoEditorText.UndoZoomDown, z => z with { CenterY = down.Value / 100 });
+        var easeIn = new NumberParameter(VideoEditorText.ZoomInOver, 0, 3, zoom.EaseIn, 0.1, VideoEditorText.SecondsUnit);
+        Change(easeIn, "zoom in time", VideoEditorText.UndoZoomInTime, z => z with { EaseIn = Math.Round(easeIn.Value, 2) });
+        var easeOut = new NumberParameter(VideoEditorText.ZoomOutOver, 0, 3, zoom.EaseOut, 0.1, VideoEditorText.SecondsUnit);
+        Change(easeOut, "zoom out time", VideoEditorText.UndoZoomOutTime, z => z with { EaseOut = Math.Round(easeOut.Value, 2) });
+        list.Add(new NoteParameter(VideoEditorText.ZoomNote));
         return list;
     }
 
