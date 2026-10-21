@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CashGear.Capture.VideoEditor\CashGear.Capture.VideoEditor.csproj" />
+  </ItemGroup>
+
+  <!-- The real FFmpeg libraries (and ffmpeg.exe / ffprobe.exe for independent checks) when tools\ffmpeg has them; the tests that need them skip otherwise. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\avcodec-63.dll')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\*" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\CashGear.Capture.Media.Tests\StampedRecording.cs" Link="Media\StampedRecording.cs" />
+    <Compile Include="..\CashGear.Capture.Media.Tests\TestMedia.cs" Link="Media\TestMedia.cs" />
+  </ItemGroup>
+
+</Project>
