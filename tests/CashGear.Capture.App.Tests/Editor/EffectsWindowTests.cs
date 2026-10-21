@@ -65,6 +65,7 @@ public sealed class EffectsWindowTests : IDisposable
         var viewModel = new EffectsViewModel(session, context, [new ShadowEffect(), new WatermarkEffect(new Watermark(Tile: false))]) { Debounce = TimeSpan.Zero };
         viewModel.Selected = viewModel.Items[1];
         var window = new EffectsWindow { DataContext = viewModel };
+        _ = viewModel.RefreshAsync(); // as the editor does before showing it
         bool? result = null;
         var checks = new List<string>();
 
