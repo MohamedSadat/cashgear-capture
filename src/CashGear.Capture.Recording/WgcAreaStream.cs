@@ -6,8 +6,10 @@ using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Engine.Capture.Wgc;
+using CashGear.Capture.Engine.Display;
 using CashGear.Capture.Overlays.Rendering;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
@@ -16,12 +18,6 @@ using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
 
 namespace CashGear.Capture.Recording;
-
-/// <summary>
-/// A picture of the recorded area on the GPU, when Windows captured it (a <see cref="Stopwatch"/> timestamp), and the
-/// video frame it belongs to (-1 when the stream wasn't told how to work that out).
-/// </summary>
-internal sealed record Picture(ID3D11Texture2D Texture, long Timestamp, long Slot);
 
 /// <summary>
 /// A running Windows.Graphics.Capture session on one monitor, delivering pictures of an area of it. Each frame
@@ -33,46 +29,73 @@ internal sealed record Picture(ID3D11Texture2D Texture, long Timestamp, long Slo
 /// actually encodes are read back to the CPU (<see cref="Read"/>). Uses its own D3D11 device, so screenshots
 /// taken meanwhile don't wait for it. A monitor in HDR mode is captured as 16-bit float and each picture read
 /// is tone-mapped to SDR first (<see cref="ToneMapper"/>).
+/// <para>
+/// Faults: a lost graphics device (a driver reset, a GPU switch) makes reads throw <see cref="DeviceLostException"/>
+/// until <see cref="Recover"/> builds everything again; a resolution change that changes the area waits for
+/// <see cref="ApplyResize"/>; a monitor that goes away raises <see cref="Closed"/>.
+/// </para>
 /// </summary>
-internal sealed partial class WgcAreaStream : IDisposable
+internal sealed partial class WgcAreaStream : IPictureStream
 {
     private const int PoolBuffers = 2;
     private const int QueueLength = 8;
     private const int MaxTextures = QueueLength + 4;
     private static readonly TimeSpan FirstFrameTimeout = TimeSpan.FromSeconds(5);
 
+    /// <summary>How long without a picture before the watchdog asks the device whether it was removed.</summary>
+    private static readonly TimeSpan StallCheck = TimeSpan.FromSeconds(1);
+
+    /// <summary>Held by the frame callback; never held while calling the device (Windows may hold the device's lock while it calls us).</summary>
     private readonly object _gate = new();
 
     /// <summary>Serializes reading back and drawing overlays (the capture thread's copies rely on the device's multithread protection).</summary>
     private readonly object _contextGate = new();
-    private readonly D3DDeviceManager _devices;
-    private readonly PixelRect _crop;
+    private readonly WgcInterop _interop;
+    private readonly bool _includeCursor;
+    private readonly bool _wholeMonitor;
     private readonly TaskCompletionSource _firstFrame = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly List<Picture> _pictures = [];
     private readonly Func<long, long>? _slotOf;
     private readonly ConcurrentBag<ID3D11Texture2D> _free = [];
-    private readonly List<ID3D11Texture2D> _textures = [];
+    private readonly ILoggerFactory _loggers;
     private readonly ILogger _logger;
     private readonly HdrInfo? _hdr;
     private readonly DirectXPixelFormat _poolFormat;
 
+    private List<ID3D11Texture2D> _textures = [];
+    private MonitorInfo _monitor;
+    private D3DDeviceManager _devices;
+    private PixelRect _crop;
+    private PixelRect? _pendingCrop;
     private D3DResources? _resources;
     private ToneMapper? _toneMapper;
     private ID3D11Texture2D? _toned;
+    private GraphicsCaptureItem? _item;
     private Direct3D11CaptureFramePool? _pool;
     private GraphicsCaptureSession? _session;
     private ID3D11Texture2D? _staging;
     private SizeInt32 _poolSize;
+    private SizeInt32 _monitorSize;
     private long _delivered;
     private long _skipped;
+    private long _lastPictureAt = Stopwatch.GetTimestamp();
     private Exception? _failure;
+    private volatile bool _lost;
+    private volatile bool _simulateLoss;
+    private int _generation;
+    private bool _paused;
     private bool _disposed;
 
-    private WgcAreaStream(MonitorInfo monitor, PixelRect area, Func<long, long>? slotOf, HdrInfo? hdr, ILoggerFactory loggers)
+    private WgcAreaStream(WgcInterop interop, MonitorInfo monitor, PixelRect area, bool includeCursor, Func<long, long>? slotOf, HdrInfo? hdr, ILoggerFactory loggers)
     {
+        _interop = interop;
+        _monitor = monitor;
+        _includeCursor = includeCursor;
+        _wholeMonitor = area == monitor.Bounds;
         _slotOf = slotOf;
         _hdr = hdr;
         _poolFormat = hdr is null ? DirectXPixelFormat.B8G8R8A8UIntNormalized : DirectXPixelFormat.R16G16B16A16Float;
+        _loggers = loggers;
         _devices = new D3DDeviceManager(loggers.CreateLogger<D3DDeviceManager>());
         _logger = loggers.CreateLogger<WgcAreaStream>();
         _crop = new PixelRect(area.X - monitor.Bounds.X, area.Y - monitor.Bounds.Y, area.Width, area.Height);
@@ -80,9 +103,13 @@ internal sealed partial class WgcAreaStream : IDisposable
         Height = area.Height;
     }
 
-    public int Width { get; }
+    public event EventHandler? Closed;
 
-    public int Height { get; }
+    public int Width { get; private set; }
+
+    public int Height { get; private set; }
+
+    public PixelRect Area => new(_monitor.Bounds.X + _crop.X, _monitor.Bounds.Y + _crop.Y, _crop.Width, _crop.Height);
 
     /// <summary>Pictures Windows delivered so far.</summary>
     public long Delivered => Interlocked.Read(ref _delivered);
@@ -92,6 +119,19 @@ internal sealed partial class WgcAreaStream : IDisposable
 
     /// <summary>The stream's own D3D11 device (overlays are drawn with it).</summary>
     public ID3D11Device Device => _resources!.Device;
+
+    public int Generation => Volatile.Read(ref _generation);
+
+    public bool ResizePending
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _pendingCrop is not null;
+            }
+        }
+    }
 
     /// <summary>Starts capturing <paramref name="area"/> of <paramref name="monitor"/> and waits for the first picture.</summary>
     /// <param name="slotOf">The video frame a picture captured at a timestamp belongs to; pictures for the same frame replace each other.</param>
@@ -108,10 +148,10 @@ internal sealed partial class WgcAreaStream : IDisposable
         // WinRT objects must not be created on the caller's (possibly STA UI) thread.
         var stream = await Task.Run(() =>
         {
-            var created = new WgcAreaStream(monitor, area, slotOf, hdr, loggers);
+            var created = new WgcAreaStream(interop, monitor, area, includeCursor, slotOf, hdr, loggers);
             try
             {
-                created.Start(interop, monitor, includeCursor);
+                created.Start();
                 return created;
             }
             catch
@@ -139,10 +179,16 @@ internal sealed partial class WgcAreaStream : IDisposable
     }
 
     /// <summary>The oldest queued picture, without taking it.</summary>
-    /// <exception cref="CaptureException">The capture failed (monitor resolution changed, device lost).</exception>
+    /// <exception cref="CaptureException">The capture failed (the area isn't on the monitor any more).</exception>
+    /// <exception cref="DeviceLostException">The device was lost: <see cref="Recover"/>.</exception>
     public bool TryPeek(out Picture picture)
     {
         ThrowIfFailed();
+        if (_lost)
+        {
+            throw new DeviceLostException(null);
+        }
+
         lock (_pictures)
         {
             picture = _pictures.Count > 0 ? _pictures[0] : null!;
@@ -169,8 +215,16 @@ internal sealed partial class WgcAreaStream : IDisposable
     {
         lock (_contextGate)
         {
-            ThrowIfFailed();
-            ReadBack(ToSdr(picture.Texture), destination);
+            ThrowIfUnreadable(picture);
+            try
+            {
+                SimulatedLoss();
+                ReadBack(ToSdr(picture.Texture), destination);
+            }
+            catch (Exception e) when (e is not DeviceLostException && DeviceLostException.IsLost(e))
+            {
+                throw Lost(e);
+            }
         }
     }
 
@@ -183,11 +237,208 @@ internal sealed partial class WgcAreaStream : IDisposable
         ArgumentNullException.ThrowIfNull(compositor);
         lock (_contextGate)
         {
-            ThrowIfFailed();
-            compositor.Compose(_resources!.Context, ToSdr(picture.Texture), scene, webcam);
-            ReadBack(compositor.Target, destination);
+            ThrowIfUnreadable(picture);
+            try
+            {
+                SimulatedLoss();
+                compositor.Compose(_resources!.Context, ToSdr(picture.Texture), scene, webcam);
+                ReadBack(compositor.Target, destination);
+            }
+            catch (Exception e) when (e is not DeviceLostException && DeviceLostException.IsLost(e))
+            {
+                throw Lost(e);
+            }
         }
     }
+
+    /// <summary>Gives a picture's texture back for the next frame Windows sends (one from before a rebuild or resize is forgotten).</summary>
+    public void Release(Picture picture)
+    {
+        if (picture.Generation == Generation)
+        {
+            _free.Add(picture.Texture);
+        }
+    }
+
+    /// <summary>Tests: the next read fails as if the graphics device had been removed, and the device is dropped.</summary>
+    internal void SimulateDeviceLoss() => _simulateLoss = true;
+
+    public void CheckDevice()
+    {
+        if (_lost || Stopwatch.GetElapsedTime(Interlocked.Read(ref _lastPictureAt)) < StallCheck)
+        {
+            return;
+        }
+
+        lock (_contextGate)
+        {
+            if (_resources is { } resources && resources.Device.DeviceRemovedReason.Failure)
+            {
+                Lost(new SharpGen.Runtime.SharpGenException(resources.Device.DeviceRemovedReason));
+            }
+        }
+    }
+
+    public bool Recover()
+    {
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return false;
+            }
+
+            _paused = true; // frames arriving from now on are ignored; none is being handled now
+        }
+
+        StopCapture();
+        lock (_contextGate)
+        {
+            DropPictures();
+            DisposeViews();
+            _devices.Dispose();
+            _devices = new D3DDeviceManager(_loggers.CreateLogger<D3DDeviceManager>());
+            _monitor = FindMonitor(_monitor) ?? _monitor;
+            try
+            {
+                Start();
+            }
+            catch (Exception e) when (e is System.Runtime.InteropServices.COMException or SharpGen.Runtime.SharpGenException or InvalidOperationException or ArgumentException)
+            {
+                // The graphics card isn't back yet (a reset takes a few seconds): the caller tries again.
+                StopCapture();
+                DisposeViews();
+                LogRecoverFailed(e);
+                return false;
+            }
+
+            Interlocked.Increment(ref _generation);
+            _lost = false;
+        }
+
+        lock (_gate)
+        {
+            _paused = false;
+        }
+
+        LogRecovered(_monitor.ShortName, Generation);
+        return true;
+    }
+
+    public void ApplyResize()
+    {
+        PixelRect crop;
+        lock (_gate)
+        {
+            if (_pendingCrop is not { } pending)
+            {
+                return;
+            }
+
+            crop = pending;
+            _pendingCrop = null;
+            _paused = true;
+        }
+
+        // The textures, the staging texture and the tone mapper's target are of the old size.
+        lock (_contextGate)
+        {
+            DropPictures();
+            _staging?.Dispose();
+            if (_toned is not null)
+            {
+                _toneMapper?.Forget(_toned);
+                _toned.Dispose();
+            }
+
+            _toned = null;
+            _monitor = FindMonitor(_monitor) ?? _monitor;
+            _crop = crop;
+            Width = crop.Width;
+            Height = crop.Height;
+            CreateTargets();
+            Interlocked.Increment(ref _generation);
+        }
+
+        lock (_gate)
+        {
+            _paused = false;
+        }
+
+        LogResized(_monitor.ShortName, _monitorSize.Width, _monitorSize.Height, _crop);
+    }
+
+    public void Dispose()
+    {
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true; // a frame that arrives from now on is ignored, without touching anything below
+        }
+
+        // Not under the lock: releasing the capture waits for a frame callback that is running, and that callback
+        // may be waiting for the lock (it froze Stop, about once in 20 recordings).
+        StopCapture();
+        lock (_contextGate)
+        {
+            DropPictures();
+            DisposeViews();
+            _devices.Dispose();
+        }
+    }
+
+    private void ThrowIfFailed()
+    {
+        if (Volatile.Read(ref _failure) is { } failure)
+        {
+            throw failure as CaptureException ?? new CaptureException("Screen capture stopped: " + failure.Message, failure);
+        }
+    }
+
+    private void ThrowIfUnreadable(Picture picture)
+    {
+        ThrowIfFailed();
+        if (_lost)
+        {
+            throw new DeviceLostException(null);
+        }
+
+        if (picture.Generation != Generation)
+        {
+            throw new InvalidOperationException("A picture from before the stream was rebuilt can't be read.");
+        }
+    }
+
+    private void SimulatedLoss()
+    {
+        if (_simulateLoss)
+        {
+            _simulateLoss = false;
+            _resources?.Dispose(); // as gone as a removed device's
+            _resources = null;
+            throw new SharpGen.Runtime.SharpGenException(new SharpGen.Runtime.Result(unchecked((int)0x887A0005)));
+        }
+    }
+
+    private DeviceLostException Lost(Exception e)
+    {
+        if (!_lost)
+        {
+            _lost = true;
+            LogDeviceLost(e);
+        }
+
+        return e as DeviceLostException ?? new DeviceLostException(e);
+    }
+
+    /// <summary>The monitor again (by its device name): its handle and bounds change with the display layout.</summary>
+    private static MonitorInfo? FindMonitor(MonitorInfo monitor) =>
+        new Win32MonitorService(NullLogger<Win32MonitorService>.Instance).GetMonitors()
+            .FirstOrDefault(m => string.Equals(m.DeviceName, monitor.DeviceName, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>A picture as 8-bit BGRA: itself, or tone-mapped into <see cref="_toned"/> when it is float (under the context lock).</summary>
     private ID3D11Texture2D ToSdr(ID3D11Texture2D picture)
@@ -220,72 +471,98 @@ internal sealed partial class WgcAreaStream : IDisposable
         }
     }
 
-    /// <summary>Gives a picture's texture back for the next frame Windows sends.</summary>
-    public void Release(Picture picture) => _free.Add(picture.Texture);
-
-    public void Dispose()
+    /// <summary>Makes the device, the capture item, the frame pool and the session, and starts capturing.</summary>
+    private void Start()
     {
-        lock (_gate)
+        _resources = _devices.Acquire();
+        _item = _interop.CreateItemForMonitor(_monitor.Handle);
+        _item.Closed += OnItemClosed;
+        _poolSize = _item.Size;
+        _monitorSize = _item.Size;
+        if (ResizedArea.Crop(_crop, _monitorSize.Width, _monitorSize.Height, _wholeMonitor) is { } crop && crop != _crop)
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true; // a frame that arrives from now on is ignored, without touching anything below
+            _pendingCrop = crop; // the monitor changed while the device was being made again
         }
 
-        // Not under the lock: releasing the capture waits for a frame callback that is running, and that callback
-        // may be waiting for the lock (it froze Stop, about once in 20 recordings).
+        _pool = Direct3D11CaptureFramePool.CreateFreeThreaded(_resources.WinRtDevice, _poolFormat, PoolBuffers, _poolSize);
+        _session = _pool.CreateCaptureSession(_item);
+        _session.IsCursorCaptureEnabled = _includeCursor;
+        CreateTargets();
+        _pool.FrameArrived += OnFrameArrived;
+        _session.StartCapture();
+        LogStarted(_monitor.ShortName, _crop, _includeCursor, _hdr is null ? "off" : $"tone-mapped, SDR white {_hdr.SdrWhiteNits:0} nits");
+    }
+
+    /// <summary>The staging texture (and, for HDR, the tone mapper and its target) at the area's size.</summary>
+    private void CreateTargets()
+    {
+        _staging = _resources!.Device.CreateTexture2D(Description(ResourceUsage.Staging, CpuAccessFlags.Read) with { Format = Format.B8G8R8A8_UNorm });
+        if (_hdr is not null)
+        {
+            _toneMapper ??= new ToneMapper(_resources.Device);
+            _toned = _resources.Device.CreateTexture2D(ToneMapper.TargetDescription(Width, Height));
+        }
+    }
+
+    /// <summary>Ends the capture session (not under a lock; see <see cref="Dispose"/>).</summary>
+    private void StopCapture()
+    {
         if (_pool is not null)
         {
             _pool.FrameArrived -= OnFrameArrived;
         }
 
+        if (_item is not null)
+        {
+            _item.Closed -= OnItemClosed;
+        }
+
         _session?.Dispose();
         _pool?.Dispose();
+        _session = null;
+        _pool = null;
+        _item = null;
+    }
+
+    /// <summary>Drops the queued pictures and releases every picture texture (under the context lock).</summary>
+    private void DropPictures()
+    {
         lock (_pictures)
         {
             _pictures.Clear();
         }
 
-        lock (_textures)
+        List<ID3D11Texture2D> textures;
+        lock (_gate)
         {
-            _textures.ForEach(t => t.Dispose());
-            _textures.Clear();
+            textures = _textures;
+            _textures = [];
         }
 
+        ReleaseTextures(textures);
+    }
+
+    private void ReleaseTextures(List<ID3D11Texture2D> textures)
+    {
+        foreach (var texture in textures)
+        {
+            _toneMapper?.Forget(texture);
+            texture.Dispose();
+        }
+
+        while (_free.TryTake(out _))
+        {
+        }
+    }
+
+    private void DisposeViews()
+    {
         _staging?.Dispose();
+        _staging = null;
         _toned?.Dispose();
+        _toned = null;
         _toneMapper?.Dispose();
-        _devices.Dispose();
-    }
-
-    private void ThrowIfFailed()
-    {
-        if (Volatile.Read(ref _failure) is { } failure)
-        {
-            throw new CaptureException("Screen capture stopped: " + failure.Message, failure);
-        }
-    }
-
-    private void Start(WgcInterop interop, MonitorInfo monitor, bool includeCursor)
-    {
-        _resources = _devices.Acquire();
-        var item = interop.CreateItemForMonitor(monitor.Handle);
-        _poolSize = item.Size;
-        _pool = Direct3D11CaptureFramePool.CreateFreeThreaded(_resources.WinRtDevice, _poolFormat, PoolBuffers, _poolSize);
-        _session = _pool.CreateCaptureSession(item);
-        _session.IsCursorCaptureEnabled = includeCursor;
-        _staging = _resources.Device.CreateTexture2D(Description(ResourceUsage.Staging, CpuAccessFlags.Read) with { Format = Format.B8G8R8A8_UNorm });
-        if (_hdr is not null)
-        {
-            _toneMapper = new ToneMapper(_resources.Device);
-            _toned = _resources.Device.CreateTexture2D(ToneMapper.TargetDescription(Width, Height));
-        }
-        _pool.FrameArrived += OnFrameArrived;
-        _session.StartCapture();
-        LogStarted(monitor.ShortName, _crop, includeCursor, _hdr is null ? "off" : $"tone-mapped, SDR white {_hdr.SdrWhiteNits:0} nits");
+        _toneMapper = null;
     }
 
     private Texture2DDescription Description(ResourceUsage usage, CpuAccessFlags cpu) => new()
@@ -301,7 +578,7 @@ internal sealed partial class WgcAreaStream : IDisposable
         CPUAccessFlags = cpu,
     };
 
-    /// <summary>A free texture for the next picture, a new one while fewer than <see cref="MaxTextures"/> exist, or null.</summary>
+    /// <summary>A free texture for the next picture, a new one while fewer than <see cref="MaxTextures"/> exist, or null (under <see cref="_gate"/>).</summary>
     private ID3D11Texture2D? RentTexture()
     {
         if (_free.TryTake(out var texture))
@@ -309,17 +586,20 @@ internal sealed partial class WgcAreaStream : IDisposable
             return texture;
         }
 
-        lock (_textures)
+        if (_textures.Count >= MaxTextures)
         {
-            if (_textures.Count >= MaxTextures)
-            {
-                return null;
-            }
-
-            texture = _resources!.Device.CreateTexture2D(Description(ResourceUsage.Default, CpuAccessFlags.None));
-            _textures.Add(texture);
-            return texture;
+            return null;
         }
+
+        texture = _resources!.Device.CreateTexture2D(Description(ResourceUsage.Default, CpuAccessFlags.None));
+        _textures.Add(texture);
+        return texture;
+    }
+
+    private void OnItemClosed(GraphicsCaptureItem sender, object args)
+    {
+        LogClosed(_monitor.ShortName);
+        Closed?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Runs on a capture worker thread for every frame Windows delivers.</summary>
@@ -327,7 +607,7 @@ internal sealed partial class WgcAreaStream : IDisposable
     {
         lock (_gate)
         {
-            if (_disposed || _failure is not null)
+            if (_disposed || _paused || _lost || _failure is not null)
             {
                 return;
             }
@@ -348,9 +628,21 @@ internal sealed partial class WgcAreaStream : IDisposable
                     sender.Recreate(_resources!.WinRtDevice, _poolFormat, PoolBuffers, size);
                 }
 
-                if (_crop.Right > size.Width || _crop.Bottom > size.Height)
+                if (size.Width != _monitorSize.Width || size.Height != _monitorSize.Height)
                 {
-                    throw new CaptureException($"The monitor is now {size.Width}x{size.Height}, smaller than the recorded area.");
+                    _monitorSize = size;
+                    var next = ResizedArea.Crop(_crop, size.Width, size.Height, _wholeMonitor)
+                        ?? throw new CaptureException($"{_monitor.ShortName} is now {size.Width}x{size.Height}, and the recorded area isn't on it any more, so the recording stopped.");
+                    _pendingCrop = next == _crop ? null : next;
+                    if (_pendingCrop is not null)
+                    {
+                        LogResizing(_monitor.ShortName, size.Width, size.Height, next);
+                    }
+                }
+
+                if (_pendingCrop is not null)
+                {
+                    return; // the recorder moves to the new size first
                 }
 
                 var timestamp = QpcTime.FromHundredNanoseconds(frame.SystemRelativeTime.Ticks, Stopwatch.Frequency);
@@ -369,9 +661,14 @@ internal sealed partial class WgcAreaStream : IDisposable
                         target, 0, 0, 0, 0, texture, 0, new Box(_crop.X, _crop.Y, 0, _crop.Right, _crop.Bottom, 1));
                 }
 
-                Queue(new Picture(target, timestamp, _slotOf?.Invoke(timestamp) ?? -1));
+                Queue(new Picture(target, timestamp, _slotOf?.Invoke(timestamp) ?? -1, Generation));
                 Interlocked.Increment(ref _delivered);
+                Interlocked.Exchange(ref _lastPictureAt, Stopwatch.GetTimestamp());
                 _firstFrame.TrySetResult();
+            }
+            catch (Exception ex) when (DeviceLostException.IsLost(ex))
+            {
+                Lost(ex); // the recorder rebuilds the stream; until then frames are ignored
             }
             catch (Exception ex)
             {
@@ -417,4 +714,22 @@ internal sealed partial class WgcAreaStream : IDisposable
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Recording capture failed")]
     private partial void LogFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Recording capture: the graphics device was lost")]
+    private partial void LogDeviceLost(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recording capture rebuilt on {Monitor} after the device was lost (generation {Generation})")]
+    private partial void LogRecovered(string monitor, int generation);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Recording capture: rebuilding after the device was lost failed (will try again)")]
+    private partial void LogRecoverFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recording capture: {Monitor} is now {Width}x{Height}; the area becomes {Crop}")]
+    private partial void LogResizing(string monitor, int width, int height, PixelRect crop);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Recording capture moved to {Monitor}'s new size {Width}x{Height}, area {Crop}")]
+    private partial void LogResized(string monitor, int width, int height, PixelRect crop);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Recording capture: {Monitor} went away")]
+    private partial void LogClosed(string monitor);
 }

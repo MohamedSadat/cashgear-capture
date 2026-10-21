@@ -1049,6 +1049,47 @@ public sealed class ScreenRecorderTests : IDisposable
     }
 
     /// <summary>
+    /// The real capture rebuilt after its device is lost: a read fails as a removed device's would and the device is
+    /// dropped; the stream makes a new device, capture item, pool and session, and the recording goes on in one file.
+    /// </summary>
+    [Fact(Timeout = 60_000)]
+    public async Task A_lost_device_rebuilds_the_real_capture_and_the_recording_goes_on()
+    {
+        var (recorder, options) = Create();
+        var ct = TestContext.Current.CancellationToken;
+        WgcAreaStream? stream = null;
+        recorder.StreamFactory = async (request, token) =>
+            stream = await WgcAreaStream.StartAsync(_interop, request.Monitor, request.Area, request.IncludeCursor, _loggers, token, request.SlotOf, request.Hdr);
+        var warnings = new List<string>();
+        var notices = new List<string>();
+        recorder.Warning += (_, m) => warnings.Add(m);
+        recorder.Notice += (_, m) => notices.Add(m);
+        await StaDispatcher.RunAsync(async () =>
+        {
+            var square = Square(options.Area.X + 20, options.Area.Y + 20, 24, options.Monitor.Scale.ScaleX, repaint: true);
+            try
+            {
+                await recorder.StartAsync(options, ct);
+                await UntilRecorded(recorder, 1, ct);
+                stream!.SimulateDeviceLoss();
+                await UntilRecorded(recorder, 3, ct);
+                var result = await recorder.StopAsync(ct);
+
+                stream.Generation.Should().Be(1, "the stream was rebuilt once");
+                result.AllParts.Should().ContainSingle();
+                result.FramesWritten.Should().BeInRange(80, 100);
+                warnings.Should().ContainSingle(w => w.Contains("graphics card stopped responding", StringComparison.Ordinal));
+                notices.Should().ContainSingle(n => n.Contains("graphics card is back", StringComparison.Ordinal));
+                stream.Delivered.Should().BeGreaterThan(30, "pictures kept coming from the rebuilt capture (the square repaints every refresh)");
+            }
+            finally
+            {
+                square.Close();
+            }
+        });
+    }
+
+    /// <summary>
     /// The recorder's HDR path on an SDR monitor: the same area captured as 16-bit float and tone-mapped reads back as
     /// the 8-bit capture's bytes (compared where the screen held still between two 8-bit pictures).
     /// </summary>

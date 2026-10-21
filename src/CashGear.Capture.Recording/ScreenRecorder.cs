@@ -34,13 +34,15 @@ internal sealed partial class ScreenRecorder(
     ILoggerFactory loggers,
     MicrophoneProcessors? processors = null,
     IWebcams? webcams = null,
-    IDesktopState? desktop = null) : IScreenRecorder
+    IDesktopState? desktop = null,
+    IPowerEvents? power = null) : IScreenRecorder
 {
     /// <summary>The note a recording made over Remote Desktop gets.</summary>
     public const string RemoteNote =
         "This was recorded in a Remote Desktop session: Windows sends pictures only as often as the connection allows, and the graphics card's encoder may not be available.";
 
     private readonly IDesktopState _desktop = desktop ?? Engine.Display.Win32DesktopState.Instance;
+    private readonly IPowerEvents? _power = power;
     private readonly MicrophoneProcessors _processors = processors ?? new MicrophoneProcessors();
 
     private static readonly TimeSpan FinishTimeout = TimeSpan.FromSeconds(60);
@@ -55,6 +57,15 @@ internal sealed partial class ScreenRecorder(
 
     /// <summary>Called on the video thread before each frame is encoded (tests: make an encoder fail or stall).</summary>
     internal Action<EncoderCandidate, long>? BeforeEncode { get; set; }
+
+    /// <summary>Makes the picture stream instead of a Windows.Graphics.Capture one (tests: a fake that can fail on cue).</summary>
+    internal Func<StreamRequest, CancellationToken, Task<IPictureStream>>? StreamFactory { get; set; }
+
+    /// <summary>The recording clock's time (tests: one that runs faster than real time).</summary>
+    internal TimeProvider Time { get; set; } = TimeProvider.System;
+
+    /// <summary>How long a lost graphics card may take to come back before the recording stops.</summary>
+    internal TimeSpan DeviceGiveUp { get; set; } = TimeSpan.FromSeconds(30);
 
     public bool IsRecording => _session is not null;
 
@@ -201,7 +212,7 @@ internal sealed partial class ScreenRecorder(
 
                 // Windows draws the pointer unless the overlays must (bigger, or hidden when idle): then the app does.
                 var ownPointer = options.IncludeCursor && overlays is { } o && o.PointerSettings.DrawsOwnPointer && o.NeedsInput;
-                var clock = new RecordingClock(TimeProvider.System);
+                var clock = new RecordingClock(Time);
                 string? webcamNote = null;
                 IWebcamSource? camera = null;
                 if (overlays is { } withWebcam && withWebcam.WebcamSettings.Enabled)
@@ -259,14 +270,16 @@ internal sealed partial class ScreenRecorder(
                     loggers.CreateLogger<MediaWriter>());
                 // Keys are shown once their privacy check is done: frames are made a little later so a key lands on its own frame.
                 var grid = new FrameGrid(options.Fps, overlays is { BurnIn: true } && overlays.KeystrokeSettings.Mode != KeystrokeMode.Off ? KeystrokeLag : null);
-                parts.Stream = await WgcAreaStream.StartAsync(
-                    interop, options.Monitor, area, options.IncludeCursor && !ownPointer, loggers, ct, timestamp => grid.SlotOf(clock.MapInstant(timestamp)), options.Hdr).ConfigureAwait(false);
+                var request = new StreamRequest(options.Monitor, area, options.IncludeCursor && !ownPointer, timestamp => grid.SlotOf(clock.MapInstant(timestamp)), options.Hdr);
+                parts.Stream = StreamFactory is { } factory
+                    ? await factory(request, ct).ConfigureAwait(false)
+                    : await WgcAreaStream.StartAsync(interop, request.Monitor, request.Area, request.IncludeCursor, loggers, ct, request.SlotOf, request.Hdr).ConfigureAwait(false);
 
                 var chain = options.MicrophoneProcessing is { } processing && sources.Any(s => s.Kind == RecordingSound.Microphone)
                     ? _processors.Create(processing)
                     : null;
                 var session = new Session(
-                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, fallbacks, parts, manifest, tracks, soundNote, chain, ownPointer, clickSound, loggers, _logger);
+                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, usable, fallbacks, parts, manifest, tracks, soundNote, chain, ownPointer, clickSound, loggers, _logger);
                 session.Failed += (_, e) => OnFailed(e);
                 session.Start();
                 _session = session;
@@ -478,7 +491,7 @@ internal sealed partial class ScreenRecorder(
 
         public MediaWriter? Writer { get; set; }
 
-        public WgcAreaStream? Stream { get; set; }
+        public IPictureStream? Stream { get; set; }
 
         public MetadataJournal? Journal { get; set; }
 
@@ -534,10 +547,13 @@ internal sealed partial class ScreenRecorder(
 
         private readonly ScreenRecorder _owner;
         private readonly RecordingOptions _options;
-        private readonly VideoFormat _format;
+        private readonly IReadOnlyList<(EncoderCandidate Candidate, EncoderProbe Probe)> _usable;
+        private readonly bool _ownPointer;
+        private readonly object _noteGate = new();
+        private VideoFormat _format;
         private readonly Queue<(EncoderCandidate Candidate, EncoderProbe Probe)> _fallbacks;
         private readonly Parts _parts;
-        private readonly WgcAreaStream _stream;
+        private readonly IPictureStream _stream;
         private readonly MediaWriter _writer;
         private readonly RecordingFolder _folder;
         private readonly IReadOnlyList<SoundTrack> _tracks;
@@ -550,7 +566,14 @@ internal sealed partial class ScreenRecorder(
         private readonly InputTimeline? _timeline;
         private readonly MetadataJournal? _journal;
         private readonly CursorLibrary _cursors = new();
-        private readonly OverlayPlanner? _planner;
+        private OverlayPlanner? _planner;
+        private OverlayCompositor? _compositor;
+        private byte[] _picture = [];
+        private bool _awaitingPicture;
+        private long _lostSince;
+        private long _nextRecovery;
+        private TimeSpan? _secureSince;
+        private bool _pausedForSleep;
         private readonly WebcamFeed? _webcam;
         private readonly AudioMixer? _mixer;
         private readonly AudioTrack? _clickTrack;
@@ -566,7 +589,7 @@ internal sealed partial class ScreenRecorder(
         private Thread? _soundThread;
         private volatile bool _stopping;
         private volatile string? _soundNote;
-        private volatile string? _note;
+        private string? _note;
         private bool _timerPeriod;
         private bool _segmentBegun;
         private int _segments;
@@ -583,6 +606,7 @@ internal sealed partial class ScreenRecorder(
             RecordingClock clock,
             FrameGrid grid,
             VideoEncoder video,
+            IReadOnlyList<(EncoderCandidate, EncoderProbe)> usable,
             Queue<(EncoderCandidate, EncoderProbe)> fallbacks,
             Parts parts,
             RecordingManifest manifest,
@@ -599,18 +623,14 @@ internal sealed partial class ScreenRecorder(
             _overlays = options.Overlays;
             _journal = parts.Journal;
             _webcam = parts.Webcam;
+            _usable = usable;
+            _ownPointer = ownPointer;
             if (_overlays?.NeedsInput == true)
             {
                 _timeline = new InputTimeline(InputRecorder.PointerNow());
             }
 
-            if (_overlays is { BurnIn: true })
-            {
-                var planner = new OverlayPlanner(
-                    _overlays, new PixelPoint(options.Area.X, options.Area.Y), options.Monitor.Scale.ScaleX, format.Width, format.Height, ownPointer, webcam: _webcam is not null);
-                _planner = planner.DrawsAnything ? planner : null;
-            }
-
+            _planner = Planner(options.Area, options.Monitor.Scale.ScaleX, format.Width, format.Height);
             _owner = owner;
             _options = options;
             _format = format;
@@ -629,6 +649,7 @@ internal sealed partial class ScreenRecorder(
             _converter = new FrameConverter(format.Width, format.Height, video.PixelFormat);
             _encoderNames.Add(video.Candidate.DisplayName);
             _writer.Failed += (_, e) => Fail(e);
+            _stream.Closed += OnStreamClosed;
             if (parts.Sources.Count > 0 || clickSound)
             {
                 _mixer = new AudioMixer();
@@ -704,6 +725,12 @@ internal sealed partial class ScreenRecorder(
             _videoThread = new Thread(WriteVideo) { IsBackground = true, Name = "Recording video", Priority = ThreadPriority.AboveNormal };
             _videoThread.Start();
             _watchdog = new Timer(_ => Watch(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
+            if (_owner._power is { } power)
+            {
+                power.Suspending += OnSuspending;
+                power.Resumed += OnResumed;
+            }
+
             if (_mixer is null)
             {
                 return;
@@ -730,7 +757,13 @@ internal sealed partial class ScreenRecorder(
         public bool ShowsKeystrokes => _input is not null && _overlays?.KeystrokeSettings.Mode != KeystrokeMode.Off;
 
         /// <summary>Something the user should know in the saved notification (the webcam couldn't be used).</summary>
-        public void AddNote(string note) => _note = _note is null ? note : _note + " " + note;
+        public void AddNote(string note)
+        {
+            lock (_noteGate)
+            {
+                _note = _note is null ? note : _note + " " + note;
+            }
+        }
 
         /// <summary>While true, keys aren't shown or kept.</summary>
         public bool KeystrokesPaused
@@ -801,6 +834,18 @@ internal sealed partial class ScreenRecorder(
             _input?.Dispose();
             _journal?.Dispose();
             _watchdog?.Dispose();
+            _stream.Closed -= OnStreamClosed;
+            if (_owner._power is { } power)
+            {
+                power.Suspending -= OnSuspending;
+                power.Resumed -= OnResumed;
+            }
+
+            if (_secureSince is { } secureSince)
+            {
+                NoteSecureScreen(secureSince, Clock.Elapsed);
+            }
+
             EndTimerPeriod();
             _stream.Dispose();
             if (!await JoinAsync(_soundThread, timeout).ConfigureAwait(false))
@@ -855,7 +900,11 @@ internal sealed partial class ScreenRecorder(
                 throw new CaptureException("The recording could not be saved: nothing in it could be read.");
             }
 
-            var note = _failure is { } failure ? $"Recording stopped early: {failure.Message}" : _note;
+            string? note;
+            lock (_noteGate)
+            {
+                note = _failure is { } failure ? $"Recording stopped early: {failure.Message}" + (_note is null ? string.Empty : " " + _note) : _note;
+            }
             return new RecordingResult(
                 saved.Files[0],
                 TimeSpan.FromSeconds((double)(_grid.End ?? _grid.Next) / _format.Fps),
@@ -910,8 +959,8 @@ internal sealed partial class ScreenRecorder(
             // Held by this thread, so it ends with the recording however the thread ends.
             Kernel32.SetThreadExecutionState(Kernel32.EsContinuous | Kernel32.EsSystemRequired | Kernel32.EsDisplayRequired);
             var packets = new List<EncodedPacket>();
-            var picture = new byte[_format.Width * _format.Height * 4];
-            var compositor = _planner is null ? null : new OverlayCompositor(_stream.Device, _format.Width, _format.Height, _cursors);
+            _picture = new byte[_format.Width * _format.Height * 4];
+            _compositor = _planner is null ? null : new OverlayCompositor(_stream.Device, _format.Width, _format.Height, _cursors);
             var composed = false;
             Picture? current = null;
             try
@@ -942,39 +991,78 @@ internal sealed partial class ScreenRecorder(
                         continue;
                     }
 
-                    var changed = TakePictures(step.Slot, ref current);
-                    var time = _grid.TimeOf(step.Slot);
-                    var scene = _planner?.Plan(_timeline ?? NoInput, time) ?? OverlayScene.Empty;
-                    if (!scene.IsEmpty)
+                    if (_stream.ResizePending)
                     {
-                        // Drawn over the picture on the GPU, then read back.
-                        var camera = _webcam?.Hold(time);
-                        try
-                        {
-                            _stream.Compose(current!, compositor!, scene, camera?.Picture, picture);
-                        }
-                        finally
-                        {
-                            if (camera is not null)
-                            {
-                                _webcam!.Release(camera);
-                            }
-                        }
-                    }
-                    else if (changed || composed)
-                    {
-                        _stream.Read(current!, picture);
+                        Forget(ref current);
+                        MoveToNewSize(packets);
+                        composed = false;
                     }
 
-                    var repeated = !changed && scene.IsEmpty && !composed;
-                    composed = !scene.IsEmpty;
+                    var time = _grid.TimeOf(step.Slot);
+                    var scene = _planner?.Plan(_timeline ?? NoInput, time) ?? OverlayScene.Empty;
+                    var changed = false;
+                    try
+                    {
+                        if (_lostSince != 0)
+                        {
+                            TryRecoverDevice();
+                        }
+
+                        changed = TakePictures(step.Slot, ref current);
+                        if (current is null)
+                        {
+                            // No picture since the device came back or the size changed: the last one holds.
+                        }
+                        else if (!scene.IsEmpty)
+                        {
+                            // Drawn over the picture on the GPU, then read back.
+                            var camera = _webcam?.Hold(time);
+                            try
+                            {
+                                _stream.Compose(current, _compositor!, scene, camera?.Picture, _picture);
+                            }
+                            finally
+                            {
+                                if (camera is not null)
+                                {
+                                    _webcam!.Release(camera);
+                                }
+                            }
+                        }
+                        else if (changed || composed)
+                        {
+                            _stream.Read(current, _picture);
+                        }
+                    }
+                    catch (DeviceLostException lost)
+                    {
+                        current = null; // its texture went with the device
+                        changed = false;
+                        OnDeviceLost(lost);
+                    }
+
+                    if (_awaitingPicture && current is null)
+                    {
+                        // A new part starts with its first picture, not with an empty frame.
+                        lock (_gridGate)
+                        {
+                            _grid.Skipped();
+                        }
+
+                        continue;
+                    }
+
+                    _awaitingPicture = false;
+                    var drawn = !scene.IsEmpty && current is not null;
+                    var repeated = !changed && !drawn && !composed;
+                    composed = drawn;
                     if (_journal is not null)
                     {
                         var pointer = _timeline!.Pointer(time);
                         _journal.Frame(step.Slot, pointer.At, pointer.Shape, pointer.Visible);
                     }
 
-                    Encode(step.Slot, picture, packets);
+                    Encode(step.Slot, _picture, packets);
                     lock (_gridGate)
                     {
                         _grid.Produced(repeated);
@@ -999,9 +1087,115 @@ internal sealed partial class ScreenRecorder(
                     _stream.Release(current);
                 }
 
-                compositor?.Dispose();
+                _compositor?.Dispose();
                 Kernel32.SetThreadExecutionState(Kernel32.EsContinuous);
             }
+        }
+
+        private void Forget(ref Picture? current)
+        {
+            if (current is not null)
+            {
+                _stream.Release(current);
+                current = null;
+            }
+        }
+
+        /// <summary>
+        /// The graphics device was lost (a driver reset, a GPU switch): the picture holds still while the stream is
+        /// rebuilt, and the recording goes on in the same file. The user is told once.
+        /// </summary>
+        private void OnDeviceLost(DeviceLostException lost)
+        {
+            if (_lostSince != 0)
+            {
+                return;
+            }
+
+            _lostSince = Stopwatch.GetTimestamp();
+            _nextRecovery = 0;
+            var at = Clock.Elapsed;
+            LogDeviceLost(lost, at);
+            AddNote($"At {Time(at)} the graphics card was reset or switched; the picture held still until it was back.");
+            _owner.OnWarning("The graphics card stopped responding (it was reset or switched). The recording goes on, and the picture holds still until it is back.");
+        }
+
+        /// <summary>Tries to rebuild the stream on the new device (at most every 250 ms); gives up after <see cref="DeviceGiveUp"/>.</summary>
+        private void TryRecoverDevice()
+        {
+            var now = Stopwatch.GetTimestamp();
+            if (now < _nextRecovery)
+            {
+                return;
+            }
+
+            if (_stream.Recover())
+            {
+                _compositor?.Dispose();
+                _compositor = _planner is null ? null : new OverlayCompositor(_stream.Device, _format.Width, _format.Height, _cursors);
+                var lostFor = Stopwatch.GetElapsedTime(_lostSince);
+                _lostSince = 0;
+                LogDeviceBack(lostFor.TotalSeconds);
+                _owner.OnNotice($"The graphics card is back after {lostFor.TotalSeconds:0.#} s; the recording carries on.");
+                return;
+            }
+
+            if (Stopwatch.GetElapsedTime(_lostSince) > _owner.DeviceGiveUp)
+            {
+                throw new CaptureException($"The graphics card stopped working and wasn't back within {_owner.DeviceGiveUp.TotalSeconds:0} s, so the recording stopped.");
+            }
+
+            _nextRecovery = now + (Stopwatch.Frequency / 4);
+        }
+
+        /// <summary>
+        /// The monitor changed resolution and the recorded area with it: the current part ends, and the rest is
+        /// recorded at the new size with a new encoder (the same one first) as another part, "name (part 2).mp4".
+        /// </summary>
+        private void MoveToNewSize(List<EncodedPacket> packets)
+        {
+            var at = Clock.Elapsed;
+            _stream.ApplyResize();
+            var (width, height) = EncoderPresets.EvenSize(_stream.Width, _stream.Height);
+            var format = _format with { Width = width, Height = height };
+            if (format == _format)
+            {
+                return;
+            }
+
+            try
+            {
+                _video.Flush(packets);
+                Post(packets);
+            }
+            catch (FfmpegException e)
+            {
+                packets.ForEach(p => p.Dispose());
+                packets.Clear();
+                LogEncoderFailed(e, _video.Candidate.Id);
+            }
+
+            var previous = _video;
+            previous.Dispose();
+            var candidates = _usable.Where(u => u.Candidate.Id == previous.Candidate.Id).Concat(_fallbacks).ToList();
+            _video = OpenFirst(new Queue<(EncoderCandidate, EncoderProbe)>(candidates), format, _options.Quality, _logger);
+            if (_video.Candidate.Id != previous.Candidate.Id)
+            {
+                _encoderNames.Add(_video.Candidate.DisplayName);
+            }
+
+            _format = format;
+            _converter.Dispose();
+            _converter = new FrameConverter(width, height, _video.PixelFormat);
+            _picture = new byte[width * height * 4];
+            _compositor?.Dispose();
+            _planner = Planner(_stream.Area, _options.Monitor.Scale.ScaleX, width, height);
+            _compositor = _planner is null ? null : new OverlayCompositor(_stream.Device, width, height, _cursors);
+            _segmentBegun = false;
+            _awaitingPicture = true;
+            LogNewSize(width, height, at);
+            AddNote($"At {Time(at)} {_options.Monitor.ShortName} changed resolution, so from there the recording is {width}x{height}, saved as another file.");
+            _owner.OnWarning($"{_options.Monitor.ShortName} changed resolution. The recording goes on at {width}x{height} and is saved as another file.");
         }
 
         /// <summary>A button was pressed (input thread): its click sound goes on the click track at that time.</summary>
@@ -1103,7 +1297,7 @@ internal sealed partial class ScreenRecorder(
                 _segmentBegun = false;
                 _encoderNames.Add(next.Candidate.DisplayName);
                 var at = Clock.Elapsed;
-                _note = $"{failed.Candidate.DisplayName} stopped working at {(int)at.TotalMinutes}:{at.Seconds:00}; {next.Candidate.DisplayName} recorded the rest, saved as a second file.";
+                AddNote($"{failed.Candidate.DisplayName} stopped working at {(int)at.TotalMinutes}:{at.Seconds:00}; {next.Candidate.DisplayName} recorded the rest, saved as another file.");
                 _owner.OnWarning($"{failed.Candidate.DisplayName} stopped working ({ex.Message}). Recording continues with {next.Candidate.DisplayName}; it will be saved as a second file.");
                 return;
             }
@@ -1251,7 +1445,11 @@ internal sealed partial class ScreenRecorder(
             packets.Clear();
         }
 
-        /// <summary>Every half second: a video encoder call that hasn't returned for 2 s means the encoder hangs.</summary>
+        /// <summary>
+        /// Every half second: a video encoder call that hasn't returned for 2 s means the encoder hangs; a stream
+        /// without pictures for a while may have lost its device; a secure screen (UAC, the lock screen) shown or
+        /// gone is noted with its times.
+        /// </summary>
         private void Watch()
         {
             var since = Volatile.Read(ref _encodingSince);
@@ -1259,6 +1457,77 @@ internal sealed partial class ScreenRecorder(
             {
                 Fail(new CaptureException($"{_video.Candidate.DisplayName} stopped responding."));
             }
+
+            try
+            {
+                _stream.CheckDevice();
+            }
+            catch (Exception e) when (e is SharpGen.Runtime.SharpGenException or System.Runtime.InteropServices.COMException or ObjectDisposedException)
+            {
+                // The video thread finds out on its next read.
+            }
+
+            var secure = _owner._desktop.IsSecure;
+            if (secure && _secureSince is null)
+            {
+                _secureSince = Clock.Elapsed;
+                LogSecureScreen(true);
+            }
+            else if (!secure && _secureSince is { } shownSince)
+            {
+                _secureSince = null;
+                NoteSecureScreen(shownSince, Clock.Elapsed);
+                LogSecureScreen(false);
+            }
+        }
+
+        private void NoteSecureScreen(TimeSpan from, TimeSpan to) =>
+            AddNote($"From {Time(from)} to {Time(to)} Windows showed a secure screen (a UAC prompt or the lock screen), which no app can capture: the video holds the last picture there.");
+
+        private static string Time(TimeSpan at) => $"{(int)at.TotalMinutes}:{at.Seconds:00}";
+
+        /// <summary>The monitor went away (disconnected): the recording can't go on.</summary>
+        private void OnStreamClosed(object? sender, EventArgs e) =>
+            Fail(new CaptureException($"{_options.Monitor.ShortName} was disconnected, so the recording stopped."));
+
+        /// <summary>
+        /// The PC is going to sleep: pause, so the time asleep isn't recorded (hours of a still picture and silence
+        /// when the clock jumps at wake-up). It stays paused after waking: the user resumes or stops it.
+        /// </summary>
+        private void OnSuspending(object? sender, EventArgs e)
+        {
+            if (Paused || _stopping)
+            {
+                return;
+            }
+
+            _owner.Pause();
+            _pausedForSleep = true;
+            AddNote($"At {Time(Clock.Elapsed)} the PC went to sleep, so the recording was paused.");
+            LogSleep(Clock.Elapsed);
+        }
+
+        private void OnResumed(object? sender, EventArgs e)
+        {
+            if (!_pausedForSleep || _stopping)
+            {
+                return;
+            }
+
+            _pausedForSleep = false;
+            _owner.OnNotice($"The PC woke up. The recording was paused at {Time(Clock.Elapsed)} when it went to sleep: resume or stop it from the toolbar.");
+        }
+
+        /// <summary>The overlay planner for the area at a size (null when the overlays draw nothing live).</summary>
+        private OverlayPlanner? Planner(PixelRect area, double scale, int width, int height)
+        {
+            if (_overlays is not { BurnIn: true })
+            {
+                return null;
+            }
+
+            var planner = new OverlayPlanner(_overlays, new PixelPoint(area.X, area.Y), scale, width, height, _ownPointer, webcam: _webcam is not null);
+            return planner.DrawsAnything ? planner : null;
         }
 
         private void Fail(Exception ex)
@@ -1306,6 +1575,21 @@ internal sealed partial class ScreenRecorder(
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "Input hooks for the overlays could not be installed")]
         private partial void LogInputFailed(Exception e);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Recording: a secure screen is shown {Shown}")]
+        private partial void LogSecureScreen(bool shown);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Recording paused at {At}: the PC is going to sleep")]
+        private partial void LogSleep(TimeSpan at);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Recording: the graphics device was lost at {At}; the picture holds until it is back")]
+        private partial void LogDeviceLost(Exception e, TimeSpan at);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Recording: the graphics device is back after {Seconds:0.0} s")]
+        private partial void LogDeviceBack(double seconds);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Recording: the area is now {Width}x{Height} at {At}; a new part begins")]
+        private partial void LogNewSize(int width, int height, TimeSpan at);
     }
 }
 
@@ -1325,3 +1609,6 @@ public static class RecordingServiceCollectionExtensions
         return services;
     }
 }
+
+/// <summary>What a picture stream is asked to capture.</summary>
+internal sealed record StreamRequest(MonitorInfo Monitor, PixelRect Area, bool IncludeCursor, Func<long, long> SlotOf, HdrInfo? Hdr);

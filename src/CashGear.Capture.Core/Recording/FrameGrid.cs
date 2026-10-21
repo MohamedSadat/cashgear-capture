@@ -91,6 +91,13 @@ public sealed class FrameGrid
         }
     }
 
+    /// <summary>Records that frame <see cref="Next"/> was left out: there was no picture to show yet (a new part's first).</summary>
+    public void Skipped()
+    {
+        Next++;
+        Dropped++;
+    }
+
     /// <summary>The recording stops at <paramref name="elapsed"/>: the remaining frames up to it are due at once.</summary>
     public void Finish(TimeSpan elapsed) => End = Math.Max(Next, FramesIn(elapsed));
 }
