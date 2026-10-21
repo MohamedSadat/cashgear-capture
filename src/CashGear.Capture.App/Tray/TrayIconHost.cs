@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Media;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -48,6 +49,7 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
         {
             menu.DataContext = viewModel;
             menu.Opened += OnMenuOpened;
+            menu.Closed += OnMenuClosed;
         }
 
         // The app icon at the notification area's size (16 px at 100%), so Windows doesn't scale a bigger one down.
@@ -190,6 +192,7 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
         if (_icon.ContextMenu is { } menu)
         {
             menu.Opened -= OnMenuOpened;
+            menu.Closed -= OnMenuClosed;
         }
 
         _icon.TrayBalloonTipClicked -= OnNotificationClicked;
@@ -216,8 +219,22 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
         }
     }
 
+    /// <summary>The tray menu is open, or closed less than half a second ago (it fades out): a capture waits for it.</summary>
+    public static bool MenuRecentlyOpen =>
+        Volatile.Read(ref _menuOpen) || Stopwatch.GetElapsedTime(Interlocked.Read(ref _menuClosedAt)) < TimeSpan.FromMilliseconds(500);
+
+    private static bool _menuOpen;
+    private static long _menuClosedAt;
+
+    private static void OnMenuClosed(object sender, RoutedEventArgs e)
+    {
+        Interlocked.Exchange(ref _menuClosedAt, Stopwatch.GetTimestamp());
+        Volatile.Write(ref _menuOpen, false);
+    }
+
     private void OnMenuOpened(object sender, RoutedEventArgs e)
     {
+        Volatile.Write(ref _menuOpen, true);
         ((sender as ContextMenu)?.DataContext as TrayViewModel)?.RefreshVideoEditor();
         if (sender is not ContextMenu menu || PresentationSource.FromVisual(menu) is not HwndSource source)
         {

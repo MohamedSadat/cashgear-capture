@@ -199,11 +199,14 @@ public sealed partial class CaptureCoordinator
     private Task CaptureSelectionAsync(CaptureMode mode, CancellationToken ct) => RunAsync(async current =>
     {
         using var hidden = await PrepareAsync(current, mode, hideOwnUi: true, ct).ConfigureAwait(false);
+        Timings.Step("prepared");
 
         // Snapshot the windows before the overlay exists, so it never offers itself as a target.
         var displays = _monitors.GetMonitors();
         var windows = _windows.GetVisibleWindows();
+        Timings.Step("windows listed");
         using var frozen = await _capture.CaptureAllMonitorsAsync(ct).ConfigureAwait(false);
+        Timings.Step("screen frozen");
 
         var options = OptionsFor(mode, current.Capture);
         var selection = await _ui.InvokeAsync(() => _regionSelector.SelectAsync(frozen, displays, windows, options, ct)).ConfigureAwait(false);
@@ -512,7 +515,8 @@ public sealed partial class CaptureCoordinator
         {
             await _countdown.RunAsync(current.Capture.DelayFor(mode), mode.Label(), ct).ConfigureAwait(false);
 
-            if (hideOwnUi)
+            // Nothing of the app's was on screen (a hotkey): no need to wait for anything to fade.
+            if (hideOwnUi && hidden is not IHiddenUi { Fading: false })
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(current.Capture.HideDelayMs), _time, ct).ConfigureAwait(false);
             }

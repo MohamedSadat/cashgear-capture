@@ -132,6 +132,11 @@ internal sealed partial class RegionOverlayWindow : Window
     protected override void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
+        if (Hosting.Timings.SinceHotkey() is { } since)
+        {
+            LogShownAfterHotkey(since.TotalMilliseconds, System.Diagnostics.Stopwatch.GetTimestamp(), Hosting.Timings.StepsSoFar());
+        }
+
         VerifyPlacement();
     }
 
@@ -287,6 +292,9 @@ internal sealed partial class RegionOverlayWindow : Window
     }
 
     private void OnModelChanged(object? sender, EventArgs e) => _visual.InvalidateVisual();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Overlay shown {SinceHotkeyMs:0.0} ms after its hotkey (QPC {ShownQpc}): {Steps}")]
+    private partial void LogShownAfterHotkey(double sinceHotkeyMs, long shownQpc, string steps);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Overlay {Action} at {Point} (clicks {Clicks})")]
     private partial void LogPointer(string action, PixelPoint point, int clicks);

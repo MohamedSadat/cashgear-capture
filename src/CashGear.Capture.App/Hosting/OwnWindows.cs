@@ -15,6 +15,16 @@ public interface IOwnWindows
     Task<IDisposable> HideAsync();
 }
 
+/// <summary>What <see cref="IOwnWindows.HideAsync"/> hid, and whether any of the app may still be fading off the screen.</summary>
+public interface IHiddenUi : IDisposable
+{
+    /// <summary>
+    /// A window was just hidden or the tray menu was just open: a capture waits for them to fade out (the hide
+    /// delay). From a hotkey with nothing of the app's on screen there is nothing to wait for.
+    /// </summary>
+    bool Fading { get; }
+}
+
 internal sealed class WpfOwnWindows(IUiDispatcher ui) : IOwnWindows
 {
     public Task<IDisposable> HideAsync() => ui.InvokeAsync<IDisposable>(() =>
@@ -28,12 +38,14 @@ internal sealed class WpfOwnWindows(IUiDispatcher ui) : IOwnWindows
             window.Hide();
         }
 
-        return new Restore(ui, hidden);
+        return new Restore(ui, hidden, Fading: hidden.Count > 0 || Tray.TrayIconHost.MenuRecentlyOpen);
     });
 
-    private sealed class Restore(IUiDispatcher ui, List<Window> windows) : IDisposable
+    private sealed class Restore(IUiDispatcher ui, List<Window> windows, bool Fading) : IHiddenUi
     {
         private int _disposed;
+
+        public bool Fading { get; } = Fading;
 
         public void Dispose()
         {

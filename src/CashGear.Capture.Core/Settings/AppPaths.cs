@@ -19,13 +19,35 @@ public sealed record AppPaths(
     /// <summary>Copies of recent captures and their thumbnails.</summary>
     public string HistoryDirectory => Path.Combine(DataDirectory, "history");
 
-    public static AppPaths FromEnvironment() => new(
-        SettingsDirectory: Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CashGear", "Capture"),
-        LogDirectory: Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CashGear", "Capture", "logs"),
-        DefaultCaptureDirectory: Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "CashGear Capture"));
+    /// <summary>
+    /// The usual folders, or with <c>CASHGEAR_INSTANCE=name</c> folders of their own (<c>CashGear\Capture-name</c>):
+    /// a second copy (tools\Bench) then runs beside the installed one without sharing its settings or data.
+    /// </summary>
+    public static AppPaths FromEnvironment()
+    {
+        var folder = InstanceName is { } name ? "Capture-" + name : "Capture";
+        return new(
+            SettingsDirectory: Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CashGear", folder),
+            LogDirectory: Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CashGear", folder, "logs"),
+            DefaultCaptureDirectory: Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "CashGear Capture"));
+    }
+
+    /// <summary>
+    /// <c>CASHGEAR_INSTANCE</c>: letters, digits and dashes (anything else is left out), or null when unset. A copy
+    /// started with it has its own single-instance names and folders.
+    /// </summary>
+    public static string? InstanceName
+    {
+        get
+        {
+            var name = new string((Environment.GetEnvironmentVariable("CASHGEAR_INSTANCE") ?? string.Empty)
+                .Where(c => char.IsAsciiLetterOrDigit(c) || c == '-').Take(32).ToArray());
+            return name.Length == 0 ? null : name;
+        }
+    }
 
     /// <summary>The folder captures are saved to under the given settings.</summary>
     public string ResolveCaptureDirectory(OutputSettings output)

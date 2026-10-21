@@ -8,7 +8,8 @@
       CashGear.Capture-win-Portable.zip  the same app as a folder that runs from anywhere
       *.nupkg + releases.win.json        the update feed: copy the folder's contents to the update address
 
-    The app is published self-contained (no .NET install needed) as one executable plus the native libraries
+    The app is published self-contained (no .NET install needed) and compiled ahead of time (ReadyToRun: it starts
+    in about 1 s instead of 1.7 s, for about 120 MB more before compression) as one executable plus the native libraries
     WPF and SkiaSharp need, with ffmpeg\ (FFmpeg's libraries, for screen recording), rnnoise\ (noise suppression,
     built by tools\get-rnnoise.ps1 if it isn't there yet), runtimes\win-x64 and runtimes\vulkan\win-x64 (whisper.cpp,
     for captions from speech; the other platforms' copies are left out) and THIRD-PARTY-NOTICES.txt.
@@ -79,7 +80,7 @@ if (-not $NoRnnoise -and -not (Test-Path (Join-Path $root "tools\rnnoise\rnnoise
 Write-Host "Publishing CashGear Capture $Version (win-x64, self-contained, single file)"
 if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
 dotnet publish $project -c Release -r win-x64 --self-contained true --nologo `
-    -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false -p:Version=$Version "-p:UpdateFeedUrl=$UpdateFeedUrl" -o $publish
+    -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:DebugType=None -p:DebugSymbols=false -p:Version=$Version "-p:UpdateFeedUrl=$UpdateFeedUrl" -o $publish
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)." }
 
 if ($NoFfmpeg) {

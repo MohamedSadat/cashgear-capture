@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
+    <InternalsVisibleTo Include="CashGear.Capture.Bench" />
   </ItemGroup>
 
 </Project>

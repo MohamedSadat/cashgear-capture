@@ -55,6 +55,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashGear.Capture.Transcript
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashGear.Capture.Transcription.Tests", "tests\CashGear.Capture.Transcription.Tests\CashGear.Capture.Transcription.Tests.csproj", "{BC2E0066-1BCD-46AA-89BC-9549CBC5546E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashGear.Capture.Bench", "tools\Bench\CashGear.Capture.Bench.csproj", "{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -341,6 +343,18 @@ Global
 		{BC2E0066-1BCD-46AA-89BC-9549CBC5546E}.Release|x64.Build.0 = Release|Any CPU
 		{BC2E0066-1BCD-46AA-89BC-9549CBC5546E}.Release|x86.ActiveCfg = Release|Any CPU
 		{BC2E0066-1BCD-46AA-89BC-9549CBC5546E}.Release|x86.Build.0 = Release|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Debug|x64.Build.0 = Debug|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Debug|x86.Build.0 = Debug|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Release|x64.ActiveCfg = Release|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Release|x64.Build.0 = Release|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Release|x86.ActiveCfg = Release|Any CPU
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -369,5 +383,6 @@ Global
 		{7B1A7FEC-0B15-4292-8672-713626CA8DC8} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{261D7421-52BC-43B8-8DB6-7C26FF28A263} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{BC2E0066-1BCD-46AA-89BC-9549CBC5546E} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{434EB1A7-7FA7-4CA7-AEFB-DB0A5D8F083B} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

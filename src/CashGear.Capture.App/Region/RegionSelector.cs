@@ -63,7 +63,9 @@ public sealed partial class RegionSelector(IObjectFinder objects, ILogger<Region
         var background = frozen.Metadata.SourceBounds == virtualBounds
             ? frozen.ToBitmapSource()
             : CropToBitmap(frozen, virtualBounds);
+        Hosting.Timings.Step("picture made");
         var overlay = new RegionOverlayWindow(virtualBounds, displays, background, model, p => ColorAt(frozen, p), logger);
+        Hosting.Timings.Step("window made");
 
         CancellationTokenRegistration registration = default;
         EventHandler onDisplayChange = (_, _) => dispatcher.BeginInvoke(model.Cancel);
@@ -109,6 +111,7 @@ public sealed partial class RegionSelector(IObjectFinder objects, ILogger<Region
 
         _isOpen = true;
         overlay.Show();
+        Hosting.Timings.Step("shown");
 
         // Foreground + full-screen is what makes the shell drop every taskbar below the overlay. Works when this
         // process may take the foreground (tray click, hotkey, or a launch that called AllowSetForegroundWindow).

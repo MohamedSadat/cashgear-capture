@@ -93,6 +93,7 @@ public sealed partial class Win32HotkeyService(ILogger<Win32HotkeyService> logge
             if (IdOf(action) == id)
             {
                 handled = true;
+                Hosting.Timings.HotkeyPressed();
                 LogPressed(action);
                 Pressed?.Invoke(this, action);
                 break;

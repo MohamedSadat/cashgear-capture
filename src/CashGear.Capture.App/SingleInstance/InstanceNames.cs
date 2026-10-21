@@ -9,9 +9,12 @@ namespace CashGear.Capture.App.SingleInstance;
 /// </summary>
 internal static class InstanceNames
 {
-    public static string MutexName { get; } = $@"Local\CashGear.Capture.{UserKey()}";
+    public static string MutexName { get; } = $@"Local\CashGear.Capture.{UserKey()}{Instance()}";
 
-    public static string PipeName { get; } = $"CashGear.Capture.{UserKey()}.{SessionId()}";
+    public static string PipeName { get; } = $"CashGear.Capture.{UserKey()}.{SessionId()}{Instance()}";
+
+    /// <summary>A copy started with <c>CASHGEAR_INSTANCE</c> is a separate instance (tools\Bench beside the installed app).</summary>
+    private static string Instance() => Core.Settings.AppPaths.InstanceName is { } name ? "." + name : string.Empty;
 
     private static string UserKey()
     {

@@ -278,9 +278,27 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         {
             var used = new HashSet<CaptureBackend>();
             long covered = 0;
-            foreach (var (monitor, area) in parts)
+
+            // Every monitor at once: one's copy overlaps another's read (WGC grabs still take turns on their device).
+            var grabs = parts.Select(p => CaptureAreaAsync(p.Monitor, p.Area, backend, includeCursor, ct)).ToList();
+            try
             {
-                using var part = await CaptureAreaAsync(monitor, area, backend, includeCursor, ct).ConfigureAwait(false);
+                await Task.WhenAll(grabs).ConfigureAwait(false);
+            }
+            catch
+            {
+                foreach (var grab in grabs.Where(g => g.IsCompletedSuccessfully))
+                {
+                    grab.Result.Dispose();
+                }
+
+                throw;
+            }
+
+            for (var i = 0; i < parts.Count; i++)
+            {
+                using var part = grabs[i].Result;
+                var area = parts[i].Area;
                 var local = VirtualScreen.ToLocal(area, target);
                 PixelCompositor.Blit(part, canvas, local.X, local.Y);
                 used.Add(part.Metadata.Backend);

@@ -64,6 +64,7 @@ public partial class CaptureApplication : Application
 
         _tray = _services.GetRequiredService<TrayIconHost>();
         _tray.Show(_services.GetRequiredService<TrayViewModel>());
+        var trayAt = Timings.SinceProcessStart();
         _services.GetRequiredService<ThemeService>().Start();
 
         // After the tray icon exists, so conflict notifications have somewhere to show.
@@ -75,6 +76,8 @@ public partial class CaptureApplication : Application
         }
 
         _services.GetRequiredService<UiReadySignal>().SetReady();
+        LogReady(trayAt.TotalMilliseconds, Timings.SinceProcessStart().TotalMilliseconds);
+        Timings.SignalReady();
         _ = Task.Run(diagnostics.LogDisplaysAndBackends); // first WinRT probe takes ~1 s; keep it off the UI thread
 
         // If the host stops on its own (e.g. a background service fails), take the UI down with it.
@@ -141,6 +144,9 @@ public partial class CaptureApplication : Application
 
     [LoggerMessage(Level = LogLevel.Critical, Message = "Startup failed")]
     private partial void LogStartupFailed(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Ready: the tray icon {TrayMs:0} ms and the hotkeys {ReadyMs:0} ms after the process started")]
+    private partial void LogReady(double trayMs, double readyMs);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "UI started; startup command {Command}")]
     private partial void LogStarted(InstanceCommand command);
