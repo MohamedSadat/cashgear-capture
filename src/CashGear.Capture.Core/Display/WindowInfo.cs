@@ -13,4 +13,14 @@ public sealed record WindowInfo(
     int ProcessId,
     PixelRect Bounds,
     bool IsMinimized,
-    int ZOrder);
+    int ZOrder)
+{
+    /// <summary>Hidden by Windows (on another virtual desktop, a suspended store app): nothing of it can be captured.</summary>
+    public bool IsCloaked { get; init; }
+
+    /// <summary>
+    /// The window asked Windows to keep it out of captures (display affinity): video players showing protected
+    /// video, password managers, some banking apps. It comes out black, or not at all.
+    /// </summary>
+    public bool HidesFromCapture { get; init; }
+}

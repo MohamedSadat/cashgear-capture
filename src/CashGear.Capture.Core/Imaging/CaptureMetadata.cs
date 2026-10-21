@@ -30,4 +30,7 @@ public sealed record CaptureMetadata
 
     /// <summary>A freehand, polygon, rounded or menu capture: transparent outside its shape, so it is always saved as PNG.</summary>
     public bool IsNonRectangular { get; init; }
+
+    /// <summary>Something the user should know about this capture (part of it is black because an app hides itself from captures), or null.</summary>
+    public string? Notice { get; init; }
 }

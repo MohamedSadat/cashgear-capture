@@ -19,10 +19,14 @@ public sealed class WindowCaptureServiceTests
     private static readonly WindowInfo Spanning = Window(12, "Wide", new PixelRect(350, 10, 100, 50));
     private static readonly WindowInfo HalfOffScreen = Window(13, "Off", new PixelRect(-50, 20, 100, 50));
     private static readonly WindowInfo Minimized = Window(14, "Min", new PixelRect(-32000, -32000, 160, 28)) with { IsMinimized = true };
+    private static readonly WindowInfo Cloaked = Window(15, "Hidden", new PixelRect(30, 40, 100, 80)) with { IsCloaked = true };
+    private static readonly WindowInfo Player = Window(16, "Player", new PixelRect(40, 50, 100, 80)) with { HidesFromCapture = true };
+    private static readonly WindowInfo Lost = Window(17, "Lost", new PixelRect(5000, 100, 100, 80));
 
     private readonly FakeGrabber _gdi = new(CaptureBackend.Gdi);
     private readonly FakeWindowGrabber _wgc = new();
-    private readonly FakeWindowService _windows = new(Editor, OnSecondary, Spanning, HalfOffScreen, Minimized);
+    private readonly FakeDesktop _desktop = new();
+    private readonly FakeWindowService _windows = new(Editor, OnSecondary, Spanning, HalfOffScreen, Minimized, Cloaked, Player, Lost);
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -42,6 +46,79 @@ public sealed class WindowCaptureServiceTests
         await act.Should().ThrowAsync<CaptureException>().WithMessage("*\"Min\" is minimized*");
         _wgc.Requests.Should().BeEmpty();
         _gdi.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_cloaked_window_is_explained_instead_of_capturing_what_covers_its_place()
+    {
+        var act = () => Create(CaptureBackend.Auto, FakeCapabilities.Windows10).CaptureWindowAsync(Cloaked.Handle, new CaptureWindowOptions(), Ct);
+
+        await act.Should().ThrowAsync<CaptureException>().WithMessage("*\"Hidden\" is hidden by Windows*another desktop*");
+        _wgc.Requests.Should().BeEmpty();
+        _gdi.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Nothing_is_captured_while_windows_shows_a_secure_screen()
+    {
+        _desktop.IsSecure = true;
+
+        var act = () => Create(CaptureBackend.Auto, FakeCapabilities.Windows10).CaptureWindowAsync(Editor.Handle, new CaptureWindowOptions(), Ct);
+
+        await act.Should().ThrowAsync<CaptureException>().WithMessage(CaptureMessages.SecureScreen);
+        _wgc.Requests.Should().BeEmpty();
+        _gdi.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_window_off_every_screen_says_how_to_bring_it_back_when_wgc_cannot_see_it()
+    {
+        _wgc.Behavior = _ => throw new TimeoutException();
+
+        var act = () => Create(CaptureBackend.Auto, FakeCapabilities.Windows10).CaptureWindowAsync(Lost.Handle, new CaptureWindowOptions(), Ct);
+
+        await act.Should().ThrowAsync<CaptureException>().WithMessage("*\"Lost\" is off every screen*no longer connected*Windows+Shift+Left or Right*");
+        _wgc.Requests.Should().ContainSingle("WGC is tried first: it can see windows off the screen");
+    }
+
+    [Fact]
+    public async Task A_window_off_every_screen_is_captured_when_wgc_sees_it()
+    {
+        using var image = await Create(CaptureBackend.Auto, FakeCapabilities.Windows10).CaptureWindowAsync(Lost.Handle, new CaptureWindowOptions(), Ct);
+
+        image.Width.Should().Be(100);
+        image.Metadata.Backend.Should().Be(CaptureBackend.Wgc);
+        image.Metadata.Notice.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_window_that_hides_from_capture_comes_with_a_notice()
+    {
+        _windows.Occluded.Add(Player.Handle);
+
+        using var image = await Create(CaptureBackend.Auto, FakeCapabilities.Windows10).CaptureWindowAsync(Player.Handle, new CaptureWindowOptions(), Ct);
+
+        image.Metadata.Notice.Should().Be(CaptureMessages.Protected("Player"));
+    }
+
+    [Fact]
+    public async Task A_black_window_capture_says_protected_video_is_always_black()
+    {
+        _windows.Occluded.Add(Editor.Handle);
+        _wgc.Behavior = request =>
+        {
+            var black = CapturedImage.Allocate(100, 80, new CaptureMetadata { Kind = CaptureKind.Window, SourceBounds = request.Window.Bounds, Backend = CaptureBackend.Wgc });
+            for (var i = 3; i < black.ByteLength; i += 4)
+            {
+                black.Pixels[i] = 255;
+            }
+
+            return black;
+        };
+
+        using var image = await Create(CaptureBackend.Auto, FakeCapabilities.Windows10).CaptureWindowAsync(Editor.Handle, new CaptureWindowOptions(), Ct);
+
+        image.Metadata.Notice.Should().Contain("\"Editor\" is black").And.Contain("DRM");
     }
 
     [Fact]
@@ -166,7 +243,8 @@ public sealed class WindowCaptureServiceTests
             [_wgc],
             ArrayPool<byte>.Shared,
             TimeProvider.System,
-            NullLogger<ScreenCaptureService>.Instance);
+            NullLogger<ScreenCaptureService>.Instance,
+            _desktop);
 
     private static WindowInfo Window(nint handle, string title, PixelRect bounds) =>
         new(handle, title, "TestClass", 4242, bounds, IsMinimized: false, ZOrder: (int)handle);

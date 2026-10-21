@@ -162,6 +162,7 @@ public sealed unsafe class Win32WindowService : IWindowService
             return null;
         }
 
+        uint affinity = 0;
         return new WindowInfo(
             hwnd,
             GetTitle(hwnd),
@@ -169,7 +170,11 @@ public sealed unsafe class Win32WindowService : IWindowService
             (int)processId,
             bounds,
             User32.IsIconic(hwnd),
-            zOrder);
+            zOrder)
+        {
+            IsCloaked = IsCloaked(hwnd),
+            HidesFromCapture = User32.GetWindowDisplayAffinity(hwnd, &affinity) && affinity != 0,
+        };
     }
 
     private static bool IsCloaked(nint hwnd)

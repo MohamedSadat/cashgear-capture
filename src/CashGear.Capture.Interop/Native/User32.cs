@@ -48,10 +48,19 @@ public static unsafe partial class User32
     public const int SmCMonitors = 80;
     public const int SmCxSmIcon = 49;
 
+    /// <summary>Non-zero in a Remote Desktop session.</summary>
+    public const int SmRemoteSession = 0x1000;
+
     public const uint CursorShowing = 0x1;
     public const uint DiNormal = 0x3;
 
     public const uint DesktopSwitchDesktop = 0x100;
+
+    /// <summary>GetUserObjectInformation: the object's name (a desktop's is "Default" for the user's, "Winlogon" for the secure one).</summary>
+    public const int UoiName = 2;
+
+    /// <summary>SetWindowDisplayAffinity: shown only on the monitor; captures see black.</summary>
+    public const uint WdaMonitor = 0x1;
 
     public static readonly nint HwndTopmost = -1;
     public const uint SwpNoActivate = 0x0010;
@@ -405,4 +414,8 @@ public static unsafe partial class User32
     [LibraryImport(Dll, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool CloseDesktop(nint desktop);
+
+    [LibraryImport(Dll, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetUserObjectInformationW(nint handle, int index, void* info, uint length, out uint needed);
 }

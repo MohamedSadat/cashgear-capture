@@ -25,6 +25,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
     private readonly ArrayPool<byte> _pool;
     private readonly TimeProvider _time;
     private readonly ILogger<ScreenCaptureService> _logger;
+    private readonly IDesktopState _desktop;
 
     public ScreenCaptureService(
         IMonitorService monitors,
@@ -35,8 +36,10 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         IEnumerable<IWindowGrabber> windowGrabbers,
         ArrayPool<byte> pool,
         TimeProvider time,
-        ILogger<ScreenCaptureService> logger)
+        ILogger<ScreenCaptureService> logger,
+        IDesktopState? desktop = null)
     {
+        _desktop = desktop ?? Display.Win32DesktopState.Instance;
         _monitors = monitors;
         _windows = windows;
         _settings = settings;
@@ -56,11 +59,13 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
     public Task<CapturedImage> CaptureMonitorAsync(MonitorInfo monitor, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(monitor);
+        ThrowIfSecure();
         return CaptureAreaAsync(monitor, monitor.Bounds, ScreenBackend(), _settings.Current.Capture.IncludeCursor, ct);
     }
 
     public Task<CapturedImage> CaptureAllMonitorsAsync(CancellationToken ct = default)
     {
+        ThrowIfSecure();
         var monitors = _monitors.GetMonitors();
         if (monitors.Count == 0)
         {
@@ -81,6 +86,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
             throw new ArgumentException("Region is empty.", nameof(region));
         }
 
+        ThrowIfSecure();
         return ComposeAsync(region, CaptureKind.Region, _monitors.GetMonitors(), ScreenBackend(), includeCursor, ct);
     }
 
@@ -92,6 +98,13 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         {
             throw new CaptureException($"\"{Describe(window)}\" is minimized. Restore it, then capture again.");
         }
+
+        if (window.IsCloaked)
+        {
+            throw new CaptureException($"\"{Describe(window)}\" is hidden by Windows (on another desktop, or an app that is suspended). Switch to it, then capture again.");
+        }
+
+        ThrowIfSecure();
 
         var monitors = _monitors.GetMonitors();
         var onScreen = Covered(window.Bounds, monitors) == window.Bounds.Area;
@@ -133,6 +146,11 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         }
 
         LogWindowCaptured(Describe(window), image.Width, image.Height, image.Metadata.Backend, unobstructed);
+        if (BlackNotice(window, image) is { } notice)
+        {
+            image.Metadata = image.Metadata with { Notice = notice };
+        }
+
         if (!options.IncludeShadow)
         {
             return image;
@@ -157,12 +175,61 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
         var area = window.Bounds.Intersect(virtualBounds);
         if (area.IsEmpty)
         {
-            throw new CaptureException($"\"{Describe(window)}\" is off screen.");
+            throw new CaptureException(
+                $"\"{Describe(window)}\" is off every screen, perhaps on a monitor that is no longer connected. Bring it back first: click it on the taskbar, then press Windows+Shift+Left or Right to move it onto a monitor.");
         }
 
         var image = await ComposeAsync(area, CaptureKind.Window, monitors, ScreenBackend(), includeCursor, ct).ConfigureAwait(false);
         image.Metadata = image.Metadata with { WindowTitle = window.Title };
         return image;
+    }
+
+    private void ThrowIfSecure()
+    {
+        if (_desktop.IsSecure)
+        {
+            LogSecureScreen();
+            throw new CaptureException(CaptureMessages.SecureScreen);
+        }
+    }
+
+    /// <summary>
+    /// Why a window capture came out black, when it did: the window keeps itself out of captures, or (almost every
+    /// pixel black) shows protected video, which Windows gives no app.
+    /// </summary>
+    internal static string? BlackNotice(WindowInfo window, CapturedImage image)
+    {
+        if (window.HidesFromCapture)
+        {
+            return CaptureMessages.Protected(Describe(window));
+        }
+
+        return IsAlmostBlack(image)
+            ? $"The capture of \"{Describe(window)}\" is black. Video that is protected from copying (DRM), and apps that hide themselves from captures, are always black in screenshots and recordings."
+            : null;
+    }
+
+    /// <summary>At least 99% of the pixels are black (or nearly), sampled on a grid.</summary>
+    private static bool IsAlmostBlack(CapturedImage image)
+    {
+        var stepX = Math.Max(1, image.Width / 64);
+        var stepY = Math.Max(1, image.Height / 64);
+        long total = 0, black = 0;
+        for (var y = 0; y < image.Height; y += stepY)
+        {
+            var row = image.GetRow(y);
+            for (var x = 0; x < image.Width; x += stepX)
+            {
+                var i = x * CapturedImage.BytesPerPixel;
+                total++;
+                if (row[i + 3] != 0 && row[i] <= 4 && row[i + 1] <= 4 && row[i + 2] <= 4)
+                {
+                    black++;
+                }
+            }
+        }
+
+        return total > 0 && black * 100 >= total * 99;
     }
 
     private static long Covered(PixelRect rect, IReadOnlyList<MonitorInfo> monitors) =>
@@ -275,4 +342,7 @@ internal sealed partial class ScreenCaptureService : IScreenCaptureService
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Windows.Graphics.Capture failed for {Monitor}; falling back to GDI")]
     private partial void LogFallback(Exception ex, string monitor);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "A capture was asked for while Windows shows a secure screen; nothing captured")]
+    private partial void LogSecureScreen();
 }

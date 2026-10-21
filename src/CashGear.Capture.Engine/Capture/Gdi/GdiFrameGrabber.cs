@@ -32,7 +32,7 @@ internal sealed unsafe partial class GdiFrameGrabber(ArrayPool<byte> pool, TimeP
         var screenDc = User32.GetDC(0);
         if (screenDc == 0)
         {
-            throw new CaptureException("GetDC(NULL) failed.");
+            throw Win32Failure("GetDC");
         }
 
         nint memoryDc = 0, bitmap = 0, previous = 0;
@@ -132,8 +132,12 @@ internal sealed unsafe partial class GdiFrameGrabber(ArrayPool<byte> pool, TimeP
         }
     }
 
-    private static CaptureException Win32Failure(string api) =>
-        new($"{api} failed.", new Win32Exception(Marshal.GetLastPInvokeError()));
+    /// <summary>A failure a user can read: the screen couldn't be read, and the likely reason (a secure screen).</summary>
+    private static CaptureException Win32Failure(string api)
+    {
+        var error = new Win32Exception(Marshal.GetLastPInvokeError());
+        return new($"The screen couldn't be read ({api}: {error.Message}). If Windows was showing a secure screen (a UAC prompt or the lock screen), try again once it's gone.", error);
+    }
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Drawing the cursor failed (Win32 error {Error})")]
     private partial void LogCursorFailed(int error);

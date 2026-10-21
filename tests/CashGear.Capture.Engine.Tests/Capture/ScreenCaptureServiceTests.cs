@@ -18,6 +18,7 @@ public sealed class ScreenCaptureServiceTests
 
     private readonly FakeGrabber _gdi = new(CaptureBackend.Gdi);
     private readonly FakeGrabber _wgc = new(CaptureBackend.Wgc);
+    private readonly FakeDesktop _desktop = new();
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -92,6 +93,19 @@ public sealed class ScreenCaptureServiceTests
 
         _gdi.Requests.Should().ContainSingle();
         _wgc.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Screens_are_not_captured_while_windows_shows_a_secure_screen()
+    {
+        _desktop.IsSecure = true;
+        var service = Create(CaptureBackend.Auto, FakeCapabilities.Windows11);
+
+        await service.Invoking(s => s.CaptureAllMonitorsAsync(Ct)).Should().ThrowAsync<CaptureException>().WithMessage(CaptureMessages.SecureScreen);
+        await service.Invoking(s => s.CaptureRegionAsync(new PixelRect(0, 0, 2, 2), Ct)).Should().ThrowAsync<CaptureException>().WithMessage(CaptureMessages.SecureScreen);
+        await service.Invoking(s => s.CaptureMonitorAsync(Layout.Primary, Ct)).Should().ThrowAsync<CaptureException>().WithMessage(CaptureMessages.SecureScreen);
+        _wgc.Requests.Should().BeEmpty();
+        _gdi.Requests.Should().BeEmpty();
     }
 
     public static TheoryData<string> Failures => ["com", "timeout", "invalid"];
@@ -229,7 +243,8 @@ public sealed class ScreenCaptureServiceTests
             [],
             pool,
             TimeProvider.System,
-            NullLogger<ScreenCaptureService>.Instance);
+            NullLogger<ScreenCaptureService>.Instance,
+            _desktop);
 
         var act = () => service.CaptureAllMonitorsAsync(Ct);
 
@@ -243,7 +258,7 @@ public sealed class ScreenCaptureServiceTests
         var act = () => new ScreenCaptureService(
             new FakeMonitorService(), new FakeWindowService(), FakeSettingsService.With(CaptureBackend.Auto),
             new CaptureBackendSelector(FakeCapabilities.Windows10), [_wgc], [], ArrayPool<byte>.Shared,
-            TimeProvider.System, NullLogger<ScreenCaptureService>.Instance);
+            TimeProvider.System, NullLogger<ScreenCaptureService>.Instance, _desktop);
 
         act.Should().Throw<ArgumentException>();
     }
@@ -259,7 +274,8 @@ public sealed class ScreenCaptureServiceTests
             [],
             ArrayPool<byte>.Shared,
             TimeProvider.System,
-            NullLogger<ScreenCaptureService>.Instance);
+            NullLogger<ScreenCaptureService>.Instance,
+            _desktop);
 
     /// <summary>Each pixel must carry the tag of the monitor covering it, or be fully transparent.</summary>
     private static void AssertPainted(CapturedImage image, PixelRect origin, params Core.Display.MonitorInfo[] monitors)

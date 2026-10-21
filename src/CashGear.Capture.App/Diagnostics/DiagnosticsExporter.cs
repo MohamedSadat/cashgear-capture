@@ -245,7 +245,8 @@ public sealed partial class DiagnosticsExporter(
             ["release"] = Registry.GetValue(Key, "DisplayVersion", null) as string,
             ["build"] = string.Create(CultureInfo.InvariantCulture, $"{Environment.OSVersion.Version.Build}.{Registry.GetValue(Key, "UBR", 0)}"),
             ["version"] = Environment.OSVersion.VersionString,
-            ["remoteSession"] = Interop.Native.User32.GetSystemMetrics(0x1000) != 0, // SM_REMOTESESSION
+            ["remoteSession"] = Engine.Display.Win32DesktopState.Instance.IsRemoteSession,
+            ["secureScreen"] = Engine.Display.Win32DesktopState.IsSecureNow(),
             ["uiLanguage"] = CultureInfo.CurrentUICulture.Name,
             ["culture"] = CultureInfo.CurrentCulture.Name,
         };

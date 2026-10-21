@@ -117,6 +117,87 @@ public sealed class WindowCaptureTests : IDisposable
         });
     }
 
+    /// <summary>
+    /// A stand-in for protected video: a window with display affinity "monitor only", which Windows blacks out in
+    /// every capture. Both methods give a black window, and the capture says why.
+    /// </summary>
+    [Fact]
+    public Task A_window_that_hides_from_capture_comes_out_black_with_the_reason()
+    {
+        InteractiveDesktop.Require();
+        Assert.SkipUnless(_capabilities.IsWgcSupported, "Windows.Graphics.Capture is not supported here.");
+
+        return StaDispatcher.RunAsync(async () =>
+        {
+            var (window, hwnd) = await ShowPatternWindowAsync();
+            try
+            {
+                User32.SetWindowDisplayAffinity(hwnd, User32.WdaMonitor).Should().BeTrue();
+                await Task.Delay(300);
+                foreach (var preference in new[] { CaptureBackend.Wgc, CaptureBackend.Gdi })
+                {
+                    using var image = await CreateService(preference).CaptureWindowAsync(hwnd, new CaptureWindowOptions(), TestContext.Current.CancellationToken);
+
+                    PatternMatch(image, ClientOffset(hwnd, FrameBounds(hwnd))).Should().BeLessThan(0.01, $"{preference} sees none of the pattern");
+                    BlackFraction(image).Should().BeGreaterThan(0.9, $"{preference} gets a black window");
+                    image.Metadata.Notice.Should().Be(CaptureMessages.Protected(window.Title), preference.ToString());
+                }
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    /// <summary>
+    /// A window left where a disconnected monitor was: outside every monitor. Windows.Graphics.Capture still sees its
+    /// content, so the capture works (screen pixels would have nothing to give).
+    /// </summary>
+    [Fact]
+    public Task A_window_beyond_every_monitor_is_captured_through_wgc()
+    {
+        InteractiveDesktop.Require();
+        Assert.SkipUnless(_capabilities.IsWgcSupported, "Windows.Graphics.Capture is not supported here.");
+
+        return StaDispatcher.RunAsync(async () =>
+        {
+            var (window, hwnd) = await ShowPatternWindowAsync();
+            try
+            {
+                var monitors = new Win32MonitorService(NullLogger<Win32MonitorService>.Instance).GetMonitors();
+                var screen = VirtualScreen.GetBounds(monitors.Select(m => m.Bounds));
+                User32.SetWindowPos(hwnd, 0, screen.Right + 300, screen.Y + 100, 0, 0, User32.SwpNoActivate | User32.SwpNoSize);
+                await Task.Delay(500);
+                FrameBounds(hwnd).IntersectsWith(screen).Should().BeFalse("the window is off every monitor");
+
+                using var image = await CreateService(CaptureBackend.Auto).CaptureWindowAsync(hwnd, new CaptureWindowOptions(), TestContext.Current.CancellationToken);
+
+                image.Metadata.Backend.Should().Be(CaptureBackend.Wgc);
+                PatternMatch(image, ClientOffset(hwnd, FrameBounds(hwnd))).Should().BeGreaterThanOrEqualTo(0.995);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    private static double BlackFraction(CapturedImage image)
+    {
+        long black = 0;
+        var pixels = image.Pixels;
+        for (var i = 0; i < pixels.Length; i += 4)
+        {
+            if (pixels[i] < 8 && pixels[i + 1] < 8 && pixels[i + 2] < 8)
+            {
+                black++;
+            }
+        }
+
+        return black / (double)(image.Width * image.Height);
+    }
+
     private ScreenCaptureService CreateService(CaptureBackend preference) =>
         new(
             new Win32MonitorService(NullLogger<Win32MonitorService>.Instance),

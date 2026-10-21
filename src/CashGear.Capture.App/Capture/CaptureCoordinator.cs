@@ -536,6 +536,12 @@ public sealed partial class CaptureCoordinator
         CapturedImage primary, IReadOnlyList<CapturedImage> files, AppSettings current, IDisposable hidden, CancellationToken ct)
     {
         hidden.Dispose();
+        if (Notice(primary) is { } notice)
+        {
+            LogNotice(notice);
+            _notifier.Notify("Part of the capture is black", notice, NotificationKind.Warning);
+        }
+
         var delivery = await _outputs.DeliverCaptureAsync(primary, files, current, ct).ConfigureAwait(false);
 
         // The history keeps the saved PNG itself instead of a second copy.
@@ -543,6 +549,29 @@ public sealed partial class CaptureCoordinator
         var pngCopy = savedAs is not null && CaptureFiles.FormatFor(primary, current.Output) == ImageFileFormat.Png ? savedAs : null;
         await _history.AddAsync(primary, savedAs, pngCopy, CancellationToken.None).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// What the user should know about a capture: the capture's own notice (a black window), or the windows in it that
+    /// keep themselves out of captures (protected video, password managers), which come out black or missing.
+    /// </summary>
+    private string? Notice(CapturedImage image)
+    {
+        if (image.Metadata.Notice is { } notice)
+        {
+            return notice;
+        }
+
+        var bounds = image.Metadata.SourceBounds;
+        var hiding = _windows.GetVisibleWindows()
+            .Where(w => w.HidesFromCapture && w.ProcessId != Environment.ProcessId && w.Bounds.IntersectsWith(bounds))
+            .Select(w => w.Title.Length > 0 ? w.Title : w.ClassName)
+            .Distinct()
+            .ToList();
+        return hiding.Count == 0 ? null : CaptureMessages.Protected(string.Join("\", \"", hiding));
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Capture notice: {Notice}")]
+    private partial void LogNotice(string notice);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Captured full screen {Width}x{Height} via {Backend}")]
     private partial void LogCaptured(int width, int height, CaptureBackend backend);

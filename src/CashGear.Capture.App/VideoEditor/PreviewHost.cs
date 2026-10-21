@@ -247,7 +247,7 @@ internal sealed partial class PreviewHost : Border
     }
 
     /// <summary>Under Remote Desktop OpenGL goes through software: the memory surface is quicker and safer.</summary>
-    private static bool RemoteSession() => Interop.Native.User32.GetSystemMetrics(0x1000) != 0; // SM_REMOTESESSION
+    private static bool RemoteSession() => Engine.Display.Win32DesktopState.Instance.IsRemoteSession;
 
     private void LogNoGpu(Exception e)
     {

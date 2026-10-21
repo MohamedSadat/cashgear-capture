@@ -203,6 +203,7 @@ public sealed partial class RecordingController
             }
 
             await _ui.InvokeAsync(() => ShowToolbar(monitor, area, current)).ConfigureAwait(false);
+            WarnAboutHiddenWindows(area);
         }
         catch (OperationCanceledException)
         {
@@ -212,6 +213,20 @@ public sealed partial class RecordingController
         {
             LogStartFailed(ex);
             _notifier.Notify("Recording could not start", ex.Message, NotificationKind.Error);
+        }
+    }
+
+    /// <summary>Windows in the area that keep themselves out of captures (protected video, password managers) will be black: say so now.</summary>
+    private void WarnAboutHiddenWindows(PixelRect area)
+    {
+        var hiding = _windows.GetVisibleWindows()
+            .Where(w => w.HidesFromCapture && w.ProcessId != Environment.ProcessId && w.Bounds.IntersectsWith(area))
+            .Select(w => w.Title.Length > 0 ? w.Title : w.ClassName)
+            .Distinct()
+            .ToList();
+        if (hiding.Count > 0)
+        {
+            _notifier.Notify("Recording", CaptureMessages.Protected(string.Join("\", \"", hiding), "recording"), NotificationKind.Warning);
         }
     }
 

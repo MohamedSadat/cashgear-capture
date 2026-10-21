@@ -3,6 +3,7 @@ using CashGear.Capture.Audio;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Diagnostics;
+using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Core.Recording;
@@ -32,8 +33,14 @@ internal sealed partial class ScreenRecorder(
     IAudioSourceFactory audio,
     ILoggerFactory loggers,
     MicrophoneProcessors? processors = null,
-    IWebcams? webcams = null) : IScreenRecorder
+    IWebcams? webcams = null,
+    IDesktopState? desktop = null) : IScreenRecorder
 {
+    /// <summary>The note a recording made over Remote Desktop gets.</summary>
+    public const string RemoteNote =
+        "This was recorded in a Remote Desktop session: Windows sends pictures only as often as the connection allows, and the graphics card's encoder may not be available.";
+
+    private readonly IDesktopState _desktop = desktop ?? Engine.Display.Win32DesktopState.Instance;
     private readonly MicrophoneProcessors _processors = processors ?? new MicrophoneProcessors();
 
     private static readonly TimeSpan FinishTimeout = TimeSpan.FromSeconds(60);
@@ -267,6 +274,11 @@ internal sealed partial class ScreenRecorder(
                 {
                     OnWarning(webcamNote);
                     session.AddNote(webcamNote);
+                }
+
+                if (_desktop.IsRemoteSession)
+                {
+                    session.AddNote(RemoteNote);
                 }
 
                 LogStarted(area, options.Monitor.ShortName, options.Fps, video.Candidate.DisplayName, video.Detail ?? "", options.Quality, output, parts.Folder.Directory);

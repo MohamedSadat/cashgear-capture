@@ -2,6 +2,19 @@ using CashGear.Capture.Core.Geometry;
 
 namespace CashGear.Capture.Core.Display;
 
+/// <summary>What Windows is showing now.</summary>
+public interface IDesktopState
+{
+    /// <summary>
+    /// Windows shows a secure screen instead of the user's desktop: a UAC prompt (on the secure desktop), the lock
+    /// screen, Ctrl+Alt+Del. No app can capture it, and the user's desktop isn't on the screen meanwhile.
+    /// </summary>
+    bool IsSecure { get; }
+
+    /// <summary>This is a Remote Desktop session.</summary>
+    bool IsRemoteSession { get; }
+}
+
 public interface IMonitorService
 {
     /// <summary>Current monitors, primary first, then left-to-right / top-to-bottom.</summary>

@@ -154,3 +154,11 @@ internal sealed class FakeWindowGrabber : IWindowGrabber
         return Task.FromResult(image);
     }
 }
+
+/// <summary>A desktop that is the user's (or, set, a secure screen or a remote session).</summary>
+internal sealed class FakeDesktop : IDesktopState
+{
+    public bool IsSecure { get; set; }
+
+    public bool IsRemoteSession { get; set; }
+}
