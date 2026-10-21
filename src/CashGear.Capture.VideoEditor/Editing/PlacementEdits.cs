@@ -3,8 +3,27 @@ using SkiaSharp;
 
 namespace CashGear.Capture.VideoEditor.Editing;
 
-/// <summary>What a pointer on the preview is over: a picture clip (the top one), and whether on its resize grip.</summary>
-public readonly record struct PreviewHit(string ClipId, bool OnGrip);
+/// <summary>Which part of an item on the preview the pointer is on.</summary>
+public enum PreviewGrip
+{
+    /// <summary>The item itself: dragging moves it.</summary>
+    None,
+
+    /// <summary>The bottom-right corner: dragging resizes it.</summary>
+    Corner,
+
+    /// <summary>A line's or an arrow's start.</summary>
+    Start,
+
+    /// <summary>A line's or an arrow's end.</summary>
+    End,
+}
+
+/// <summary>What a pointer on the preview is over: the top item (an annotation, or a picture clip), and which grip.</summary>
+public readonly record struct PreviewHit(string ItemId, PreviewGrip Grip = PreviewGrip.None)
+{
+    public bool OnGrip => Grip != PreviewGrip.None;
+}
 
 /// <summary>
 /// Moving and resizing pictures on the preview (the webcam, a picture-in-picture), in canvas pixels. The grip is the
@@ -27,14 +46,32 @@ public static class PlacementEdits
         return SKRect.Create((float)x, (float)y, (float)width, (float)height);
     }
 
-    /// <summary>The top picture clip at <paramref name="point"/> (canvas pixels) at <paramref name="time"/>, or null.</summary>
+    /// <summary>The top annotation or picture clip at <paramref name="point"/> (canvas pixels) at <paramref name="time"/>, or null.</summary>
     /// <param name="grip">The grip's size in canvas pixels (larger when the preview is shown small).</param>
     public static PreviewHit? HitTest(VideoProject project, double time, SKPoint point, double grip = GripSize)
     {
         ArgumentNullException.ThrowIfNull(project);
         foreach (var track in project.Tracks.Reverse())
         {
-            if (!track.HasPictures || track.Hidden || track.Locked)
+            if (track.Hidden || track.Locked)
+            {
+                continue;
+            }
+
+            if (track.Kind == TrackKind.Annotation)
+            {
+                foreach (var item in track.Items.OfType<AnnotationItem>().Where(a => a.Covers(time)).Reverse())
+                {
+                    if (AnnotationEdits.HitTest(item, time, point, grip) is { } on)
+                    {
+                        return new PreviewHit(item.Id, on);
+                    }
+                }
+
+                continue;
+            }
+
+            if (!track.HasPictures)
             {
                 continue;
             }
@@ -47,7 +84,7 @@ public static class PlacementEdits
                 var onGrip = Math.Abs(point.X - area.Right) <= reach && Math.Abs(point.Y - area.Bottom) <= reach;
                 if (onGrip || area.Contains(point))
                 {
-                    return new PreviewHit(clip.Id, onGrip);
+                    return new PreviewHit(clip.Id, onGrip ? PreviewGrip.Corner : PreviewGrip.None);
                 }
             }
         }

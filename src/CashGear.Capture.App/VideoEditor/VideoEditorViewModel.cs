@@ -307,9 +307,16 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         canvas.Scale(scale);
         canvas.ClipRect(SKRect.Create(size.Width, size.Height));
         var result = Compositor.Render(canvas, Project, Timeline.Playhead);
-        if (!Engine.IsPlaying && Timeline.Selected is Clip clip && clip.Covers(Timeline.Playhead) && Project.Find(clip.Id)?.Track is { HasPictures: true })
+        if (!Engine.IsPlaying && Timeline.Selected is { } selected && selected.Covers(Timeline.Playhead))
         {
-            DrawSelection(canvas, PlacementEdits.Area(Project, clip), scale);
+            if (selected is Clip clip && Project.Find(clip.Id)?.Track is { HasPictures: true })
+            {
+                DrawSelection(canvas, PlacementEdits.Area(Project, clip), scale, corner: true);
+            }
+            else if (selected is AnnotationItem annotation)
+            {
+                DrawSelection(canvas, annotation, Timeline.Playhead, scale);
+            }
         }
 
         canvas.Restore();
@@ -324,14 +331,15 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     public void PreviewPointerDown(double x, double y)
     {
         StopPlaying();
-        if (PreviewHitAt(x, y) is not { } hit || Project.Find(hit.ClipId)?.Item is not Clip clip)
+        if (PreviewHitAt(x, y) is not { } hit || Project.Find(hit.ItemId)?.Item is not { } item)
         {
             Timeline.Select(null);
             return;
         }
 
-        Timeline.Select(clip.Id);
-        _drag = new PreviewDrag(Project, clip, ToCanvas(x, y), PlacementEdits.Area(Project, clip), hit.OnGrip, ++_drags);
+        Timeline.Select(item.Id);
+        var area = item is Clip clip ? PlacementEdits.Area(Project, clip) : default;
+        _drag = new PreviewDrag(Project, item, ToCanvas(x, y), area, hit.Grip, ++_drags);
         PreviewInvalidated?.Invoke(this, EventArgs.Empty);
     }
 
@@ -343,13 +351,32 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
 
         var point = ToCanvas(x, y);
-        var placement = drag.Clip.Placement ?? Placement.Fit;
-        var changed = drag.Resize
-            ? PlacementEdits.Resize(placement, drag.Area, point)
-            : PlacementEdits.Move(placement, Project.Canvas, point.X - drag.Start.X, point.Y - drag.Start.Y);
-        var item = drag.Clip with { Placement = changed };
+        TimelineItem item;
+        string name;
+        if (drag.Item is AnnotationItem annotation)
+        {
+            item = AnnotationEdits.Drag(annotation, Timeline.Playhead, drag.Grip, drag.Start, point, Project.Canvas.Fps);
+            name = drag.Grip == PreviewGrip.None ? "move annotation" : "resize annotation";
+        }
+        else if (drag.Item is Clip clip)
+        {
+            var placement = clip.Placement ?? Placement.Fit;
+            var resize = drag.Grip != PreviewGrip.None;
+            item = clip with
+            {
+                Placement = resize
+                    ? PlacementEdits.Resize(placement, drag.Area, point)
+                    : PlacementEdits.Move(placement, Project.Canvas, point.X - drag.Start.X, point.Y - drag.Start.Y),
+            };
+            name = resize ? "resize picture" : "move picture";
+        }
+        else
+        {
+            return;
+        }
+
         _applied = item;
-        History.Apply(drag.Resize ? "resize picture" : "move picture", drag.Base.WithItem(item), $"preview {drag.Number}");
+        History.Apply(name, drag.Base.WithItem(item), $"preview {drag.Number}");
     }
 
     public void PreviewPointerUp() => _drag = null;
@@ -590,6 +617,67 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
     }
 
+    [RelayCommand]
+    private void InsertText() => Insert(AnnotationShape.Text);
+
+    [RelayCommand]
+    private void InsertArrow() => Insert(AnnotationShape.Arrow);
+
+    [RelayCommand]
+    private void InsertLine() => Insert(AnnotationShape.Line);
+
+    [RelayCommand]
+    private void InsertRectangle() => Insert(AnnotationShape.Rectangle);
+
+    [RelayCommand]
+    private void InsertEllipse() => Insert(AnnotationShape.Ellipse);
+
+    [RelayCommand]
+    private void InsertHighlight() => Insert(AnnotationShape.Highlight);
+
+    [RelayCommand]
+    private void InsertBlur() => Insert(AnnotationShape.Blur);
+
+    [RelayCommand]
+    private void InsertPixelate() => Insert(AnnotationShape.Pixelate);
+
+    /// <summary>
+    /// A new annotation over the marked range (else from the playhead for 3 s), selected so the panel and the preview
+    /// show it.
+    /// </summary>
+    public string Insert(AnnotationShape shape)
+    {
+        StopPlaying();
+        var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (Timeline.Playhead, AnnotationItem.DefaultLength);
+        var (project, id) = AnnotationEdits.Add(Project, shape, from, length);
+        History.Apply("add " + ItemProperties.ShapeName(shape).ToLowerInvariant(), project);
+        Timeline.SetRange(null);
+        Timeline.Select(id);
+        if (!Timeline.Selected!.Covers(Timeline.Playhead))
+        {
+            Seek(from);
+        }
+
+        return id;
+    }
+
+    /// <summary>A keyframe at the playhead for the selected annotation (where it is now), to move it from there.</summary>
+    public void AddKeyframe()
+    {
+        if (Timeline.Selected is AnnotationItem item && item.Covers(Timeline.Playhead))
+        {
+            History.Apply("add keyframe", Project.WithItem(item.WithKeyframeAt(Timeline.Playhead, Project.Canvas.Fps)));
+        }
+    }
+
+    public void RemoveKeyframe()
+    {
+        if (Timeline.Selected is AnnotationItem item)
+        {
+            History.Apply("remove keyframe", Project.WithItem(item.WithoutKeyframeAt(Timeline.Playhead, Project.Canvas.Fps)));
+        }
+    }
+
     private void Step(int frames)
     {
         StopPlaying();
@@ -721,7 +809,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         Properties.Clear();
         if (item is not null)
         {
-            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty))
+            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe)))
             {
                 Properties.Add(parameter);
             }
@@ -739,17 +827,37 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
     private SKPoint ToCanvas(double x, double y) => new((float)((x - _preview.X) / _preview.Scale), (float)((y - _preview.Y) / _preview.Scale));
 
-    /// <summary>The selected picture's outline and its resize grip, over the preview (never exported).</summary>
-    private static void DrawSelection(SKCanvas canvas, SKRect area, float scale)
+    /// <summary>The selection's outline and its resize grip, over the preview (never exported).</summary>
+    private static void DrawSelection(SKCanvas canvas, SKRect area, float scale, bool corner)
     {
-        using var outline = new SKPaint { Color = new SKColor(0xFF, 0xB0, 0x20), Style = SKPaintStyle.Stroke, StrokeWidth = 2 / scale, IsAntialias = true };
+        using var outline = new SKPaint { Color = SelectionColor, Style = SKPaintStyle.Stroke, StrokeWidth = 2 / scale, IsAntialias = true };
         canvas.DrawRect(area, outline);
-        var grip = 10 / scale;
-        using var fill = new SKPaint { Color = new SKColor(0xFF, 0xB0, 0x20), IsAntialias = true };
-        canvas.DrawRect(SKRect.Create(area.Right - grip, area.Bottom - grip, grip * 2, grip * 2), fill);
+        if (corner)
+        {
+            var grip = 6 / scale;
+            using var fill = new SKPaint { Color = SelectionColor, IsAntialias = true };
+            canvas.DrawRect(SKRect.Create(area.Right - grip, area.Bottom - grip, grip * 2, grip * 2), fill);
+        }
     }
 
-    private sealed record PreviewDrag(VideoProject Base, Clip Clip, SKPoint Start, SKRect Area, bool Resize, int Number);
+    /// <summary>An annotation's outline (or, for a line, its two ends) and grips.</summary>
+    private static void DrawSelection(SKCanvas canvas, AnnotationItem item, double time, float scale)
+    {
+        if (!item.IsLine)
+        {
+            DrawSelection(canvas, FrameCompositor.Bounds(item, time), scale, corner: item.Shape != AnnotationShape.Text);
+            return;
+        }
+
+        var place = item.At(time);
+        using var fill = new SKPaint { Color = SelectionColor, IsAntialias = true };
+        canvas.DrawCircle((float)place.X, (float)place.Y, 6 / scale, fill);
+        canvas.DrawCircle((float)(place.X + place.Width), (float)(place.Y + place.Height), 6 / scale, fill);
+    }
+
+    private static readonly SKColor SelectionColor = new(0xFF, 0xB0, 0x20);
+
+    private sealed record PreviewDrag(VideoProject Base, TimelineItem Item, SKPoint Start, SKRect Area, PreviewGrip Grip, int Number);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Saving the video project {Path} failed")]
     private partial void LogSaveFailed(Exception e, string path);

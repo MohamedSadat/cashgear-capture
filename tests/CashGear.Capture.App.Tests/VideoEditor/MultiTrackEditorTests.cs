@@ -76,7 +76,7 @@ public sealed class MultiTrackEditorTests : VideoEditorTestBase
         Shown(vm); // draws at 320 × 180: the canvas's own pixels
 
         // The default webcam: a circle of 45 px around (275.2, 140.4).
-        vm.PreviewHitAt(275, 140).Should().Be(new PreviewHit(webcam.Id, false));
+        vm.PreviewHitAt(275, 140).Should().Be(new PreviewHit(webcam.Id));
         vm.PreviewPointerDown(275, 140);
         vm.Timeline.SelectedId.Should().Be(webcam.Id);
         vm.PreviewPointerMove(255, 120);

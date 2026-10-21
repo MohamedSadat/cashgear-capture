@@ -210,7 +210,8 @@ internal sealed partial class PreviewHost : Border
 
         Cursor = _viewModel.PreviewHitAt(at.X, at.Y) switch
         {
-            { OnGrip: true } => Cursors.SizeNWSE,
+            { Grip: CashGear.Capture.VideoEditor.Editing.PreviewGrip.Corner } => Cursors.SizeNWSE,
+            { OnGrip: true } => Cursors.Cross,
             not null => Cursors.SizeAll,
             _ => Cursors.Arrow,
         };

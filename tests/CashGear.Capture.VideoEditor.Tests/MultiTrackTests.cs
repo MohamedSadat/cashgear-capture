@@ -28,12 +28,12 @@ public sealed class MultiTrackTests : IDisposable
         var area = PlacementEdits.Area(project, webcam);
         area.Width.Should().BeApproximately(180, 0.01f);
         area.MidX.Should().BeApproximately(1100.8f, 0.01f);
-        PlacementEdits.HitTest(project, 1, new SKPoint(area.MidX, area.MidY)).Should().Be(new PreviewHit(webcam.Id, false));
-        PlacementEdits.HitTest(project, 1, new SKPoint(area.Right - 2, area.Bottom - 2)).Should().Be(new PreviewHit(webcam.Id, true));
-        PlacementEdits.HitTest(project, 1, new SKPoint(100, 100)).Should().Be(new PreviewHit(screen.Id, false));
+        PlacementEdits.HitTest(project, 1, new SKPoint(area.MidX, area.MidY)).Should().Be(new PreviewHit(webcam.Id));
+        PlacementEdits.HitTest(project, 1, new SKPoint(area.Right - 2, area.Bottom - 2)).Should().Be(new PreviewHit(webcam.Id, PreviewGrip.Corner));
+        PlacementEdits.HitTest(project, 1, new SKPoint(100, 100)).Should().Be(new PreviewHit(screen.Id));
         PlacementEdits.HitTest(project, 11, new SKPoint(100, 100)).Should().BeNull("nothing is shown after the end");
-        PlacementEdits.HitTest(project.WithTrack(project.Tracks[3] with { Hidden = true }), 1, new SKPoint(area.MidX, area.MidY))!.Value.ClipId.Should().Be(screen.Id);
-        PlacementEdits.HitTest(project.WithTrack(project.Tracks[3] with { Locked = true }), 1, new SKPoint(area.MidX, area.MidY))!.Value.ClipId.Should().Be(screen.Id);
+        PlacementEdits.HitTest(project.WithTrack(project.Tracks[3] with { Hidden = true }), 1, new SKPoint(area.MidX, area.MidY))!.Value.ItemId.Should().Be(screen.Id);
+        PlacementEdits.HitTest(project.WithTrack(project.Tracks[3] with { Locked = true }), 1, new SKPoint(area.MidX, area.MidY))!.Value.ItemId.Should().Be(screen.Id);
 
         var moved = PlacementEdits.Move(webcam.Placement!, project.Canvas, -640, -180);
         (moved.CenterX, moved.CenterY).Should().Be((0.36, 0.53));

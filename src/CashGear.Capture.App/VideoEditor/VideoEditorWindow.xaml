@@ -100,6 +100,17 @@
         <MenuItem Header="Mark _Out" Command="{Binding MarkOutCommand}" InputGestureText="O" />
         <MenuItem Header="_Clear the Selection" Command="{Binding ClearSelectionCommand}" InputGestureText="Esc" />
       </MenuItem>
+      <MenuItem Header="_Insert">
+        <MenuItem Header="_Text" Command="{Binding InsertTextCommand}" />
+        <MenuItem Header="_Arrow" Command="{Binding InsertArrowCommand}" />
+        <MenuItem Header="_Line" Command="{Binding InsertLineCommand}" />
+        <MenuItem Header="_Rectangle" Command="{Binding InsertRectangleCommand}" />
+        <MenuItem Header="_Ellipse" Command="{Binding InsertEllipseCommand}" />
+        <MenuItem Header="_Highlight" Command="{Binding InsertHighlightCommand}" />
+        <Separator />
+        <MenuItem Header="_Blur an Area" Command="{Binding InsertBlurCommand}" />
+        <MenuItem Header="_Pixelate an Area" Command="{Binding InsertPixelateCommand}" />
+      </MenuItem>
       <MenuItem Header="_View">
         <MenuItem Header="Zoom _In" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
         <MenuItem Header="Zoom _Out" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />
@@ -149,6 +160,9 @@
       <Border Grid.Row="1" Padding="10,6" BorderThickness="0,1,0,1" BorderBrush="#40808080">
         <DockPanel>
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button Content="Text" Command="{Binding InsertTextCommand}" ToolTip="Text over the video, from the playhead (or the marked range)" Margin="4,0" />
+            <Button Content="Arrow" Command="{Binding InsertArrowCommand}" ToolTip="An arrow, from the playhead (or the marked range)" Margin="4,0" />
+            <Button Content="Blur" Command="{Binding InsertBlurCommand}" ToolTip="Hide an area, from the playhead (or the marked range)" Margin="4,0,16,0" />
             <Button Content="Split" Command="{Binding SplitCommand}" ToolTip="Cut every clip at the playhead (S)" Margin="4,0" />
             <Button Content="Delete" Command="{Binding DeleteCommand}" ToolTip="The marked range or the selected clip (Del)" Margin="4,0" />
             <Button Content="Export…" Command="{Binding ExportCommand}" ToolTip="Make a video file (Ctrl+E)" Margin="4,0" />

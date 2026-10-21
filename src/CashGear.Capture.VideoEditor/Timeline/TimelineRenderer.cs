@@ -187,8 +187,29 @@ public sealed class TimelineRenderer : IDisposable
         var label = item switch
         {
             Clip clip => project.Asset(clip.AssetId)?.Name ?? "Missing media",
+            AnnotationItem { Shape: AnnotationShape.Text } written => written.Text.ReplaceLineEndings(" "),
+            AnnotationItem annotation => annotation.Shape.ToString(),
             _ => item.GetType().Name,
         };
+
+        if (item is AnnotationItem { Keyframes.Count: > 1 } moving)
+        {
+            // A diamond at each keyframe.
+            using var mark = new SKPaint { Color = SKColors.White, IsAntialias = true };
+            foreach (var keyframe in moving.Keyframes)
+            {
+                var at = (float)view.X(moving.Start + keyframe.Time);
+                var y = box.Bottom - 6;
+                using var builder = new SKPathBuilder();
+                builder.MoveTo(at, y - 4);
+                builder.LineTo(at + 4, y);
+                builder.LineTo(at, y + 4);
+                builder.LineTo(at - 4, y);
+                builder.Close();
+                using var diamond = builder.Detach();
+                canvas.DrawPath(diamond, mark);
+            }
+        }
 
         if (item is Clip media && project.Asset(media.AssetId) is { } asset && Previews is { } previews)
         {
