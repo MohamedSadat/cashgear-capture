@@ -17,6 +17,8 @@
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="H.NotifyIcon.Wpf" Version="2.4.1" />
     <PackageVersion Include="Velopack" Version="1.2.161" />
+    <!-- Crash reports, only when the user agrees and the build has an address (docs\LICENSES.md). -->
+    <PackageVersion Include="Sentry" Version="6.12.1" />
   </ItemGroup>
 
   <ItemGroup Label="Capture">

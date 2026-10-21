@@ -71,6 +71,7 @@ internal static class AppHost
         builder.Services.AddSingleton<SettingsWindowService>();
         builder.Services.AddSingleton<SettingsFiles>();
         builder.Services.AddSingleton<ReleaseNotes>();
+        builder.Services.AddSingleton<Diagnostics.CrashReporter>();
         builder.Services.AddSingleton<ISettingsFileDialogs, WpfSettingsFileDialogs>();
         builder.Services.AddSingleton<RegionSelector>();
         builder.Services.AddSingleton<IScrollPlatform, Win32ScrollPlatform>();

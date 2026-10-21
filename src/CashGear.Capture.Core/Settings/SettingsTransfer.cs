@@ -107,6 +107,7 @@ public static class SettingsTransfer
         return incoming with
         {
             Appearance = keepLanguage ? incoming.Appearance with { Language = current.Appearance.Language } : incoming.Appearance,
+            CrashReports = current.CrashReports,
         };
     }
 }

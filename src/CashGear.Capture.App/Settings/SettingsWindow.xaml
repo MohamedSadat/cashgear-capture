@@ -1100,6 +1100,10 @@
           <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:UpdatesText.ChannelHint}" />
           <Button Content="{x:Static r:UpdatesText.WhatsNew}" Command="{Binding ShowReleaseNotesCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" />
 
+          <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DiagnosticsText.PrivacySection}" />
+          <CheckBox Margin="0,2" Content="{x:Static r:DiagnosticsText.SendCrashReports}" IsChecked="{Binding SendCrashReports}" IsEnabled="{Binding CrashReportsAvailable}" />
+          <TextBlock Style="{StaticResource Hint}" Text="{Binding CrashReportsText}" />
+
           <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.SettingsSection}" />
           <TextBlock Text="{Binding PortableText}" TextWrapping="Wrap" Margin="0,0,0,8"
                      Visibility="{Binding PortableText, Converter={StaticResource VisibleIfSet}}" />

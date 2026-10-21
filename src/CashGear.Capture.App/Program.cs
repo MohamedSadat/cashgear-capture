@@ -1,4 +1,5 @@
 using System.IO;
+using CashGear.Capture.App.Diagnostics;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.SingleInstance;
@@ -82,6 +83,7 @@ public static class Program
         catch (Exception ex)
         {
             log.Fatal(ex, "Unhandled exception during startup or shutdown");
+            CrashReporter.Active?.Capture(ex, "startup", fatal: true);
             return 1;
         }
         finally

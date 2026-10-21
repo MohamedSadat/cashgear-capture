@@ -31,6 +31,7 @@ internal static class LoggingSetup
                 fileSizeLimitBytes: 10 * 1024 * 1024,
                 rollOnFileSizeLimit: true,
                 shared: true) // a second launch logs its hand-off to the same file
+            .WriteTo.Sink(Diagnostics.CrashBreadcrumbs.Instance) // nothing until crash reports are on
             .CreateLogger();
 
     /// <summary>Levels and the properties every line gets (tests add their own sink).</summary>

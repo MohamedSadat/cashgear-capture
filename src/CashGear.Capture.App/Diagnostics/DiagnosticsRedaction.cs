@@ -33,6 +33,7 @@ internal static class DiagnosticsRedaction
         "destinations.powerPoint.appendPath",
         "destinations.print.printer",
         "updates.feedUrl",
+        "crashReports.dsn",
     };
 
     /// <summary>What the app remembers that names windows and files.</summary>

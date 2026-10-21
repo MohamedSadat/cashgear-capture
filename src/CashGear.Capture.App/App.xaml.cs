@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Threading;
+using CashGear.Capture.App.Diagnostics;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Platform;
@@ -61,6 +62,7 @@ public partial class CaptureApplication : Application
         var diagnostics = _services.GetRequiredService<IStartupDiagnostics>();
         diagnostics.LogDpiAwareness(); // per thread, so it must run here on the UI thread
         _ = _services.GetRequiredService<ISettingsService>(); // load (or create) settings up front
+        _services.GetRequiredService<CrashReporter>().Start();
 
         _tray = _services.GetRequiredService<TrayIconHost>();
         _tray.Show(_services.GetRequiredService<TrayViewModel>());
@@ -85,6 +87,7 @@ public partial class CaptureApplication : Application
 
         LogStarted(_startupCommand);
         Welcome(_services.GetRequiredService<InstallEvents>());
+        AskAboutCrashReports();
         _ = _services.GetRequiredService<RecordingController>().WarmUpAsync(
             _services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
 
@@ -118,6 +121,28 @@ public partial class CaptureApplication : Application
         }
     }
 
+    /// <summary>
+    /// The first start with an address to send crash reports to asks whether to (nothing is sent before the answer).
+    /// Not modal, so an exit or an update isn't held up by the question.
+    /// </summary>
+    private void AskAboutCrashReports()
+    {
+        var reports = _services.GetRequiredService<CrashReporter>();
+        if (!reports.ShouldAsk)
+        {
+            return;
+        }
+
+        AppDialog.ShowModeless(
+            DiagnosticsText.ConsentMessage,
+            DiagnosticsText.ConsentTitle,
+            DialogKind.Question,
+            _services.GetRequiredService<ISettingsService>().Current.Appearance.Theme,
+            DiagnosticsText.SendReports,
+            DiagnosticsText.DontSend,
+            answer => _ = reports.AnswerAsync(answer == DialogAnswer.Yes));
+    }
+
     private void ShutdownFromHost()
     {
         if (!Dispatcher.HasShutdownStarted)
@@ -129,16 +154,24 @@ public partial class CaptureApplication : Application
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         LogUnhandledUi(e.Exception);
+        CrashReporter.Active?.Capture(e.Exception, "ui", fatal: false);
         e.Handled = true;
         _tray?.Notify(CommonText.ProductName, AppText.SomethingWentWrong(e.Exception.Message), NotificationKind.Error);
     }
 
-    private void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e) =>
+    private void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
         LogUnhandledDomain(e.ExceptionObject as Exception, e.IsTerminating);
+        if (e.ExceptionObject is Exception ex)
+        {
+            CrashReporter.Active?.Capture(ex, "domain", fatal: e.IsTerminating);
+        }
+    }
 
     private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
         LogUnobservedTask(e.Exception);
+        CrashReporter.Active?.Capture(e.Exception, "task", fatal: false);
         e.SetObserved();
     }
 

@@ -135,4 +135,13 @@ public static class BuildInfo
     /// </summary>
     public static string? UpdateFeedUrl { get; } = Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
         .FirstOrDefault(a => a.Key == "UpdateFeedUrl")?.Value is { Length: > 0 } url ? url : null;
+
+    /// <summary>Where crash reports go (a Sentry DSN), given to the packaging script (<c>-SentryDsn</c>); null without one.</summary>
+    public static string? SentryDsn { get; } = Metadata("SentryDsn");
+
+    /// <summary>The key licence files are checked against (base64), from the packaging script (<c>-LicensePublicKey</c>); null without one.</summary>
+    public static string? LicensePublicKey { get; } = Metadata("LicensePublicKey");
+
+    private static string? Metadata(string key) =>
+        Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == key)?.Value is { Length: > 0 } value ? value : null;
 }

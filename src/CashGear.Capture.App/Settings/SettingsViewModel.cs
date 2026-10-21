@@ -90,9 +90,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IMonitorService? monitors = null,
         SettingsFiles? files = null,
         ISettingsFileDialogs? fileDialogs = null,
-        ReleaseNotes? releaseNotes = null)
+        ReleaseNotes? releaseNotes = null,
+        Diagnostics.CrashReporter? crashReports = null)
     {
         _releaseNotes = releaseNotes;
+        CrashReportsAvailable = crashReports?.IsAvailable == true;
+        CrashReportsText = CrashReportsAvailable ? DiagnosticsText.CrashReportsHint : DiagnosticsText.NoCrashReportAddress;
         UpdateChannels =
         [
             .. updates?.InstalledChannel is { } installed ? [new ChannelChoice(null, UpdatesText.ChannelAsInstalled(installed))] : Array.Empty<ChannelChoice>(),
@@ -913,6 +916,15 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private Task ExportDiagnosticsAsync() => _diagnostics?.ExportAsync() ?? Task.CompletedTask;
 
+    /// <summary>Whether this copy has somewhere to send crash reports (Settings › General › Privacy).</summary>
+    public bool CrashReportsAvailable { get; }
+
+    /// <summary>What a crash report holds, or that this copy sends none.</summary>
+    public string CrashReportsText { get; }
+
+    [ObservableProperty]
+    private bool _sendCrashReports;
+
     /// <summary>For a portable copy: where it keeps its settings and data. Null when installed.</summary>
     public string? PortableText { get; }
 
@@ -1170,6 +1182,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Ocr = new OcrSettings(OcrLanguage?.Tag),
         History = new HistorySettings(HistorySize?.Value ?? current.History.MaxItems),
         Updates = current.Updates with { CheckAutomatically = CheckForUpdates, Channel = UpdateChannel?.Value },
+        // Unasked stays unasked unless the box was changed here.
+        CrashReports = current.CrashReports with
+        {
+            Send = SendCrashReports != (current.CrashReports.Send == true) ? SendCrashReports : current.CrashReports.Send,
+        },
         Tools = current.Tools with
         {
             ShowToolbarAtStartup = ShowToolbarAtStartup,
@@ -1268,6 +1285,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         CheckForUpdates = s.Updates.CheckAutomatically;
+        SendCrashReports = s.CrashReports.Send == true;
         UpdateChannel = UpdateChannels.FirstOrDefault(c => c.Value == s.Updates.Channel) ?? UpdateChannels[0];
         foreach (var row in Hotkeys)
         {

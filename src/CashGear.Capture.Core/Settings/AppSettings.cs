@@ -48,6 +48,9 @@ public sealed record AppSettings
     /// <summary>The capture toolbar and the screen tools (magnifier, colour picker, ruler).</summary>
     public ToolsSettings Tools { get; init; } = new();
 
+    /// <summary>Whether crash reports are sent (asked once; nothing is sent until the user agrees).</summary>
+    public CrashReportSettings CrashReports { get; init; } = new();
+
     /// <summary>Replaces missing sections with defaults and clamps out-of-range values.</summary>
     public AppSettings Normalize() => this with
     {
@@ -63,6 +66,7 @@ public sealed record AppSettings
         History = (History ?? new HistorySettings()).Normalize(),
         Updates = (Updates ?? new UpdateSettings()).Normalize(),
         Tools = (Tools ?? new ToolsSettings()).Normalize(),
+        CrashReports = (CrashReports ?? new CrashReportSettings()).Normalize(),
     };
 }
 
@@ -379,6 +383,14 @@ public sealed record UpdateSettings(bool CheckAutomatically = true, string? Feed
         FeedUrl = string.IsNullOrWhiteSpace(FeedUrl) ? null : FeedUrl.Trim(),
         Channel = Channel is { } channel && !Enum.IsDefined(channel) ? null : Channel,
     };
+}
+
+/// <summary>Crash reports (Settings › General › Privacy).</summary>
+/// <param name="Send">True: send them; false: never; null: not asked yet (asked at the first start that has somewhere to send them).</param>
+/// <param name="Dsn">Where to send them instead of the address built into the app (a Sentry DSN).</param>
+public sealed record CrashReportSettings(bool? Send = null, string? Dsn = null)
+{
+    public CrashReportSettings Normalize() => this with { Dsn = string.IsNullOrWhiteSpace(Dsn) ? null : Dsn.Trim() };
 }
 
 /// <summary>Which releases an installed copy updates to.</summary>

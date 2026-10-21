@@ -54,15 +54,38 @@ internal static class AppDialog
         return answer();
     }
 
+    /// <summary>
+    /// Shows the dialog without waiting (a question at start-up must not hold up an exit or a restart);
+    /// <paramref name="answered"/> gets the answer when it is closed. <paramref name="yes"/> and <paramref name="no"/>
+    /// label Yes and No.
+    /// </summary>
+    public static Window ShowModeless(
+        string message, string title, DialogKind kind, AppTheme theme, string yes, string no, Action<DialogAnswer> answered)
+    {
+        var window = Create(null, message, title, DialogButtons.YesNo, kind, theme, out var answer, yes, no);
+        window.Closed += (_, _) => answered(answer());
+        window.Show();
+        window.Activate();
+        return window;
+    }
+
     /// <summary>The dialog's window, not shown yet (tests); <paramref name="answer"/> reads the answer once it is closed.</summary>
     internal static Window Create(
-        Window? owner, string message, string? title, DialogButtons buttons, DialogKind kind, AppTheme theme, out Func<DialogAnswer> answer)
+        Window? owner,
+        string message,
+        string? title,
+        DialogButtons buttons,
+        DialogKind kind,
+        AppTheme theme,
+        out Func<DialogAnswer> answer,
+        string? yes = null,
+        string? no = null)
     {
         var choices = buttons switch
         {
             DialogButtons.OkCancel => new[] { (CommonText.Ok, DialogAnswer.Ok), (CommonText.Cancel, DialogAnswer.Cancel) },
-            DialogButtons.YesNo => [(CommonText.Yes, DialogAnswer.Yes), (CommonText.No, DialogAnswer.No)],
-            DialogButtons.YesNoCancel => [(CommonText.Yes, DialogAnswer.Yes), (CommonText.No, DialogAnswer.No), (CommonText.Cancel, DialogAnswer.Cancel)],
+            DialogButtons.YesNo => [(yes ?? CommonText.Yes, DialogAnswer.Yes), (no ?? CommonText.No, DialogAnswer.No)],
+            DialogButtons.YesNoCancel => [(yes ?? CommonText.Yes, DialogAnswer.Yes), (no ?? CommonText.No, DialogAnswer.No), (CommonText.Cancel, DialogAnswer.Cancel)],
             _ => [(CommonText.Ok, DialogAnswer.Ok)],
         };
         var escape = buttons switch

@@ -63,6 +63,7 @@ public sealed class DiagnosticsExporterTests : IDisposable
                 "print": { "printer": "Accounting printer" }
               },
               "updates": { "feedUrl": "https://updates.secret-host.example/feed" },
+              "crashReports": { "send": true, "dsn": "https://abc@crash-reports.secret-host.example/7" },
               "recording": { "fps": 30 },
             }
             """);
@@ -100,7 +101,7 @@ public sealed class DiagnosticsExporterTests : IDisposable
         var texts = zip.Entries.ToDictionary(e => e.FullName, e => new StreamReader(e.Open()).ReadToEnd());
         foreach (var (name, text) in texts)
         {
-            foreach (var secret in new[] { Host, User, UploadUrl, HeaderValue, FieldValue, Fingerprint, Password, WindowTitle, Project, "Accounting printer", "updates.secret-host" })
+            foreach (var secret in new[] { Host, User, UploadUrl, HeaderValue, FieldValue, Fingerprint, Password, WindowTitle, Project, "Accounting printer", "updates.secret-host", "crash-reports.secret-host" })
             {
                 text.Should().NotContain(secret, $"{name} must not carry it");
             }
