@@ -1,0 +1,149 @@
+<Window x:Class="CashGear.Capture.App.VideoEditor.VideoEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.VideoEditor"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:VideoEditorViewModel}"
+        Title="{Binding Title}"
+        Width="1280" Height="840" MinWidth="820" MinHeight="560"
+        WindowStartupLocation="CenterScreen">
+  <Window.InputBindings>
+    <KeyBinding Key="S" Command="{Binding SplitCommand}" />
+    <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
+    <KeyBinding Gesture="Shift+Delete" Command="{Binding RippleDeleteCommand}" />
+    <KeyBinding Key="I" Command="{Binding MarkInCommand}" />
+    <KeyBinding Key="O" Command="{Binding MarkOutCommand}" />
+    <KeyBinding Key="Escape" Command="{Binding ClearSelectionCommand}" />
+    <KeyBinding Key="Left" Command="{Binding StepBackCommand}" />
+    <KeyBinding Key="Right" Command="{Binding StepForwardCommand}" />
+    <KeyBinding Key="Home" Command="{Binding GoToStartCommand}" />
+    <KeyBinding Key="End" Command="{Binding GoToEndCommand}" />
+    <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
+    <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}" />
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveProjectCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveProjectAsCommand}" />
+    <KeyBinding Gesture="Ctrl+E" Command="{Binding ExportCommand}" />
+    <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding ZoomInCommand}" />
+    <KeyBinding Gesture="Ctrl+Add" Command="{Binding ZoomInCommand}" />
+    <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding ZoomOutCommand}" />
+    <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding ZoomOutCommand}" />
+    <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomFitCommand}" />
+    <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding ZoomFitCommand}" />
+  </Window.InputBindings>
+
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="Visible" />
+
+    <DataTemplate x:Key="TrackHeader" DataType="{x:Type local:TrackHeaderViewModel}">
+      <Border Height="{Binding Height}" BorderThickness="0,0,0,1" BorderBrush="#30808080" Padding="8,3,4,3">
+        <DockPanel LastChildFill="True">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+            <ToggleButton Content="M" Width="26" Height="24" Padding="0" Margin="2,0" ToolTip="Mute"
+                          IsChecked="{Binding IsMuted}" Visibility="{Binding HasSound, Converter={StaticResource Visible}}" />
+            <ToggleButton Content="S" Width="26" Height="24" Padding="0" Margin="2,0" ToolTip="Solo: hear only the solo tracks"
+                          IsChecked="{Binding IsSolo}" Visibility="{Binding HasSound, Converter={StaticResource Visible}}" />
+            <CheckBox ToolTip="Shown in the video" IsChecked="{Binding IsShown}" MinWidth="0" Margin="2,0"
+                      Visibility="{Binding HasPictures, Converter={StaticResource Visible}}" />
+            <ToggleButton Content="L" Width="26" Height="24" Padding="0" Margin="2,0" ToolTip="Lock: edits leave this track alone"
+                          IsChecked="{Binding IsLocked}" />
+          </StackPanel>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding Kind}" FontSize="11" Opacity="0.7" />
+          </StackPanel>
+        </DockPanel>
+      </Border>
+    </DataTemplate>
+  </Window.Resources>
+
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_File">
+        <MenuItem Header="_Add a Recording…" Command="{Binding AddRecordingCommand}" />
+        <Separator />
+        <MenuItem Header="_Save Project" Command="{Binding SaveProjectCommand}" InputGestureText="Ctrl+S" />
+        <MenuItem Header="Save Project _As…" Command="{Binding SaveProjectAsCommand}" InputGestureText="Ctrl+Shift+S" />
+        <MenuItem Header="Save with _Media…" Command="{Binding SaveWithMediaCommand}" ToolTip="A copy of the project with its recordings inside, to take to another PC" />
+        <Separator />
+        <MenuItem Header="_Export…" Command="{Binding ExportCommand}" InputGestureText="Ctrl+E" />
+        <Separator />
+        <MenuItem Header="_Close" Click="OnCloseClick" />
+      </MenuItem>
+      <MenuItem Header="_Edit">
+        <MenuItem Header="{Binding UndoText}" Command="{Binding UndoCommand}" InputGestureText="Ctrl+Z" />
+        <MenuItem Header="{Binding RedoText}" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y" />
+        <Separator />
+        <MenuItem Header="_Split at the Playhead" Command="{Binding SplitCommand}" InputGestureText="S" />
+        <MenuItem Header="_Delete" Command="{Binding DeleteCommand}" InputGestureText="Del" ToolTip="The marked range (closing the gap), or the selected clip" />
+        <MenuItem Header="_Ripple Delete" Command="{Binding RippleDeleteCommand}" InputGestureText="Shift+Del" ToolTip="The selected clip and its time, from every track" />
+        <Separator />
+        <MenuItem Header="Mark _In" Command="{Binding MarkInCommand}" InputGestureText="I" />
+        <MenuItem Header="Mark _Out" Command="{Binding MarkOutCommand}" InputGestureText="O" />
+        <MenuItem Header="_Clear the Selection" Command="{Binding ClearSelectionCommand}" InputGestureText="Esc" />
+      </MenuItem>
+      <MenuItem Header="_View">
+        <MenuItem Header="Zoom _In" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
+        <MenuItem Header="Zoom _Out" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />
+        <MenuItem Header="_Fit the Timeline" Command="{Binding ZoomFitCommand}" InputGestureText="Ctrl+0" />
+      </MenuItem>
+    </Menu>
+
+    <Border DockPanel.Dock="Bottom" Padding="10,4" BorderThickness="0,1,0,0" BorderBrush="#40808080">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Right" Text="{Binding Status}" Opacity="0.75" />
+        <TextBlock x:Name="SelectionLine" Text="{Binding SelectionText}" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
+    </Border>
+
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" MinHeight="160" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="5" />
+        <RowDefinition Height="270" MinHeight="120" />
+      </Grid.RowDefinitions>
+
+      <local:PreviewHost x:Name="Preview" Grid.Row="0" />
+
+      <!-- Transport -->
+      <Border Grid.Row="1" Padding="10,6" BorderThickness="0,1,0,1" BorderBrush="#40808080">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button Content="Split" Command="{Binding SplitCommand}" ToolTip="Cut every clip at the playhead (S)" Margin="4,0" />
+            <Button Content="Delete" Command="{Binding DeleteCommand}" ToolTip="The marked range or the selected clip (Del)" Margin="4,0" />
+            <Button Content="Export…" Command="{Binding ExportCommand}" ToolTip="Make a video file (Ctrl+E)" Margin="4,0" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal">
+            <Button Content="⏮" Command="{Binding GoToStartCommand}" ToolTip="Start (Home)" Width="40" Margin="0,0,4,0" />
+            <Button Content="◀" Command="{Binding StepBackCommand}" ToolTip="A frame back (←)" Width="40" Margin="0,0,4,0" />
+            <Button x:Name="PlayButton" Command="{Binding PlayPauseCommand}" ToolTip="Play or pause (Space)" Width="56" Margin="0,0,4,0" />
+            <Button Content="▶" Command="{Binding StepForwardCommand}" ToolTip="A frame on (→)" Width="40" Margin="0,0,4,0" />
+            <Button Content="⏭" Command="{Binding GoToEndCommand}" ToolTip="End (End)" Width="40" Margin="0,0,12,0" />
+            <TextBlock Text="{Binding TimeText}" VerticalAlignment="Center" FontFamily="Consolas" FontSize="14" />
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" ResizeDirection="Rows" Background="Transparent" />
+
+      <!-- Timeline: track headers on the left, the rows drawn with Skia on the right -->
+      <Grid Grid.Row="3">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="190" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border Grid.Column="0" BorderThickness="0,0,1,0" BorderBrush="#40808080" ClipToBounds="True">
+          <ItemsControl x:Name="Headers" ItemsSource="{Binding Tracks}" ItemTemplate="{StaticResource TrackHeader}" Margin="0,26,0,0" Focusable="False">
+            <ItemsControl.RenderTransform>
+              <TranslateTransform Y="{Binding RowsOffset}" />
+            </ItemsControl.RenderTransform>
+          </ItemsControl>
+        </Border>
+        <local:TimelineControl x:Name="TimelineSurface" Grid.Column="1" />
+      </Grid>
+    </Grid>
+  </DockPanel>
+</Window>

@@ -76,6 +76,9 @@ internal sealed class InstanceCommandDispatcher(
             case InstanceCommand.Crosshair:
                 return ui.InvokeAsync(() => tray.ToggleCrosshairCommand.Execute(null));
 
+            case InstanceCommand.VideoEditor:
+                return ui.InvokeAsync(() => tray.OpenVideoEditorCommand.ExecuteAsync(null));
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(command), command, null);
         }

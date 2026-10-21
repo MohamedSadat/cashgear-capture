@@ -218,6 +218,7 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
 
     private void OnMenuOpened(object sender, RoutedEventArgs e)
     {
+        ((sender as ContextMenu)?.DataContext as TrayViewModel)?.RefreshVideoEditor();
         if (sender is not ContextMenu menu || PresentationSource.FromVisual(menu) is not HwndSource source)
         {
             return;

@@ -48,6 +48,7 @@ public sealed partial class RecordingController
     private readonly IKeyboardState _keyboard;
     private readonly HotkeyRegistrar? _hotkeys;
     private readonly OutputWorkflow? _outputs;
+    private readonly IAppStateStore? _state;
     private RecordingToolbarWindow? _toolbar;
     private DrawingViewModel? _drawing;
     private DrawingLayerWindow? _layer;
@@ -73,8 +74,10 @@ public sealed partial class RecordingController
         ILogger<RecordingController> logger,
         IKeyboardState? keyboard = null,
         HotkeyRegistrar? hotkeys = null,
-        OutputWorkflow? outputs = null)
+        OutputWorkflow? outputs = null,
+        IAppStateStore? state = null)
     {
+        _state = state;
         _hotkeys = hotkeys;
         _outputs = outputs;
         _keyboard = keyboard ?? new Win32KeyboardState();
@@ -233,6 +236,12 @@ public sealed partial class RecordingController
                 Summary(result),
                 result.DropRate > DropWarning || result.SoundNote is not null || result.Note is not null ? NotificationKind.Warning : NotificationKind.Info,
                 onClick: () => _shell.ShowInFolder(result.Path));
+            if (_state is not null)
+            {
+                // Tray › Video Editor › Edit the Last Recording.
+                await _state.UpdateAsync(s => s with { VideoEditor = (s.VideoEditor ?? new VideoEditorState()) with { LastRecording = result.Path } }).ConfigureAwait(false);
+            }
+
             if (_outputs is not null)
             {
                 // After the recording is saved: the steps of the recording workflow (an upload, the clipboard, …).

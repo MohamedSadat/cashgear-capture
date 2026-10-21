@@ -77,6 +77,12 @@ internal static class AppHost
         builder.Services.AddSingleton<RecordingController>();
         builder.Services.AddSingleton<IRecordingPicker, WpfRecordingPicker>();
         builder.Services.AddSingleton<AddOverlaysController>();
+        builder.Services.AddSingleton<CashGear.Capture.VideoEditor.Export.ProjectExporter>();
+        builder.Services.AddSingleton(sp => new CashGear.Capture.VideoEditor.Playback.MediaPreviews(
+            System.IO.Path.Combine(sp.GetRequiredService<AppPaths>().DataDirectory, "VideoEditor", "cache"),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CashGear.Capture.VideoEditor.Playback.MediaPreviews>>()));
+        builder.Services.AddSingleton<VideoEditor.VideoEditorWindows>();
+        builder.Services.AddSingleton<VideoEditor.IVideoEditorLauncher>(sp => sp.GetRequiredService<VideoEditor.VideoEditorWindows>());
         builder.Services.AddSingleton<InterruptedRecordings>();
         builder.Services.AddSingleton<ToolStyleMemory>();
         builder.Services.AddSingleton<CashGear.Capture.Editor.Presets.IPresetStore, CashGear.Capture.Editor.Presets.JsonPresetStore>();

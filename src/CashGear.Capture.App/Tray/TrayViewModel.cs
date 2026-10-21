@@ -62,6 +62,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly Tools.ScreenTools _tools;
     private readonly ImageTools.ImageToolWindows _imageTools;
     private readonly TimeProvider _time;
+    private readonly VideoEditor.VideoEditorWindows _videoEditors;
 
     public TrayViewModel(
         CaptureCoordinator coordinator,
@@ -81,9 +82,11 @@ public sealed partial class TrayViewModel : ObservableObject
         Toolbar.CaptureToolbarService toolbar,
         Tools.ScreenTools tools,
         TimeProvider time,
-        ImageTools.ImageToolWindows imageTools)
+        ImageTools.ImageToolWindows imageTools,
+        VideoEditor.VideoEditorWindows videoEditors)
     {
         _imageTools = imageTools;
+        _videoEditors = videoEditors;
         _toolbar = toolbar;
         _tools = tools;
         _tools.Changed += (_, _) =>
@@ -296,6 +299,26 @@ public sealed partial class TrayViewModel : ObservableObject
     [RelayCommand]
     private Task RecoverRecordingsAsync() => _interrupted.RecoverAllAsync();
 
+    /// <summary>Opens a recording or a project, picked in a dialog, in the video editor.</summary>
+    [RelayCommand]
+    private Task OpenVideoEditorAsync() => _videoEditors.PickAndOpenAsync();
+
+    /// <summary>Opens the last recording saved in the video editor.</summary>
+    [RelayCommand]
+    private Task EditLastRecordingAsync() => _videoEditors.LastRecording is { } path ? _videoEditors.OpenAsync(path) : _videoEditors.PickAndOpenAsync();
+
+    /// <summary>The menu item for the last recording, with its name.</summary>
+    public string EditLastRecordingText => _videoEditors.LastRecording is { } path ? $"Edit the Last Recording ({System.IO.Path.GetFileName(path)})" : "Edit the Last Recording";
+
+    public bool HasLastRecording => _videoEditors.LastRecording is not null;
+
+    /// <summary>The tray menu is about to open: the last recording may have changed.</summary>
+    public void RefreshVideoEditor()
+    {
+        OnPropertyChanged(nameof(EditLastRecordingText));
+        OnPropertyChanged(nameof(HasLastRecording));
+    }
+
     /// <summary>Turns the pen for drawing on the screen on or off (while recording).</summary>
     [RelayCommand]
     private void ToggleDrawing() => _recording.ToggleDrawing();
@@ -331,7 +354,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private async Task<bool> PrepareExitAsync()
     {
         await _recording.StopAsync();
-        return await _editors.CloseAllAsync();
+        return await _editors.CloseAllAsync() && await _videoEditors.CloseAllAsync();
     }
 
     private Task SetDelayAsync(int seconds) =>

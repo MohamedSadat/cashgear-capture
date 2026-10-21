@@ -47,6 +47,9 @@ public enum InstanceCommand
     Ruler,
 
     Crosshair,
+
+    /// <summary>Open a recording or a project in the video editor.</summary>
+    VideoEditor,
 }
 
 /// <summary>Maps command-line switches and pipe messages to <see cref="InstanceCommand"/>.</summary>
@@ -74,6 +77,7 @@ public static class InstanceCommandParser
         [InstanceCommand.ColorPicker] = "color-picker",
         [InstanceCommand.Ruler] = "ruler",
         [InstanceCommand.Crosshair] = "crosshair",
+        [InstanceCommand.VideoEditor] = "video-editor",
     };
 
     private static readonly IReadOnlyDictionary<string, InstanceCommand> Commands = Wires.ToDictionary(p => p.Value, p => p.Key);

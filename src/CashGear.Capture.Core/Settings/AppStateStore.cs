@@ -27,11 +27,41 @@ public sealed record AppState
     /// <summary>The magnifier's zoom last used.</summary>
     public int MagnifierZoom { get; init; } = Geometry.Magnifier.DefaultZoom;
 
+    /// <summary>The video editor's last export choices, recent projects and the last recording.</summary>
+    public VideoEditorState? VideoEditor { get; init; }
+
     public const int MaxColors = 16;
 
     /// <summary>A copy with <paramref name="hex"/> first in the colour history (once).</summary>
     public AppState WithColor(string hex) =>
         this with { Colors = [hex, .. (Colors ?? []).Where(c => !string.Equals(c, hex, StringComparison.OrdinalIgnoreCase)).Take(MaxColors - 1)] };
+}
+
+/// <summary>What the video editor remembers.</summary>
+public sealed record VideoEditorState
+{
+    public const int MaxRecent = 8;
+
+    /// <summary>The export preset last used (its id).</summary>
+    public string? ExportPreset { get; init; }
+
+    public Recording.QualityPreset ExportQuality { get; init; } = Recording.QualityPreset.High;
+
+    /// <summary>Where the last export went.</summary>
+    public string? ExportFolder { get; init; }
+
+    /// <summary>Projects saved or opened, newest first.</summary>
+    public IReadOnlyList<string> RecentProjects { get; init; } = [];
+
+    /// <summary>The last recording saved (Tray › Video Editor › Edit the Last Recording).</summary>
+    public string? LastRecording { get; init; }
+
+    /// <summary>Draw the preview on the graphics card when it can (false: always in memory).</summary>
+    public bool GpuPreview { get; init; } = true;
+
+    /// <summary>A copy with <paramref name="path"/> first among the recent projects (once).</summary>
+    public VideoEditorState WithRecent(string path) =>
+        this with { RecentProjects = [path, .. (RecentProjects ?? []).Where(p => !string.Equals(p, path, StringComparison.OrdinalIgnoreCase)).Take(MaxRecent - 1)] };
 }
 
 /// <summary>The screen ruler: its top-left (virtual-screen pixels), its length in pixels, which way and its unit.</summary>

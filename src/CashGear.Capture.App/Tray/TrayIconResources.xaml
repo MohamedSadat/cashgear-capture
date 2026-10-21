@@ -51,6 +51,10 @@
         <Separator />
         <MenuItem Header="{Binding RecordText}" Command="{Binding ToggleRecordingCommand}" InputGestureText="{Binding RecordHotkey}" />
         <MenuItem Header="Add _Overlays to a Recording…" Command="{Binding AddOverlaysCommand}" />
+        <MenuItem Header="_Video Editor">
+          <MenuItem Header="_Open a Recording or Project…" Command="{Binding OpenVideoEditorCommand}" />
+          <MenuItem Header="{Binding EditLastRecordingText}" Command="{Binding EditLastRecordingCommand}" IsEnabled="{Binding HasLastRecording}" />
+        </MenuItem>
         <MenuItem Header="Save _Interrupted Recordings" Command="{Binding RecoverRecordingsCommand}"
                   Visibility="{Binding HasInterruptedRecordings, Converter={StaticResource TrayVisible}}" />
         <Separator />

@@ -12,6 +12,9 @@ namespace CashGear.Capture.Core.Settings;
 public static class DestinationIds
 {
     public const string Editor = "editor";
+
+    /// <summary>A recording opens in the video editor.</summary>
+    public const string VideoEditor = "video-editor";
     public const string File = "file";
     public const string Clipboard = "clipboard";
     public const string Printer = "printer";

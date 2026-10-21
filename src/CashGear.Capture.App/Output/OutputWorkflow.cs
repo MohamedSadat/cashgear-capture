@@ -83,7 +83,7 @@ public sealed partial class OutputWorkflow(
 
     public IReadOnlyList<SendTarget> Targets() =>
         [.. registry.All()
-            .Where(d => !DestinationIds.Same(d.Id, DestinationIds.Editor) && !DestinationIds.Same(d.Id, DestinationIds.CopyLink))
+            .Where(d => !DestinationIds.Same(d.Id, DestinationIds.Editor) && !DestinationIds.Same(d.Id, DestinationIds.VideoEditor) && !DestinationIds.Same(d.Id, DestinationIds.CopyLink))
             .Select(d => new SendTarget(d.Id, d.DisplayName))];
 
     public string Describe(IReadOnlyList<WorkflowStep> steps) => string.Join(" → ", (steps ?? []).Select(s => registry.NameOf(s.Destination)));

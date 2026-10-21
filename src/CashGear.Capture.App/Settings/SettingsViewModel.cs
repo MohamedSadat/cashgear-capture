@@ -945,6 +945,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             ?? BuiltInDestinations(settings);
         return [.. all
             .Where(d => !video || (d.Video && !DestinationIds.Same(d.Id, DestinationIds.File)))
+            .Where(d => video || !DestinationIds.Same(d.Id, DestinationIds.VideoEditor))
             .Select(d => new DestinationChoice(d.Id, d.Name))];
     }
 
@@ -952,6 +953,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private IEnumerable<(string Id, string Name, bool Video)> BuiltInDestinations(AppSettings settings) =>
     [
         (DestinationIds.Editor, "Open in the editor", false),
+        (DestinationIds.VideoEditor, "Open in the video editor", true),
         (DestinationIds.File, "Save to file", true),
         (DestinationIds.Clipboard, "Copy to clipboard", true),
         (DestinationIds.Printer, "Print", false),

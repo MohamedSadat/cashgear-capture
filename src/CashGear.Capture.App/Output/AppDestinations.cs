@@ -1,5 +1,6 @@
 using System.IO;
 using CashGear.Capture.App.Editor;
+using CashGear.Capture.App.VideoEditor;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
@@ -9,19 +10,24 @@ using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.App.Output;
 
-/// <summary>The destinations that need the app: the editor, the capture folder, the clipboard and the printer.</summary>
+/// <summary>The destinations that need the app: the editors, the capture folder, the clipboard and the printer.</summary>
 public sealed partial class AppDestinations(
     IEditorLauncher editor,
     IOutputService output,
     IPrinter printer,
     AppPaths paths,
     ICaptureCounter counter,
-    ILogger<AppDestinations> logger) : IDestinationSource
+    ILogger<AppDestinations> logger,
+    IVideoEditorLauncher? videoEditor = null) : IDestinationSource
 {
     public IEnumerable<IOutputDestination> Create(AppSettings settings, ICredentialStore credentials)
     {
         ArgumentNullException.ThrowIfNull(settings);
         yield return new EditorDestination(editor);
+        if (videoEditor is not null)
+        {
+            yield return new VideoEditorDestination(videoEditor);
+        }
         yield return new FileDestination(settings.Output, paths.ResolveCaptureDirectory(settings.Output), output, counter, this);
         yield return new ClipboardDestination(output);
         yield return new PrinterDestination(settings.Destinations.Print ?? new PrintSettings(), printer);

@@ -53,6 +53,7 @@
     <ProjectReference Include="..\CashGear.Capture.Interop\CashGear.Capture.Interop.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Overlays\CashGear.Capture.Overlays.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Outputs\CashGear.Capture.Outputs.csproj" />
+    <ProjectReference Include="..\CashGear.Capture.VideoEditor\CashGear.Capture.VideoEditor.csproj" />
   </ItemGroup>
 
   <!-- Noise suppression loads RNNoise from rnnoise\ next to the app (BSD-3-Clause; built from the pinned source by tools\get-rnnoise.ps1). Without it there is no noise suppression. -->
