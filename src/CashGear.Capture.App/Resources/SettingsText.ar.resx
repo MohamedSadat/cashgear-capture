@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ThemeLabel" xml:space="preserve">
+    <value>السمة (_T):</value>
+  </data>
+  <data name="ThemeName" xml:space="preserve">
+    <value>السمة</value>
+  </data>
+  <data name="LanguageLabel" xml:space="preserve">
+    <value>اللغة (_L):</value>
+  </data>
+  <data name="LanguageName" xml:space="preserve">
+    <value>اللغة</value>
+  </data>
+  <data name="LanguageAutomatic" xml:space="preserve">
+    <value>كما في Windows (العربية أو الإنجليزية)</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageArabic" xml:space="preserve">
+    <value>العربية</value>
+  </data>
+  <data name="LanguageHint" xml:space="preserve">
+    <value>تُطبَّق اللغة الجديدة عند بدء تشغيل CashGear Capture من جديد. في العربية تُعرض النوافذ من اليمين إلى اليسار.</value>
+  </data>
+  <data name="RestartForLanguage" xml:space="preserve">
+    <value>هل تريد إعادة تشغيل CashGear Capture الآن لعرضه باللغة الجديدة؟</value>
+  </data>
+</root>

@@ -1,4 +1,3 @@
-using System.Windows;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.SingleInstance;
@@ -18,9 +17,12 @@ public static class Program
         Log.Logger = LoggingSetup.CreateLogger(paths);
         var log = Log.ForContext(typeof(Program));
         var command = InstanceCommandParser.FromArgs(args);
+        AppLanguage.Start(paths.SettingsFile);
 
         try
         {
+            // Restarted by the app itself (a new language): the old process still holds the single-instance mutex.
+            AppRestart.WaitForPrevious(args);
             using var guard = SingleInstanceGuard.TryAcquire(InstanceNames.MutexName);
 
             // Install, update and uninstall steps run this exe and end inside Run.
@@ -32,7 +34,7 @@ public static class Program
                 if (handOff == HandOffResult.InstanceElevated)
                 {
                     // Exiting silently made the launch (or --exit) look ignored.
-                    MessageBox.Show(HandOffMessages.InstanceElevated(command), HandOffMessages.Caption, MessageBoxButton.OK, MessageBoxImage.Information);
+                    AppDialog.Show(null, HandOffMessages.InstanceElevated(command));
                 }
 
                 return handOff == HandOffResult.Delivered ? 0 : 1;

@@ -1,4 +1,7 @@
 using System.Windows;
+using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
+using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,6 +11,7 @@ namespace CashGear.Capture.App.Settings;
 public sealed class SettingsWindowService(IServiceProvider services, ISettingsService settings)
 {
     private SettingsWindow? _window;
+    private UiLanguage? _offered;
 
     public void Show()
     {
@@ -25,10 +29,30 @@ public sealed class SettingsWindowService(IServiceProvider services, ISettingsSe
         // Created per window and disposed by it; ActivatorUtilities keeps the container from holding on to it.
         var viewModel = ActivatorUtilities.CreateInstance<SettingsViewModel>(services, InstalledFonts());
         var window = new SettingsWindow(viewModel, settings.Current.Appearance.Theme);
+        viewModel.Saved += (_, _) => OfferRestart(window);
         window.Closed += (_, _) => _window = null;
         _window = window;
         window.Show();
         window.Activate();
+    }
+
+    /// <summary>A new language shows once the app starts again: offers to restart now (asked once per language).</summary>
+    private void OfferRestart(Window owner)
+    {
+        var language = settings.Current.Appearance.Language;
+        if (!AppLanguage.NeedsRestart(language) || _offered == language)
+        {
+            return;
+        }
+
+        _offered = language;
+        var answer = AppDialog.Show(
+            owner, SettingsText.RestartForLanguage, buttons: DialogButtons.YesNo, kind: DialogKind.Question, theme: settings.Current.Appearance.Theme);
+        if (answer == DialogAnswer.Yes)
+        {
+            owner.Close();
+            _ = services.GetRequiredService<TrayViewModel>().RestartCommand.ExecuteAsync(null);
+        }
     }
 
     /// <summary>The font families installed here, by name (for the keystroke overlay).</summary>

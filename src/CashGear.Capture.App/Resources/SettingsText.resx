@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ThemeLabel" xml:space="preserve">
+    <value>_Theme:</value>
+    <comment>Settings &gt; General &gt; Appearance</comment>
+  </data>
+  <data name="ThemeName" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="LanguageLabel" xml:space="preserve">
+    <value>_Language:</value>
+  </data>
+  <data name="LanguageName" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="LanguageAutomatic" xml:space="preserve">
+    <value>As Windows (Arabic or English)</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+    <comment>Always in its own language</comment>
+  </data>
+  <data name="LanguageArabic" xml:space="preserve">
+    <value>العربية</value>
+    <comment>Always in its own language</comment>
+  </data>
+  <data name="LanguageHint" xml:space="preserve">
+    <value>A new language applies when CashGear Capture starts again. In Arabic, windows are laid out right to left.</value>
+  </data>
+  <data name="RestartForLanguage" xml:space="preserve">
+    <value>Restart CashGear Capture now to show it in the new language?</value>
+  </data>
+</root>

@@ -376,9 +376,26 @@ public sealed record UpdateSettings(bool CheckAutomatically = true, string? Feed
     public UpdateSettings Normalize() => this with { FeedUrl = string.IsNullOrWhiteSpace(FeedUrl) ? null : FeedUrl.Trim() };
 }
 
-public sealed record AppearanceSettings(AppTheme Theme = AppTheme.System)
+/// <param name="Theme">Light, dark, or as Windows' apps are.</param>
+/// <param name="Language">The language of the app's windows and messages; a change applies when the app starts again.</param>
+public sealed record AppearanceSettings(AppTheme Theme = AppTheme.System, UiLanguage Language = UiLanguage.Automatic)
 {
-    public AppearanceSettings Normalize() => this with { Theme = Enum.IsDefined(Theme) ? Theme : AppTheme.System };
+    public AppearanceSettings Normalize() => this with
+    {
+        Theme = Enum.IsDefined(Theme) ? Theme : AppTheme.System,
+        Language = Enum.IsDefined(Language) ? Language : UiLanguage.Automatic,
+    };
+}
+
+/// <summary>The app's language.</summary>
+public enum UiLanguage
+{
+    /// <summary>Windows' display language: Arabic when that is Arabic, otherwise English.</summary>
+    Automatic,
+    English,
+
+    /// <summary>Arabic, right to left.</summary>
+    Arabic,
 }
 
 /// <summary>

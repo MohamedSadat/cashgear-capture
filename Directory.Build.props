@@ -22,4 +22,24 @@
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
 
+  <!--
+    Localization (docs\localization.md): every project under src\ turns its .resx files into classes and is checked
+    for user-visible text outside them (CG0001 in C#, CG0002 in XAML) and for missing or mismatched translations.
+  -->
+  <PropertyGroup>
+    <CashGearLocalized Condition="'$(CashGearLocalized)' == '' and $(MSBuildProjectDirectory.Contains('\src\')) and '$(MSBuildProjectName)' != 'CashGear.Capture.Analyzers'">true</CashGearLocalized>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(CashGearLocalized)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src\CashGear.Capture.Analyzers\CashGear.Capture.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <AdditionalFiles Include="**\*.resx;**\*.xaml" Exclude="bin\**;obj\**" />
+    <CompilerVisibleProperty Include="RootNamespace" />
+    <CompilerVisibleProperty Include="MSBuildProjectDirectory" />
+  </ItemGroup>
+
+  <!-- Until every string is in a .resx file: build with -p:CashGearStringCheck=true to list what is left. -->
+  <PropertyGroup Condition="'$(CashGearLocalized)' == 'true' and '$(CashGearStringCheck)' != 'true'">
+    <NoWarn>$(NoWarn);CG0001;CG0002</NoWarn>
+  </PropertyGroup>
+
 </Project>

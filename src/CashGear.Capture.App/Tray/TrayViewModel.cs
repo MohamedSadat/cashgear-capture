@@ -6,6 +6,7 @@ using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Recording;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Settings;
 using CashGear.Capture.Core.History;
 using CashGear.Capture.Core.Hotkeys;
@@ -114,7 +115,7 @@ public sealed partial class TrayViewModel : ObservableObject
         _interrupted = interrupted;
         _time = time;
 
-        DelayChoices = [.. new[] { 0, 3, 5, 10 }.Select(s => new DelayChoice(s, s == 0 ? "_No delay" : $"_{s} seconds", SetDelayAsync))];
+        DelayChoices = [.. new[] { 0, 3, 5, 10 }.Select(s => new DelayChoice(s, s == 0 ? TrayText.NoDelay : TrayText.DelaySeconds(s), SetDelayAsync))];
 
         _recording.StateChanged += (_, _) => _ = _ui.InvokeAsync(() => OnPropertyChanged(nameof(RecordText)));
         _interrupted.Changed += (_, _) => _ = _ui.InvokeAsync(() => OnPropertyChanged(nameof(HasInterruptedRecordings)));
@@ -174,7 +175,7 @@ public sealed partial class TrayViewModel : ObservableObject
 
     /// <summary>E.g. "Capture _Delay (5 s)".</summary>
     [ObservableProperty]
-    private string _delayHeader = "Capture _Delay";
+    private string _delayHeader = TrayText.CaptureDelay;
 
     public ObservableCollection<RecentCapture> RecentCaptures { get; } = [];
 
@@ -188,7 +189,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private string _updateText = string.Empty;
 
     /// <summary>The recording menu item: start one, or stop the one running.</summary>
-    public string RecordText => _recording.IsRecording ? "Stop _Recording" : _recording.IsSaving ? "Saving the Recording…" : "Re_cord Screen…";
+    public string RecordText => _recording.IsRecording ? TrayText.StopRecording : _recording.IsSaving ? TrayText.SavingRecording : TrayText.RecordScreen;
 
     /// <summary>Recordings a crash left unsaved: the menu offers to save them.</summary>
     public bool HasInterruptedRecordings => _interrupted.Count > 0;
@@ -315,7 +316,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private Task EditLastRecordingAsync() => _videoEditors.LastRecording is { } path ? _videoEditors.OpenAsync(path) : _videoEditors.PickAndOpenAsync();
 
     /// <summary>The menu item for the last recording, with its name.</summary>
-    public string EditLastRecordingText => _videoEditors.LastRecording is { } path ? $"Edit the Last Recording ({System.IO.Path.GetFileName(path)})" : "Edit the Last Recording";
+    public string EditLastRecordingText => _videoEditors.LastRecording is { } path ? TrayText.EditLastRecordingNamed(System.IO.Path.GetFileName(path)) : TrayText.EditLastRecording;
 
     public bool HasLastRecording => _videoEditors.LastRecording is not null;
 
@@ -358,6 +359,17 @@ public sealed partial class TrayViewModel : ObservableObject
         }
     }
 
+    /// <summary>Exits like <see cref="ExitAsync"/> and starts the app again (a new language applies at start-up).</summary>
+    [RelayCommand]
+    private async Task RestartAsync()
+    {
+        if (await PrepareExitAsync())
+        {
+            AppRestart.StartNewCopy();
+            _lifetime.Shutdown();
+        }
+    }
+
     private async Task<bool> PrepareExitAsync()
     {
         await _recording.StopAsync();
@@ -375,7 +387,7 @@ public sealed partial class TrayViewModel : ObservableObject
             choice.IsChecked = choice.Seconds == delay;
         }
 
-        DelayHeader = delay == 0 ? "Capture _Delay" : $"Capture _Delay ({delay} s)";
+        DelayHeader = delay == 0 ? TrayText.CaptureDelay : TrayText.CaptureDelaySet(delay);
     }
 
     private void RefreshRecent()
@@ -394,7 +406,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private void RefreshUpdate()
     {
         IsUpdateReady = _updates.ReadyVersion is not null;
-        UpdateText = $"Restart to _Update ({_updates.ReadyVersion})";
+        UpdateText = TrayText.RestartToUpdate(_updates.ReadyVersion);
     }
 
     private void RefreshHotkeyLabels()

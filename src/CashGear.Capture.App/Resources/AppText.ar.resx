@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="StartupFailed" xml:space="preserve">
+    <value>تعذر بدء تشغيل CashGear Capture:
+
+{0}
+
+التفاصيل في السجل: {1}</value>
+  </data>
+  <data name="SomethingWentWrong" xml:space="preserve">
+    <value>حدث خطأ: {0}</value>
+  </data>
+  <data name="ElevatedActivate" xml:space="preserve">
+    <value>CashGear Capture قيد التشغيل بالفعل كمسؤول. لا يسمح Windows بالتواصل معه إلا للبرامج التي تعمل كمسؤول أيضًا، لذا لا تستطيع هذه النسخة تسليمه الأمر.
+
+استخدم أيقونة النسخة العاملة في منطقة الإعلامات، أو اخرج منها (الأيقونة › خروج) ثم شغّل CashGear Capture من جديد.</value>
+  </data>
+  <data name="ElevatedExit" xml:space="preserve">
+    <value>CashGear Capture قيد التشغيل كمسؤول. لا يسمح Windows بالتواصل معه إلا للبرامج التي تعمل كمسؤول أيضًا، لذا لا يستطيع --exit إغلاقه من هنا.
+
+اخرج منه عبر أيقونته في منطقة الإعلامات (› خروج)، أو شغّل الأمر من جديد كمسؤول.</value>
+  </data>
+  <data name="ElevatedCommand" xml:space="preserve">
+    <value>CashGear Capture قيد التشغيل كمسؤول. لا يسمح Windows بالتواصل معه إلا للبرامج التي تعمل كمسؤول أيضًا، لذا لا يصل إليه --{0} من هنا.
+
+استخدم أيقونة النسخة العاملة أو مفاتيح اختصارها، أو اخرج منها (الأيقونة › خروج) ثم شغّل CashGear Capture من جديد.</value>
+  </data>
+</root>

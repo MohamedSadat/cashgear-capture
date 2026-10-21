@@ -191,6 +191,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<AppTheme> Themes { get; } = Enum.GetValues<AppTheme>();
 
+    /// <summary>The app's languages; a change applies when the app starts again.</summary>
+    public IReadOnlyList<UiLanguage> Languages { get; } = Platform.AppLanguage.Languages;
+
     public IReadOnlyList<int> DelayChoices { get; } = [0, 1, 2, 3, 5, 10, 15, 30];
 
     public IReadOnlyList<int> HideDelayChoices { get; } = [0, 100, 200, 300, 500, 1000];
@@ -766,6 +769,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private AppTheme _theme;
 
     [ObservableProperty]
+    private UiLanguage _language;
+
+    [ObservableProperty]
     private CountChoice? _historySize;
 
     [ObservableProperty]
@@ -1035,7 +1041,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Output = BuildOutput(current.Output),
         Destinations = BuildDestinations(current.Destinations),
         Hotkeys = Hotkeys.Aggregate(current.Hotkeys, (h, row) => h.With(row.Action, row.SettingText)),
-        Appearance = new AppearanceSettings(Theme),
+        Appearance = new AppearanceSettings(Theme, Language),
         Recording = current.Recording with
         {
             Fps = RecordingFps,
@@ -1154,6 +1160,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         FullScreenOutput = s.Capture.FullScreenOutput;
         StartWithWindows = startWithWindows;
         Theme = s.Appearance.Theme;
+        Language = s.Appearance.Language;
         HistorySize = HistorySizes.FirstOrDefault(c => c.Value == s.History.MaxItems);
         if (HistorySize is null)
         {

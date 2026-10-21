@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
 
 namespace CashGear.Capture.App.Tray;
@@ -22,11 +23,7 @@ public partial class TrayIconRefusedWindow : Window, IThemedWindow
         ApplyTheme(theme);
     }
 
-    internal static string Message(string logDirectory) =>
-        "CashGear Capture is running, but Windows did not let it add its icon to the notification area.\n\n" +
-        "The capture hotkeys still work. This can happen when the taskbar isn't running, or when other copies of " +
-        "CashGear Capture, installed elsewhere, already hold its icon.\n\n" +
-        $"Details are in the log: {logDirectory}";
+    internal static string Message(string logDirectory) => TrayText.IconRefused(logDirectory);
 
     public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
 

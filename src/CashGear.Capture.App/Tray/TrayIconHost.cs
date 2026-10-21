@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Media;
 using System.Runtime.InteropServices;
@@ -8,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Interop.Native;
 using H.NotifyIcon;
@@ -47,6 +49,8 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
         icon.DataContext = viewModel;
         if (icon.ContextMenu is { } menu)
         {
+            // The menu isn't in a window, so it doesn't get the language's direction from one.
+            AppLanguage.ApplyTo(menu);
             menu.DataContext = viewModel;
             menu.Opened += OnMenuOpened;
             menu.Closed += OnMenuClosed;
@@ -79,6 +83,7 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
     /// other falls back to slot 1 (and so on). Slot 0 keeps the original formula so existing installs keep their id.
     /// </para>
     /// </summary>
+    [Localizable(false)]
     internal static Guid IconId(string programPath, int slot = 0) =>
         new(SHA256.HashData(Encoding.UTF8.GetBytes(
             "CashGear.Capture tray icon|" + programPath.ToUpperInvariant() + (slot == 0 ? "" : "|" + slot)))[..16]);

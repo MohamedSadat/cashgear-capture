@@ -4,6 +4,7 @@ using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Recording;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.SingleInstance;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Instance;
@@ -47,11 +48,10 @@ public partial class CaptureApplication : Application
             // Without this, the dispatcher handler below would swallow the failure and leave a half-started app with
             // no icon, no hotkeys and a hand-off pipe that never answers, i.e. an app that "doesn't open".
             LogStartupFailed(ex);
-            MessageBox.Show(
-                $"CashGear Capture could not start:\n\n{ex.Message}\n\nDetails are in the log: {_services.GetRequiredService<AppPaths>().LogDirectory}",
-                "CashGear Capture",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            AppDialog.Show(
+                null,
+                AppText.StartupFailed(ex.Message, _services.GetRequiredService<AppPaths>().LogDirectory),
+                kind: DialogKind.Error);
             Shutdown(1);
         }
     }
@@ -107,14 +107,13 @@ public partial class CaptureApplication : Application
         if (install.FirstRun)
         {
             var hotkeys = _services.GetRequiredService<HotkeyRegistrar>();
-            var region = hotkeys.Active.TryGetValue(Core.Hotkeys.HotkeyAction.CaptureRegion, out var gesture) ? $"Press {gesture} to capture a region, or click" : "Click";
             _tray!.Notify(
-                "CashGear Capture is running",
-                $"It lives in the notification area (under ^ if Windows hides it). {region} the icon for every kind of capture and Settings.");
+                TrayText.WelcomeTitle,
+                hotkeys.Active.TryGetValue(Core.Hotkeys.HotkeyAction.CaptureRegion, out var gesture) ? TrayText.WelcomeWithHotkey(gesture) : TrayText.Welcome);
         }
         else if (install.UpdatedTo is { } version)
         {
-            _tray!.Notify("CashGear Capture updated", $"You are now running version {version}.");
+            _tray!.Notify(TrayText.UpdatedTitle, TrayText.UpdatedMessage(version));
         }
     }
 
@@ -130,7 +129,7 @@ public partial class CaptureApplication : Application
     {
         LogUnhandledUi(e.Exception);
         e.Handled = true;
-        _tray?.Notify("CashGear Capture", $"Something went wrong: {e.Exception.Message}", NotificationKind.Error);
+        _tray?.Notify(CommonText.ProductName, AppText.SomethingWentWrong(e.Exception.Message), NotificationKind.Error);
     }
 
     private void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e) =>

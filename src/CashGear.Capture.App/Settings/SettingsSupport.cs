@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Data;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
@@ -110,6 +111,9 @@ public sealed class EnumLabelConverter : IValueConverter
         AppTheme.System => "Use the Windows setting",
         AppTheme.Light => "Light",
         AppTheme.Dark => "Dark",
+        UiLanguage.Automatic => SettingsText.LanguageAutomatic,
+        UiLanguage.English => SettingsText.LanguageEnglish,
+        UiLanguage.Arabic => SettingsText.LanguageArabic,
         PointerEffect.None => "None",
         PointerEffect.Halo => "A halo around it",
         PointerEffect.Spotlight => "A spotlight on it (the rest dimmed)",

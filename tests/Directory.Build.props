@@ -19,4 +19,8 @@
     <Using Include="AwesomeAssertions" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)TestCulture.cs" Link="TestCulture.cs" />
+  </ItemGroup>
+
 </Project>

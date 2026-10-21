@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Interop;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Scrolling;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Display;
@@ -94,7 +95,7 @@ public partial class CountdownWindow : Window, IThemedWindow
     /// <summary>What is captured when the count ends: "Open menu in 3".</summary>
     public string What
     {
-        init => Heading.Text = $"{value} in";
+        init => Heading.Text = CapturingText.CountdownWhat(value);
     }
 
     /// <summary>Shows the seconds left.</summary>

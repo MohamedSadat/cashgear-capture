@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:CashGear.Capture.App.Settings"
         xmlns:wpf="clr-namespace:CashGear.Capture.App.Wpf"
         xmlns:editor="clr-namespace:CashGear.Capture.App.Editor"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SettingsViewModel}"
         Title="CashGear Capture Settings"
@@ -1056,8 +1057,23 @@
           <TextBlock Style="{StaticResource Hint}" Text="Inches and centimetres on the ruler follow Windows' scale of the monitor it is on. To measure real inches on the glass, set your screen's pixels per inch (its width in pixels divided by its width in inches). Tools are in tray › Tools and on the capture toolbar; set hotkeys for them on the Hotkeys tab." />
 
           <TextBlock Style="{StaticResource Section}" Text="Appearance" />
-          <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" ItemTemplate="{StaticResource EnumItem}"
-                    HorizontalAlignment="Left" MinWidth="220" AutomationProperties.Name="Theme" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" MinWidth="120" />
+              <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition />
+              <RowDefinition />
+            </Grid.RowDefinitions>
+            <Label Content="{x:Static r:SettingsText.ThemeLabel}" Target="{Binding ElementName=ThemeBox}" VerticalAlignment="Center" Padding="0" Margin="0,0,12,0" />
+            <ComboBox x:Name="ThemeBox" Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" ItemTemplate="{StaticResource EnumItem}"
+                      HorizontalAlignment="Left" MinWidth="220" AutomationProperties.Name="{x:Static r:SettingsText.ThemeName}" />
+            <Label Grid.Row="1" Content="{x:Static r:SettingsText.LanguageLabel}" Target="{Binding ElementName=LanguageBox}" VerticalAlignment="Center" Padding="0" Margin="0,8,12,0" />
+            <ComboBox x:Name="LanguageBox" Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" ItemTemplate="{StaticResource EnumItem}"
+                      HorizontalAlignment="Left" MinWidth="220" Margin="0,8,0,0" AutomationProperties.Name="{x:Static r:SettingsText.LanguageName}" />
+          </Grid>
+          <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.LanguageHint}" />
 
           <TextBlock Style="{StaticResource Section}" Text="Capture history" />
           <ComboBox ItemsSource="{Binding HistorySizes}" SelectedItem="{Binding HistorySize}" DisplayMemberPath="Label"

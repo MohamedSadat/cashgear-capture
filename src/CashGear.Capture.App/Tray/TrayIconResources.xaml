@@ -1,43 +1,44 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:tb="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf">
+                    xmlns:tb="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf"
+                    xmlns:r="clr-namespace:CashGear.Capture.App.Resources">
 
   <BooleanToVisibilityConverter x:Key="TrayVisible" />
 
   <!-- The icon itself is set in TrayIconHost (the app icon at the notification area's size). -->
   <tb:TaskbarIcon x:Key="TrayIcon"
-                  ToolTipText="CashGear Capture"
+                  ToolTipText="{x:Static r:CommonText.ProductName}"
                   MenuActivation="LeftOrRightClick"
                   NoLeftClickDelay="True">
 
     <tb:TaskbarIcon.ContextMenu>
       <ContextMenu>
-        <MenuItem Header="Capture _Region" Command="{Binding CaptureRegionCommand}" InputGestureText="{Binding RegionHotkey}" />
-        <MenuItem Header="Capture _Window" Command="{Binding CaptureWindowCommand}" InputGestureText="{Binding WindowHotkey}" />
-        <MenuItem Header="Capture _Full Screen" Command="{Binding CaptureFullScreenCommand}" InputGestureText="{Binding FullScreenHotkey}" />
-        <MenuItem Header="_Scrolling Capture" Command="{Binding CaptureScrollingCommand}" InputGestureText="{Binding ScrollingHotkey}" />
-        <MenuItem Header="Capture _Text" Command="{Binding CaptureTextCommand}" InputGestureText="{Binding TextHotkey}" />
-        <MenuItem Header="_More Captures">
-          <MenuItem Header="_Fixed-Size Region" Command="{Binding CaptureFixedRegionCommand}" InputGestureText="{Binding FixedRegionHotkey}" />
-          <MenuItem Header="F_reehand Region" Command="{Binding CaptureFreehandCommand}" InputGestureText="{Binding FreehandHotkey}" />
-          <MenuItem Header="_Polygon Region" Command="{Binding CapturePolygonCommand}" InputGestureText="{Binding PolygonHotkey}" />
-          <MenuItem Header="R_ounded Region" Command="{Binding CaptureRoundedRegionCommand}" InputGestureText="{Binding RoundedRegionHotkey}" />
+        <MenuItem Header="{x:Static r:TrayText.CaptureRegion}" Command="{Binding CaptureRegionCommand}" InputGestureText="{Binding RegionHotkey}" />
+        <MenuItem Header="{x:Static r:TrayText.CaptureWindow}" Command="{Binding CaptureWindowCommand}" InputGestureText="{Binding WindowHotkey}" />
+        <MenuItem Header="{x:Static r:TrayText.CaptureFullScreen}" Command="{Binding CaptureFullScreenCommand}" InputGestureText="{Binding FullScreenHotkey}" />
+        <MenuItem Header="{x:Static r:TrayText.CaptureScrolling}" Command="{Binding CaptureScrollingCommand}" InputGestureText="{Binding ScrollingHotkey}" />
+        <MenuItem Header="{x:Static r:TrayText.CaptureText}" Command="{Binding CaptureTextCommand}" InputGestureText="{Binding TextHotkey}" />
+        <MenuItem Header="{x:Static r:TrayText.MoreCaptures}">
+          <MenuItem Header="{x:Static r:TrayText.FixedRegion}" Command="{Binding CaptureFixedRegionCommand}" InputGestureText="{Binding FixedRegionHotkey}" />
+          <MenuItem Header="{x:Static r:TrayText.FreehandRegion}" Command="{Binding CaptureFreehandCommand}" InputGestureText="{Binding FreehandHotkey}" />
+          <MenuItem Header="{x:Static r:TrayText.PolygonRegion}" Command="{Binding CapturePolygonCommand}" InputGestureText="{Binding PolygonHotkey}" />
+          <MenuItem Header="{x:Static r:TrayText.RoundedRegion}" Command="{Binding CaptureRoundedRegionCommand}" InputGestureText="{Binding RoundedRegionHotkey}" />
           <Separator />
-          <MenuItem Header="O_bject (Part of a Window)" Command="{Binding CaptureObjectCommand}" InputGestureText="{Binding ObjectHotkey}" />
-          <MenuItem Header="Open _Menu" Command="{Binding CaptureMenuCommand}" InputGestureText="{Binding MenuHotkey}" />
+          <MenuItem Header="{x:Static r:TrayText.ObjectCapture}" Command="{Binding CaptureObjectCommand}" InputGestureText="{Binding ObjectHotkey}" />
+          <MenuItem Header="{x:Static r:TrayText.OpenMenu}" Command="{Binding CaptureMenuCommand}" InputGestureText="{Binding MenuHotkey}" />
         </MenuItem>
-        <MenuItem Header="Repeat _Last Capture" Command="{Binding RepeatLastCaptureCommand}" InputGestureText="{Binding RepeatHotkey}" />
-        <MenuItem Header="Capture _Toolbar" IsCheckable="True" IsChecked="{Binding IsToolbarVisible, Mode=OneWay}"
+        <MenuItem Header="{x:Static r:TrayText.RepeatLastCapture}" Command="{Binding RepeatLastCaptureCommand}" InputGestureText="{Binding RepeatHotkey}" />
+        <MenuItem Header="{x:Static r:TrayText.CaptureToolbar}" IsCheckable="True" IsChecked="{Binding IsToolbarVisible, Mode=OneWay}"
                   Command="{Binding ToggleToolbarCommand}" InputGestureText="{Binding ToolbarHotkey}" />
-        <MenuItem Header="T_ools">
-          <MenuItem Header="_Magnifier" Command="{Binding ToggleMagnifierCommand}" InputGestureText="{Binding MagnifierHotkey}" />
-          <MenuItem Header="_Colour Picker" Command="{Binding PickColorCommand}" InputGestureText="{Binding ColorPickerHotkey}" />
-          <MenuItem Header="Screen _Ruler" IsCheckable="True" IsChecked="{Binding IsRulerVisible, Mode=OneWay}" Command="{Binding ToggleRulerCommand}" InputGestureText="{Binding RulerHotkey}" />
-          <MenuItem Header="Cross_hair" IsCheckable="True" IsChecked="{Binding IsCrosshairVisible, Mode=OneWay}" Command="{Binding ToggleCrosshairCommand}" InputGestureText="{Binding CrosshairHotkey}" />
+        <MenuItem Header="{x:Static r:TrayText.Tools}">
+          <MenuItem Header="{x:Static r:TrayText.Magnifier}" Command="{Binding ToggleMagnifierCommand}" InputGestureText="{Binding MagnifierHotkey}" />
+          <MenuItem Header="{x:Static r:TrayText.ColorPicker}" Command="{Binding PickColorCommand}" InputGestureText="{Binding ColorPickerHotkey}" />
+          <MenuItem Header="{x:Static r:TrayText.ScreenRuler}" IsCheckable="True" IsChecked="{Binding IsRulerVisible, Mode=OneWay}" Command="{Binding ToggleRulerCommand}" InputGestureText="{Binding RulerHotkey}" />
+          <MenuItem Header="{x:Static r:TrayText.Crosshair}" IsCheckable="True" IsChecked="{Binding IsCrosshairVisible, Mode=OneWay}" Command="{Binding ToggleCrosshairCommand}" InputGestureText="{Binding CrosshairHotkey}" />
           <Separator />
-          <MenuItem Header="_Batch Process…" Command="{Binding BatchProcessCommand}" />
-          <MenuItem Header="Com_bine Images…" Command="{Binding CombineImagesCommand}" />
-          <MenuItem Header="Images to _PDF…" Command="{Binding ImagesToPdfCommand}" />
+          <MenuItem Header="{x:Static r:TrayText.BatchProcess}" Command="{Binding BatchProcessCommand}" />
+          <MenuItem Header="{x:Static r:TrayText.CombineImages}" Command="{Binding CombineImagesCommand}" />
+          <MenuItem Header="{x:Static r:TrayText.ImagesToPdf}" Command="{Binding ImagesToPdfCommand}" />
         </MenuItem>
         <MenuItem Header="{Binding DelayHeader}" ItemsSource="{Binding DelayChoices}">
           <MenuItem.ItemContainerStyle>
@@ -50,15 +51,15 @@
         </MenuItem>
         <Separator />
         <MenuItem Header="{Binding RecordText}" Command="{Binding ToggleRecordingCommand}" InputGestureText="{Binding RecordHotkey}" />
-        <MenuItem Header="Add _Overlays to a Recording…" Command="{Binding AddOverlaysCommand}" />
-        <MenuItem Header="_Video Editor">
-          <MenuItem Header="_Open a Recording or Project…" Command="{Binding OpenVideoEditorCommand}" />
+        <MenuItem Header="{x:Static r:TrayText.AddOverlays}" Command="{Binding AddOverlaysCommand}" />
+        <MenuItem Header="{x:Static r:TrayText.VideoEditor}">
+          <MenuItem Header="{x:Static r:TrayText.OpenRecordingOrProject}" Command="{Binding OpenVideoEditorCommand}" />
           <MenuItem Header="{Binding EditLastRecordingText}" Command="{Binding EditLastRecordingCommand}" IsEnabled="{Binding HasLastRecording}" />
         </MenuItem>
-        <MenuItem Header="Save _Interrupted Recordings" Command="{Binding RecoverRecordingsCommand}"
+        <MenuItem Header="{x:Static r:TrayText.SaveInterruptedRecordings}" Command="{Binding RecoverRecordingsCommand}"
                   Visibility="{Binding HasInterruptedRecordings, Converter={StaticResource TrayVisible}}" />
         <Separator />
-        <MenuItem Header="Recent _Captures" ItemsSource="{Binding RecentCaptures}" IsEnabled="{Binding HasRecentCaptures}">
+        <MenuItem Header="{x:Static r:TrayText.RecentCaptures}" ItemsSource="{Binding RecentCaptures}" IsEnabled="{Binding HasRecentCaptures}">
           <MenuItem.ItemContainerStyle>
             <Style TargetType="MenuItem">
               <Setter Property="Command" Value="{Binding Open}" />
@@ -81,14 +82,14 @@
             </Style>
           </MenuItem.ItemContainerStyle>
         </MenuItem>
-        <MenuItem Header="Capture _History…" Command="{Binding OpenHistoryCommand}" />
+        <MenuItem Header="{x:Static r:TrayText.CaptureHistory}" Command="{Binding OpenHistoryCommand}" />
         <Separator />
         <MenuItem Header="{Binding UpdateText}" Command="{Binding RestartToUpdateCommand}"
                   Visibility="{Binding IsUpdateReady, Converter={StaticResource TrayVisible}}" />
-        <MenuItem Header="_Settings…" Command="{Binding OpenSettingsCommand}" />
-        <MenuItem Header="Export _Diagnostics…" Command="{Binding ExportDiagnosticsCommand}" />
+        <MenuItem Header="{x:Static r:TrayText.Settings}" Command="{Binding OpenSettingsCommand}" />
+        <MenuItem Header="{x:Static r:TrayText.ExportDiagnostics}" Command="{Binding ExportDiagnosticsCommand}" />
         <Separator />
-        <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
+        <MenuItem Header="{x:Static r:TrayText.Exit}" Command="{Binding ExitCommand}" />
       </ContextMenu>
     </tb:TaskbarIcon.ContextMenu>
   </tb:TaskbarIcon>

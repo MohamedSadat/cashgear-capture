@@ -10,12 +10,15 @@ namespace CashGear.Capture.App.Platform;
 /// Applies the light/dark setting to the app's windows using WPF's built-in Fluent theme (<c>ThemeMode</c>), which
 /// styles every standard control in both modes and follows the Windows app theme for <see cref="AppTheme.System"/>.
 /// The title bar is drawn by DWM, so it gets the matching dark/light attribute too. Applied per window, so the tray
-/// menu keeps its classic look.
+/// menu keeps its classic look. Every themed window is also laid out in the UI language's direction
+/// (<see cref="AppLanguage.ApplyTo"/>).
 /// </summary>
 internal static class Theming
 {
     public static void Apply(Window window, AppTheme theme)
     {
+        AppLanguage.ApplyTo(window);
+
 #pragma warning disable WPF0001 // ThemeMode is marked experimental in .NET 10 WPF; it is the supported way to get Fluent light/dark.
         window.ThemeMode = theme switch
         {

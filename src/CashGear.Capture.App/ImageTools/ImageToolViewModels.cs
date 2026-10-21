@@ -778,23 +778,45 @@ public sealed partial class PdfToolViewModel : ObservableObject, IDisposable
         Status = "Making the PDF…";
         _run = new CancellationTokenSource();
         var total = pictures.Count;
+
+        // As in Batch Process: a report posted just before the end can arrive after it, so once finished they are ignored.
+        var finished = false;
+        var gate = new object();
         var progress = new Progress<int>(done =>
         {
-            Progress = 100.0 * done / total;
-            Status = $"{done} of {total} pictures";
+            lock (gate)
+            {
+                if (!finished)
+                {
+                    Progress = 100.0 * done / total;
+                    Status = $"{done} of {total} pictures";
+                }
+            }
         });
+
+        void Finish()
+        {
+            lock (gate)
+            {
+                finished = true;
+            }
+        }
+
         try
         {
             await PdfWriter.WriteAsync(path, pictures, options, Path.GetFileNameWithoutExtension(path), progress, _run.Token);
+            Finish();
             MadeFile = path;
             Status = $"Saved {Path.GetFileName(path)} ({total} pictures).";
         }
         catch (OperationCanceledException)
         {
+            Finish();
             Status = "Cancelled; no PDF was saved.";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or ArgumentException)
         {
+            Finish();
             Status = "Could not make the PDF: " + ex.Message;
         }
         finally

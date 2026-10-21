@@ -1,4 +1,5 @@
 using CashGear.Capture.App.Hosting;
+using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Instance;
 
@@ -15,7 +16,7 @@ internal sealed class InstanceCommandDispatcher(
         switch (command)
         {
             case InstanceCommand.Activate:
-                notifier.Notify("CashGear Capture is already running", "Use the tray icon to capture.");
+                notifier.Notify(TrayText.AlreadyRunningTitle, TrayText.AlreadyRunningMessage);
                 return Task.CompletedTask;
 
             case InstanceCommand.Exit:
