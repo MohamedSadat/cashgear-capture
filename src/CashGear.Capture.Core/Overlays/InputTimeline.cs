@@ -137,13 +137,17 @@ public sealed class InputTimeline
     /// <summary>Presses that may still show at <paramref name="time"/>: down within <paramref name="window"/> before it, or held then.</summary>
     public IReadOnlyList<Click> Clicks(TimeSpan time, TimeSpan window)
     {
-        var result = new List<Click>();
-        Clicks(time, window, result);
-        return result;
+        var found = new List<(Click Click, bool Held)>();
+        Clicks(time, window, found);
+        return [.. found.Select(c => c.Held ? c.Click with { Up = null } : c.Click)];
     }
 
-    /// <summary>As <see cref="Clicks(TimeSpan, TimeSpan)"/>, into <paramref name="result"/> (cleared first): nothing is allocated.</summary>
-    public void Clicks(TimeSpan time, TimeSpan window, List<Click> result)
+    /// <summary>
+    /// As <see cref="Clicks(TimeSpan, TimeSpan)"/>, into <paramref name="result"/> (cleared first) without
+    /// allocating: a press still held at <paramref name="time"/> is <c>Held</c>, its click as recorded (with the
+    /// release that came later, if any).
+    /// </summary>
+    public void Clicks(TimeSpan time, TimeSpan window, List<(Click Click, bool Held)> result)
     {
         ArgumentNullException.ThrowIfNull(result);
         result.Clear();
@@ -160,7 +164,7 @@ public sealed class InputTimeline
                 var held = click.Up is not { } up || up > time;
                 if ((held || time - click.Down <= window || time - click.Up!.Value <= window) && !IsDrawing(click.Down))
                 {
-                    result.Add(held ? click with { Up = null } : click);
+                    result.Add((click, held));
                 }
             }
         }
@@ -169,9 +173,19 @@ public sealed class InputTimeline
     /// <summary>Captions as they read at <paramref name="time"/>, oldest first, each with when it was last changed.</summary>
     public IReadOnlyList<(int Id, string Text, TimeSpan Started, TimeSpan Changed)> Captions(TimeSpan time, TimeSpan hold)
     {
+        var result = new List<(int Id, string Text, TimeSpan Started, TimeSpan Changed)>();
+        Captions(time, hold, result);
+        return result;
+    }
+
+    /// <summary>As <see cref="Captions(TimeSpan, TimeSpan)"/>, into <paramref name="result"/> (cleared first) without allocating.</summary>
+    public void Captions(TimeSpan time, TimeSpan hold, List<(int Id, string Text, TimeSpan Started, TimeSpan Changed)> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        result.Clear();
         lock (_gate)
         {
-            var byId = new Dictionary<int, (string Text, TimeSpan Started, TimeSpan Changed)>();
+            // In time order, so each caption comes in where it started: oldest first, as they are returned.
             for (var i = 0; i < _captions.Count && _captions[i].Time <= time; i++)
             {
                 var caption = _captions[i];
@@ -180,15 +194,32 @@ public sealed class InputTimeline
                     continue;
                 }
 
-                byId[caption.Id] = byId.TryGetValue(caption.Id, out var known)
-                    ? (caption.Text, known.Started, caption.Time)
-                    : (caption.Text, caption.Time, caption.Time);
+                var known = result.Count - 1;
+                while (known >= 0 && result[known].Id != caption.Id)
+                {
+                    known--;
+                }
+
+                if (known >= 0)
+                {
+                    result[known] = (caption.Id, caption.Text, result[known].Started, caption.Time);
+                }
+                else
+                {
+                    result.Add((caption.Id, caption.Text, caption.Time, caption.Time));
+                }
             }
 
-            return [.. byId
-                .Where(p => time - p.Value.Changed <= hold && !IsDrawing(p.Value.Started))
-                .OrderBy(p => p.Value.Started)
-                .Select(p => (p.Key, p.Value.Text, p.Value.Started, p.Value.Changed))];
+            var kept = 0;
+            for (var i = 0; i < result.Count; i++)
+            {
+                if (time - result[i].Changed <= hold && !IsDrawing(result[i].Started))
+                {
+                    result[kept++] = result[i];
+                }
+            }
+
+            result.RemoveRange(kept, result.Count - kept);
         }
     }
 

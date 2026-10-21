@@ -67,6 +67,12 @@ internal sealed partial class ScreenRecorder(
     /// <summary>How long a lost graphics card may take to come back before the recording stops.</summary>
     internal TimeSpan DeviceGiveUp { get; set; } = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// Feeds the overlays' input timeline instead of Windows' mouse and keyboard hooks (tests: input that doesn't
+    /// depend on what else moves the pointer); what it returns is disposed when the recording stops.
+    /// </summary>
+    internal Func<InputTimeline, IDisposable>? InputFeed { get; set; }
+
     public bool IsRecording => _session is not null;
 
     public bool IsPaused => _session?.Paused ?? false;
@@ -594,6 +600,7 @@ internal sealed partial class ScreenRecorder(
         private FrameConverter _converter;
         private Timer? _watchdog;
         private InputRecorder? _input;
+        private IDisposable? _inputFeed;
         private Thread? _videoThread;
         private Thread? _soundThread;
         private volatile bool _stopping;
@@ -846,6 +853,7 @@ internal sealed partial class ScreenRecorder(
             }
 
             _input?.Dispose();
+            _inputFeed?.Dispose();
             _journal?.Dispose();
             _watchdog?.Dispose();
             _stream.Closed -= OnStreamClosed;
@@ -939,6 +947,12 @@ internal sealed partial class ScreenRecorder(
         {
             if (_timeline is null || _overlays is null)
             {
+                return;
+            }
+
+            if (_owner.InputFeed is { } feed)
+            {
+                _inputFeed = feed(_timeline);
                 return;
             }
 

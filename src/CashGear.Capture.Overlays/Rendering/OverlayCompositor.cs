@@ -28,6 +28,9 @@ public sealed class OverlayCompositor : IDisposable
     private const float CaptionPaddingX = 0.55f;
     private const float CaptionPaddingY = 0.25f;
 
+    /// <summary>Caption layouts kept (the texts recently shown); beyond that they are all made again.</summary>
+    private const int MaxLayouts = 32;
+
     private readonly CursorLibrary? _cursors;
     private readonly ID2D1Factory1 _factory;
     private readonly ID2D1Device _device;
@@ -37,6 +40,9 @@ public sealed class OverlayCompositor : IDisposable
     private readonly ID2D1SolidColorBrush _brush;
     private readonly Dictionary<int, ID2D1Bitmap1?> _cursorBitmaps = [];
     private readonly Dictionary<(string, float), IDWriteTextFormat> _formats = [];
+    private readonly Dictionary<(string Text, string Family, float Size), IDWriteTextLayout> _layouts = [];
+    private ID2D1Geometry? _webcamShape;
+    private (bool Circle, System.Drawing.RectangleF Bounds, float Corner) _webcamShapeOf;
     private ID2D1Bitmap1? _webcam;
     private long _webcamVersion = -1;
     private readonly GradientStop[] _stops = new GradientStop[3];
@@ -153,6 +159,12 @@ public sealed class OverlayCompositor : IDisposable
             format.Dispose();
         }
 
+        foreach (var layout in _layouts.Values)
+        {
+            layout.Dispose();
+        }
+
+        _webcamShape?.Dispose();
         _webcam?.Dispose();
         _halo?.Dispose();
         _spotlight?.Dispose();
@@ -256,8 +268,7 @@ public sealed class OverlayCompositor : IDisposable
 
     private void DrawCaption(CaptionItem caption)
     {
-        var format = TextFormat(caption.FontFamily, (float)caption.FontSize);
-        using var layout = _write.CreateTextLayout(caption.Text, format, Width * 0.9f, Height);
+        var layout = TextLayout(caption.Text, caption.FontFamily, (float)caption.FontSize);
         var metrics = layout.Metrics;
         var size = (float)caption.FontSize;
         var boxWidth = metrics.WidthIncludingTrailingWhitespace + (2 * size * CaptionPaddingX);
@@ -314,9 +325,7 @@ public sealed class OverlayCompositor : IDisposable
         var top = Math.Clamp((float)placement.CenterY - (height / 2), 0, Math.Max(0, Height - height));
         var bounds = new System.Drawing.RectangleF(left, top, width, height);
         var corner = circle ? width / 2 : height * 0.12f;
-        using var shape = circle
-            ? (ID2D1Geometry)_factory.CreateEllipseGeometry(new Ellipse(new Vector2(left + (width / 2), top + (height / 2)), width / 2, height / 2))
-            : _factory.CreateRoundedRectangleGeometry(new RoundedRectangle(bounds, corner, corner));
+        var shape = WebcamOutline(circle, bounds, corner);
 
         // The picture fills the shape (cut to its middle), mirrored like a mirror if asked.
         var shown = circle ? height * aspect : width;
@@ -345,6 +354,44 @@ public sealed class OverlayCompositor : IDisposable
                 _context.DrawRoundedRectangle(new RoundedRectangle(inset, corner, corner), _brush, stroke);
             }
         }
+    }
+
+    /// <summary>The webcam's outline, made again only when it moves or changes (it stays put through a recording).</summary>
+    private ID2D1Geometry WebcamOutline(bool circle, System.Drawing.RectangleF bounds, float corner)
+    {
+        if (_webcamShape is null || _webcamShapeOf != (circle, bounds, corner))
+        {
+            _webcamShape?.Dispose();
+            _webcamShape = circle
+                ? _factory.CreateEllipseGeometry(new Ellipse(new Vector2(bounds.X + (bounds.Width / 2), bounds.Y + (bounds.Height / 2)), bounds.Width / 2, bounds.Height / 2))
+                : _factory.CreateRoundedRectangleGeometry(new RoundedRectangle(bounds, corner, corner));
+            _webcamShapeOf = (circle, bounds, corner);
+        }
+
+        return _webcamShape;
+    }
+
+    /// <summary>A caption's laid-out text, kept while it shows: made once when the text changes, not every frame.</summary>
+    private IDWriteTextLayout TextLayout(string text, string family, float size)
+    {
+        if (_layouts.TryGetValue((text, family, size), out var layout))
+        {
+            return layout;
+        }
+
+        if (_layouts.Count >= MaxLayouts)
+        {
+            foreach (var old in _layouts.Values)
+            {
+                old.Dispose();
+            }
+
+            _layouts.Clear();
+        }
+
+        layout = _write.CreateTextLayout(text, TextFormat(family, size), Width * 0.9f, Height);
+        _layouts[(text, family, size)] = layout;
+        return layout;
     }
 
     private IDWriteTextFormat TextFormat(string family, float size)
