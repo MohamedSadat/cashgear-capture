@@ -217,12 +217,12 @@ public sealed class ScreenToolsTests : IDisposable
                 Topmost = true,
                 ShowInTaskbar = false,
                 WindowStartupLocation = WindowStartupLocation.Manual,
-                Left = (pattern.X + 220) / monitor.Scale.ScaleX,
-                Top = (pattern.Y + 150) / monitor.Scale.ScaleY,
             };
             form.Show();
             try
             {
+                // In physical pixels: WPF would turn a DIP position into pixels at the scale of the monitor it starts on.
+                User32.SetWindowPos(ToolWindowStyle.Handle(form), User32.HwndTopmost, pattern.X + 220, pattern.Y + 150, 0, 0, User32.SwpNoActivate | User32.SwpNoSize);
                 await Task.Delay(400);
                 var (cx, cy) = TestInput.Centre(button);
                 using (TestInput.Exclusive())

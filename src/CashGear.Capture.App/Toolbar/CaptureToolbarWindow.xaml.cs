@@ -22,6 +22,8 @@ namespace CashGear.Capture.App.Toolbar;
 /// open), and is left out of every capture and recording.</item>
 /// <item>Dragged by its grip; dropped near an edge of a monitor's work area it docks flush against it, in a column
 /// on the left and right edges and in a row at the top and bottom. Where it was is remembered.</item>
+/// <item>When a column (or row) is longer than the monitor's work area (20 buttons at 150% on a 1080p screen), it
+/// wraps into a second one.</item>
 /// </list>
 /// Positions are physical pixels (<c>SetWindowPos</c>), so it lands exactly at any mix of monitor scales.
 /// </summary>
@@ -84,8 +86,9 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
         base.OnDpiChanged(oldDpi, newDpi);
         if (!_dragging)
         {
-            // On another monitor's scale it has another size: put it flush against its edge again.
+            // On another monitor's scale it has another size: fit it to that monitor and put it flush against its edge again.
             var at = Bounds().TopLeft;
+            FitTo(MonitorOf(Bounds()));
             Dispatcher.BeginInvoke(() => Snap(at, save: false), DispatcherPriority.Loaded);
         }
     }
@@ -111,6 +114,8 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
     {
         IsVertical = vertical;
         Bar.Orientation = vertical ? Orientation.Vertical : Orientation.Horizontal;
+        Bar.MaxWidth = double.PositiveInfinity;
+        Bar.MaxHeight = double.PositiveInfinity;
         Grip.Width = vertical ? 34 : 14;
         Grip.Height = vertical ? 14 : 34;
         GripGlyph.Text = vertical ? GripVertical : GripHorizontal;
@@ -122,9 +127,31 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
         }
     }
 
+    /// <summary>Wraps it into more columns (or rows) when one would be longer than <paramref name="monitor"/>'s work area.</summary>
+    private void FitTo(MonitorInfo monitor)
+    {
+        var scale = monitor.Scale;
+        if (IsVertical)
+        {
+            Bar.MaxWidth = double.PositiveInfinity;
+            Bar.MaxHeight = Math.Max(100, (monitor.WorkArea.Height / scale.ScaleY) - 8);
+        }
+        else
+        {
+            Bar.MaxHeight = double.PositiveInfinity;
+            Bar.MaxWidth = Math.Max(100, (monitor.WorkArea.Width / scale.ScaleX) - 8);
+        }
+    }
+
     /// <summary>Where it was last time (or the top centre of the primary monitor).</summary>
     private void Restore()
     {
+        // Onto its monitor first: that monitor's scale decides its size (a move there changes its DPI at once).
+        var monitors = _monitors.GetMonitors();
+        var monitor = monitors.FirstOrDefault(m => m.DeviceName == _placement?.Monitor) ?? monitors.FirstOrDefault(m => m.IsPrimary) ?? monitors[0];
+        Move(new PixelRect(monitor.WorkArea.X, monitor.WorkArea.Y, 1, 1));
+        FitTo(monitor);
+
         // Created as a narrow column it can start at Windows' minimum window width; fitting it to its buttons again
         // once shown makes it its real size.
         SizeToContent = SizeToContent.Manual;
@@ -182,12 +209,15 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
     private void Dock()
     {
         var bounds = Bounds();
-        Edge = ToolbarDocking.EdgeFor(bounds, MonitorOf(bounds).WorkArea);
+        var monitor = MonitorOf(bounds);
+        Edge = ToolbarDocking.EdgeFor(bounds, monitor.WorkArea);
         var vertical = ToolbarDocking.VerticalFor(Edge) ?? IsVertical;
         if (vertical != IsVertical)
         {
             SetVertical(vertical);
         }
+
+        FitTo(monitor);
 
         // After the layout (and the window's new size) for a new orientation.
         Dispatcher.BeginInvoke(() => Snap(bounds.TopLeft, save: true), DispatcherPriority.Loaded);

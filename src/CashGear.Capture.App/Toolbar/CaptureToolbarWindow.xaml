@@ -57,7 +57,7 @@
     </Style>
   </Window.Resources>
 
-  <StackPanel x:Name="Bar" Orientation="Horizontal" Margin="2">
+  <WrapPanel x:Name="Bar" Orientation="Horizontal" Margin="2">
     <Border x:Name="Grip" Width="14" Height="34" Background="Transparent" Cursor="SizeAll"
             MouseLeftButtonDown="OnGripDown" MouseMove="OnGripMove" MouseLeftButtonUp="OnGripUp"
             ToolTip="Drag to move. Drop it at the edge of the screen to dock it there." AutomationProperties.Name="Move the toolbar">
@@ -134,5 +134,5 @@
     <Button Command="{Binding HideToolbarCommand}" ToolTip="Hide the toolbar (tray › Capture Toolbar brings it back)" AutomationProperties.Name="Hide the toolbar">
       <TextBlock Text="&#xE711;" Style="{StaticResource Glyph}" FontSize="12" />
     </Button>
-  </StackPanel>
+  </WrapPanel>
 </Window>

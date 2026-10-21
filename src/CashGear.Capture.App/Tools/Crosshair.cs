@@ -84,8 +84,8 @@ public sealed class Crosshair
         var monitors = _monitors.GetMonitors();
         var screen = VirtualScreen.GetBounds(monitors.Select(m => m.Bounds));
         var monitor = monitors.FirstOrDefault(m => m.Bounds.Contains(cursor)) ?? monitors[0];
-        ToolWindowStyle.Place(_across, new PixelRect(screen.X, cursor.Y, screen.Width, 1));
-        ToolWindowStyle.Place(_down, new PixelRect(cursor.X, screen.Y, 1, screen.Height));
+        _across.PlaceAt(new PixelRect(screen.X, cursor.Y, screen.Width, 1));
+        _down.PlaceAt(new PixelRect(cursor.X, screen.Y, 1, screen.Height));
 
         var local = VirtualScreen.ToLocal(cursor, monitor.Bounds);
         _text.Text = string.Create(
@@ -99,7 +99,7 @@ public sealed class Crosshair
         // Below right of the pointer, flipped to stay on its monitor.
         var x = cursor.X + gap + size.Width > monitor.Bounds.Right ? cursor.X - gap - size.Width : cursor.X + gap;
         var y = cursor.Y + gap + size.Height > monitor.Bounds.Bottom ? cursor.Y - gap - size.Height : cursor.Y + gap;
-        ToolWindowStyle.Place(_readout, new PixelRect(x, y, size.Width, size.Height));
+        _readout.PlaceAt(new PixelRect(x, y, size.Width, size.Height));
     }
 
     private static T Frozen<T>(T freezable)
@@ -109,9 +109,11 @@ public sealed class Crosshair
         return freezable;
     }
 
-    /// <summary>A borderless, click-through, top-most window of the crosshair.</summary>
+    /// <summary>A borderless, top-most window of the crosshair, placed in physical pixels.</summary>
     private sealed class ToolOverlay : Window, IScreenToolWindow
     {
+        private PixelRect _bounds;
+
         public ToolOverlay(Brush background, bool clickThrough)
         {
             Title = "CashGear Capture - crosshair";
@@ -128,6 +130,22 @@ public sealed class Crosshair
             Width = 1;
             Height = 1;
             SourceInitialized += (_, _) => ToolWindowStyle.Apply(this, clickThrough, popup: true);
+        }
+
+        public void PlaceAt(PixelRect bounds)
+        {
+            _bounds = bounds;
+            ToolWindowStyle.Place(this, bounds);
+        }
+
+        /// <summary>
+        /// A line spanning monitors changes DPI when most of it moves onto a monitor of another scale, and WPF then
+        /// scales the window (a 1-px line became 2 × 1.5 times as long): put it back.
+        /// </summary>
+        protected override void OnDpiChanged(System.Windows.DpiScale oldDpi, System.Windows.DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+            Dispatcher.BeginInvoke(() => ToolWindowStyle.Place(this, _bounds), System.Windows.Threading.DispatcherPriority.Send);
         }
     }
 }
