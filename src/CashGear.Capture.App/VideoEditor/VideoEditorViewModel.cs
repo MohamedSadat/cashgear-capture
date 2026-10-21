@@ -50,14 +50,31 @@ public sealed record VideoEditorServices(
     public string CacheDirectory => Path.Combine(Paths.DataDirectory, "VideoEditor");
 }
 
-/// <summary>A row header of the timeline: the track's name and its switches.</summary>
+/// <summary>A row header of the timeline: the track's name, its switches and (for sound) its volume.</summary>
 public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Track track, double height) : ObservableObject
 {
-    public Track Track { get; } = track;
+    public Track Track { get; private set; } = track;
 
     public string Name => Track.Name;
 
     public double Height { get; } = height;
+
+    /// <summary>The track's sound level in percent (0 to 200); a drag of the slider is one undo step.</summary>
+    public double Volume
+    {
+        get => Math.Round(Track.Volume * 100);
+        set => owner.ChangeTrack(Track, t => t with { Volume = Math.Clamp(value, 0, 200) / 100 }, "track volume", $"volume {Track.Id}");
+    }
+
+    /// <summary>The same track after an edit: its switches show the new state (the header stays, so a slider drag goes on).</summary>
+    internal void Update(Track track)
+    {
+        Track = track;
+        OnPropertyChanged(string.Empty);
+    }
+
+    [RelayCommand]
+    private void Delete() => owner.DeleteTrack(Track);
 
     public bool HasPictures => Track.HasPictures;
 
@@ -108,6 +125,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     private readonly IVideoEditorDialogs _dialogs;
     private readonly ILogger _logger;
     private bool _disposed;
+    private TimelineItem? _shown;
+    private TimelineItem? _applied;
+    private (float X, float Y, float Scale) _preview = (0, 0, 1);
+    private PreviewDrag? _drag;
+    private int _drags;
 
     public VideoEditorViewModel(VideoProject project, string? projectPath, VideoEditorServices services, IVideoEditorDialogs dialogs)
     {
@@ -155,6 +177,14 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     public VideoProject Project => History.Project;
 
     public ObservableCollection<TrackHeaderViewModel> Tracks { get; } = [];
+
+    /// <summary>The selected item's settings (the properties panel).</summary>
+    public ObservableCollection<EditParameter> Properties { get; } = [];
+
+    [ObservableProperty]
+    private string _propertiesTitle = "";
+
+    public bool HasProperties => Properties.Count > 0;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Title))]
@@ -272,23 +302,75 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
 
         canvas.Save();
-        canvas.Translate((width - (size.Width * scale)) / 2, (height - (size.Height * scale)) / 2);
+        _preview = ((width - (size.Width * scale)) / 2, (height - (size.Height * scale)) / 2, scale);
+        canvas.Translate(_preview.X, _preview.Y);
         canvas.Scale(scale);
         canvas.ClipRect(SKRect.Create(size.Width, size.Height));
         var result = Compositor.Render(canvas, Project, Timeline.Playhead);
+        if (!Engine.IsPlaying && Timeline.Selected is Clip clip && clip.Covers(Timeline.Playhead) && Project.Find(clip.Id)?.Track is { HasPictures: true })
+        {
+            DrawSelection(canvas, PlacementEdits.Area(Project, clip), scale);
+        }
+
         canvas.Restore();
         return result.Missing;
     }
 
-    /// <summary>Changes a track (mute, solo, lock, show) as one undo step.</summary>
-    public void ChangeTrack(Track track, Func<Track, Track> change, string name)
+    /// <summary>What a press on the preview at (<paramref name="x"/>, <paramref name="y"/>) would take hold of (pixels of the last frame drawn).</summary>
+    public PreviewHit? PreviewHitAt(double x, double y) =>
+        PlacementEdits.HitTest(Project, Timeline.Playhead, ToCanvas(x, y), PlacementEdits.GripSize / _preview.Scale);
+
+    /// <summary>A press on the preview: selects the picture under it, to move it (or resize it by its grip).</summary>
+    public void PreviewPointerDown(double x, double y)
+    {
+        StopPlaying();
+        if (PreviewHitAt(x, y) is not { } hit || Project.Find(hit.ClipId)?.Item is not Clip clip)
+        {
+            Timeline.Select(null);
+            return;
+        }
+
+        Timeline.Select(clip.Id);
+        _drag = new PreviewDrag(Project, clip, ToCanvas(x, y), PlacementEdits.Area(Project, clip), hit.OnGrip, ++_drags);
+        PreviewInvalidated?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void PreviewPointerMove(double x, double y)
+    {
+        if (_drag is not { } drag)
+        {
+            return;
+        }
+
+        var point = ToCanvas(x, y);
+        var placement = drag.Clip.Placement ?? Placement.Fit;
+        var changed = drag.Resize
+            ? PlacementEdits.Resize(placement, drag.Area, point)
+            : PlacementEdits.Move(placement, Project.Canvas, point.X - drag.Start.X, point.Y - drag.Start.Y);
+        var item = drag.Clip with { Placement = changed };
+        _applied = item;
+        History.Apply(drag.Resize ? "resize picture" : "move picture", drag.Base.WithItem(item), $"preview {drag.Number}");
+    }
+
+    public void PreviewPointerUp() => _drag = null;
+
+    /// <summary>Changes a track (mute, solo, lock, show, volume) as one undo step (merged with others of the same key).</summary>
+    public void ChangeTrack(Track track, Func<Track, Track> change, string name, string? mergeKey = null)
     {
         ArgumentNullException.ThrowIfNull(track);
         ArgumentNullException.ThrowIfNull(change);
         if (Project.Track(track.Id) is { } current)
         {
-            History.Apply(name, Project.WithTrack(change(current)));
+            History.Apply(name, Project.WithTrack(change(current)), mergeKey);
         }
+    }
+
+    /// <summary>Removes a track and everything on it.</summary>
+    public void DeleteTrack(Track track)
+    {
+        ArgumentNullException.ThrowIfNull(track);
+        StopPlaying();
+        History.Apply("delete track", TrackEdits.Remove(Project, track.Id));
     }
 
     /// <summary>Asks about unsaved changes before the window closes. False keeps it open.</summary>
@@ -481,6 +563,33 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Adds a music (or any sound) file on a sound track of its own, from the start, under the voice.</summary>
+    [RelayCommand]
+    private async Task AddMusicAsync()
+    {
+        var path = _dialogs.PickMedia("Add music", "Sound (*.mp3;*.m4a;*.aac;*.wav;*.ogg;*.opus;*.flac;*.wma)|*.mp3;*.m4a;*.aac;*.wav;*.ogg;*.opus;*.flac;*.wma|All files (*.*)|*.*", Folder());
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var asset = await Task.Run(() => ProjectFactory.ReadAsset(path));
+            if (!asset.Streams.Any(s => s.Kind == StreamKind.Audio))
+            {
+                _dialogs.ShowError($"{Path.GetFileName(path)} has no sound.");
+                return;
+            }
+
+            History.Apply("add music", ProjectFactory.AddSound(Project, asset, 0, "Music", ProjectFactory.MusicVolume));
+        }
+        catch (Exception e) when (e is FfmpegException or IOException)
+        {
+            _dialogs.ShowError($"{Path.GetFileName(path)} can't be opened: {e.Message}");
+        }
+    }
+
     private void Step(int frames)
     {
         StopPlaying();
@@ -542,6 +651,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
 
         RebuildTracks();
+        RefreshProperties();
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(TimeText));
@@ -555,6 +665,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
     private void OnTimelineChanged()
     {
+        RefreshProperties();
         OnPropertyChanged(nameof(SelectionText));
         OnPropertyChanged(nameof(HasRange));
         TimelineInvalidated?.Invoke(this, EventArgs.Empty);
@@ -562,12 +673,20 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
     private void OnPreviewsChanged(object? sender, EventArgs e) => TimelineInvalidated?.Invoke(this, EventArgs.Empty);
 
-    /// <summary>The track headers, in the timeline's row order; kept when the tracks didn't change.</summary>
+    /// <summary>The track headers, in the timeline's row order; the same headers, updated, while the tracks are the same.</summary>
     private void RebuildTracks()
     {
         var rows = TimelineView.Rows(Project);
-        if (Tracks.Count == rows.Count && Tracks.Zip(rows).All(p => ReferenceEquals(p.First.Track, p.Second.Track)))
+        if (Tracks.Count == rows.Count && Tracks.Zip(rows).All(p => p.First.Track.Id == p.Second.Track.Id))
         {
+            foreach (var (header, row) in Tracks.Zip(rows))
+            {
+                if (!ReferenceEquals(header.Track, row.Track))
+                {
+                    header.Update(row.Track);
+                }
+            }
+
             return;
         }
 
@@ -579,6 +698,58 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     private string Format(double seconds) => TimelineRenderer.Format(seconds, Project.Canvas.Fps, frames: true);
+
+    /// <summary>
+    /// The properties panel for the selection: made again when the selection changes or its item was changed by
+    /// something else (undo); kept while its own settings change the item, so a slider being dragged stays.
+    /// </summary>
+    private void RefreshProperties()
+    {
+        var item = Timeline.Selected;
+        if (ReferenceEquals(item, _shown))
+        {
+            return;
+        }
+
+        var own = item is not null && _shown is not null && item.Id == _shown.Id && ReferenceEquals(item, _applied);
+        _shown = item;
+        if (own)
+        {
+            return;
+        }
+
+        Properties.Clear();
+        if (item is not null)
+        {
+            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty))
+            {
+                Properties.Add(parameter);
+            }
+        }
+
+        PropertiesTitle = item is null ? "" : ItemProperties.Title(Project, item);
+        OnPropertyChanged(nameof(HasProperties));
+    }
+
+    private void ApplyProperty(TimelineItem item, string name, string mergeKey)
+    {
+        _applied = item;
+        History.Apply(name, Project.WithItem(item), mergeKey);
+    }
+
+    private SKPoint ToCanvas(double x, double y) => new((float)((x - _preview.X) / _preview.Scale), (float)((y - _preview.Y) / _preview.Scale));
+
+    /// <summary>The selected picture's outline and its resize grip, over the preview (never exported).</summary>
+    private static void DrawSelection(SKCanvas canvas, SKRect area, float scale)
+    {
+        using var outline = new SKPaint { Color = new SKColor(0xFF, 0xB0, 0x20), Style = SKPaintStyle.Stroke, StrokeWidth = 2 / scale, IsAntialias = true };
+        canvas.DrawRect(area, outline);
+        var grip = 10 / scale;
+        using var fill = new SKPaint { Color = new SKColor(0xFF, 0xB0, 0x20), IsAntialias = true };
+        canvas.DrawRect(SKRect.Create(area.Right - grip, area.Bottom - grip, grip * 2, grip * 2), fill);
+    }
+
+    private sealed record PreviewDrag(VideoProject Base, Clip Clip, SKPoint Start, SKRect Area, bool Resize, int Number);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Saving the video project {Path} failed")]
     private partial void LogSaveFailed(Exception e, string path);

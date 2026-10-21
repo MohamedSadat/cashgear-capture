@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using CashGear.Capture.App.Wpf;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,7 @@ internal sealed partial class PreviewHost : Border
     private bool _dirty = true;
     private bool _rendering;
     private SKColor _surround = new(0x10, 0x10, 0x10);
+    private int _renderWidth;
 
     /// <summary>Drawing on the graphics card.</summary>
     public bool UsesGpu { get; private set; }
@@ -157,6 +159,7 @@ internal sealed partial class PreviewHost : Border
     private void Draw(SKCanvas canvas, int width, int height)
     {
         Paints++;
+        _renderWidth = width;
         if (_viewModel is null)
         {
             canvas.Clear(Surround);
@@ -167,6 +170,69 @@ internal sealed partial class PreviewHost : Border
         {
             _dirty = true; // a picture is still on its way: draw again when it comes
         }
+    }
+
+    /// <summary>A position on the preview in the pixels it is drawn in (DIPs times the surface's own scale).</summary>
+    private Point ToPixels(MouseEventArgs e)
+    {
+        var at = e.GetPosition(this);
+        var scale = _renderWidth > 0 && ActualWidth > 0 ? _renderWidth / ActualWidth : 1;
+        return new Point(at.X * scale, at.Y * scale);
+    }
+
+    protected override void OnMouseDown(MouseButtonEventArgs e)
+    {
+        base.OnMouseDown(e);
+        if (_viewModel is null || e.ChangedButton != MouseButton.Left)
+        {
+            return;
+        }
+
+        var at = ToPixels(e);
+        CaptureMouse();
+        _viewModel.PreviewPointerDown(at.X, at.Y);
+        e.Handled = true;
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        var at = ToPixels(e);
+        if (IsMouseCaptured)
+        {
+            _viewModel.PreviewPointerMove(at.X, at.Y);
+        }
+
+        Cursor = _viewModel.PreviewHitAt(at.X, at.Y) switch
+        {
+            { OnGrip: true } => Cursors.SizeNWSE,
+            not null => Cursors.SizeAll,
+            _ => Cursors.Arrow,
+        };
+    }
+
+    protected override void OnMouseUp(MouseButtonEventArgs e)
+    {
+        base.OnMouseUp(e);
+        if (_viewModel is null || e.ChangedButton != MouseButton.Left)
+        {
+            return;
+        }
+
+        _viewModel.PreviewPointerUp();
+        ReleaseMouseCapture();
+        e.Handled = true;
+    }
+
+    protected override void OnLostMouseCapture(MouseEventArgs e)
+    {
+        base.OnLostMouseCapture(e);
+        _viewModel?.PreviewPointerUp();
     }
 
     /// <summary>Under Remote Desktop OpenGL goes through software: the memory surface is quicker and safer.</summary>
