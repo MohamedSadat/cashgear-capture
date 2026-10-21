@@ -5,6 +5,7 @@ using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Editor.Rendering;
 using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Model;
+using CaptionItem = CashGear.Capture.Core.Overlays.CaptionItem;
 using EffectKind = CashGear.Capture.VideoEditor.Model.EffectKind;
 using SkiaSharp;
 
@@ -33,8 +34,39 @@ public sealed class MetadataOverlays
         return Load(asset)?.Metadata;
     }
 
+    /// <summary>Where this asset's metadata starts in the recording (a later part of a recording starts later), 0 without metadata.</summary>
+    public double PartStart(MediaAsset asset)
+    {
+        ArgumentNullException.ThrowIfNull(asset);
+        return Load(asset)?.PartStart(asset) ?? 0;
+    }
+
+    /// <summary>
+    /// Where the pointer is in the pictures of <paramref name="asset"/> at <paramref name="sourceTime"/> (pixels from
+    /// the recorded area's top-left, as the overlays draw it), or null when it has no metadata.
+    /// </summary>
+    public (double X, double Y)? Pointer(MediaAsset asset, double sourceTime)
+    {
+        ArgumentNullException.ThrowIfNull(asset);
+        if (Load(asset) is not { } loaded)
+        {
+            return null;
+        }
+
+        var at = loaded.Timeline.Pointer(TimeSpan.FromSeconds(Math.Max(0, sourceTime + loaded.PartStart(asset)))).At;
+        return (at.X - loaded.Metadata.Area.X, at.Y - loaded.Metadata.Area.Y);
+    }
+
     /// <summary>Draws <paramref name="effect"/> over the screen clips below track <paramref name="trackIndex"/> at <paramref name="time"/>.</summary>
-    public void Draw(SKCanvas canvas, VideoProject project, int trackIndex, EffectItem effect, double time)
+    public void Draw(SKCanvas canvas, VideoProject project, int trackIndex, EffectItem effect, double time) =>
+        Draw(canvas, project, trackIndex, effect, time, SKMatrix.Identity);
+
+    /// <summary>
+    /// Draws <paramref name="effect"/> as <see cref="Draw(SKCanvas, VideoProject, int, EffectItem, double)"/> does,
+    /// with what marks a place in the pictures (rings, the pointer, its halo or spotlight) moved by
+    /// <paramref name="camera"/> as the pictures are; keystroke captions stay where they are.
+    /// </summary>
+    public void Draw(SKCanvas canvas, VideoProject project, int trackIndex, EffectItem effect, double time, SKMatrix camera)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(project);
@@ -68,12 +100,17 @@ public sealed class MetadataOverlays
                 }
 
                 var area = PlacementEdits.Area(project, clip);
+                if (camera.IsIdentity)
+                {
+                    Paint(canvas, area, scene.Items, width, height, loaded);
+                    continue;
+                }
+
                 canvas.Save();
-                canvas.ClipRect(area);
-                canvas.Translate(area.Left, area.Top);
-                canvas.Scale(area.Width / width, area.Height / height);
-                Paint(canvas, scene, width, height, loaded);
+                canvas.Concat(in camera);
+                Paint(canvas, area, scene.Items.Where(i => i is not CaptionItem), width, height, loaded);
                 canvas.Restore();
+                Paint(canvas, area, scene.Items.OfType<CaptionItem>(), width, height, loaded);
             }
         }
     }
@@ -134,9 +171,20 @@ public sealed class MetadataOverlays
         });
     }
 
-    private static void Paint(SKCanvas canvas, OverlayScene scene, float width, float height, Loaded loaded)
+    /// <summary>Scene items in the clip's <paramref name="area"/> of the canvas, from the picture's own pixels.</summary>
+    private static void Paint(SKCanvas canvas, SKRect area, IEnumerable<OverlayItem> items, float width, float height, Loaded loaded)
     {
-        foreach (var item in scene.Items)
+        canvas.Save();
+        canvas.ClipRect(area);
+        canvas.Translate(area.Left, area.Top);
+        canvas.Scale(area.Width / width, area.Height / height);
+        Paint(canvas, items, width, height, loaded);
+        canvas.Restore();
+    }
+
+    private static void Paint(SKCanvas canvas, IEnumerable<OverlayItem> items, float width, float height, Loaded loaded)
+    {
+        foreach (var item in items)
         {
             switch (item)
             {

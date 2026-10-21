@@ -192,6 +192,7 @@ public sealed class TimelineRenderer : IDisposable
             EffectItem { Kind: EffectKind.Clicks } => "Click highlights",
             EffectItem { Kind: EffectKind.Keystrokes } => "Keystrokes",
             EffectItem => "Pointer",
+            ZoomItem zoom => zoom.Focus == ZoomFocus.FollowPointer ? $"Zoom {zoom.ClampedScale:0.##}×, following the pointer" : $"Zoom {zoom.ClampedScale:0.##}×",
             _ => item.GetType().Name,
         };
 

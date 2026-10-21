@@ -32,14 +32,19 @@ public sealed class FrameCompositor
 
     private readonly IFrameProvider _frames;
     private readonly MetadataOverlays _overlays = new();
+    private readonly ZoomCamera _camera;
 
     /// <summary>The recordings' metadata the effect tracks draw from.</summary>
     public MetadataOverlays Overlays => _overlays;
+
+    /// <summary>The zooms' camera over the screen pictures.</summary>
+    public ZoomCamera Camera => _camera;
 
     public FrameCompositor(IFrameProvider frames)
     {
         ArgumentNullException.ThrowIfNull(frames);
         _frames = frames;
+        _camera = new ZoomCamera(_overlays);
     }
 
     public CompositionResult Render(SKCanvas canvas, VideoProject project, double time)
@@ -47,7 +52,8 @@ public sealed class FrameCompositor
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(project);
         canvas.Clear(Color(project.Canvas.Background, SKColors.Black));
-        return new CompositionResult(RenderTracks(canvas, project, time, project.Tracks.Count));
+        var camera = _camera.View(project, time).Matrix(project.Canvas);
+        return new CompositionResult(RenderTracks(canvas, project, time, project.Tracks.Count, camera));
     }
 
     /// <summary>
@@ -98,8 +104,11 @@ public sealed class FrameCompositor
         return SKRect.Create((float)place.X, (float)place.Y, (float)place.Width, (float)place.Height);
     }
 
-    /// <summary>The tracks before <paramref name="count"/>, bottom up; returns the pictures that weren't ready.</summary>
-    private int RenderTracks(SKCanvas canvas, VideoProject project, double time, int count)
+    /// <summary>
+    /// The tracks before <paramref name="count"/>, bottom up, the screen pictures (and what marks a place in them)
+    /// through <paramref name="camera"/>; returns the pictures that weren't ready.
+    /// </summary>
+    private int RenderTracks(SKCanvas canvas, VideoProject project, double time, int count, SKMatrix camera)
     {
         var size = project.Canvas;
         var missing = 0;
@@ -115,7 +124,7 @@ public sealed class FrameCompositor
             {
                 foreach (var effect in track.Items.OfType<EffectItem>().Where(e => e.Covers(time)))
                 {
-                    _overlays.Draw(canvas, project, index, effect, time);
+                    _overlays.Draw(canvas, project, index, effect, time, camera);
                 }
 
                 continue;
@@ -125,7 +134,7 @@ public sealed class FrameCompositor
             {
                 foreach (var item in track.Items.OfType<AnnotationItem>().Where(a => a.Covers(time)))
                 {
-                    missing += DrawAnnotation(canvas, project, index, item, time);
+                    missing += DrawAnnotation(canvas, project, index, item, time, camera);
                 }
 
                 continue;
@@ -134,6 +143,13 @@ public sealed class FrameCompositor
             if (!track.HasPictures)
             {
                 continue;
+            }
+
+            var zoomed = track.Kind == TrackKind.Video && !camera.IsIdentity;
+            if (zoomed)
+            {
+                canvas.Save();
+                canvas.Concat(in camera);
             }
 
             Clip? previous = null;
@@ -176,12 +192,17 @@ public sealed class FrameCompositor
                     frame.Release();
                 }
             }
+
+            if (zoomed)
+            {
+                canvas.Restore();
+            }
         }
 
         return missing;
     }
 
-    private int DrawAnnotation(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time)
+    private int DrawAnnotation(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, SKMatrix camera)
     {
         if (item.Fade(time) * item.Look.Opacity <= 0.005)
         {
@@ -194,14 +215,14 @@ public sealed class FrameCompositor
             return 0;
         }
 
-        return DrawHidden(canvas, project, trackIndex, item, time);
+        return DrawHidden(canvas, project, trackIndex, item, time, camera);
     }
 
     /// <summary>
     /// A blurred or pixelated area: what the tracks below draw there is drawn again on its own (with a margin, so a
     /// blur doesn't darken at its edges), blurred or pixelated, and drawn over them.
     /// </summary>
-    private int DrawHidden(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time)
+    private int DrawHidden(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, SKMatrix camera)
     {
         var place = item.At(time);
         var canvasArea = SKRectI.Create(project.Canvas.Width, project.Canvas.Height);
@@ -223,7 +244,7 @@ public sealed class FrameCompositor
 
         surface.Canvas.Clear(Color(project.Canvas.Background, SKColors.Black));
         surface.Canvas.Translate(-region.Left, -region.Top);
-        var missing = RenderTracks(surface.Canvas, project, time, trackIndex);
+        var missing = RenderTracks(surface.Canvas, project, time, trackIndex, camera);
         using var under = surface.Snapshot();
         var inner = SKRectI.Create(area.Left - region.Left, area.Top - region.Top, area.Width, area.Height);
         using var patch = blur ? EffectCache.Blur(under, SKRectI.Create(region.Width, region.Height), strength) : EffectCache.Pixelate(under, inner, strength);

@@ -54,7 +54,7 @@ public enum TrackKind
     /// <summary>Text, arrows, shapes, blurred areas, each shown for a while.</summary>
     Annotation,
 
-    /// <summary>Effects from a recording's metadata: clicks, keystrokes, the pointer.</summary>
+    /// <summary>Effects from a recording's metadata (clicks, keystrokes, the pointer) and zooms into the screen.</summary>
     Effect,
 }
 

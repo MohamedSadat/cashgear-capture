@@ -71,6 +71,23 @@ public static class AnnotationEdits
         return (project with { Tracks = [.. project.Tracks, track] }, item.Id);
     }
 
+    /// <summary>
+    /// A zoom from <paramref name="at"/> for <paramref name="length"/> seconds, following the pointer when a screen
+    /// clip there has metadata, else on the middle of the picture, on a zoom track with room for it.
+    /// </summary>
+    public static (VideoProject Project, string Id) AddZoom(VideoProject project, double at, double length, bool followPointer)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        var zoom = new ZoomItem
+        {
+            Id = Ids.New(),
+            Start = Times.Round(Math.Max(0, at)),
+            Length = Times.Round(Math.Max(TimelineEdits.ShortestItem, length)),
+            Focus = followPointer ? ZoomFocus.FollowPointer : ZoomFocus.Fixed,
+        };
+        return (AutoZoom.AddZoom(project, zoom), zoom.Id);
+    }
+
     /// <summary>Whether <paramref name="point"/> is on the annotation at <paramref name="time"/>, and on which grip.</summary>
     public static PreviewGrip? HitTest(AnnotationItem item, double time, SKPoint point, double grip)
     {

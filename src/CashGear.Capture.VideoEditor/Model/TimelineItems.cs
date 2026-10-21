@@ -35,6 +35,7 @@ public enum ItemEdge
 [JsonDerivedType(typeof(Clip), "clip")]
 [JsonDerivedType(typeof(AnnotationItem), "annotation")]
 [JsonDerivedType(typeof(EffectItem), "effect")]
+[JsonDerivedType(typeof(ZoomItem), "zoom")]
 public abstract record TimelineItem
 {
     public required string Id { get; init; }
