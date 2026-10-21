@@ -10,7 +10,8 @@
 
     The app is published self-contained (no .NET install needed) as one executable plus the native libraries
     WPF and SkiaSharp need, with ffmpeg\ (FFmpeg's libraries, for screen recording), rnnoise\ (noise suppression,
-    built by tools\get-rnnoise.ps1 if it isn't there yet) and THIRD-PARTY-NOTICES.txt.
+    built by tools\get-rnnoise.ps1 if it isn't there yet), runtimes\win-x64 and runtimes\vulkan\win-x64 (whisper.cpp,
+    for captions from speech; the other platforms' copies are left out) and THIRD-PARTY-NOTICES.txt.
 
     Code signing: pass -SignParams (signtool.exe arguments, e.g. '/a /fd sha256 /tr http://timestamp.digicert.com
     /td sha256 /f cert.pfx /p ...'), -SignTemplate (any command, {{file}} is replaced by the file to sign) or
@@ -100,6 +101,19 @@ else {
         throw "rnnoise\ in the publish folder should hold exactly COPYING and rnnoise.dll, not $($shipped -join ', ')."
     }
 }
+
+# Whisper.net's runtime packages bring whisper.cpp for every platform; the app needs win-x64's, on the processor and
+# through Vulkan (docs\LICENSES.md).
+$runtimes = Join-Path $publish "runtimes"
+Get-ChildItem $runtimes -Directory | Where-Object { $_.Name -notin "win-x64", "vulkan" } | Remove-Item -Recurse -Force
+Get-ChildItem (Join-Path $runtimes "vulkan") -Directory | Where-Object { $_.Name -ne "win-x64" } | Remove-Item -Recurse -Force
+foreach ($folder in "win-x64", "vulkan\win-x64") {
+    $dll = Join-Path $runtimes "$folder\whisper.dll"
+    if (-not (Test-Path $dll)) {
+        throw "Speech recognition's $dll is missing from the publish folder."
+    }
+}
+
 Copy-Item (Join-Path $root "THIRD-PARTY-NOTICES.txt") $publish
 
 dotnet tool restore --tool-manifest (Join-Path $root "dotnet-tools.json") | Out-Null
