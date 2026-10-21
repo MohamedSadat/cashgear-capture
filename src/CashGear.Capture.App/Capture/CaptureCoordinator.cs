@@ -7,6 +7,7 @@ using CashGear.Capture.App.Region;
 using CashGear.Capture.App.Scrolling;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
+using CashGear.Capture.Core.Diagnostics;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.History;
@@ -483,6 +484,8 @@ public sealed partial class CaptureCoordinator
             return;
         }
 
+        // Everything logged for this capture, down to its workflow, carries its id.
+        using var scope = LogScopes.Begin(_logger, LogScopes.Capture, LogScopes.NewId());
         try
         {
             await capture(current).ConfigureAwait(false);

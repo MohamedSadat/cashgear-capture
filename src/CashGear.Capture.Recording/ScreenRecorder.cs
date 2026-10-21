@@ -2,6 +2,7 @@ using System.Diagnostics;
 using CashGear.Capture.Audio;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Capture;
+using CashGear.Capture.Core.Diagnostics;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Core.Recording;
@@ -135,6 +136,10 @@ internal sealed partial class ScreenRecorder(
     public async Task StartAsync(RecordingOptions options, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+
+        // Everything logged for this recording carries its id, also on the threads and timers it starts.
+        var id = LogScopes.NewId();
+        using var scope = LogScopes.Begin(_logger, LogScopes.Recording, id);
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
@@ -203,7 +208,7 @@ internal sealed partial class ScreenRecorder(
                 }
 
                 var manifest = new RecordingManifest(
-                    Guid.NewGuid().ToString("N")[..8], DateTimeOffset.Now, output, width, height, options.Fps, [], [.. tracks.Select(t => t.Title)],
+                    id, DateTimeOffset.Now, output, width, height, options.Fps, [], [.. tracks.Select(t => t.Title)],
                     NormalizeLoudness: options.NormalizeLoudness && tracks.Count > 0,
                     Metadata: overlays?.WriteMetadata == true ? MetadataJournal.FileName : null,
                     Webcam: camera is null ? null : WebcamFeed.FileName);
@@ -315,6 +320,7 @@ internal sealed partial class ScreenRecorder(
         }
 
         OnStateChanged();
+        using var scope = LogScopes.Begin(_logger, LogScopes.Recording, session.Id);
         try
         {
             var result = await session.StopAsync(FinishTimeout).ConfigureAwait(false);
@@ -631,6 +637,9 @@ internal sealed partial class ScreenRecorder(
 
         /// <summary>Recording time: runs only while not paused.</summary>
         public RecordingClock Clock { get; }
+
+        /// <summary>The recording's id (its temporary folder's and its log lines').</summary>
+        public string Id => _manifest.Id;
 
         public bool Paused { get; private set; }
 

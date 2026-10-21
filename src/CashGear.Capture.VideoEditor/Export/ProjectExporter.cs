@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using CashGear.Capture.Core.Diagnostics;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Media;
 using CashGear.Capture.VideoEditor.Editing;
@@ -80,6 +81,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
 
     private async Task<ExportResult> Run(ExportRequest request, IProgress<ExportProgress>? progress, CancellationToken ct)
     {
+        using var scope = LogScopes.Begin(logger, LogScopes.Export, LogScopes.NewId());
         if (encoders.Problem is { } problem)
         {
             throw new ExportException(problem);
