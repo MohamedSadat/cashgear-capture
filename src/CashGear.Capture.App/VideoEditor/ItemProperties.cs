@@ -53,6 +53,7 @@ public static class ItemProperties
             EffectItem { Kind: EffectKind.Clicks } => "Click highlights",
             EffectItem { Kind: EffectKind.Keystrokes } => "Keystrokes",
             EffectItem => "Pointer effects",
+            ZoomItem => "Zoom",
             _ => "Item",
         };
     }
@@ -71,6 +72,11 @@ public static class ItemProperties
         if (item is EffectItem effect)
         {
             return ForEffect(project, effect, current, apply);
+        }
+
+        if (item is ZoomItem zoom)
+        {
+            return ForZoom(project, zoom, current, apply);
         }
 
         var list = new List<EditParameter>();
@@ -368,6 +374,52 @@ public static class ItemProperties
             }
         }
 
+        return list;
+    }
+
+    /// <summary>A zoom's settings; changing one makes it the user's own (Auto-Zoom no longer replaces it).</summary>
+    private static IReadOnlyList<EditParameter> ForZoom(VideoProject project, ZoomItem zoom, Func<VideoProject> current, Apply apply)
+    {
+        var list = new List<EditParameter>();
+        void Change<T>(T parameter, string name, Func<ZoomItem, ZoomItem> update)
+            where T : EditParameter
+        {
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is "Value" or "Selected" && current().Find(zoom.Id)?.Item is ZoomItem now)
+                {
+                    apply(update(now) with { Auto = false }, name, $"property {zoom.Id} {name}");
+                }
+            };
+            list.Add(parameter);
+        }
+
+        var scale = new NumberParameter("Zoom", ZoomItem.SmallestScale * 100, ZoomItem.LargestScale * 100, zoom.ClampedScale * 100, 5, " %");
+        Change(scale, "zoom", z => z with { Scale = scale.Value / 100 });
+        var follow = new SwitchParameter("Follow the pointer", zoom.Focus == ZoomFocus.FollowPointer);
+        var across = new NumberParameter("Across", 0, 100, zoom.CenterX * 100, 1, " %") { IsVisible = !follow.Value };
+        var down = new NumberParameter("Down", 0, 100, zoom.CenterY * 100, 1, " %") { IsVisible = !follow.Value };
+        follow.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Value")
+            {
+                across.IsVisible = !follow.Value;
+                down.IsVisible = !follow.Value;
+            }
+        };
+        Change(follow, "follow the pointer", z => z with { Focus = follow.Value ? ZoomFocus.FollowPointer : ZoomFocus.Fixed });
+        if (!MetadataOf(project).HasMetadata)
+        {
+            list.Add(new NoteParameter("No recording here has a metadata file, so there is no pointer to follow: the zoom stays on its centre."));
+        }
+
+        Change(across, "zoom across", z => z with { CenterX = across.Value / 100 });
+        Change(down, "zoom down", z => z with { CenterY = down.Value / 100 });
+        var easeIn = new NumberParameter("Zoom in over", 0, 3, zoom.EaseIn, 0.1, " s");
+        Change(easeIn, "zoom in time", z => z with { EaseIn = Math.Round(easeIn.Value, 2) });
+        var easeOut = new NumberParameter("Zoom out over", 0, 3, zoom.EaseOut, 0.1, " s");
+        Change(easeOut, "zoom out time", z => z with { EaseOut = Math.Round(easeOut.Value, 2) });
+        list.Add(new NoteParameter("While it is selected, the preview shows the whole picture and the zoom's frame: drag the frame to place the zoom (it then stays there), or its corner to zoom in or out."));
         return list;
     }
 

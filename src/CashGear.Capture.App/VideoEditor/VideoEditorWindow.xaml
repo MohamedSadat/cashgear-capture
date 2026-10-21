@@ -117,6 +117,9 @@
         <MenuItem Header="_Click Highlights" Command="{Binding InsertClicksCommand}" ToolTip="Rings at the clicks, from the recording's metadata" />
         <MenuItem Header="_Keystrokes" Command="{Binding InsertKeystrokesCommand}" ToolTip="The keys pressed, from the recording's metadata" />
         <MenuItem Header="Pointer _Effects" Command="{Binding InsertPointerCommand}" ToolTip="A halo or spotlight, a bigger or smoother pointer, from the recording's metadata" />
+        <Separator />
+        <MenuItem Header="_Zoom" Command="{Binding InsertZoomCommand}" ToolTip="Zoom into the screen from the playhead (or over the marked range), following the pointer" />
+        <MenuItem Header="_Auto-Zoom from Clicks and Typing" Command="{Binding MakeAutoZoomsCommand}" ToolTip="Zooms around the clicks and typing in the recording's metadata (made again each time)" />
       </MenuItem>
       <MenuItem Header="_View">
         <MenuItem Header="Zoom _In" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
@@ -169,7 +172,8 @@
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
             <Button Content="Text" Command="{Binding InsertTextCommand}" ToolTip="Text over the video, from the playhead (or the marked range)" Margin="4,0" />
             <Button Content="Arrow" Command="{Binding InsertArrowCommand}" ToolTip="An arrow, from the playhead (or the marked range)" Margin="4,0" />
-            <Button Content="Blur" Command="{Binding InsertBlurCommand}" ToolTip="Hide an area, from the playhead (or the marked range)" Margin="4,0,16,0" />
+            <Button Content="Blur" Command="{Binding InsertBlurCommand}" ToolTip="Hide an area, from the playhead (or the marked range)" Margin="4,0" />
+            <Button Content="Zoom" Command="{Binding InsertZoomCommand}" ToolTip="Zoom into the screen from the playhead (or over the marked range), following the pointer" Margin="4,0,16,0" />
             <Button Content="Split" Command="{Binding SplitCommand}" ToolTip="Cut every clip at the playhead (S)" Margin="4,0" />
             <Button Content="Delete" Command="{Binding DeleteCommand}" ToolTip="The marked range or the selected clip (Del)" Margin="4,0" />
             <Button Content="Export…" Command="{Binding ExportCommand}" ToolTip="Make a video file (Ctrl+E)" Margin="4,0" />

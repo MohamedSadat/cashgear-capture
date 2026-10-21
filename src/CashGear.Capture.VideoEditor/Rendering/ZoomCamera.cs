@@ -227,6 +227,18 @@ public sealed class ZoomCamera
         return time < outFrom ? Target(last) : Between(Target(last), whole, Ease((time - outFrom) / (last.End - outFrom)));
     }
 
+    /// <summary>
+    /// Where <paramref name="zoom"/> puts the view at <paramref name="time"/> when fully zoomed in (following the
+    /// pointer as it does in its chain): for showing and dragging it on the preview.
+    /// </summary>
+    public ZoomView Target(VideoProject project, ZoomItem zoom, double time)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(zoom);
+        var chain = Chains(Zooms(project)).FirstOrDefault(c => c.Any(z => z.Id == zoom.Id)) ?? [zoom];
+        return TargetOf(project, zoom, time, zoom.Focus == ZoomFocus.FollowPointer ? PathFor(project, chain) : null);
+    }
+
     /// <summary>Where <paramref name="zoom"/> wants the view at <paramref name="time"/>, fully zoomed in.</summary>
     private static ZoomView TargetOf(VideoProject project, ZoomItem zoom, double time, PointerPath? path)
     {

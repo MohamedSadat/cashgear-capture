@@ -315,8 +315,13 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         canvas.Translate(_preview.X, _preview.Y);
         canvas.Scale(scale);
         canvas.ClipRect(SKRect.Create(size.Width, size.Height));
-        var result = Compositor.Render(canvas, Project, Timeline.Playhead);
-        if (!Engine.IsPlaying && Timeline.Selected is { } selected && selected.Covers(Timeline.Playhead))
+        var zoomShown = SelectedZoom();
+        var result = Compositor.Render(canvas, zoomShown is null ? Project : WithoutZooms(Project), Timeline.Playhead);
+        if (zoomShown is not null)
+        {
+            DrawSelection(canvas, ZoomFrame(zoomShown), scale, corner: true);
+        }
+        else if (!Engine.IsPlaying && Timeline.Selected is { } selected && selected.Covers(Timeline.Playhead))
         {
             if (selected is Clip clip && Project.Find(clip.Id)?.Track is { HasPictures: true })
             {
@@ -341,6 +346,12 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     public void PreviewPointerDown(double x, double y)
     {
         StopPlaying();
+        if (SelectedZoom() is { } zoom && ZoomFrame(zoom) is var frame && ZoomGrip(frame, ToCanvas(x, y)) is { } zoomGrip)
+        {
+            _drag = new PreviewDrag(Project, zoom, ToCanvas(x, y), frame, zoomGrip, ++_drags);
+            return;
+        }
+
         if (PreviewHitAt(x, y) is not { } hit || Project.Find(hit.ItemId)?.Item is not { } item)
         {
             Timeline.Select(null);
@@ -379,6 +390,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
                     : PlacementEdits.Move(placement, Project.Canvas, point.X - drag.Start.X, point.Y - drag.Start.Y),
             };
             name = resize ? "resize picture" : "move picture";
+        }
+        else if (drag.Item is ZoomItem zoom)
+        {
+            item = PlacementEdits.DragZoom(zoom, Project.Canvas, drag.Area, drag.Grip, point.X - drag.Start.X, point.Y - drag.Start.Y);
+            name = drag.Grip == PreviewGrip.None ? "move zoom" : "resize zoom";
         }
         else
         {
@@ -672,6 +688,54 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void InsertZoom() => AddZoom();
+
+    /// <summary>
+    /// A zoom over the marked range (else from the playhead for 3 s), following the pointer when a recording has
+    /// metadata, selected so the preview shows its frame.
+    /// </summary>
+    public string AddZoom()
+    {
+        StopPlaying();
+        var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (Timeline.Playhead, ZoomItem.DefaultLength);
+        var follow = Project.Assets.Any(a => Compositor.Overlays.Metadata(a) is not null);
+        var (project, id) = AnnotationEdits.AddZoom(Project, from, length, follow);
+        History.Apply("add zoom", project);
+        Timeline.SetRange(null);
+        Timeline.Select(id);
+        if (!Timeline.Selected!.Covers(Timeline.Playhead))
+        {
+            Seek(from);
+        }
+
+        return id;
+    }
+
+    [RelayCommand]
+    private void MakeAutoZooms() => AutoZoomFromInput();
+
+    /// <summary>
+    /// Zooms around the clicks and typing in the recordings' metadata (replacing Auto-Zoom's earlier ones), as one
+    /// undo step; says so when there is nothing to zoom to. Returns how many were made.
+    /// </summary>
+    public int AutoZoomFromInput()
+    {
+        StopPlaying();
+        var (project, count) = CashGear.Capture.VideoEditor.Editing.AutoZoom.Apply(Project, Compositor.Overlays);
+        if (count == 0 && !MadeByAutoZoom(Project))
+        {
+            _dialogs.ShowError(Project.Assets.Any(a => Compositor.Overlays.Metadata(a) is not null)
+                ? "Auto-Zoom found no clicks or typing in the recordings' metadata to zoom to."
+                : "Auto-Zoom needs a recording's metadata file (clicks, keys and the pointer). Recordings get one when Settings › Overlays › Save a metadata file is on.");
+            return 0;
+        }
+
+        History.Apply("auto-zoom", project);
+        Timeline.Select(null);
+        return count;
+    }
+
+    [RelayCommand]
     private void InsertClicks() => InsertEffect(EffectKind.Clicks);
 
     [RelayCommand]
@@ -907,6 +971,35 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     private SKPoint ToCanvas(double x, double y) => new((float)((x - _preview.X) / _preview.Scale), (float)((y - _preview.Y) / _preview.Scale));
+
+    private static bool MadeByAutoZoom(VideoProject project) => project.Tracks.Any(t => t.Items.Any(i => i is ZoomItem { Auto: true }));
+
+    /// <summary>The selected zoom when it is under the playhead and nothing plays: the preview then shows its frame over the whole picture.</summary>
+    private ZoomItem? SelectedZoom() =>
+        !Engine.IsPlaying && Timeline.Selected is ZoomItem zoom && zoom.Covers(Timeline.Playhead) ? zoom : null;
+
+    /// <summary>The canvas area a zoom shows at the playhead, fully zoomed in.</summary>
+    private SKRect ZoomFrame(ZoomItem zoom)
+    {
+        var view = Compositor.Camera.Target(Project, zoom, Timeline.Playhead);
+        return SKRect.Create((float)view.X, (float)view.Y, (float)view.Width, (float)view.Height);
+    }
+
+    /// <summary>The grip of a zoom's frame at <paramref name="point"/>: its corner (zoom), inside it (move), or null.</summary>
+    private PreviewGrip? ZoomGrip(SKRect frame, SKPoint point)
+    {
+        var reach = PlacementEdits.GripSize / _preview.Scale;
+        if (Math.Abs(point.X - frame.Right) <= reach && Math.Abs(point.Y - frame.Bottom) <= reach)
+        {
+            return PreviewGrip.Corner;
+        }
+
+        return frame.Contains(point) ? PreviewGrip.None : null;
+    }
+
+    /// <summary>The project as the preview shows it while a zoom is selected: the whole picture.</summary>
+    private static VideoProject WithoutZooms(VideoProject project) =>
+        project with { Tracks = [.. project.Tracks.Select(t => t.Kind == TrackKind.Effect && t.Items.Any(i => i is ZoomItem) ? t.WithItems(t.Items.Where(i => i is not ZoomItem)) : t)] };
 
     /// <summary>The selection's outline and its resize grip, over the preview (never exported).</summary>
     private static void DrawSelection(SKCanvas canvas, SKRect area, float scale, bool corner)

@@ -117,6 +117,40 @@ public static class PlacementEdits
         var scale = Math.Max((point.X - center.X) / halfWidth, (point.Y - center.Y) / halfHeight);
         return placement with { Size = Math.Round(Math.Clamp(placement.Size * scale, SmallestSize, 2), 4) };
     }
+
+    /// <summary>
+    /// A zoom whose frame on the preview (<paramref name="frame"/>, canvas pixels, fully zoomed in) was dragged by
+    /// (<paramref name="dx"/>, <paramref name="dy"/>): moved, after which it stays there rather than following the
+    /// pointer; or by its corner made larger (zooming out) or smaller (zooming in), its top-left corner kept. Either
+    /// way it becomes the user's own (Auto-Zoom no longer replaces it).
+    /// </summary>
+    public static ZoomItem DragZoom(ZoomItem zoom, ProjectCanvas canvas, SKRect frame, PreviewGrip grip, double dx, double dy)
+    {
+        ArgumentNullException.ThrowIfNull(zoom);
+        ArgumentNullException.ThrowIfNull(canvas);
+        if (grip == PreviewGrip.Corner)
+        {
+            var width = frame.Width + Math.Max(dx, dy * canvas.Width / canvas.Height);
+            var scale = Math.Clamp(canvas.Width / Math.Max(1, width), ZoomItem.SmallestScale, ZoomItem.LargestScale);
+            var centerX = frame.Left + (canvas.Width / scale / 2);
+            var centerY = frame.Top + (canvas.Height / scale / 2);
+            return zoom with
+            {
+                Scale = Math.Round(scale, 2),
+                CenterX = Math.Round(Math.Clamp(centerX / canvas.Width, 0, 1), 4),
+                CenterY = Math.Round(Math.Clamp(centerY / canvas.Height, 0, 1), 4),
+                Auto = false,
+            };
+        }
+
+        return zoom with
+        {
+            Focus = ZoomFocus.Fixed,
+            CenterX = Math.Round(Math.Clamp((frame.MidX + dx) / canvas.Width, 0, 1), 4),
+            CenterY = Math.Round(Math.Clamp((frame.MidY + dy) / canvas.Height, 0, 1), 4),
+            Auto = false,
+        };
+    }
 }
 
 /// <summary>Track edits that aren't about time.</summary>
