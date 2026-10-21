@@ -20,7 +20,7 @@ RNNoise 0.2 (rnnoise\rnnoise.dll) - BSD 3-Clause License (rnnoise\COPYING) - htt
   trained model) by tools/get-rnnoise.ps1. Copyright Jean-Marc Valin, Amazon, Mozilla, Xiph.Org Foundation,
   Mark Borgerding and the other RNNoise authors.
 
-.NET runtime and Windows Presentation Foundation (WPF) - MIT License - https://github.com/dotnet/runtime, https://github.com/dotnet/wpf
+.NET runtime and Windows Presentation Foundation (WPF), including System.Security.Cryptography.ProtectedData and System.IO.Packaging - MIT License - https://github.com/dotnet/runtime, https://github.com/dotnet/wpf
 C#/WinRT projection (WinRT.Runtime) - MIT License - https://github.com/microsoft/CsWinRT
 Microsoft.Extensions.Hosting, DependencyInjection, Logging - MIT License - https://github.com/dotnet/runtime
 CommunityToolkit.Mvvm - MIT License - https://github.com/CommunityToolkit/dotnet
@@ -31,3 +31,7 @@ SkiaSharp - MIT License - https://github.com/mono/SkiaSharp
 Vortice.Windows (Direct3D 11 / DXGI / Direct2D / DirectWrite bindings) - MIT License - https://github.com/amerkoleci/Vortice.Windows
 Velopack (installer and updates) - MIT License - https://github.com/velopack/velopack
 NAudio (NAudio.Core, NAudio.Wasapi: Windows sound device access for recording sound) - MIT License - https://github.com/naudio/NAudio
+Open XML SDK (DocumentFormat.OpenXml: Word documents and PowerPoint slides) - MIT License - https://github.com/dotnet/Open-XML-SDK
+FluentFTP (FTP and FTPS uploads) - MIT License - https://github.com/robinrodricks/FluentFTP
+SSH.NET (SFTP uploads) - MIT License - https://github.com/sshnet/SSH.NET
+  Bouncy Castle (BouncyCastle.Cryptography, used by SSH.NET) - MIT License - https://www.bouncycastle.org/csharp

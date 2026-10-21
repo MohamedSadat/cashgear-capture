@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Where captures go besides the folder and the clipboard: Word and PowerPoint (Open XML), FTP/FTPS (FluentFTP), SFTP (SSH.NET), HTTP uploads and other apps. Credentials are kept with DPAPI. No WPF here: the app adds the destinations that need it (editor, file, clipboard, printer). -->
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="FluentFTP" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="SSH.NET" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CashGear.Capture.Outputs.Tests" />
+    <InternalsVisibleTo Include="CashGear.Capture.App.Tests" />
+  </ItemGroup>
+
+</Project>

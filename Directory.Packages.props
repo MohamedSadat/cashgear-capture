@@ -32,6 +32,13 @@
     <PackageVersion Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" Version="9.0.1.1" />
   </ItemGroup>
 
+  <ItemGroup Label="Output destinations">
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
+    <PackageVersion Include="FluentFTP" Version="55.0.0" />
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.13" />
+  </ItemGroup>
+
   <ItemGroup Label="Editor">
     <PackageVersion Include="SkiaSharp" Version="4.153.1" />
     <PackageVersion Include="SkiaSharp.Views.WPF" Version="4.153.1" />
@@ -39,6 +46,8 @@
 
   <ItemGroup Label="Tests">
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
+    <!-- An SSH server with SFTP, so the SFTP tests have a server of their own. -->
+    <PackageVersion Include="FxSsh" Version="1.4.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.2" />
   </ItemGroup>
 

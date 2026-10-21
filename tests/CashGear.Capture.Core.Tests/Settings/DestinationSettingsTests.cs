@@ -51,7 +51,7 @@ public sealed class DestinationSettingsTests
         var settings = new DestinationSettings(
             Workflow: [new WorkflowStep(" file "), new WorkflowStep("FILE", false), new WorkflowStep(""), new WorkflowStep("app:gone")],
             Print: new PrintSettings((PrintFit)42, (PageOrientation)9, MarginMm: 400, Printer: "  "),
-            Servers: [new ServerDestination("s", Protocol: (ServerProtocol)7, Host: " h ", Port: 70000, UserName: " ", RemoteFolder: @" \shots\2026 ", KeyFile: " \"C:\\k\\id_ed25519\" ")],
+            Servers: [new ServerDestination("s", Protocol: (ServerProtocol)7, Host: " h ", Port: 70000, UserName: " ", RemoteFolder: @" \shots\2026\ ", KeyFile: " \"C:\\k\\id_ed25519\" ")],
             Uploads: [new HttpDestination("u", Url: " https://x.test ", FileField: " ", Fields: [new NameValue(" ", "x"), new NameValue(" type ", "png")], LinkPath: " ")],
             Apps: [new ExternalApp("a", Path: "\"C:\\Apps\\x.exe\"", Arguments: " ")]).Normalize();
 
@@ -135,6 +135,6 @@ public sealed class DestinationSettingsTests
         server.Id.Should().Be("backup");
         server.Protocol.Should().Be(ServerProtocol.Sftp);
         server.Passive.Should().BeTrue();
-        server.RemoteFolder.Should().Be("/");
+        server.RemoteFolder.Should().BeEmpty("the folder the user logs in to");
     }
 }

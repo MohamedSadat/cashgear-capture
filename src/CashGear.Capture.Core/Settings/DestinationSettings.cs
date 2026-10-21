@@ -294,7 +294,7 @@ public enum ServerProtocol
 /// <param name="Name">Shown in menus and messages.</param>
 /// <param name="Port">0 for the protocol's usual port.</param>
 /// <param name="UserName">Null to log in anonymously (FTP).</param>
-/// <param name="RemoteFolder">Where files go on the server (created if missing).</param>
+/// <param name="RemoteFolder">Where files go on the server (created if missing): empty for the folder the user logs in to, a path starting with / from the server's root, else from the login folder.</param>
 /// <param name="Passive">FTP: the client opens the data connections (works through NAT and firewalls).</param>
 /// <param name="PublicUrl">The web address uploads can be seen at, with <c>{file}</c> for the file name; null for no link.</param>
 /// <param name="TrustedFingerprint">FTPS: a certificate Windows doesn't trust that the user accepted. SFTP: the server's host key (always required).</param>
@@ -306,7 +306,7 @@ public sealed record ServerDestination(
     string Host = "",
     int Port = 0,
     string? UserName = null,
-    string RemoteFolder = "/",
+    string RemoteFolder = "",
     bool Passive = true,
     string? PublicUrl = null,
     string? TrustedFingerprint = null,
@@ -326,6 +326,7 @@ public sealed record ServerDestination(
     public ServerDestination Normalize()
     {
         var folder = (RemoteFolder ?? string.Empty).Trim().Replace('\\', '/');
+        folder = folder.Length > 1 ? folder.TrimEnd('/') : folder;
         return this with
         {
             Id = Clean(Id),
@@ -334,7 +335,7 @@ public sealed record ServerDestination(
             Host = (Host ?? string.Empty).Trim(),
             Port = Port is > 0 and <= 65535 ? Port : 0,
             UserName = string.IsNullOrWhiteSpace(UserName) ? null : UserName.Trim(),
-            RemoteFolder = folder.Length == 0 ? "/" : folder,
+            RemoteFolder = folder,
             PublicUrl = string.IsNullOrWhiteSpace(PublicUrl) ? null : PublicUrl.Trim(),
             TrustedFingerprint = string.IsNullOrWhiteSpace(TrustedFingerprint) ? null : TrustedFingerprint.Trim(),
             KeyFile = string.IsNullOrWhiteSpace(KeyFile) ? null : KeyFile.Trim().Trim('"'),

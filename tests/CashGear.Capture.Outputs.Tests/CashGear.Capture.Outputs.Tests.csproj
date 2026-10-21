@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <!-- The destinations are tested against servers of their own on 127.0.0.1: an FTP/FTPS server written here, an SFTP server on FxSsh, and an HTTP server on Kestrel. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="FxSsh" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
+    <ProjectReference Include="..\..\src\CashGear.Capture.Outputs\CashGear.Capture.Outputs.csproj" />
+  </ItemGroup>
+
+</Project>
