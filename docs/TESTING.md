@@ -19,7 +19,13 @@ dotnet test --project tests/CashGear.Capture.Engine.Tests -- --explicit only
 So is the real-sound recording test, because it plays quiet beeps through the default output device for about 10 s:
 
 ```powershell
-dotnet test --project tests/CashGear.Capture.App.Tests -- --explicit only
+dotnet test --project tests/CashGear.Capture.App.Tests --filter-method "*Real_sound_played*" --explicit only
+```
+
+And the 4-hour recording on a clock 30 times faster than real time (about 8.5 minutes; `CASHGEAR_SOAK_HOURS` sets other hours), which checks that memory stays flat:
+
+```powershell
+dotnet test --project tests/CashGear.Capture.App.Tests --filter-method "*Four_recorded_hours*" --explicit only --output Detailed
 ```
 
 And the per-app acceptance test, which plays a 440 Hz and a 1 kHz tone (amplitude 0.2) from two helper processes for about 5 s and checks that "only one app" hears only the first and "all except one app" only the second:
@@ -33,6 +39,8 @@ And the browser password test, which opens Microsoft Edge on a page whose passwo
 ```powershell
 dotnet test --project tests/CashGear.Capture.Overlays.Tests --filter-method "*browser_password*" --explicit only
 ```
+
+The performance budgets (cold start, idle, the region overlay's latency) aren't tests: `tools\Bench` measures them against a Release copy of the app (README › Performance budgets).
 
 The webcam tests use a fake camera that stamps its pictures like a real one; one test lists and opens the real cameras (none here).
 
@@ -69,7 +77,7 @@ Other options: `--fps 15|30|60`, `--encoder auto|software|<id>`, `--quality Smal
 | Dual monitor 100% + 100% (secondary right of primary, offset Y) | Phase 0–9 and sound in recordings pass (2026-10-15); Phase 13 passes (2026-10-21); Phase 15 passes (2026-10-21) |
 | Dual monitor, mixed DPI (100% + 150%) | Phase 13 passes with the primary at 150% (2026-10-21; the whole suite, one Phase 12 failure); the by-hand steps for Phases 1–2 **pending** — see "Pending" below |
 | Monitor left of primary (negative X) | Phase 13 passes with the 100% monitor at (−1280, 200) and the primary at 150% (2026-10-21); the by-hand steps for Phases 1–2 **pending** — see "Pending" below |
-| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19, the Edge password field included; a real webcam **pending**, below); Phase 13 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 15 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 16 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 17 passes what was run (2026-10-21; by-hand checks **pending**, below); fresh install **pending** |
+| Windows 10 22H2 | Phase 0–9 and sound in recordings pass on the development PC (2026-10-15); Phase 10 passes (2026-10-17); Phase 11 passes what was run (2026-10-17; manual sound checks **pending**, below); Phase 12 passes what was run (2026-10-19, the Edge password field included; a real webcam **pending**, below); Phase 13 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 15 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 16 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 17 passes what was run (2026-10-21; by-hand checks **pending**, below); Phase 18 passes what was run (2026-10-21; an HDR monitor, real faults and Remote Desktop **pending**, below); fresh install **pending** |
 | Windows 11 23H2+ | not run (install steps under Phase 9 › Pending) |
 
 ## Phase 0–1 results (2026-10-14)
@@ -646,3 +654,88 @@ The 4 video editor desktop tests ran once by mistake in this phase (an App test 
 - **Vulkan** on an AMD and an Intel card, on a PC without a Vulkan driver (the processor's runtime), and the app with only `runtimes\win-x64`.
 - **The new features in the installed app:** zooms and Auto-Zoom on a recording with metadata (the preview while playing at 60 fps), dragging a zoom's frame, captions typed in Arabic with the Arabic layout and burned into an MP4, SRT and WebVTT in VLC and a browser, GIFs in a browser and a chat app, the Make a GIF step.
 - **The desktop tests** with this phase's windows (the Captions from Speech window and the export window's new choices have no desktop test yet).
+
+## Phase 18 results (2026-10-21)
+
+**The reference PC** (where the budgets are measured):
+- Xeon E5-2680 v3 (12 cores, 24 logical processors, 2.5 GHz), 32 GB.
+- GeForce GTX 1650 on driver 457.51 (27.21.14.5751).
+- Windows 10 Pro 22H2 (19045).
+- Two SDR monitors at 100%: `DISPLAY2`, an HP E27u G4, primary at 1920×1080; `DISPLAY1`, an HP E190i at 1280×1024, to its right. Neither has HDR.
+
+**How the faults were tested:**
+- **A recording's faults** were simulated through `FakePictureStream`: pictures made on a real D3D11 device with faults on cue, recorded through the real encoders, crash-safe file and parts.
+- **Sleep, the lock screen and UAC** were simulated through fake power and desktop states.
+- **The live runs** (the desktop tests and the bench) had the user's go-ahead for this phase. Resolution changes, sleep, locking and UAC prompts weren't done for real (the user's choice).
+
+### Edge cases
+
+| Case | What the app does | Automated (result) | By hand |
+|---|---|---|---|
+| UAC prompt / secure desktop (also the lock screen, Ctrl+Alt+Del) | A screenshot says "Windows is showing a secure screen…" and takes nothing. A recording holds its last picture and notes from when to when | `ScreenCaptureServiceTests`, `WindowCaptureServiceTests` (secure desktop refused); `RecordingFaultTests.A_secure_screen…` (note "From 0:01 to 0:02…"): pass | pending: UAC elevates without a prompt on this PC; the lock screen wasn't allowed |
+| DRM-protected video (black frames) | A capture with a window that keeps itself out of captures says which; a window capture that is all black says protected video is always black; a recording over one warns at the start | stand-in: a test window with display affinity `WDA_MONITOR`, captured through WGC and GDI: black (over 90% of its pixels), the notice given (desktop, `A_window_that_hides_from_capture…`): pass. Unit tests for both notices: pass | pending: a protected video in Edge (Netflix, a PlayReady demo) |
+| RDP / remote session | Recordings note that pictures come as often as the connection sends them and the graphics card's encoder may be missing; the video editor's preview draws in memory (Phase 16); diagnostics report it | `RecordingFaultTests.A_recording_over_remote_desktop_says_so`: pass | pending: there is no second PC to connect from |
+| Minimized windows | "…is minimized. Restore it, then capture again." (also for repeat-last) | `WindowCaptureServiceTests.Minimized_window_errors_gracefully`; desktop `Shadow_and_minimized_handling_on_a_real_window`: pass | — |
+| Windows on disconnected monitors | A window off every monitor is tried through WGC. Where WGC has no picture of it (as on Windows 10: its item is 0×0), the message says how to bring it back. A recording's monitor unplugged: it stops and is saved | desktop `A_window_beyond_every_monitor_is_captured_through_wgc_or_explained` (a window at (virtual right + 300, 100); here WGC has no picture, so the message): pass. `WindowCaptureServiceTests` (the message, WGC first); `RecordingFaultTests.A_disconnected_monitor…` (failure "DISPLAY7 was disconnected…", the file saved, 1.0 s): pass | pending: unplug a monitor during a recording; a window off-screen on Windows 11 |
+| GPU switching / device lost | Screenshots fall back to GDI and the device is made again (since Phase 1). A recording holds the picture, rebuilds the capture on a new device (every 250 ms for up to 30 s) and carries on in the same file | `RecordingFaultTests`: lost after 30 pictures, 3 failed rebuilds, then back: one file, 80–100 frames in 3 s, warning, notice, note; not back within 1 s: stopped and saved. Desktop `A_lost_device_rebuilds_the_real_capture…` (the real WGC capture made again on a new device): pass | pending: a real driver reset (`dxcap -forcetdr`) and a laptop switching GPUs |
+| Sleep / resume during recording | Paused as the PC goes to sleep; stays paused after waking with "The PC woke up…" | `RecordingFaultTests.Sleep_pauses…`: 2.0 s recorded around a 1.5 s sleep, one file, the note "At 0:01 the PC went to sleep…": pass | pending: real sleep (a wake timer, or by hand) |
+| Display resolution change during recording | A whole monitor follows its new size; an area keeps its place, cut to what is left. The part ends; the rest is "name (part 2).mp4" at the new size | `RecordingFaultTests.A_resolution_change…`: 640×360 then 480×270, two parts, each from 0, 85–95 frames together; `ResizedAreaTests`: pass | pending: change a monitor's resolution during a recording |
+
+### Performance budgets
+
+Measured by `tools\Bench` on the reference PC with the final build (Release, self-contained, single file, ReadyToRun), run as its own instance (`CASHGEAR_INSTANCE=bench`) while the installed copy kept running.
+
+| Budget | Result | Met |
+|---|---|---|
+| Cold start to tray < 1.5 s | process start to the tray icon: median 966 ms, p95 1033 ms over 9 runs, 898 ms just after publishing; the hotkeys registered 40 ms later. Without ReadyToRun: median 1656 ms | yes |
+| Region overlay < 150 ms after the hotkey | from the key press (SendInput) to the overlay's first rendered frame: median 145 ms, p95 154 ms, max 157 ms over 9 runs. The first after starting: 545 ms (395 ms from `WM_HOTKEY`) | median yes, p95 no (+4 ms) |
+| Idle CPU ≈ 0% | 0 ms of CPU in 120 s after 30 s settling (0.000% of one core) | yes |
+| Idle RAM < 80 MB | 35.4 MB private working set (Task Manager's "Memory"); 75.3 MB private bytes; 135.8 MB working set (with shared DLL pages) | yes |
+| No allocations in the per-frame recording hot path | 0 bytes per frame on the video, sound and file threads, also with overlays drawn while the pointer moves, a button is pressed every 0.3 s and a caption shows; 0 bytes per frame planning and drawing each kind of overlay; 0 bytes per picture in the WGC frame callback | yes |
+| 4-hour recording without memory growth | 4 recorded hours at 30× real time (8.5 min), with overlays, metadata, a microphone and the real encoders: GC heap 5.8–6.0 MB throughout, private bytes 139.9–143.4 MB, the last hour within 1 MB of the first | yes (fast clock; WGC by hand pending) |
+
+**Where the overlay's time goes** (a typical press, from `WM_HOTKEY`; the app logs these steps):
+- 1 ms: prepared (no hide delay from a hotkey).
+- 3 ms: the windows listed.
+- 70–95 ms: the screen frozen. GDI's read of 1920×1080 takes 37–80 ms and of 1280×1024 22–44 ms; the two now run at once, so one's copy overlaps the other's read.
+- 4 ms: the picture made.
+- 20–30 ms: the window shown.
+- 20–40 ms: the first frame rendered.
+
+**What changed the budgets during the phase:**
+
+| Change | Startup median (tray) | Overlay median / p95 |
+|---|---|---|
+| Before (JIT, 200 ms hide delay before every overlay) | 1606 ms | the hide delay alone was 200 ms |
+| No hide delay from a hotkey | — | 154 / 187 ms |
+| ReadyToRun publish | 980 ms | 172 / 207 ms |
+| Monitors grabbed at once | 966 ms | 145 / 154 ms |
+
+**Tried and dropped:** drawing an overlay off-screen once after start (the first press: 395 → 255 ms) cost 26 MB of idle memory, so it was taken out. Container validation off in Release made no measurable difference.
+
+### Other checks
+
+| Check | Result |
+|---|---|
+| HDR: the tone mapper on the GPU (`ToneMapperTests`) | pass: linear 0.5 → 188, SDR white at 80 nits and at 200 nits → 255, 1000 nits → white, an orange highlight twice SDR white → (255, 188, 99) keeping its hue, wide-gamut red and green moved towards grey with their luminance, offsets read the right pixels |
+| HDR: float captures on these SDR monitors | Windows hands them over with SDR white at 2.0 (every grey level twice its linear value, measured with a 0–255 ramp). With that white level, a float screenshot equals the 8-bit one within a level on ≥ 99.9% of still pixels on both monitors, and so does the recorder's float stream: pass |
+| HDR detection | the display configuration API reads both paths here (8 bits per colour, no advanced colour); no HDR monitor |
+| HDR routing (`ScreenCaptureServiceTests`) | pass: a monitor in HDR mode goes to WGC as float even on Windows 10 (Auto), to GDI with HDR off or GDI chosen |
+| Overlays' allocations (`OverlayAllocationTests`) | pass: 0 bytes in 60 frames for a halo, a spotlight, a pointer drawn bigger and fading when idle, captions, the webcam and all of them at once, with the pointer going round and stopping and a press every 0.3 s (the code before: 4.8 KB to 116 KB). A reusable scene plans the same items as a new one at every frame of 8 s |
+| Logs (`LoggingTests`) | pass: one line of JSON per event (`@t`, `@l`, `@mt`, `@m`, properties), the run id, a recording's scope coming and going, exceptions whole |
+| Diagnostics (`DiagnosticsExporterTests`) | pass: exactly 8 entries; none of 11 planted secrets (host, user, URL, header, field, fingerprint, password, window title, project, printer, feed) in any file; the user folder shown as `%USERPROFILE%`, raw and JSON-escaped; today's log read while held open for writing, a 20-day-old one left out |
+| The whole suite | without the desktop (`CASHGEAR_SKIP_INTERACTIVE=1`): 1443 tests, 1338 pass, 105 skipped, 0 failed (2 min 43 s). With the desktop (the user's go-ahead): 1432 pass, 11 skipped, 0 failed (3 min 46 s). Six of the skips need RNNoise, which isn't in a test build. The other five run only when asked for: the 4-hour run, sound played aloud, another app's sound, the WGC leak run and a browser password field. The first desktop run had six failures, all fixed (CHANGELOG › Fixed during development). Its loudness test also once heard its sound 30 ms late under the full parallel load, against a 20 ms tolerance; it passed on its own and in the final run |
+
+### Pending: by hand
+- **An HDR monitor:** with Windows' HDR on, capture a white SDR window (it should be 255, not grey), an HDR video or game (highlights white, colours not shifted), record a minute, and use the magnifier and the colour picker on it. Try the SDR content brightness slider at both ends.
+- **Faults for real:**
+  - change a monitor's resolution during a recording (whole monitor and an area);
+  - put the PC to sleep during a recording;
+  - lock it (Win+L) and approve a UAC prompt during a recording;
+  - unplug the recorded monitor;
+  - a driver reset (`dxcap -forcetdr` from the Graphics Tools, or a driver update) during a recording;
+  - a laptop switching GPUs.
+- **Remote Desktop:** record and capture from another PC; check the encoder used and the note.
+- **Protected video:** Netflix or a PlayReady test page in Edge, captured and recorded.
+- **`Bench soak --hours 4`** (a real 4-hour WGC recording) and **`Bench alloc`** (1080p30 of the primary monitor).
+- **Export Diagnostics** from the installed app, and open the zip.

@@ -1559,3 +1559,123 @@ The video editor can now zoom into the screen where things happen, the way Scree
 - **Transcription:** the first use of a model downloads it (57 to 514 MB). The window offers English and Arabic (and finding out), though Whisper knows more. No translation. The runtime is chosen once per run of the app. Small and Medium are slow on the processor for long recordings.
 - **GIF:** no sound; at most 256 colours (diffusion dithering for photos and video); the size limit tries four times at most and keeps the last.
 - **Export:** the marked range is the one when the export window opened.
+
+## Phase 18 — Robustness & Performance (2026-10-21)
+
+Captures and recordings now cope with what Windows can do to them while they run. Monitors in HDR mode are read in 16-bit float and turned into SDR, so captures look as the screen does. What Windows won't let any app capture is explained instead of coming out wrong: a UAC prompt or the lock screen, protected video and windows that hide from capture, windows that are cloaked or off every monitor. A recording carries on through a lost graphics device (a driver reset, a laptop switching GPUs) and a resolution change (the rest goes into another part). It pauses when the PC goes to sleep, stops and saves when its monitor is unplugged, and notes the time a secure screen was shown. The recording's hot path allocates nothing per frame, and four recorded hours keep memory flat. The logs are structured JSON with a run id and recording, capture and export ids, and **Export Diagnostics** makes a zip for bug reports that leaves out addresses, names and passwords. A new `tools\Bench` measures the performance budgets on this PC.
+
+### Added
+- **HDR monitors** (Settings › Capture › HDR monitors, on by default):
+  - A monitor in HDR mode is found from Windows' display configuration, along with its SDR content brightness. Screenshots of it (every kind, the colour picker and the region overlay's frozen screen included), recordings and the magnifier read it as 16-bit float through Windows.Graphics.Capture, also on Windows 10, where Automatic otherwise uses GDI.
+  - A pixel shader turns that into 8-bit sRGB:
+    - SDR white becomes 255, so SDR windows look exactly as on an SDR monitor.
+    - Wide-gamut colours move towards grey of the same luminance until they fit sRGB.
+    - Highlights brighter than SDR white are scaled down to white as a whole colour, keeping their hue.
+  - GDI's copy of an HDR desktop looks washed out; "As Windows gives it to older apps" keeps that.
+- **What Windows won't let be captured:**
+  - **A secure screen** (a UAC prompt, the lock screen, Ctrl+Alt+Del): a screenshot says so and takes nothing. A recording holds the last picture and notes from when to when.
+  - **Protected windows:** a window that keeps itself out of captures (display affinity: video players showing DRM video, password managers), or a window capture that comes out black, gets a notification saying why. Starting a recording over such a window warns that it will be black.
+  - **Hidden windows:** a cloaked window (another virtual desktop, a suspended app) is explained. A window off every monitor (left where a disconnected monitor was) is captured through WGC where WGC still sees it. Otherwise, as on Windows 10, the message says how to bring it back. A minimized window is explained, as before.
+  - **Remote Desktop:** a recording made over it says that pictures come as often as the connection allows and the graphics card's encoder may be missing.
+  - **GDI failures** read as words, with the likely reason.
+- **Recordings through faults:**
+  - **A lost graphics device** (removed, reset, hung, a driver error; or no picture for a second with the device reporting removal): the picture holds still while the capture is rebuilt on a new device, retried every 250 ms for up to 30 s. The recording stays one file, with a warning, a notice when it is back and a note in the saved notification. A device that doesn't come back stops the recording, and what was recorded is saved.
+  - **A resolution change** that changes the recorded area: a whole-monitor recording follows the monitor to its new size, and an area keeps its place, cut to what is left (even sizes). The current part ends, and the rest is recorded at the new size with the same encoder (or the next that works) as "name (part 2).mp4".
+  - **A monitor unplugged:** the recording stops and is saved.
+  - **Sleep:** the recording pauses as the PC goes to sleep, so the time asleep isn't hours of a still picture and silence. After waking it stays paused, with a notification, until it is resumed or stopped from the toolbar.
+- **Structured logs:** `%LocalAppData%\CashGear\Capture\logs\capture-yyyyMMdd.jsonl`, one JSON object per line in the compact log event format (`@t`, `@l`, `@mt`, `@m`, `@x`, then every property). Each line carries the run's id (new at every start), the process and thread. A recording's lines carry its id (the same as its temporary folder's), a capture's its own, an export's its own. The startup time and the hotkey-to-overlay time are logged.
+- **Export Diagnostics** (Settings › General › Advanced, tray › Export Diagnostics…) saves a zip:
+  - the last 7 days of logs;
+  - `settings.json` without server and upload addresses, user names, URLs, header values, other apps' paths, printers or the update address;
+  - `state.json` without window titles and recent files;
+  - `encoders.json`;
+  - `system.json`: Windows, the processor, memory, graphics cards and drivers, monitors with DPI and HDR, sound devices, data folder sizes;
+  - the recordings waiting to be saved.
+
+  The user folder is shown as `%USERPROFILE%`, `secrets.json` is never read, and nothing is sent anywhere.
+- **`tools\Bench`:** `publish`, `startup`, `idle`, `overlay` and `all` measure the budgets against a Release self-contained copy of the app, run as its own instance beside an installed one. `soak` and `alloc` are for runs by hand.
+- **`CASHGEAR_INSTANCE=name`** runs a copy with its own settings, data and single-instance names (`CashGear\Capture-name`).
+- **Inside.**
+  - **Core:** `LogScopes`; `HdrInfo` and `MonitorInfo.Hdr`; `CaptureSettings.Hdr`; `IDesktopState`; `IPowerEvents`; `WindowInfo.IsCloaked` and `HidesFromCapture`; `CaptureMetadata.Notice`; `CaptureMessages`; `OverlayPlanner.Plan` into a reusable scene, whose items are planned again in place; `InputTimeline.Clicks` and `Captions` into lists.
+  - **Interop:** `DisplayConfig`; `D3DCompiler` (Windows' own `d3dcompiler_47.dll`); `CaptureFrameAbi`, which reads WGC frames through their ABI.
+  - **Engine:** `HdrDetector`, `ToneMapper`, `LiveMonitorStream`, `Win32DesktopState`, `GraphicsAdapters`.
+  - **Overlays:** the compositor keeps captions' text layouts and the webcam's outline.
+  - **Recording:** `IPictureStream` (`WgcAreaStream` with its recovery, resizing and closing), `ResizedArea`, `DeviceLostException`; the recorder's `StreamFactory`/`Time`/`InputFeed` seams for tests.
+  - **Media:** pooled `EncodedPacket`s; `MediaWriter` on a queue and a semaphore.
+  - **App:** `JsonLinesFormatter`; `DiagnosticsExporter`/`DiagnosticsService`; `WindowsPowerEvents`; `Timings`.
+  - **Tests:** `FakePictureStream` (a real D3D11 device, faults on cue); `OverlayAllocationTests`.
+
+### Deviations from the spec
+- **No HDR recording** (the user's choice): nothing on the development PC can encode 10-bit HEVC. NVENC needs a newer driver than 457.51, Media Foundation's HEVC takes only 8-bit, and there is no AMD or Intel GPU. HDR monitors are tone-mapped to SDR for screenshots and recordings alike.
+- **Highlights are kept white with their hue, not rolled off:** compressing them would have dimmed SDR white too, and captures of SDR windows on an HDR monitor must look as on an SDR one.
+- **The shader is compiled at run time** with Windows' `d3dcompiler_47.dll` (there is no shader compiler in the build), once per process.
+- **Live tests:** the user allowed the desktop tests and the bench's startup, idle and overlay runs. Resolution changes, sleep, the lock screen and UAC were tested with simulated faults through a fake picture stream and fake power and desktop states, plus a desktop test that rebuilds the real capture after a simulated device loss. Their real counterparts are by-hand steps in TESTING.md.
+- **The 4-hour test** ran on a clock 30 times faster than real time (4 recorded hours in 8.5 minutes) through the real encoders, file, overlays, metadata and sound mixer, with a fake picture stream. A real 4-hour WGC recording is `Bench soak`, by hand.
+- **No allocations per frame** is checked with each thread's own allocation counter, so `dotnet-counters` wasn't needed. It covers:
+  - the video, sound and file threads, also with overlays drawn while the pointer moves, a button is pressed every 0.3 s and a caption shows;
+  - each kind of overlay planned and drawn on its own;
+  - the WGC frame callback.
+- **Sleep pauses and stays paused** after waking, rather than resuming by itself: the lock screen may be up, and the user decides.
+- **A resolution change keeps the metadata file of the first part:** clicks and keys after it are in the journal but the editor reads the first part's.
+- **The hide delay** (200 ms before an overlay capture) is now waited only when an app window was just hidden or the tray menu was just open; from a hotkey there is nothing to fade.
+
+### Fixed during development
+- **Float captures of SDR monitors came out twice too bright:** Windows hands such frames over with SDR white at 2.0 in scRGB (160 nits), not 1.0. Every grey level measured exactly twice its linear value. `HdrInfo.Sdr` (the tests' SDR reference) uses 160 nits; HDR monitors use the white level Windows reports for them.
+- **Closing a capture from an STA thread** (a window's or a test's) failed with "marshalled for a different thread": the capture's WinRT objects are closed from the thread pool now.
+- **The encoder made a string per packet** (its error wording, formatted even on success), and every packet, every hand-over to the writer (a delegate) and every wake of the writer (a task) allocated. All are gone (see Tested).
+- **The halo and spotlight made Direct2D brushes every frame:** they are kept while their colour is the same.
+- **Moving overlays still allocated:** in the full desktop run, the recording made 32 bytes a frame while other tests moved the real pointer.
+  - **What allocated:**
+    - The planner made new items every frame for a moving pointer's halo or spotlight, each click's ring and dot, a pointer it draws, the webcam's place and the captions. The captions also cost a dictionary and LINQ every frame.
+    - The compositor laid out each caption's text and made the webcam's outline every frame.
+  - **The fix:** the items are planned again in place, and the layouts and the outline are kept. That makes 0 bytes a frame for every kind of overlay, against 4.8 KB to 116 KB per 60 frames before.
+  - **The recorder's test read the real pointer,** which other desktop tests move. It now feeds the overlays its own input.
+- **A window off every monitor** fell back to the "off every screen" message on Windows 10, as it should, but by way of an "incorrect parameter" error. Windows.Graphics.Capture has no picture of such a window (its item is 0×0), and the log now says so.
+- **Four desktop tests were out of date or fragile:**
+  - The encoder-switch note says "saved as another file" since a resolution change can add parts too, but its warning and test still said "a second file". All three say "another file" now.
+  - The export window's GIF choices (Phase 17) are hidden for an MP4 but were counted.
+  - The float screenshot test takes the best of five tries: another test's window flashing up during the float capture alone spoiled one.
+  - The off-screen window test accepts the message where WGC has no picture.
+- **Two tests of the image tools (Phase 15) failed now and then:**
+  - A progress report arriving after a batch finished replaced "Done in …" with "2 of 2". Reports after the end are ignored now.
+  - The tests' cleanup tried to delete a picture a preview was still reading; it waits now.
+- **The first measurements missed two budgets:**
+  - Cold start: 1.6 s to the tray (JIT) → 966 ms with ReadyToRun.
+  - The overlay: a 200 ms hide delay before every overlay, then GDI reading the monitors one after the other → no delay from a hotkey, and the monitors read at once.
+
+### Tested
+- **Automated tests without the desktop:** 1443 tests: 1338 pass, 105 skipped (desktop and on-request tests), 0 failed (`CASHGEAR_SKIP_INTERACTIVE=1`).
+- **With the desktop tests** (the user's go-ahead): 1432 pass, 11 skipped (6 need RNNoise, which isn't in a test build; 5 run only when asked for), 0 failed. The first full run turned up six failures, fixed above.
+- **Acceptance:**
+  - **Edge cases:** each has a documented result in TESTING.md › Phase 18 › Edge cases. The automated ones pass; the real UAC prompt, lock, sleep, resolution change, unplugged monitor, driver reset, GPU switch, Remote Desktop and DRM video are by-hand steps.
+  - **Budgets on the reference PC** (Xeon E5-2680 v3, GTX 1650 on 457.51, Windows 10 22H2, `tools\Bench`):
+    - cold start to the tray: median 966 ms, p95 1033 ms (met);
+    - the region overlay after its hotkey: median 145 ms, p95 154 ms (the median is met; p95 is 4 ms over), and the first after starting 545 ms;
+    - idle: 0 ms of CPU in 120 s, 35.4 MB in Task Manager's "Memory" (75.3 MB private bytes) (met);
+    - no allocations per frame (met);
+    - 4 recorded hours on a fast clock with flat memory: GC heap 5.8–6.0 MB, private bytes within 3.5 MB (met).
+- **HDR:**
+  - The tone mapper on the GPU with known scRGB values.
+  - The float path on these SDR monitors, screenshots and recordings, equal to 8-bit within a level.
+  - HDR routing, and detection reading both display paths. There is no HDR monitor here.
+- **Logs and diagnostics:** the JSON lines read back with their scopes; the zip holds exactly its entries, with none of 11 planted secrets and no user folder.
+- **Build:** `dotnet build --no-incremental` without warnings. A Release ReadyToRun publish is 302 MB for the exe (180 MB without), 689 MB in all with the native libraries (the SkiaSharp and HarfBuzz `.pdb`s from Phase 17 are 119 MB of it).
+
+### Known limitations
+- **HDR:**
+  - **Not checked on a real HDR monitor:** how Windows hands such frames over follows its documentation (SDR white at the SDR white level). On SDR monitors it measured twice the documented scale.
+  - **Highlights don't keep their detail:** above SDR white they become white.
+  - **No HDR (10-bit) recording.**
+  - **The yellow border on Windows 10:** a monitor in HDR mode is read with Windows.Graphics.Capture, which draws it on that monitor while reading.
+- **The overlay:**
+  - **It takes about 145 ms** (p95 154 ms) on the reference PC: GDI's read of 3.3 megapixels is 70–95 ms of it.
+  - **The first one after the app starts takes about 0.4–0.5 s,** while WPF sets up its rendering.
+- **Recordings through faults:**
+  - **A lost device** shows as a still picture for as long as it is lost (usually 2–5 s).
+  - **A resolution change** starts a new file. The metadata (clicks, keys, the pointer) is saved with the first part only.
+  - **Sleep:** the recording has to be resumed by hand.
+  - **A secure screen** is noted with whole-second times; the sound goes on during it.
+- **Protected video in browsers:** it is recognized only when a window capture comes out all black. A region over it says nothing (the browser window doesn't declare it).
+- **A window off every monitor can't be captured on Windows 10:** Windows.Graphics.Capture has no picture of it. The message says how to bring it back.
+- **Diagnostics:** the logs keep window titles and file names, with the user folder replaced (they never hold keystrokes or passwords).
+- **ReadyToRun:** it makes the app about 120 MB bigger before compression.

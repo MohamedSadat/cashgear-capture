@@ -25,6 +25,7 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 15 | Image editor extras: effects (shadow, torn and faded edges, border, rounded corners, perspective, brightness/contrast, grayscale, sharpen, watermark) on the image or a selected area with a live preview, effect and watermark presets, spotlight and magnifier, canvas size, trim, rotate by any angle, flip, Arabic text; Combine Images, Batch Process, Images to PDF, a PDF destination | done (by-hand checks in the installed app pending) |
 | 16 | Timeline video editor: projects (`.cgcap`), frame-exact cuts, sound tracks, webcam placement, music, annotations with keyframes (Arabic text, blur, pixelate), speed and ramps, fades, crossfades, freeze frames, clicks, keystrokes and the pointer from the metadata; preview on the graphics card; export to MP4 (H.264, HEVC), WebM (VP9, AV1), M4A and MP3 | done (by-hand checks in the installed app pending) |
 | 17 | Auto-zoom (zooms around clicks and typing that follow the pointer smoothly, editable on the timeline), captions (from speech with Whisper on this PC, English and Arabic; typed; SRT/WebVTT in and out; burned in, Arabic right to left), exports of the marked range, animated GIFs (in the editor and as a recording step) | done (by-hand checks in the installed app pending) |
+| 18 | Robustness and performance: HDR monitors captured in float and tone-mapped to SDR; clear messages for UAC and the lock screen, protected video, cloaked and off-screen windows, Remote Desktop; recordings that survive a lost graphics device, a resolution change (a new part), sleep (paused) and an unplugged monitor (saved); no allocations per frame; JSON logs with run and recording ids; Export Diagnostics; `tools\Bench` for the performance budgets | done (HDR monitor, real sleep, lock, UAC, RDP and resolution change by hand pending; the overlay's p95 is 4 ms over budget) |
 
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
 
@@ -51,6 +52,19 @@ dotnet run --project src/CashGear.Capture.App
 ```
 
 Interactive capture tests need a logged-in desktop; set `CASHGEAR_SKIP_INTERACTIVE=1` to skip them (e.g. on CI).
+
+### Performance budgets: `tools\Bench`
+
+```powershell
+dotnet run --project tools/Bench -- all          # publishes artifacts\bench\app if needed, then startup, idle, overlay
+dotnet run --project tools/Bench -- startup --runs 10
+dotnet run --project tools/Bench -- idle --settle 30 --seconds 120
+dotnet run --project tools/Bench -- overlay --runs 20
+dotnet run --project tools/Bench -- soak --hours 4    # by hand: memory while recording a monitor for hours
+dotnet run --project tools/Bench -- alloc --seconds 60 # by hand: the recorder's allocations per frame at 1080p30
+```
+
+The bench measures a Release, self-contained, ReadyToRun copy of the app (as the installer ships it) in `artifacts\bench\app`, started with `CASHGEAR_INSTANCE=bench`. It has its own settings, data and single-instance names (`%AppData%\CashGear\Capture-bench`, `%LocalAppData%\CashGear\Capture-bench`), so an installed copy keeps running. It times the copy through its log and its ready signal. The overlay run presses Ctrl+Alt+F11 (the copy's only hotkey) and closes each overlay with Esc, but only when the overlay is the window in front. Reports go to `artifacts\bench\*.report.txt`. The budgets and the latest results are in [docs/TESTING.md](docs/TESTING.md).
 
 ### Installer, signing and updates
 
@@ -110,11 +124,11 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 |---|---|
 | Output | After capture: the workflow, in order (open in the editor, save to file, copy, print, Word, PowerPoint, PDF, a server, an upload, an app, copy the link; each on or off). After a recording is saved: its own steps (open in the video editor, copy, upload…). Folder; PNG/JPEG/BMP and JPEG quality; file-name template with a live example |
 | Destinations | The printer, Word and PowerPoint, PDF, FTP/FTPS/SFTP servers, HTTP uploads and apps to open captures with, each with a Test button (see [Output destinations](#output-destinations)) |
-| Capture | Capture delay (also in the tray) and a delay per kind of capture, hide delay, the capture toolbar at startup, cursor, window shadow, fixed-size region and rounded corners, full-screen output, scrolling capture (wait after each scroll, height limit), capture method |
+| Capture | Capture delay (also in the tray) and a delay per kind of capture, hide delay, the capture toolbar at startup, cursor, window shadow, fixed-size region and rounded corners, full-screen output, scrolling capture (wait after each scroll, height limit), capture method, HDR monitors (tone-mapped to SDR, or as Windows gives them to older apps) |
 | Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer. Sound: system audio on/off, all sound / only one app / all except one app, the output device (the default, followed, or one by name), the microphone (none, the Windows default or a connected one); with both, one mixed track, a track per source, or both. Microphone processing (noise suppression with its strength, noise gate with its threshold, compressor, limiter), live level meters, the microphone test, evening out loudness when saving. FFmpeg's version |
 | Overlays | Draw the overlays into the video or add them later; the metadata file; clicks (colours, size, sound); pointer (halo or spotlight, size, hide when idle); keystrokes (shortcuts or all keys, position, font, size, time, apps never shown); webcam (camera, picture, shape, size, border, mirror, placement preview); drawing (pen colour, width, fade) |
 | Hotkeys | Record hotkeys; each shows whether it is active. Push to talk |
-| General | Start with Windows, text recognition language (Automatic or one installed language), screen tools (the ruler's pixels per inch, how the colour picker copies), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file |
+| General | Start with Windows, text recognition language (Automatic or one installed language), screen tools (the ruler's pixels per inch, how the colour picker copies), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file, Export diagnostics |
 
 Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved. The destinations' passwords and tokens are not in it (see [Output destinations](#output-destinations)).
 
@@ -142,6 +156,17 @@ Destinations, each with a **Test** button (it checks the set-up as it is in the 
 | Copy the link | Copies the links the uploads before it made |
 
 **Security.** An FTPS certificate that Windows doesn't trust, and every SFTP server's key, must be trusted once from the Test button, which shows its SHA-256 fingerprint; a key that changes later is refused, and nothing is sent before. Passwords, key passphrases and the secret header are encrypted for your Windows account with DPAPI in `%LocalAppData%\CashGear\Capture\secrets.json`, never in settings.json. They are saved on OK or Apply and never shown again.
+
+## HDR monitors
+
+A monitor in HDR mode is read in 16-bit float and turned into SDR on the graphics card, so captures look as the screen does instead of washed out. This covers screenshots of every kind (the region overlay's frozen screen and the colour picker included), recordings and the magnifier. SDR white (Windows' "SDR content brightness") becomes white, wide-gamut colours keep their hue, and HDR highlights brighter than SDR white become white. This goes through Windows.Graphics.Capture, so on Windows 10 that monitor shows a yellow border while it is read. Settings › Capture › HDR monitors can turn it off.
+
+## When Windows doesn't allow a capture
+
+- **A secure screen** (a UAC prompt, the lock screen, Ctrl+Alt+Del): no app can capture it. A capture asked for meanwhile says so and takes nothing. A recording holds its last picture, and the saved notification says from when to when.
+- **Protected video and private windows:** windows that keep themselves out of captures (DRM video players, password managers) come out black or missing. A capture with one in it says which, and starting a recording over one warns. A window capture that comes out all black says protected video is always black.
+- **Hidden windows:** a window on another virtual desktop (or a suspended app) is explained, and so is a minimized one. A window left off every monitor (where a monitor was unplugged) is captured where Windows.Graphics.Capture still sees it. Windows 10 doesn't, so there the message says how to bring the window back.
+- **Remote Desktop:** recordings work, with pictures as often as the connection sends them, and the graphics card's encoder may be missing. The saved notification says so.
 
 ## Delayed capture
 
@@ -224,6 +249,11 @@ Tray › **Record Screen…** (or `Shift+PrintScreen`): drag the area to record,
   - **Loudness.** With Settings › Recording › Even out the loudness, every recording is saved at −16 LUFS (the sound is measured and encoded again; the video isn't).
   - Sound is kept on the recording's clock: silences stay silent, Pause pauses the sound too, and the sound and picture end together.
   - If no sound device is available, the video is recorded without sound and the notification says why. With system audio off and no microphone, the MP4 has no sound track.
+- **When things change under it:**
+  - **The graphics card resets** (a driver update or crash, a laptop switching GPUs): the picture holds still while the capture is set up again on the new device, and the recording carries on in the same file. If the card isn't back within 30 s, the recording stops and what was recorded is saved.
+  - **The monitor changes resolution:** a whole-monitor recording follows it, and an area keeps its place (cut to what is left). The rest goes into "name (part 2).mp4" at the new size.
+  - **The monitor is unplugged:** the recording stops and is saved.
+  - **The PC goes to sleep:** the recording pauses. After waking it stays paused until you resume or stop it.
 
 ## Recording overlays
 
@@ -319,7 +349,7 @@ Closing an editor (or exiting the app) with unsaved changes asks whether to save
 ```
 src/CashGear.Capture.Core       Models, interfaces, settings, pixel math (net10.0, no WPF/WinRT)
 src/CashGear.Capture.Interop    All P/Invoke + COM declarations
-src/CashGear.Capture.Engine     Capture engines (WGC, GDI), monitor/window enumeration, open menus, UI Automation objects
+src/CashGear.Capture.Engine     Capture engines (WGC, GDI, HDR tone mapping), monitor/window enumeration (HDR state, display affinity), open menus, UI Automation objects
 src/CashGear.Capture.Editor     Editor core: annotations, undo/redo, Skia rendering, zoom, effects, Arabic text (HarfBuzz), presets, combine, batch, PDF (net10.0, no WPF)
 src/CashGear.Capture.Media      FFmpeg in-process (FFmpeg.AutoGen): encoders, crash-safe writer, remux, loudness, decoding (net10.0)
 src/CashGear.Capture.Audio      Sound devices: WASAPI capture with Windows' timestamps, devices followed, process loopback, microphone chain, RNNoise, meters
@@ -331,6 +361,7 @@ tools/get-ffmpeg.ps1            Downloads the pinned LGPL FFmpeg build into tool
 tools/get-rnnoise.ps1           Builds rnnoise.dll from the pinned RNNoise source into tools/rnnoise (not committed; needs MSVC)
 tools/get-whisper-models.ps1    Downloads the Whisper models the transcription tests use into tools/whisper (not committed)
 tools/SyncTest                  Recording acceptance test: flashes + beeps, then sync, drift, CPU (docs/TESTING.md)
+tools/Bench                     Performance budgets: cold start, idle CPU/memory, hotkey to overlay; by hand a long recording and per-frame allocations
 tools/licenses                  License texts shipped with FFmpeg
 tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
 tools/make-icon.ps1             Draws the app icon
@@ -344,7 +375,8 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | What | Where |
 |---|---|
 | Settings | `%AppData%\CashGear\Capture\settings.json` |
-| Logs | `%LocalAppData%\CashGear\Capture\logs\` |
+| Logs (one JSON object a line: `capture-yyyyMMdd.jsonl`, 14 days) | `%LocalAppData%\CashGear\Capture\logs\` |
+| A diagnostics zip (Settings › General › Export diagnostics…) | where you save it (the Desktop by default) |
 | Captures (default) | `Pictures\CashGear Capture\` |
 | Capture history | `%LocalAppData%\CashGear\Capture\history\` |
 | Recordings in progress (and ones a crash left) | `%LocalAppData%\CashGear\Capture\Recordings\Temp\` |
