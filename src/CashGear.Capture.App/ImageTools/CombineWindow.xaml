@@ -1,0 +1,66 @@
+<local:ImageToolWindow x:Class="CashGear.Capture.App.ImageTools.CombineWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.ImageTools"
+        xmlns:editor="clr-namespace:CashGear.Capture.App.Editor"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:CombineViewModel}"
+        Title="Combine Images – CashGear Capture" Width="980" Height="640" MinWidth="760" MinHeight="460"
+        WindowStartupLocation="CenterScreen">
+  <Window.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <local:ImageListTemplate />
+        <editor:EditParameterTemplates />
+      </ResourceDictionary.MergedDictionaries>
+      <BooleanToVisibilityConverter x:Key="Visible" />
+    </ResourceDictionary>
+  </Window.Resources>
+
+  <DockPanel Margin="16">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+      <TextBlock Text="{Binding Error}" Foreground="#C42B1C" VerticalAlignment="Center" Margin="0,0,12,0" MaxWidth="460" TextWrapping="Wrap" />
+      <Button Content="Save as…" Command="{Binding SaveAsCommand}" MinWidth="90" Margin="0,0,8,0" />
+      <Button Content="Open in the editor" Command="{Binding OpenInEditorCommand}" IsDefault="True" FontWeight="SemiBold" />
+    </StackPanel>
+
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="260" />
+        <ColumnDefinition Width="16" />
+        <ColumnDefinition Width="220" />
+        <ColumnDefinition Width="16" />
+        <ColumnDefinition />
+      </Grid.ColumnDefinitions>
+
+      <ContentControl Content="{Binding List}" Focusable="False" x:Name="ListHost" />
+
+      <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel>
+          <TextBlock Text="Layout" />
+          <ComboBox Margin="0,2,0,0" ItemsSource="{Binding Layouts}" SelectedItem="{Binding Layout}" DisplayMemberPath="Label" AutomationProperties.Name="Layout" />
+          <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding ShowColumns, Converter={StaticResource Visible}}">
+            <TextBlock Text="Columns" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBox Text="{Binding Columns}" Width="60" AutomationProperties.Name="Columns" />
+          </StackPanel>
+          <TextBlock Text="Aligned" Margin="0,8,0,0" />
+          <ComboBox Margin="0,2,0,0" ItemsSource="{Binding Alignments}" SelectedItem="{Binding Alignment}" DisplayMemberPath="Label" AutomationProperties.Name="Aligned" />
+          <TextBlock Margin="0,8,0,0"><Run Text="Space between: " /><Run Text="{Binding Spacing, Mode=OneWay}" /><Run Text=" px" /></TextBlock>
+          <Slider Minimum="0" Maximum="100" Value="{Binding Spacing}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="Space between" />
+          <TextBlock Margin="0,8,0,0"><Run Text="Border around: " /><Run Text="{Binding Margin, Mode=OneWay}" /><Run Text=" px" /></TextBlock>
+          <Slider Minimum="0" Maximum="100" Value="{Binding Margin}" IsSnapToTickEnabled="True" TickFrequency="1" AutomationProperties.Name="Border around" />
+          <ContentControl Content="{Binding Background}" Focusable="False" />
+        </StackPanel>
+      </ScrollViewer>
+
+      <DockPanel Grid.Column="4">
+        <TextBlock DockPanel.Dock="Top" Text="{Binding SizeText}" Margin="0,0,0,6" Opacity="0.8" />
+        <Border BorderBrush="#40808080" BorderThickness="1">
+          <Image Source="{Binding Preview}" Stretch="Uniform" StretchDirection="DownOnly" Margin="8" />
+        </Border>
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</local:ImageToolWindow>

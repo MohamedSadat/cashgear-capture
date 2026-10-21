@@ -60,6 +60,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly AddOverlaysController _addOverlays;
     private readonly Toolbar.CaptureToolbarService _toolbar;
     private readonly Tools.ScreenTools _tools;
+    private readonly ImageTools.ImageToolWindows _imageTools;
     private readonly TimeProvider _time;
 
     public TrayViewModel(
@@ -79,8 +80,10 @@ public sealed partial class TrayViewModel : ObservableObject
         AddOverlaysController addOverlays,
         Toolbar.CaptureToolbarService toolbar,
         Tools.ScreenTools tools,
-        TimeProvider time)
+        TimeProvider time,
+        ImageTools.ImageToolWindows imageTools)
     {
+        _imageTools = imageTools;
         _toolbar = toolbar;
         _tools = tools;
         _tools.Changed += (_, _) =>
@@ -275,6 +278,16 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [RelayCommand]
     private void OpenHistory() => _historyWindow.Show();
+
+    /// <summary>Pictures through resize, effects, a watermark, a format and new names, into a folder.</summary>
+    [RelayCommand]
+    private void BatchProcess() => _imageTools.ShowBatch();
+
+    [RelayCommand]
+    private void CombineImages() => _imageTools.ShowCombine();
+
+    [RelayCommand]
+    private void ImagesToPdf() => _imageTools.ShowPdf();
 
     /// <summary>Starts a screen recording (pick the area), or stops and saves the one running.</summary>
     [RelayCommand]

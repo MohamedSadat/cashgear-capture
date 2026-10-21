@@ -34,6 +34,10 @@
           <MenuItem Header="_Colour Picker" Command="{Binding PickColorCommand}" InputGestureText="{Binding ColorPickerHotkey}" />
           <MenuItem Header="Screen _Ruler" IsCheckable="True" IsChecked="{Binding IsRulerVisible, Mode=OneWay}" Command="{Binding ToggleRulerCommand}" InputGestureText="{Binding RulerHotkey}" />
           <MenuItem Header="Cross_hair" IsCheckable="True" IsChecked="{Binding IsCrosshairVisible, Mode=OneWay}" Command="{Binding ToggleCrosshairCommand}" InputGestureText="{Binding CrosshairHotkey}" />
+          <Separator />
+          <MenuItem Header="_Batch Process…" Command="{Binding BatchProcessCommand}" />
+          <MenuItem Header="Com_bine Images…" Command="{Binding CombineImagesCommand}" />
+          <MenuItem Header="Images to _PDF…" Command="{Binding ImagesToPdfCommand}" />
         </MenuItem>
         <MenuItem Header="{Binding DelayHeader}" ItemsSource="{Binding DelayChoices}">
           <MenuItem.ItemContainerStyle>

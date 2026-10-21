@@ -332,4 +332,6 @@ internal sealed class NoShell : IShell
     public void OpenLink(string url)
     {
     }
+
+    public void OpenFile(string path) => throw new NotSupportedException();
 }

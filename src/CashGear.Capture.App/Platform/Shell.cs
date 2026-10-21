@@ -14,6 +14,9 @@ public interface IShell
 
     /// <summary>Opens a web address (http or https only) in the default browser.</summary>
     void OpenLink(string url);
+
+    /// <summary>Opens a file the user made (a PDF) in the app Windows uses for it.</summary>
+    void OpenFile(string path);
 }
 
 internal sealed partial class ExplorerShell(ILogger<ExplorerShell> logger) : IShell
@@ -39,6 +42,24 @@ internal sealed partial class ExplorerShell(ILogger<ExplorerShell> logger) : ISh
             {
                 LogMissing(path);
             }
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            LogFailed(ex, path);
+        }
+    }
+
+    public void OpenFile(string path)
+    {
+        if (!File.Exists(path))
+        {
+            LogMissing(path);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {

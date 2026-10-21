@@ -367,6 +367,8 @@ public sealed class OutputWorkflowTests : IDisposable
         public void ShowInFolder(string path) => Shown.Add(path);
 
         public void OpenLink(string url) => Links.Add(url);
+
+        public void OpenFile(string path) => throw new NotSupportedException();
     }
 
     private sealed class CountingCounter : ICaptureCounter

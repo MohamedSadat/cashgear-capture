@@ -89,6 +89,8 @@ internal static class AppHost
         builder.Services.AddSingleton<ICaptureHistory, FileCaptureHistory>();
         builder.Services.AddSingleton<HistoryActions>();
         builder.Services.AddSingleton<HistoryWindowService>();
+        builder.Services.AddSingleton<ImageTools.IImageFilePicker, ImageTools.WpfImageFilePicker>();
+        builder.Services.AddSingleton<ImageTools.ImageToolWindows>();
         builder.Services.AddSingleton<ThemeService>();
         builder.Services.AddSingleton<CaptureCoordinator>();
         builder.Services.AddSingleton<Toolbar.CaptureToolbarService>();
