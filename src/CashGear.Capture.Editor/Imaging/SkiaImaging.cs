@@ -76,6 +76,48 @@ public static class SkiaImaging
         return false;
     }
 
+    /// <summary>The image's pixels as straight-alpha BGRA bytes, row after row with no padding.</summary>
+    public static unsafe byte[] ReadUnpremul(SKImage image)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        var info = new SKImageInfo(image.Width, image.Height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+        var bytes = new byte[image.Width * image.Height * 4];
+        fixed (byte* p = bytes)
+        {
+            if (!image.ReadPixels(info, (nint)p, image.Width * 4, 0, 0))
+            {
+                throw new InvalidOperationException("Could not read the image's pixels.");
+            }
+        }
+
+        return bytes;
+    }
+
+    /// <summary>A premultiplied image from straight-alpha BGRA bytes (the inverse of <see cref="ReadUnpremul"/>).</summary>
+    public static unsafe SKImage FromUnpremul(byte[] bgra, int width, int height)
+    {
+        ArgumentNullException.ThrowIfNull(bgra);
+        var source = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+        using var bitmap = new SKBitmap(source.WithAlphaType(SKAlphaType.Premul));
+        fixed (byte* pixels = bgra)
+        {
+            using var pixmap = new SKPixmap(source, (nint)pixels, width * 4);
+            if (!pixmap.ReadPixels(bitmap.Info, bitmap.GetPixels(), bitmap.RowBytes, 0, 0))
+            {
+                throw new InvalidOperationException("Could not convert the pixels.");
+            }
+        }
+
+        return SKImage.FromPixelCopy(bitmap.Info, bitmap.GetPixels(), bitmap.RowBytes);
+    }
+
+    /// <summary>A copy of <paramref name="area"/> of the image, pixel for pixel.</summary>
+    public static SKImage Copy(SKImage image, SKRectI area)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        return Draw(area.Width, area.Height, c => c.DrawImage(image, -area.Left, -area.Top, new SKSamplingOptions(SKFilterMode.Nearest), null));
+    }
+
     /// <summary>Draws into a new transparent raster image of the given size.</summary>
     public static SKImage Draw(int width, int height, Action<SKCanvas> draw)
     {

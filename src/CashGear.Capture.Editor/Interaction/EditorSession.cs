@@ -1,4 +1,5 @@
 using CashGear.Capture.Editor.Document;
+using CashGear.Capture.Editor.Effects;
 using CashGear.Capture.Editor.Imaging;
 using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Editor.Rendering;
@@ -44,6 +45,10 @@ public sealed class EditorSession
             {
                 CropArea = null;
             }
+            else if (_tool == EditorTool.Area)
+            {
+                SelectedArea = null;
+            }
 
             _tool = value;
             Invalidate();
@@ -66,7 +71,33 @@ public sealed class EditorSession
     /// <summary>The crop rectangle the user is adjusting, in image pixels; applied with <see cref="ApplyCrop"/>.</summary>
     public SKRectI? CropArea { get; private set; }
 
+    /// <summary>The part of the image the Area tool selected, in image pixels: effects apply to it instead of the whole image.</summary>
+    public SKRectI? SelectedArea { get; private set; }
+
+    /// <summary>
+    /// An image edit being tried out (its window is open): drawn instead of the document until it is committed
+    /// (<see cref="CommitPreview"/>, which keeps exactly these pixels) or cancelled.
+    /// </summary>
+    public DocumentState? Preview { get; private set; }
+
     public bool IsDragging => _drag is not null;
+
+    /// <summary>The rectangle the Crop or Area tool adjusts.</summary>
+    private SKRectI? Marquee
+    {
+        get => Tool == EditorTool.Area ? SelectedArea : CropArea;
+        set
+        {
+            if (Tool == EditorTool.Area)
+            {
+                SelectedArea = value;
+            }
+            else
+            {
+                CropArea = value;
+            }
+        }
+    }
 
     /// <summary>Something on the canvas changed that the document doesn't know about (draft, selection, crop).</summary>
     public event EventHandler? Invalidated;
@@ -128,18 +159,18 @@ public sealed class EditorSession
 
                 break;
 
-            case EditorTool.Crop:
-                if (CropArea is { } crop && Geometry.HandleAt(Geometry.BoxHandles(crop), p, tolerance) is { } cropGrip)
+            case EditorTool.Crop or EditorTool.Area:
+                if (Marquee is { } crop && Geometry.HandleAt(Geometry.BoxHandles(crop), p, tolerance) is { } cropGrip)
                 {
                     _drag = new CropDrag(p, crop, cropGrip.Kind);
                 }
-                else if (CropArea is { } current && current.Contains((int)MathF.Floor(p.X), (int)MathF.Floor(p.Y)))
+                else if (Marquee is { } current && current.Contains((int)MathF.Floor(p.X), (int)MathF.Floor(p.Y)))
                 {
                     _drag = new CropDrag(p, current, null);
                 }
                 else
                 {
-                    CropArea = null;
+                    Marquee = null;
                     _drag = new CropDrag(p, null, null);
                 }
 
@@ -220,7 +251,7 @@ public sealed class EditorSession
                 break;
 
             case CropDrag crop:
-                CropArea = CropRect(crop, p);
+                Marquee = CropRect(crop, p);
                 Invalidate();
                 break;
         }
@@ -256,8 +287,8 @@ public sealed class EditorSession
                 Commit(resize.Before, "resize " + resize.Before.Kind.DisplayName());
                 break;
 
-            case CropDrag when CropArea is { } area && (area.Width < MinShapeSize || area.Height < MinShapeSize):
-                CropArea = null;
+            case CropDrag when Marquee is { } area && (area.Width < MinShapeSize || area.Height < MinShapeSize):
+                Marquee = null;
                 break;
         }
 
@@ -287,8 +318,8 @@ public sealed class EditorSession
                 return SelectedHandleAt(p, tolerance) is { } grip ? CursorFor(grip.Kind)
                     : HitTest(p, tolerance) is not null ? EditorCursor.Move
                     : EditorCursor.Arrow;
-            case EditorTool.Crop:
-                if (CropArea is { } crop)
+            case EditorTool.Crop or EditorTool.Area:
+                if (Marquee is { } crop)
                 {
                     if (Geometry.HandleAt(Geometry.BoxHandles(crop), p, tolerance) is { } cropGrip)
                     {
@@ -320,9 +351,10 @@ public sealed class EditorSession
             return true;
         }
 
-        if (CropArea is not null)
+        if (CropArea is not null || SelectedArea is not null)
         {
             CropArea = null;
+            SelectedArea = null;
             Invalidate();
             return true;
         }
@@ -431,6 +463,86 @@ public sealed class EditorSession
 
     public void AddShadow() => RunImageEdit("add shadow", ImageOperations.AddShadow);
 
+    public void Flip(bool horizontal) =>
+        RunImageEdit(horizontal ? "flip horizontally" : "flip vertically", s => ImageOperations.Flip(s, horizontal));
+
+    public void RotateBy(double degrees, SKColor background) => RunImageEdit("rotate", s => ImageOperations.RotateBy(s, degrees, background));
+
+    public void SetCanvasSize(int width, int height, Anchor anchor, SKColor background) =>
+        RunImageEdit("change the canvas size", s => ImageOperations.CanvasSize(s, width, height, anchor, background));
+
+    /// <summary>Crops away plain borders. False when there were none.</summary>
+    public bool AutoTrim(int tolerance = 8)
+    {
+        if (IsDragging || TextEdit is not null || ImageOperations.FindTrim(Document.Image, tolerance) is not { } area)
+        {
+            return false;
+        }
+
+        RunImageEdit("trim borders", s => ImageOperations.Crop(s, area));
+        return true;
+    }
+
+    /// <summary>Applies effects to the <see cref="SelectedArea"/> when <paramref name="toArea"/> (and there is one), else to the whole image.</summary>
+    public void ApplyEffects(IReadOnlyList<ImageEffect> effects, bool toArea, SKColor background, string? name = null)
+    {
+        ArgumentNullException.ThrowIfNull(effects);
+        var area = toArea ? SelectedArea : null;
+        RunImageEdit(name ?? EffectRunner.NameOf(effects), s => EffectRunner.Apply(s, effects, area, background), keepArea: area is not null);
+    }
+
+    /// <summary>Shows <paramref name="preview"/> instead of the document (the session owns its image from now on).</summary>
+    public void ShowPreview(DocumentState preview)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+        ReleasePreview(keep: preview.Image);
+        Preview = preview;
+        Invalidate();
+    }
+
+    /// <summary>Back to the document as it is; the previewed image is freed.</summary>
+    public void CancelPreview()
+    {
+        if (Preview is null)
+        {
+            return;
+        }
+
+        ReleasePreview(keep: null);
+        Preview = null;
+        Invalidate();
+    }
+
+    /// <summary>Makes the previewed state the document's as one undo step, with exactly the pixels shown. False if there was nothing to commit.</summary>
+    public bool CommitPreview(string name)
+    {
+        if (Preview is not { } preview || IsDragging || TextEdit is not null)
+        {
+            return false;
+        }
+
+        Preview = null;
+        var before = Document.State;
+        if (ReferenceEquals(preview.Image, before.Image) && preview.Annotations == before.Annotations)
+        {
+            Invalidate();
+            return false;
+        }
+
+        CropArea = null;
+        Document.Execute(new ImageEditCommand(name, before, preview));
+        Invalidate();
+        return true;
+    }
+
+    private void ReleasePreview(SKImage? keep)
+    {
+        if (Preview is { } old && !ReferenceEquals(old.Image, Document.Image) && !ReferenceEquals(old.Image, keep))
+        {
+            old.Image.Dispose();
+        }
+    }
+
     public void Undo()
     {
         if (!IsDragging && TextEdit is null)
@@ -447,16 +559,29 @@ public sealed class EditorSession
         }
     }
 
-    private void RunImageEdit(string name, Func<DocumentState, DocumentState> edit)
+    private void RunImageEdit(string name, Func<DocumentState, DocumentState> edit, bool keepArea = false)
     {
         if (IsDragging || TextEdit is not null)
         {
             return;
         }
 
+        CancelPreview();
         CropArea = null;
+        if (!keepArea)
+        {
+            SelectedArea = null;
+        }
+
         var before = Document.State;
-        Document.Execute(new ImageEditCommand(name, before, edit(before)));
+        var after = edit(before);
+        if (ReferenceEquals(after.Image, before.Image) && after.Annotations == before.Annotations)
+        {
+            Invalidate();
+            return; // nothing changed (a turn by 0°, no effects)
+        }
+
+        Document.Execute(new ImageEditCommand(name, before, after));
     }
 
     private void Reorder(int index, string name)
@@ -585,9 +710,15 @@ public sealed class EditorSession
             Select(null);
         }
 
-        if (CropArea is { } crop && !SKRectI.Create(Document.Width, Document.Height).Contains(crop))
+        var bounds = SKRectI.Create(Document.Width, Document.Height);
+        if (CropArea is { } crop && !bounds.Contains(crop))
         {
             CropArea = null;
+        }
+
+        if (SelectedArea is { } area && !bounds.Contains(area))
+        {
+            SelectedArea = null;
         }
     }
 

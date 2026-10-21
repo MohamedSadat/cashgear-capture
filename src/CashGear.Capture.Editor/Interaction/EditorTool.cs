@@ -17,6 +17,9 @@ public enum EditorTool
     Blur,
     Pixelate,
     Crop,
+
+    /// <summary>Selects a part of the image for effects (no annotation).</summary>
+    Area,
 }
 
 [Flags]

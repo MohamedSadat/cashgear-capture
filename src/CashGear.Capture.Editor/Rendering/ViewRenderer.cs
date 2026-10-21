@@ -36,7 +36,8 @@ public sealed class ViewRenderer : IDisposable
         ArgumentNullException.ThrowIfNull(viewport);
 
         canvas.Clear(Background);
-        var state = session.Document.State;
+        var preview = session.Preview;
+        var state = preview ?? session.Document.State;
         using (var checker = new SKPaint { Shader = Checker() })
         {
             canvas.DrawRect(viewport.ImageBounds, checker);
@@ -50,15 +51,18 @@ public sealed class ViewRenderer : IDisposable
         canvas.Save();
         var matrix = viewport.Matrix;
         canvas.Concat(in matrix);
-        DocumentRenderer.Render(canvas, state, new RenderContext(state.Image, _effects, sampling), session.Draft, session.TextEdit?.Existing);
+        DocumentRenderer.Render(
+            canvas, state, new RenderContext(state.Image, _effects, sampling), preview is null ? session.Draft : null, preview is null ? session.TextEdit?.Existing : null);
         canvas.Restore();
         _effects.Trim();
 
-        if (overlays)
+        // A preview shows only what the edit will make; grips and outlines would be in the wrong places.
+        if (overlays && preview is null)
         {
             DrawDraftOutline(canvas, session, viewport);
             DrawSelection(canvas, session, viewport);
             DrawCrop(canvas, session, viewport);
+            DrawArea(canvas, session, viewport);
         }
     }
 
@@ -121,6 +125,20 @@ public sealed class ViewRenderer : IDisposable
         DrawDashedRect(canvas, crop);
         DrawHandles(canvas, Geometry.BoxHandles(crop).Select(h => h.Position));
         DrawLabel(canvas, $"{area.Width} × {area.Height}", new SKPoint(crop.Left, crop.Top));
+    }
+
+    /// <summary>The Area tool's selection: an outline, grips and its size (nothing is dimmed: it isn't cut).</summary>
+    private void DrawArea(SKCanvas canvas, EditorSession session, Viewport viewport)
+    {
+        if (session.SelectedArea is not { } area)
+        {
+            return;
+        }
+
+        var rect = Geometry.MapRect(viewport.Matrix, new SKRect(area.Left, area.Top, area.Right, area.Bottom));
+        DrawDashedRect(canvas, rect);
+        DrawHandles(canvas, Geometry.BoxHandles(rect).Select(h => h.Position));
+        DrawLabel(canvas, $"{area.Width} × {area.Height}", new SKPoint(rect.Left, rect.Top));
     }
 
     /// <summary>White dashes over a dark line: visible on any background.</summary>
