@@ -1,4 +1,7 @@
+using CashGear.Capture.Editor.Batch;
+using CashGear.Capture.Editor.Composition;
 using CashGear.Capture.Editor.Effects;
+using CashGear.Capture.Editor.Pdf;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Presets;
@@ -19,12 +22,26 @@ public sealed record WatermarkPreset(string Name, Watermark Watermark);
 /// What <c>presets.json</c> holds: the effect presets, the watermark presets, and the image tools' last choices.
 /// Immutable; change it with <see cref="IPresetStore.UpdateAsync"/>.
 /// </summary>
-public sealed record PresetLibrary(IReadOnlyList<EffectPreset>? Effects = null, IReadOnlyList<WatermarkPreset>? Watermarks = null)
+/// <param name="Batch">The batch processor's last choices.</param>
+/// <param name="Combine">Combine Images' last choices.</param>
+/// <param name="Pdf">Images to PDF's last choices.</param>
+public sealed record PresetLibrary(
+    IReadOnlyList<EffectPreset>? Effects = null,
+    IReadOnlyList<WatermarkPreset>? Watermarks = null,
+    BatchOptions? Batch = null,
+    CombineOptions? Combine = null,
+    PdfOptions? Pdf = null)
 {
     /// <summary>Never null once normalized.</summary>
     public IReadOnlyList<EffectPreset>? Effects { get; init; } = Effects ?? [];
 
     public IReadOnlyList<WatermarkPreset>? Watermarks { get; init; } = Watermarks ?? [];
+
+    public BatchOptions? Batch { get; init; } = Batch ?? new BatchOptions();
+
+    public CombineOptions? Combine { get; init; } = Combine ?? new CombineOptions();
+
+    public PdfOptions? Pdf { get; init; } = Pdf ?? new PdfOptions();
 
     /// <summary>What a new installation starts with.</summary>
     public static PresetLibrary Defaults { get; } = new(
@@ -85,10 +102,18 @@ public sealed record PresetLibrary(IReadOnlyList<EffectPreset>? Effects = null, 
                 .Where(p => p is not null && !string.IsNullOrWhiteSpace(p.Name))
                 .Select(p => new WatermarkPreset(p.Name.Trim(), (p.Watermark ?? new Watermark()).Normalize())),
             p => p.Name)],
+        Batch = (Batch ?? new BatchOptions()).Normalize(),
+        Combine = (Combine ?? new CombineOptions()).Normalize(),
+        Pdf = (Pdf ?? new PdfOptions()).Normalize(),
     };
 
     public bool Equals(PresetLibrary? other) =>
-        other is not null && EffectPresets.SequenceEqual(other.EffectPresets) && WatermarkPresets.SequenceEqual(other.WatermarkPresets);
+        other is not null
+        && EffectPresets.SequenceEqual(other.EffectPresets)
+        && WatermarkPresets.SequenceEqual(other.WatermarkPresets)
+        && Equals(Batch, other.Batch)
+        && Equals(Combine, other.Combine)
+        && Equals(Pdf, other.Pdf);
 
     public override int GetHashCode() => HashCode.Combine(EffectPresets.Count, WatermarkPresets.Count);
 
