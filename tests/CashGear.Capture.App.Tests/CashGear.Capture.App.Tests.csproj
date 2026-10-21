@@ -30,6 +30,7 @@
     <Compile Include="..\CashGear.Capture.Media.Tests\SyntheticRecording.cs" Link="Recording\SyntheticRecording.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\TestMedia.cs" Link="Recording\TestMedia.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\StampedRecording.cs" Link="VideoEditor\StampedRecording.cs" />
+    <Compile Include="..\CashGear.Capture.Media.Tests\GifProbe.cs" Link="VideoEditor\GifProbe.cs" />
     <Compile Include="..\CashGear.Capture.Overlays.Tests\TestInput.cs" Link="Recording\TestInput.cs" />
   </ItemGroup>
 

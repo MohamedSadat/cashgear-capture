@@ -33,6 +33,7 @@ public sealed class ExportException : Exception
 /// <param name="Range">Only this part of the timeline (null: all of it).</param>
 /// <param name="BurnCaptions">Whether caption tracks that are shown are drawn into the pictures.</param>
 /// <param name="CaptionFiles">Subtitle files written next to the file (same name), from every caption track.</param>
+/// <param name="Gif">How a GIF is made (null: the defaults).</param>
 public sealed record ExportRequest(
     VideoProject Project,
     ExportPreset Preset,
@@ -41,7 +42,8 @@ public sealed record ExportRequest(
     string? EncoderSetting = null,
     TimeRange? Range = null,
     bool BurnCaptions = true,
-    CaptionFiles CaptionFiles = CaptionFiles.None)
+    CaptionFiles CaptionFiles = CaptionFiles.None,
+    GifOptions? Gif = null)
 {
     /// <summary>The project as the export makes it: the range only, caption tracks hidden when they aren't burned in.</summary>
     public VideoProject Prepared()
@@ -56,7 +58,8 @@ public sealed record ExportProgress(double Fraction, TimeSpan Elapsed, TimeSpan?
 
 /// <param name="Encoder">The video encoder used (null for sound only).</param>
 /// <param name="CaptionPaths">The subtitle files written next to it.</param>
-public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed, IReadOnlyList<string>? CaptionPaths = null);
+/// <param name="Gif">For a GIF, how it was made in the end (smaller than asked, to fit its size).</param>
+public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed, IReadOnlyList<string>? CaptionPaths = null, GifOptions? Gif = null);
 
 /// <summary>
 /// Makes a file from a project on a background thread: each frame drawn by the same <see cref="FrameCompositor"/>
@@ -89,13 +92,14 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
 
         var project = request.Prepared();
 
-        var detected = request.Preset.HasVideo ? await encoders.DetectAsync(ct: ct).ConfigureAwait(false) : [];
+        var detected = request.Preset.Codec is not null ? await encoders.DetectAsync(ct: ct).ConfigureAwait(false) : [];
         var partial = request.Path + ".partial";
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(request.Path))!);
         LogStarted(request.Path, request.Preset.Id, request.Quality);
         try
         {
-            var result = Write(request with { Project = project, Range = null }, partial, detected, progress, ct);
+            var prepared = request with { Project = project, Range = null };
+            var result = request.Preset.IsGif ? WriteGif(prepared, partial, progress, ct) : Write(prepared, partial, detected, progress, ct);
             File.Move(partial, request.Path, overwrite: true);
             LogFinished(request.Path, result.Frames, result.Elapsed.TotalSeconds);
             return result with { Path = request.Path, CaptionPaths = WriteCaptions(project, request.Path, request.CaptionFiles) };
@@ -224,6 +228,86 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         return new ExportResult(partial, TimeSpan.FromSeconds((double)count / fps), count, bytes, video.Candidate.DisplayName, watch.Elapsed);
     }
 
+    /// <summary>
+    /// A GIF: each try draws the timeline twice at the GIF's rate and size (first for its colours, then to write
+    /// it); when it comes out larger than allowed, it is made again with fewer colours, frames or pixels (four tries
+    /// at most, the last kept whatever its size).
+    /// </summary>
+    private ExportResult WriteGif(ExportRequest request, string partial, IProgress<ExportProgress>? progress, CancellationToken ct)
+    {
+        var project = request.Project;
+        var options = request.Gif ?? new GifOptions();
+        options = options with { Fps = Math.Clamp(options.Fps, GifOptions.SlowestFps, GifOptions.FastestFps) };
+        var watch = Stopwatch.StartNew();
+        var lastReport = TimeSpan.Zero;
+        for (var attempt = 1; ; attempt++)
+        {
+            var (width, height) = options.Size(project.Canvas.Width, project.Canvas.Height);
+            var count = (long)Math.Ceiling((project.Duration * options.Fps) - 1e-6);
+            long bytes;
+            using (var gif = new GifWriter(partial, width, height, options.Fps, new GifSettings(options.Colors, options.Dither, options.Loop ? 0 : -1)))
+            using (var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul))
+                ?? throw new ExportException($"Not enough memory for {width} × {height} pictures."))
+            {
+                for (var pass = 0; pass < 2; pass++)
+                {
+                    using var frames = new ExportFrameProvider(VideoDecoding.Hardware);
+                    var compositor = new FrameCompositor(frames);
+                    for (var n = 0L; n < count; n++)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        var target = surface.Canvas;
+                        target.Save();
+                        target.Scale((float)width / project.Canvas.Width, (float)height / project.Canvas.Height);
+                        compositor.Render(target, project, (double)n / options.Fps);
+                        target.Restore();
+                        surface.Flush();
+                        using (var pixmap = surface.PeekPixels())
+                        {
+                            unsafe
+                            {
+                                var pixels = new ReadOnlySpan<byte>((void*)pixmap.GetPixels(), pixmap.RowBytes * height);
+                                if (pass == 0)
+                                {
+                                    gif.Learn(pixels, pixmap.RowBytes);
+                                }
+                                else
+                                {
+                                    gif.Write(pixels, pixmap.RowBytes);
+                                }
+                            }
+                        }
+
+                        frames.Retire();
+                        if (watch.Elapsed - lastReport >= ReportEvery)
+                        {
+                            lastReport = watch.Elapsed;
+                            var fraction = ((pass * count) + n + 1) / (2.0 * count);
+                            TimeSpan? remaining = attempt == 1 && fraction > 0.02 && watch.Elapsed > TimeSpan.FromSeconds(1) ? watch.Elapsed * ((1 - fraction) / fraction) : null;
+                            progress?.Report(new ExportProgress(fraction, watch.Elapsed, remaining));
+                        }
+                    }
+
+                    if (pass == 0)
+                    {
+                        gif.EndLearning();
+                    }
+                }
+
+                bytes = gif.Finish();
+            }
+
+            if (options.MaxBytes <= 0 || bytes <= options.MaxBytes || attempt >= 4 || options.Smaller() is not { } smaller)
+            {
+                progress?.Report(new ExportProgress(1, watch.Elapsed, TimeSpan.Zero));
+                return new ExportResult(partial, TimeSpan.FromSeconds((double)count / options.Fps), count, bytes, "GIF (FFmpeg palettegen and paletteuse)", watch.Elapsed, Gif: options);
+            }
+
+            LogGifTooLarge(bytes, options.MaxBytes, attempt);
+            options = smaller;
+        }
+    }
+
     /// <summary>The subtitle files asked for, next to <paramref name="path"/> (none when no caption has text).</summary>
     private static IReadOnlyList<string> WriteCaptions(VideoProject project, string path, CaptionFiles files)
     {
@@ -277,6 +361,9 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Export: encoder {Id} could not open: {Reason}")]
     private partial void LogOpenFailed(string id, string reason);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The GIF came out at {Bytes} bytes, over {Max} (try {Attempt}): making it smaller")]
+    private partial void LogGifTooLarge(long bytes, long max, int attempt);
 }
 
 /// <summary>The export's pictures: a <see cref="FrameCursor"/> per clip, read forward as the export goes, closed once the clip is behind.</summary>

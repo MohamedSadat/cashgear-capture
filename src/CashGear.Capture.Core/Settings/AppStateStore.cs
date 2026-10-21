@@ -77,6 +77,21 @@ public sealed record VideoEditorState
     /// <summary>Transcribe on the graphics card when it can.</summary>
     public bool TranscriptionGpu { get; init; } = true;
 
+    /// <summary>GIFs: frames a second.</summary>
+    public int GifFps { get; init; } = 15;
+
+    /// <summary>GIFs: the width in pixels (at most the project's).</summary>
+    public int GifWidth { get; init; } = 800;
+
+    /// <summary>GIFs play over and over (false: once).</summary>
+    public bool GifLoop { get; init; } = true;
+
+    /// <summary>GIFs: the dithering (a <c>GifDither</c> name: Pattern, Diffusion or None).</summary>
+    public string? GifDither { get; init; }
+
+    /// <summary>GIFs are made smaller until they are under this many megabytes (0: no limit).</summary>
+    public double GifMaxMegabytes { get; init; }
+
     /// <summary>A copy with <paramref name="path"/> first among the recent projects (once).</summary>
     public VideoEditorState WithRecent(string path) =>
         this with { RecentProjects = [path, .. (RecentProjects ?? []).Where(p => !string.Equals(p, path, StringComparison.OrdinalIgnoreCase)).Take(MaxRecent - 1)] };

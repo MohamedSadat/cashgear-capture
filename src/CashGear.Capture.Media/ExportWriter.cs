@@ -15,6 +15,9 @@ public enum ExportContainer
 
     /// <summary>Sound only, MP3.</summary>
     Mp3,
+
+    /// <summary>An animated GIF (no sound), written by <see cref="GifWriter"/> rather than this writer.</summary>
+    Gif,
 }
 
 /// <summary>
@@ -122,6 +125,11 @@ public sealed unsafe class ExportWriter : IDisposable
     private void Start()
     {
         _started = true;
+        if (_container == ExportContainer.Gif)
+        {
+            throw new InvalidOperationException("GIFs are written by GifWriter.");
+        }
+
         var format = _container switch
         {
             ExportContainer.WebM => "webm",

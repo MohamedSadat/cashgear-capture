@@ -3,6 +3,7 @@ using System.IO;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Media;
 using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Export;
 using CashGear.Capture.VideoEditor.Model;
@@ -20,6 +21,12 @@ public interface IExportPathPicker
 
 /// <summary>A quality as the export window lists it.</summary>
 public sealed record QualityChoice(QualityPreset Value, string Name);
+
+/// <summary>A GIF's dithering as the export window lists it.</summary>
+public sealed record DitherChoice(GifDither Value, string Name);
+
+/// <summary>A size a GIF must stay under (0: no limit).</summary>
+public sealed record SizeLimitChoice(double Megabytes, string Name);
 
 /// <summary>
 /// The export window: the kind of file and its quality, where it goes, only the marked range or not, the captions
@@ -56,7 +63,63 @@ public sealed partial class ExportViewModel : ObservableObject
         _burnCaptions = remembered.ExportBurnCaptions;
         _saveSrt = remembered.ExportSrt;
         _saveVtt = remembered.ExportVtt;
+        var gif = GifChoices.From(remembered);
+        GifWidths = [.. new[] { 320, 480, 640, 800, 960, 1280 }.Where(w => w < project.Canvas.Width).Append(project.Canvas.Width)];
+        _gifFps = GifRates.Contains(gif.Fps) ? gif.Fps : 15;
+        _gifWidth = GifWidths.Where(w => w <= gif.Width).DefaultIfEmpty(GifWidths[0]).Max();
+        _gifLoop = gif.Loop;
+        _gifDithering = GifDithers.FirstOrDefault(d => d.Value == gif.Dither) ?? GifDithers[0];
+        _gifLimit = GifLimits.FirstOrDefault(l => Math.Abs(l.Megabytes - remembered.GifMaxMegabytes) < 0.01) ?? GifLimits[0];
     }
+
+    /// <summary>The kind of file is a GIF: its own choices instead of the quality.</summary>
+    public bool IsGif => SelectedPreset.IsGif;
+
+    public bool HasQuality => !SelectedPreset.IsGif;
+
+    public IReadOnlyList<int> GifRates { get; } = [10, 12, 15, 20, 25, 30];
+
+    /// <summary>Widths up to the project's own.</summary>
+    public IReadOnlyList<int> GifWidths { get; }
+
+    public IReadOnlyList<DitherChoice> GifDithers { get; } =
+    [
+        new(GifDither.Pattern, "A fine pattern (smaller; best for screens)"),
+        new(GifDither.Diffusion, "Diffusion (smoother gradients and video)"),
+        new(GifDither.None, "None (flat colours only)"),
+    ];
+
+    public IReadOnlyList<SizeLimitChoice> GifLimits { get; } =
+    [
+        new(0, "No limit"),
+        new(1, "1 MB"),
+        new(2, "2 MB"),
+        new(5, "5 MB"),
+        new(8, "8 MB"),
+        new(10, "10 MB"),
+        new(25, "25 MB"),
+    ];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SizeText))]
+    private int _gifFps;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SizeText))]
+    private int _gifWidth;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SizeText))]
+    private bool _gifLoop;
+
+    [ObservableProperty]
+    private DitherChoice _gifDithering;
+
+    [ObservableProperty]
+    private SizeLimitChoice _gifLimit;
+
+    /// <summary>The GIF choices as export options.</summary>
+    public GifOptions GifOptions => new(GifFps, GifWidth, GifLoop, Dither: GifDithering.Value, MaxBytes: (long)Math.Round(GifLimit.Megabytes * 1024 * 1024));
 
     /// <summary>A range is marked on the timeline: the export can be of it alone.</summary>
     public bool HasRange => _range is not null;
@@ -140,6 +203,12 @@ public sealed partial class ExportViewModel : ObservableObject
                 return $"Sound only, {TimeText(TimeSpan.FromSeconds(Duration))} long";
             }
 
+            if (SelectedPreset.IsGif)
+            {
+                var (w, h) = GifOptions.Size(_project.Canvas.Width, _project.Canvas.Height);
+                return $"{w} × {h}, {GifFps} frames a second, {TimeText(TimeSpan.FromSeconds(Duration))} long, no sound, {(GifLoop ? "plays over and over" : "plays once")}";
+            }
+
             var (width, height) = SelectedPreset.Size(_project.Canvas.Width, _project.Canvas.Height);
             return $"{width} × {height}, {_project.Canvas.Fps} fps, {TimeText(TimeSpan.FromSeconds(Duration))} long";
         }
@@ -148,8 +217,12 @@ public sealed partial class ExportViewModel : ObservableObject
     /// <summary>Raised when the window should close.</summary>
     public event EventHandler? CloseRequested;
 
-    partial void OnSelectedPresetChanged(ExportPreset value) =>
+    partial void OnSelectedPresetChanged(ExportPreset value)
+    {
         Path = System.IO.Path.ChangeExtension(Path, value.Extension);
+        OnPropertyChanged(nameof(IsGif));
+        OnPropertyChanged(nameof(HasQuality));
+    }
 
     [RelayCommand]
     private void Browse()
@@ -176,6 +249,8 @@ public sealed partial class ExportViewModel : ObservableObject
         var preset = SelectedPreset;
         var quality = Quality.Value;
         var (burn, srt, vtt) = (BurnCaptions, SaveSrt, SaveVtt);
+        var gif = GifOptions;
+        var gifLimit = GifLimit.Megabytes;
         var range = OnlyRange ? _range : null;
         var path = System.IO.Path.GetFullPath(Path);
         if (File.Exists(path) && !string.Equals(path, _confirmed, StringComparison.OrdinalIgnoreCase))
@@ -197,6 +272,11 @@ public sealed partial class ExportViewModel : ObservableObject
                     ExportBurnCaptions = burn,
                     ExportSrt = srt,
                     ExportVtt = vtt,
+                    GifFps = preset.IsGif ? gif.Fps : s.VideoEditor?.GifFps ?? 15,
+                    GifWidth = preset.IsGif ? gif.Width : s.VideoEditor?.GifWidth ?? 800,
+                    GifLoop = preset.IsGif ? gif.Loop : s.VideoEditor?.GifLoop ?? true,
+                    GifDither = preset.IsGif ? gif.Dither.ToString() : s.VideoEditor?.GifDither,
+                    GifMaxMegabytes = preset.IsGif ? gifLimit : s.VideoEditor?.GifMaxMegabytes ?? 0,
                 },
             });
             var progress = new Progress<ExportProgress>(p =>
@@ -208,11 +288,16 @@ public sealed partial class ExportViewModel : ObservableObject
             });
             var files = (srt ? CaptionFiles.Srt : CaptionFiles.None) | (vtt ? CaptionFiles.Vtt : CaptionFiles.None);
             var result = await _exporter.ExportAsync(
-                new ExportRequest(_project, preset, quality, path, _settings.Current.Recording.Encoder, range, burn, HasCaptions ? files : CaptionFiles.None),
+                new ExportRequest(_project, preset, quality, path, _settings.Current.Recording.Encoder, range, burn, HasCaptions ? files : CaptionFiles.None, preset.IsGif ? gif : null),
                 progress,
                 _cancel.Token);
             Progress = 1;
             var captions = result.CaptionPaths is { Count: > 0 } written ? $", with {string.Join(" and ", written.Select(System.IO.Path.GetFileName))}" : "";
+            if (result.Gif is { } made && made != gif)
+            {
+                var (w, _) = made.Size(_project.Canvas.Width, _project.Canvas.Height);
+                captions += $" (made smaller to fit: {w} px wide, {made.Fps} frames a second, {made.Colors} colours)";
+            }
             ProgressText = $"Done in {TimeText(result.Elapsed)}: {System.IO.Path.GetFileName(result.Path)}, {result.Bytes / 1024.0 / 1024.0:0.0} MB{(result.Encoder is { } encoder ? $" ({encoder})" : "")}{captions}";
             Result = result.Path;
         }

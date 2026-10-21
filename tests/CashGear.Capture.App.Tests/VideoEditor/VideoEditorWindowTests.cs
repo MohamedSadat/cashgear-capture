@@ -116,7 +116,7 @@ public sealed class VideoEditorWindowTests : VideoEditorTestBase
         {
             await Task.Delay(500);
             Find<ComboBox>(window).Should().HaveCount(2);
-            Find<ComboBox>(window)[0].Items.Count.Should().Be(8);
+            Find<ComboBox>(window)[0].Items.Count.Should().Be(9);
             Find<Button>(window).Select(b => b.Content as string).Should().Contain(["Browse…", "Export", "Close"]);
         }
         finally

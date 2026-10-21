@@ -30,8 +30,31 @@
       <TextBlock Grid.Row="0" Text="Format" VerticalAlignment="Center" Margin="0,0,12,8" />
       <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" DisplayMemberPath="Name" Margin="0,0,0,8" />
 
-      <TextBlock Grid.Row="1" Text="Quality" VerticalAlignment="Center" Margin="0,0,12,8" />
-      <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding Qualities}" SelectedItem="{Binding Quality}" DisplayMemberPath="Name" Margin="0,0,0,8" />
+      <TextBlock Grid.Row="1" Text="Quality" VerticalAlignment="Center" Margin="0,0,12,8" Visibility="{Binding HasQuality, Converter={StaticResource Visible}}" />
+      <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding Qualities}" SelectedItem="{Binding Quality}" DisplayMemberPath="Name" Margin="0,0,0,8" Visibility="{Binding HasQuality, Converter={StaticResource Visible}}" />
+
+      <Grid Grid.Row="1" Grid.ColumnSpan="3" Visibility="{Binding IsGif, Converter={StaticResource Visible}}" Margin="0,0,0,8">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="Frames a second" VerticalAlignment="Center" Margin="0,0,12,8" />
+        <ComboBox Grid.Column="1" ItemsSource="{Binding GifRates}" SelectedItem="{Binding GifFps}" Margin="0,0,12,8" />
+        <TextBlock Grid.Column="2" Text="Width (px)" VerticalAlignment="Center" Margin="0,0,12,8" />
+        <ComboBox Grid.Column="3" ItemsSource="{Binding GifWidths}" SelectedItem="{Binding GifWidth}" Margin="0,0,0,8" />
+        <TextBlock Grid.Row="1" Text="Dithering" VerticalAlignment="Center" Margin="0,0,12,8" />
+        <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" ItemsSource="{Binding GifDithers}" SelectedItem="{Binding GifDithering}" DisplayMemberPath="Name" Margin="0,0,0,8" />
+        <TextBlock Grid.Row="2" Text="Keep it under" VerticalAlignment="Center" Margin="0,0,12,0" />
+        <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding GifLimits}" SelectedItem="{Binding GifLimit}" DisplayMemberPath="Name" Margin="0,0,12,0" />
+        <CheckBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Content="Play over and over" IsChecked="{Binding GifLoop}" VerticalAlignment="Center" />
+      </Grid>
 
       <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding SizeText}" Opacity="0.75" Margin="0,0,0,8" />
 

@@ -46,6 +46,12 @@ internal sealed unsafe class StampedRecording
     /// <summary>A second, stamped video titled "Webcam" (not the default stream), at its own size and rate.</summary>
     public VideoFormat? Webcam { get; init; }
 
+    /// <summary>
+    /// Draws picture n itself, as top-down BGRA rows of the format's width, instead of the stamp (pictures like a
+    /// real screen's, for tests about how they compress).
+    /// </summary>
+    public Action<int, byte[]>? Picture { get; init; }
+
     /// <summary>The picture number stamped into a decoded top-down BGRA picture of width <paramref name="width"/> (scale 1).</summary>
     public static int ReadStamp(ReadOnlySpan<byte> bgra, int width, double scale = 1)
     {
@@ -100,6 +106,8 @@ internal sealed unsafe class StampedRecording
 
         var packets = new List<EncodedPacket>();
         var samples = new float[2 * 1024];
+        using var converter = Picture is null ? null : new FrameConverter(Format.Width, Format.Height, video.PixelFormat);
+        var picture = Picture is null ? null : new byte[Format.Width * Format.Height * 4];
         long audioPts = 0;
         var webcamFrame = 0;
         try
@@ -107,7 +115,16 @@ internal sealed unsafe class StampedRecording
             var frames = (int)Math.Round(Seconds * Format.Fps);
             for (var n = 0; n < frames; n++)
             {
-                Fill(video.NextFrame(), n, Flash(n));
+                if (Picture is not null)
+                {
+                    Picture(n, picture!);
+                    converter!.Convert(picture, Format.Width * 4, video.NextFrame());
+                }
+                else
+                {
+                    Fill(video.NextFrame(), n, Flash(n));
+                }
+
                 video.Encode(n, packets);
                 Send(packets, writer);
 

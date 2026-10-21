@@ -18,7 +18,10 @@ public sealed partial class AppDestinations(
     AppPaths paths,
     ICaptureCounter counter,
     ILogger<AppDestinations> logger,
-    IVideoEditorLauncher? videoEditor = null) : IDestinationSource
+    IVideoEditorLauncher? videoEditor = null,
+    CashGear.Capture.VideoEditor.Export.ProjectExporter? exporter = null,
+    CashGear.Capture.Media.FfmpegRuntime? ffmpeg = null,
+    IAppStateStore? state = null) : IDestinationSource
 {
     public IEnumerable<IOutputDestination> Create(AppSettings settings, ICredentialStore credentials)
     {
@@ -27,6 +30,11 @@ public sealed partial class AppDestinations(
         if (videoEditor is not null)
         {
             yield return new VideoEditorDestination(videoEditor);
+        }
+
+        if (exporter is not null && ffmpeg is not null && state is not null)
+        {
+            yield return new GifDestination(exporter, ffmpeg, state);
         }
         yield return new FileDestination(settings.Output, paths.ResolveCaptureDirectory(settings.Output), output, counter, this);
         yield return new ClipboardDestination(output);

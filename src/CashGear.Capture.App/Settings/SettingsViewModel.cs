@@ -945,7 +945,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             ?? BuiltInDestinations(settings);
         return [.. all
             .Where(d => !video || (d.Video && !DestinationIds.Same(d.Id, DestinationIds.File)))
-            .Where(d => video || !DestinationIds.Same(d.Id, DestinationIds.VideoEditor))
+            .Where(d => video || !(DestinationIds.Same(d.Id, DestinationIds.VideoEditor) || DestinationIds.Same(d.Id, DestinationIds.Gif)))
             .Select(d => new DestinationChoice(d.Id, d.Name))];
     }
 
@@ -954,6 +954,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [
         (DestinationIds.Editor, "Open in the editor", false),
         (DestinationIds.VideoEditor, "Open in the video editor", true),
+        (DestinationIds.Gif, "Make a GIF", true),
         (DestinationIds.File, "Save to file", true),
         (DestinationIds.Clipboard, "Copy to clipboard", true),
         (DestinationIds.Printer, "Print", false),

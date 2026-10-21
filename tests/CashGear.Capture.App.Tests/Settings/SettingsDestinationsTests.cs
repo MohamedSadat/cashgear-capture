@@ -162,6 +162,7 @@ public sealed class SettingsDestinationsTests : IDisposable
         vm.CaptureWorkflow.Addable.Should().Contain(new DestinationChoice("upload:upload", "Images"));
         vm.RecordingWorkflow.Addable.Select(d => d.Id).Should().Contain(["clipboard", "upload:upload", "copy-link"])
             .And.NotContain(["file", "editor", "printer", "word", "powerpoint"], "a recording is saved already, and the rest take pictures only");
+        vm.CaptureWorkflow.Addable.Select(d => d.Id).Should().NotContain(["video-editor", "gif"], "pictures don't go to the video editor or into GIFs");
         vm.Errors.Should().Contain("write each form field as name=value (\"broken line\")");
         upload.FieldsText = "album=screens\nprivate = true";
         vm.HasErrors.Should().BeFalse();
