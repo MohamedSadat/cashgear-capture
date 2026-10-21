@@ -1,10 +1,14 @@
 using CashGear.Capture.Editor.Rendering;
+using CashGear.Capture.Editor.Text;
 using SkiaSharp;
 
 namespace CashGear.Capture.Editor.Model;
 
-/// <summary>Where the lines of a <see cref="TextAnnotation"/> go, relative to its top-left corner.</summary>
-public sealed record TextLayout(IReadOnlyList<string> Lines, float Padding, float LineHeight, float Ascent, SKSize Size)
+/// <summary>
+/// Where the lines of a <see cref="TextAnnotation"/> go, relative to its top-left corner. Lines are shaped (Arabic
+/// letters joined, right-to-left runs in order); text whose first letter is right to left is right-aligned.
+/// </summary>
+public sealed record TextLayout(IReadOnlyList<string> Lines, float Padding, float LineHeight, float Ascent, SKSize Size, IReadOnlyList<ShapedLine> Shaped, bool RightToLeft)
 {
     /// <summary>Measures <paramref name="text"/> in <paramref name="style"/>'s font. Blank lines keep their height.</summary>
     public static TextLayout Measure(string text, AnnotationStyle style)
@@ -13,12 +17,17 @@ public sealed record TextLayout(IReadOnlyList<string> Lines, float Padding, floa
         using var typeface = Fonts.CreateTypeface(style);
         using var font = Fonts.CreateFont(typeface, style.FontSize);
         var padding = PaddingFor(style);
-        var width = lines.Select(line => font.MeasureText(line)).DefaultIfEmpty(0).Max();
+        var rightToLeft = Bidi.IsRightToLeft(text);
+        var shaped = lines.Select(line => TextShaper.Shape(line, typeface, style.FontSize, rightToLeft)).ToList();
+        var width = shaped.Select(line => line.Width).DefaultIfEmpty(0).Max();
         width = MathF.Max(width, style.FontSize * 0.5f); // an empty box is still visible and clickable
         var lineHeight = font.Spacing;
         var size = new SKSize(MathF.Ceiling(width + (2 * padding)), MathF.Ceiling((lines.Count * lineHeight) + (2 * padding)));
-        return new TextLayout(lines, padding, lineHeight, -font.Metrics.Ascent, size);
+        return new TextLayout(lines, padding, lineHeight, -font.Metrics.Ascent, size, shaped, rightToLeft);
     }
+
+    /// <summary>Where line <paramref name="index"/> starts, from the box's left edge: the padding, or right-aligned.</summary>
+    public float LineStart(int index) => RightToLeft ? Size.Width - Padding - Shaped[index].Width : Padding;
 
     /// <summary>Space between the text and the edge of its (optional) background.</summary>
     public static float PaddingFor(AnnotationStyle style) => MathF.Round(MathF.Max(2, style.FontSize * 0.2f));
@@ -62,11 +71,10 @@ public sealed record TextAnnotation(AnnotationId Id, AnnotationStyle Style, SKPo
         using var typeface = Fonts.CreateTypeface(Style);
         using var font = Fonts.CreateFont(typeface, Style.FontSize);
         using var paint = FillPaint(Style.Color);
-        var x = Position.X + layout.Padding;
         var y = Position.Y + layout.Padding + layout.Ascent;
-        foreach (var line in layout.Lines)
+        for (var i = 0; i < layout.Shaped.Count; i++)
         {
-            canvas.DrawText(line, x, y, SKTextAlign.Left, font, paint);
+            layout.Shaped[i].Draw(canvas, Position.X + layout.LineStart(i), y, font, paint);
             y += layout.LineHeight;
         }
     }

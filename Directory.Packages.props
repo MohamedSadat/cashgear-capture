@@ -41,6 +41,8 @@
 
   <ItemGroup Label="Editor">
     <PackageVersion Include="SkiaSharp" Version="4.153.1" />
+    <!-- Text shaping (Arabic letters joined, right-to-left runs); must match SkiaSharp's version. -->
+    <PackageVersion Include="SkiaSharp.HarfBuzz" Version="4.153.1" />
     <PackageVersion Include="SkiaSharp.Views.WPF" Version="4.153.1" />
   </ItemGroup>
 

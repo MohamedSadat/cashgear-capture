@@ -8,6 +8,7 @@ using CashGear.Capture.App.Platform;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Interaction;
 using CashGear.Capture.Editor.Model;
+using CashGear.Capture.Editor.Text;
 using SkiaSharp;
 
 namespace CashGear.Capture.App.Editor;
@@ -37,6 +38,7 @@ public partial class EditorWindow : Window, IThemedWindow
         viewModel.FinishTextEditRequested += (_, _) => CommitText();
         TextEditor.LostKeyboardFocus += (_, _) => CommitText();
         TextEditor.PreviewKeyDown += OnTextEditorKeyDown;
+        TextEditor.TextChanged += (_, _) => FollowTextDirection();
         SizeToImage(viewModel.Document.Width, viewModel.Document.Height);
         Loaded += (_, _) => Surface.Focus();
     }
@@ -189,6 +191,7 @@ public partial class EditorWindow : Window, IThemedWindow
         Canvas.SetLeft(TextEditor, topLeft.X - 1);
         Canvas.SetTop(TextEditor, topLeft.Y - 1);
         TextEditor.Text = request.Text;
+        FollowTextDirection();
         TextEditor.Visibility = Visibility.Visible;
 
         // After the mouse click that asked for it has finished, or the canvas would take focus straight back.
@@ -198,6 +201,10 @@ public partial class EditorWindow : Window, IThemedWindow
             TextEditor.CaretIndex = TextEditor.Text.Length;
         });
     }
+
+    /// <summary>Arabic or Hebrew text is typed right to left, as the annotation will show it (right-aligned).</summary>
+    private void FollowTextDirection() =>
+        TextEditor.FlowDirection = Bidi.IsRightToLeft(TextEditor.Text) ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
 
     /// <summary>Destinations set up in Settings since the menu was last opened show up at once.</summary>
     private void OnSendToOpened(object sender, RoutedEventArgs e) => (DataContext as EditorViewModel)?.RefreshSendTargets();
