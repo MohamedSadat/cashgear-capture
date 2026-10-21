@@ -15,6 +15,8 @@ public enum AnnotationKind
     StepNumber,
     Blur,
     Pixelate,
+    Spotlight,
+    Magnify,
 }
 
 /// <summary>
@@ -43,6 +45,9 @@ public abstract record Annotation(AnnotationId Id, AnnotationStyle Style)
     public virtual Annotation WithHandleMoved(HandleKind handle, SKPoint position, bool constrain) => this;
 
     public abstract Annotation Offset(float dx, float dy);
+
+    /// <summary>A copy moved by a drag that started at <paramref name="origin"/> (a part of it may move alone).</summary>
+    public virtual Annotation MoveFrom(SKPoint origin, float dx, float dy) => Offset(dx, dy);
 
     /// <summary>
     /// A copy moved by an image-wide operation (crop, rotate, resize, border). <paramref name="scale"/> is how much the
@@ -105,6 +110,7 @@ public static class AnnotationKindExtensions
         AnnotationKind.Freehand => "drawing",
         AnnotationKind.StepNumber => "step number",
         AnnotationKind.Pixelate => "pixelation",
+        AnnotationKind.Magnify => "magnifier",
         _ => kind.ToString().ToLowerInvariant(),
     };
 }

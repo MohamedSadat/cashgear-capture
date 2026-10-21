@@ -48,6 +48,7 @@ public readonly record struct EffectOutput(SKImage Image, SKPointI Offset);
 [JsonDerivedType(typeof(AdjustEffect), "adjust")]
 [JsonDerivedType(typeof(GrayscaleEffect), "grayscale")]
 [JsonDerivedType(typeof(SharpenEffect), "sharpen")]
+[JsonDerivedType(typeof(WatermarkEffect), "watermark")]
 public abstract record ImageEffect
 {
     /// <summary>Lower-case name for undo ("Undo drop shadow") and lists.</summary>

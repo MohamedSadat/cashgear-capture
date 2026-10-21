@@ -25,7 +25,7 @@ public sealed class RenderContext(SKImage image, EffectCache effects, SKSampling
 /// </summary>
 public sealed class EffectCache : IDisposable
 {
-    private readonly Dictionary<Key, Entry> _entries = [];
+    private readonly Dictionary<object, Entry> _entries = [];
     private int _frame;
 
     public int Count => _entries.Count;
@@ -34,10 +34,20 @@ public sealed class EffectCache : IDisposable
     public SKImage Get(SKImage source, SKRectI area, EffectKind kind, float strength)
     {
         ArgumentNullException.ThrowIfNull(source);
-        var key = new Key(source.UniqueId, area, kind, strength);
+        return GetOrCreate(new Key(source.UniqueId, area, kind, strength), () => kind == EffectKind.Blur ? Blur(source, area, strength) : Pixelate(source, area, strength));
+    }
+
+    /// <summary>
+    /// Any patch, made by <paramref name="create"/> the first time <paramref name="key"/> (a value that changes
+    /// whenever the patch would) is asked for, and freed by <see cref="Trim"/> once a frame doesn't use it.
+    /// </summary>
+    public SKImage GetOrCreate(object key, Func<SKImage> create)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(create);
         if (!_entries.TryGetValue(key, out var entry))
         {
-            entry = new Entry(kind == EffectKind.Blur ? Blur(source, area, strength) : Pixelate(source, area, strength));
+            entry = new Entry(create());
             _entries.Add(key, entry);
         }
 

@@ -243,7 +243,7 @@ public sealed class EditorSession
                     (dx, dy) = MathF.Abs(dx) >= MathF.Abs(dy) ? (dx, 0f) : (0f, dy); // horizontal or vertical only
                 }
 
-                Document.Preview(move.Before.Offset(dx, dy));
+                Document.Preview(move.Before.MoveFrom(move.Origin, dx, dy));
                 break;
 
             case ResizeDrag resize:
@@ -647,12 +647,15 @@ public sealed class EditorSession
             EditorTool.Highlight => new HighlightAnnotation(id, Style, empty),
             EditorTool.Blur => new BlurAnnotation(id, Style, empty),
             EditorTool.Pixelate => new PixelateAnnotation(id, Style, empty),
+            EditorTool.Spotlight => new SpotlightAnnotation(id, Style, empty),
+            EditorTool.Magnify => MagnifyAnnotation.Place(id, Style, empty, new SKSizeI(Document.Width, Document.Height)),
             _ => throw new InvalidOperationException($"{Tool} does not draw shapes."),
         };
     }
 
-    private static Annotation UpdateDraft(Annotation draft, SKPoint origin, SKPoint p, bool constrain) => draft switch
+    private Annotation UpdateDraft(Annotation draft, SKPoint origin, SKPoint p, bool constrain) => draft switch
     {
+        MagnifyAnnotation lens => MagnifyAnnotation.Place(lens.Id, lens.Style, Geometry.RectFromPoints(origin, Geometry.SquareCorner(origin, p)), new SKSizeI(Document.Width, Document.Height)),
         TwoPointAnnotation line => line with { End = constrain ? Geometry.SnapAngle(origin, p) : p },
         FreehandAnnotation pen when Geometry.Distance(pen.Points[^1], p) >= 1 => pen with { Points = [.. pen.Points, p] },
         FreehandAnnotation pen => pen,
@@ -664,6 +667,7 @@ public sealed class EditorSession
     {
         TwoPointAnnotation line => line.Length >= MinShapeSize,
         BoxAnnotation box => box.Rect.Width >= MinShapeSize && box.Rect.Height >= MinShapeSize,
+        MagnifyAnnotation lens => lens.Radius >= MinShapeSize,
         _ => true, // a freehand click is a dot
     };
 

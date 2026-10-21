@@ -29,11 +29,18 @@ public static class DocumentRenderer
         canvas.Save();
         canvas.ClipRect(SKRect.Create(state.Image.Width, state.Image.Height));
         canvas.DrawImage(state.Image, 0, 0, context.Sampling, null);
-        foreach (var annotation in PaintOrder(state.Annotations, extra))
+        var order = PaintOrder(state.Annotations, extra).Where(a => a.Id != hidden).ToList();
+        var spotlightsDrawn = false;
+        foreach (var annotation in order)
         {
-            if (annotation.Id != hidden)
+            if (annotation is not SpotlightAnnotation)
             {
                 annotation.Render(canvas, context);
+            }
+            else if (!spotlightsDrawn)
+            {
+                SpotlightAnnotation.DrawAll(canvas, [.. order.OfType<SpotlightAnnotation>()], SKRect.Create(state.Image.Width, state.Image.Height));
+                spotlightsDrawn = true;
             }
         }
 
@@ -41,14 +48,17 @@ public static class DocumentRenderer
     }
 
     /// <summary>
-    /// Bottom to top as drawn: effects first, then the rest, each in document order; <paramref name="extra"/> (a shape
-    /// being drawn) goes last in its group. Hit-testing walks this in reverse.
+    /// Bottom to top as drawn: blur and pixelate first, then spotlights (one shared dimmed layer), then the rest,
+    /// each in document order; <paramref name="extra"/> (a shape being drawn) goes last in its group. Hit-testing
+    /// walks this in reverse.
     /// </summary>
     public static IEnumerable<Annotation> PaintOrder(IReadOnlyList<Annotation> annotations, Annotation? extra = null)
     {
         ArgumentNullException.ThrowIfNull(annotations);
         IEnumerable<Annotation> all = extra is null ? annotations : [.. annotations, extra];
-        return all.Where(a => a is EffectAnnotation).Concat(all.Where(a => a is not EffectAnnotation));
+        return all.Where(a => a is EffectAnnotation)
+            .Concat(all.Where(a => a is SpotlightAnnotation))
+            .Concat(all.Where(a => a is not EffectAnnotation and not SpotlightAnnotation));
     }
 
     /// <summary>The image with every annotation burned in, at full resolution.</summary>

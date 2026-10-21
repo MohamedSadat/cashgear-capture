@@ -20,6 +20,8 @@ public enum EditorTool
 
     /// <summary>Selects a part of the image for effects (no annotation).</summary>
     Area,
+    Spotlight,
+    Magnify,
 }
 
 [Flags]
@@ -62,6 +64,8 @@ public static class EditorTools
         EditorTool.StepNumber => AnnotationKind.StepNumber,
         EditorTool.Blur => AnnotationKind.Blur,
         EditorTool.Pixelate => AnnotationKind.Pixelate,
+        EditorTool.Spotlight => AnnotationKind.Spotlight,
+        EditorTool.Magnify => AnnotationKind.Magnify,
         _ => null,
     };
 
@@ -78,6 +82,8 @@ public static class EditorTools
         AnnotationKind.StepNumber => EditorTool.StepNumber,
         AnnotationKind.Blur => EditorTool.Blur,
         AnnotationKind.Pixelate => EditorTool.Pixelate,
+        AnnotationKind.Spotlight => EditorTool.Spotlight,
+        AnnotationKind.Magnify => EditorTool.Magnify,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
@@ -90,6 +96,8 @@ public static class EditorTools
         EditorTool.Text => StyleParts.Color | StyleParts.Fill | StyleParts.Opacity | StyleParts.Font | StyleParts.FontSize,
         EditorTool.StepNumber => StyleParts.Color | StyleParts.Opacity | StyleParts.FontSize,
         EditorTool.Blur or EditorTool.Pixelate => StyleParts.Strength,
+        EditorTool.Spotlight => StyleParts.Color | StyleParts.Opacity,
+        EditorTool.Magnify => StyleParts.Color | StyleParts.StrokeWidth | StyleParts.Strength,
         _ => StyleParts.None,
     };
 
@@ -101,6 +109,8 @@ public static class EditorTools
         EditorTool.StepNumber => new AnnotationStyle { FontSize = 28 },
         EditorTool.Blur => new AnnotationStyle { Strength = 8 },
         EditorTool.Pixelate => new AnnotationStyle { Strength = 12 },
+        EditorTool.Spotlight => new AnnotationStyle { Color = SKColors.Black, Opacity = 0.6f },
+        EditorTool.Magnify => new AnnotationStyle { StrokeWidth = 3, Strength = MagnifyAnnotation.MinZoom },
         _ => new AnnotationStyle(),
     };
 }

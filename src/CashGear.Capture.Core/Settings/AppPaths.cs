@@ -10,6 +10,9 @@ public sealed record AppPaths(
 {
     public string SettingsFile => Path.Combine(SettingsDirectory, "settings.json");
 
+    /// <summary>Saved effect stacks and watermarks, and the image tools' last choices (next to the settings, so they roam with them).</summary>
+    public string PresetsFile => Path.Combine(SettingsDirectory, "presets.json");
+
     /// <summary>Per-machine app state (<c>%LocalAppData%\CashGear\Capture</c>).</summary>
     public string DataDirectory => DataDirectoryOverride ?? Path.GetDirectoryName(LogDirectory) ?? LogDirectory;
 
