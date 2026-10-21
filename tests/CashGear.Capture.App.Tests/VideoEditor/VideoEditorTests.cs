@@ -42,6 +42,11 @@ internal sealed class FakeVideoDialogs : IVideoEditorDialogs
 
     public ExportViewModel? Export { get; private set; }
 
+    public TranscribeViewModel? Transcribe { get; private set; }
+
+    /// <summary>What Save dialogs answer.</summary>
+    public string? SavePath { get; set; }
+
     public string? AskProjectPath(string suggestedName, string? folder) => ProjectPath;
 
     public string? PickMedia(string title, string filter, string? folder) => Media;
@@ -55,6 +60,10 @@ internal sealed class FakeVideoDialogs : IVideoEditorDialogs
     public void ShowError(string message) => Errors.Add(message);
 
     public void ShowExport(ExportViewModel viewModel) => Export = viewModel;
+
+    public void ShowTranscribe(TranscribeViewModel viewModel) => Transcribe = viewModel;
+
+    public string? AskSavePath(string title, string filter, string fileName, string? folder) => SavePath;
 }
 
 /// <summary>A test folder with the services a video editor window gets, and a stamped recording.</summary>

@@ -1,0 +1,54 @@
+<Window x:Class="CashGear.Capture.App.VideoEditor.TranscribeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.VideoEditor"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:TranscribeViewModel}"
+        Title="Captions from Speech"
+        Width="560" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="Visible" />
+  </Window.Resources>
+  <StackPanel Margin="20">
+    <TextBlock TextWrapping="Wrap" Margin="0,0,0,14" Opacity="0.8"
+               Text="The speech in a sound track becomes captions on a new caption track, with their times. Everything happens on this PC: the sound isn't sent anywhere." />
+    <Grid IsEnabled="{Binding IsIdle}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <TextBlock Grid.Row="0" Text="Listen to" VerticalAlignment="Center" Margin="0,0,12,8" />
+      <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Sounds}" SelectedItem="{Binding Sound}" DisplayMemberPath="Name" Margin="0,0,0,8" />
+
+      <TextBlock Grid.Row="1" Text="Language" VerticalAlignment="Center" Margin="0,0,12,8" />
+      <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" DisplayMemberPath="Name" Margin="0,0,0,8" />
+
+      <TextBlock Grid.Row="2" Text="Model" VerticalAlignment="Center" Margin="0,0,12,8" />
+      <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Models}" SelectedItem="{Binding Model}" DisplayMemberPath="Name" Margin="0,0,0,8" />
+
+      <StackPanel Grid.Row="3" Grid.Column="1">
+        <CheckBox Content="Use the graphics card when it can (faster for long recordings)" IsChecked="{Binding UseGpu}" Margin="0,0,0,4" />
+        <CheckBox Content="{Binding RangeText}" IsChecked="{Binding OnlyRange}" Visibility="{Binding HasRange, Converter={StaticResource Visible}}" />
+      </StackPanel>
+    </Grid>
+
+    <ProgressBar Height="6" Margin="0,18,0,6" Minimum="0" Maximum="1" Value="{Binding Progress}" />
+    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" MinHeight="18" />
+    <TextBlock Text="{Binding Error}" TextWrapping="Wrap" Foreground="#D13438" Margin="0,6,0,0" />
+
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button Content="Make Captions" Command="{Binding StartCommand}" IsDefault="True" MinWidth="110" Margin="0,0,8,0" />
+      <Button x:Name="CancelButton" Command="{Binding CancelCommand}" MinWidth="88" />
+    </StackPanel>
+  </StackPanel>
+</Window>

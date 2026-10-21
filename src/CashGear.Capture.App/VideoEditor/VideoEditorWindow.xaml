@@ -84,6 +84,9 @@
         <MenuItem Header="Save Project _As…" Command="{Binding SaveProjectAsCommand}" InputGestureText="Ctrl+Shift+S" />
         <MenuItem Header="Save with _Media…" Command="{Binding SaveWithMediaCommand}" ToolTip="A copy of the project with its recordings inside, to take to another PC" />
         <Separator />
+        <MenuItem Header="_Import Captions…" Command="{Binding ImportCaptionsCommand}" ToolTip="An SRT or WebVTT file as a caption track" />
+        <MenuItem Header="Save _Captions…" Command="{Binding SaveCaptionsCommand}" ToolTip="The captions as an SRT or WebVTT file" />
+        <Separator />
         <MenuItem Header="_Export…" Command="{Binding ExportCommand}" InputGestureText="Ctrl+E" />
         <Separator />
         <MenuItem Header="_Close" Click="OnCloseClick" />
@@ -120,6 +123,9 @@
         <Separator />
         <MenuItem Header="_Zoom" Command="{Binding InsertZoomCommand}" ToolTip="Zoom into the screen from the playhead (or over the marked range), following the pointer" />
         <MenuItem Header="_Auto-Zoom from Clicks and Typing" Command="{Binding MakeAutoZoomsCommand}" ToolTip="Zooms around the clicks and typing in the recording's metadata (made again each time)" />
+        <Separator />
+        <MenuItem Header="Ca_ption" Command="{Binding InsertCaptionCommand}" ToolTip="A caption to type, from the playhead (or over the marked range)" />
+        <MenuItem Header="Captions from _Speech…" Command="{Binding TranscribeCommand}" ToolTip="Captions made from a sound track's speech (English, Arabic and more), on this PC" />
       </MenuItem>
       <MenuItem Header="_View">
         <MenuItem Header="Zoom _In" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
@@ -173,7 +179,8 @@
             <Button Content="Text" Command="{Binding InsertTextCommand}" ToolTip="Text over the video, from the playhead (or the marked range)" Margin="4,0" />
             <Button Content="Arrow" Command="{Binding InsertArrowCommand}" ToolTip="An arrow, from the playhead (or the marked range)" Margin="4,0" />
             <Button Content="Blur" Command="{Binding InsertBlurCommand}" ToolTip="Hide an area, from the playhead (or the marked range)" Margin="4,0" />
-            <Button Content="Zoom" Command="{Binding InsertZoomCommand}" ToolTip="Zoom into the screen from the playhead (or over the marked range), following the pointer" Margin="4,0,16,0" />
+            <Button Content="Zoom" Command="{Binding InsertZoomCommand}" ToolTip="Zoom into the screen from the playhead (or over the marked range), following the pointer" Margin="4,0" />
+            <Button Content="Captions…" Command="{Binding TranscribeCommand}" ToolTip="Captions from the speech in a sound track" Margin="4,0,16,0" />
             <Button Content="Split" Command="{Binding SplitCommand}" ToolTip="Cut every clip at the playhead (S)" Margin="4,0" />
             <Button Content="Delete" Command="{Binding DeleteCommand}" ToolTip="The marked range or the selected clip (Del)" Margin="4,0" />
             <Button Content="Export…" Command="{Binding ExportCommand}" ToolTip="Make a video file (Ctrl+E)" Margin="4,0" />

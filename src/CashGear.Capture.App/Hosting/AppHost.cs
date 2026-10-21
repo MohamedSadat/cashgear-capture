@@ -81,6 +81,12 @@ internal static class AppHost
         builder.Services.AddSingleton(sp => new CashGear.Capture.VideoEditor.Playback.MediaPreviews(
             System.IO.Path.Combine(sp.GetRequiredService<AppPaths>().DataDirectory, "VideoEditor", "cache"),
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CashGear.Capture.VideoEditor.Playback.MediaPreviews>>()));
+        builder.Services.AddSingleton<CashGear.Capture.Transcription.ITranscriber, CashGear.Capture.Transcription.WhisperTranscriber>();
+        builder.Services.AddSingleton(sp => new CashGear.Capture.Transcription.WhisperModelStore(
+            System.IO.Path.Combine(sp.GetRequiredService<AppPaths>().DataDirectory, "Models", "Whisper"),
+            new System.Net.Http.HttpClient { Timeout = System.Threading.Timeout.InfiniteTimeSpan },
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CashGear.Capture.Transcription.WhisperModelStore>>(),
+            alsoIn: [System.IO.Path.Combine(AppContext.BaseDirectory, "models")]));
         builder.Services.AddSingleton<VideoEditor.VideoEditorWindows>();
         builder.Services.AddSingleton<VideoEditor.IVideoEditorLauncher>(sp => sp.GetRequiredService<VideoEditor.VideoEditorWindows>());
         builder.Services.AddSingleton<InterruptedRecordings>();

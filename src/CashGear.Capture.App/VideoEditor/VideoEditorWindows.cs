@@ -7,6 +7,7 @@ using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Media;
 using CashGear.Capture.Outputs;
+using CashGear.Capture.Transcription;
 using CashGear.Capture.VideoEditor.Export;
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.VideoEditor.Playback;
@@ -52,7 +53,9 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         MediaPreviews previews,
         IShell shell,
         ITrayNotifier notifier,
-        ILoggerFactory loggers)
+        ILoggerFactory loggers,
+        ITranscriber transcriber,
+        WhisperModelStore models)
     {
         _ui = ui;
         _settings = settings;
@@ -62,7 +65,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         _notifier = notifier;
         _loggers = loggers;
         _logger = loggers.CreateLogger<VideoEditorWindows>();
-        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput());
+        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models);
     }
 
     public int OpenCount => _windows.Count;
@@ -238,6 +241,23 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
 
         public void ShowExport(ExportViewModel viewModel) =>
             new ExportWindow(viewModel, theme) { Owner = owner() }.ShowDialog();
+
+        public void ShowTranscribe(TranscribeViewModel viewModel) =>
+            new TranscribeWindow(viewModel, theme) { Owner = owner() }.ShowDialog();
+
+        public string? AskSavePath(string title, string filter, string fileName, string? folder)
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = title,
+                Filter = filter,
+                FileName = fileName,
+                InitialDirectory = folder is not null && Directory.Exists(folder) ? folder : null,
+                AddExtension = true,
+                OverwritePrompt = true,
+            };
+            return dialog.ShowDialog(owner()) == true ? dialog.FileName : null;
+        }
     }
 }
 

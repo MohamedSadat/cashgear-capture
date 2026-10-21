@@ -4,6 +4,7 @@ using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Media;
+using CashGear.Capture.Transcription;
 using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Export;
 using CashGear.Capture.VideoEditor.Model;
@@ -33,6 +34,12 @@ public interface IVideoEditorDialogs
 
     /// <summary>Shows the export window (it runs the export, and closes when the user is done).</summary>
     void ShowExport(ExportViewModel viewModel);
+
+    /// <summary>Shows the Captions from Speech window (it runs the transcription, and closes when it is done).</summary>
+    void ShowTranscribe(TranscribeViewModel viewModel);
+
+    /// <summary>Asks where to save a file (null: cancelled).</summary>
+    string? AskSavePath(string title, string filter, string fileName, string? folder);
 }
 
 /// <summary>What every video editor window shares.</summary>
@@ -45,7 +52,9 @@ public sealed record VideoEditorServices(
     IShell Shell,
     ILoggerFactory Loggers,
     Func<IAudioOutput?> AudioOutput,
-    VideoDecoding Decoding = VideoDecoding.Hardware)
+    VideoDecoding Decoding = VideoDecoding.Hardware,
+    ITranscriber? Transcriber = null,
+    WhisperModelStore? Models = null)
 {
     /// <summary>Where embedded media is unpacked and thumbnails are kept.</summary>
     public string CacheDirectory => Path.Combine(Paths.DataDirectory, "VideoEditor");
@@ -592,8 +601,142 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             _services.Settings,
             _services.State,
             _services.Shell,
-            _services.Loggers.CreateLogger<ExportViewModel>());
+            _services.Loggers.CreateLogger<ExportViewModel>(),
+            MarkedRange());
         _dialogs.ShowExport(viewModel);
+    }
+
+    [RelayCommand]
+    private void InsertCaption() => AddCaption();
+
+    /// <summary>A caption over the marked range (else from the playhead for 3 s), selected so its text can be typed.</summary>
+    public string AddCaption()
+    {
+        StopPlaying();
+        var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (Timeline.Playhead, CaptionItem.DefaultLength);
+        var (project, id) = CaptionEdits.Add(Project, from, length, "Caption");
+        History.Apply("add caption", project);
+        Timeline.SetRange(null);
+        Timeline.Select(id);
+        if (!Timeline.Selected!.Covers(Timeline.Playhead))
+        {
+            Seek(from);
+        }
+
+        return id;
+    }
+
+    [RelayCommand]
+    private void Transcribe() => OpenTranscribe();
+
+    /// <summary>
+    /// Captions from Speech: the window that makes them (over the marked range, if there is one); the captions it
+    /// hears come back as a new caption track, one undo step. Null when there is nothing to listen to.
+    /// </summary>
+    public TranscribeViewModel? OpenTranscribe()
+    {
+        StopPlaying();
+        if (_services.Transcriber is null || _services.Models is null)
+        {
+            _dialogs.ShowError("Speech recognition isn't available in this copy of the app.");
+            return null;
+        }
+
+        if (!Project.Tracks.Any(t => t.HasSound && t.Items.Count > 0))
+        {
+            _dialogs.ShowError("There is no sound on the timeline to make captions from.");
+            return null;
+        }
+
+        var viewModel = new TranscribeViewModel(Project, MarkedRange(), _services.Transcriber, _services.Models, _services.State, _services.Loggers.CreateLogger<TranscribeViewModel>(), AddCaptionsFromSpeech);
+        _dialogs.ShowTranscribe(viewModel);
+        return viewModel;
+    }
+
+    /// <summary>File › Import Captions: an SRT or WebVTT file as a caption track of its own.</summary>
+    [RelayCommand]
+    private void ImportCaptions()
+    {
+        var path = _dialogs.PickMedia("Import captions", "Subtitles (*.srt;*.vtt)|*.srt;*.vtt|All files (*.*)|*.*", Folder());
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var captions = CaptionEdits.FromCues(SubtitleFiles.Load(path));
+            var (project, _) = CaptionEdits.AddTrack(Project, captions, Path.GetFileNameWithoutExtension(path));
+            History.Apply("import captions", project);
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError($"{Path.GetFileName(path)} can't be read: {e.Message}");
+        }
+    }
+
+    /// <summary>File › Save Captions: every caption track's captions as an SRT or WebVTT file.</summary>
+    [RelayCommand]
+    private void SaveCaptions()
+    {
+        var cues = SubtitleFiles.Cues(Project);
+        if (cues.Count == 0)
+        {
+            _dialogs.ShowError("There are no captions to save.");
+            return;
+        }
+
+        var path = _dialogs.AskSavePath("Save the captions", "SubRip subtitles (*.srt)|*.srt|WebVTT subtitles (*.vtt)|*.vtt", Name + ".srt", Folder());
+        if (path is null)
+        {
+            return;
+        }
+
+        try
+        {
+            SubtitleFiles.Save(path, cues, string.Equals(Path.GetExtension(path), ".vtt", StringComparison.OrdinalIgnoreCase) ? SubtitleFormat.Vtt : SubtitleFormat.Srt);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError($"The captions couldn't be saved: {e.Message}");
+        }
+    }
+
+    private TimeRange? MarkedRange() => Timeline.Range is { } range && range.To - range.From >= TimelineEdits.ShortestItem ? new TimeRange(range.From, range.To) : null;
+
+    private void AddCaptionsFromSpeech(IReadOnlyList<CaptionItem> captions, string language)
+    {
+        var name = TranscribeViewModel.LanguageName(language) is { Length: > 0 } heard ? $"Captions ({heard})" : "Captions";
+        var (project, _) = CaptionEdits.AddTrack(Project, captions, name);
+        History.Apply("captions from speech", project);
+    }
+
+    private void SplitCaption(string id)
+    {
+        StopPlaying();
+        var (project, second) = CaptionEdits.Split(Project, id, Timeline.Playhead);
+        if (second is not null)
+        {
+            History.Apply("split caption", project);
+        }
+    }
+
+    private void MergeCaption(string id)
+    {
+        StopPlaying();
+        var project = CaptionEdits.MergeWithNext(Project, id);
+        if (!ReferenceEquals(project, Project))
+        {
+            History.Apply("merge captions", project);
+        }
+    }
+
+    private void ChangeCaptionStyle(string trackId, Func<CaptionStyle, CaptionStyle> change, string name)
+    {
+        if (Project.Track(trackId) is { } track)
+        {
+            History.Apply(name, Project.WithTrack(track with { Captions = change(track.Captions ?? new CaptionStyle()) }), $"caption style {trackId} {name}");
+        }
     }
 
     /// <summary>Adds another recording (or any video) on new tracks at the end of the timeline.</summary>
@@ -955,7 +1098,8 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         if (item is not null)
         {
             var actions = new ItemProperties.ClipActions(SetSpeed, SetFreezeLength, CrossfadeFrom, RemoveCrossfadeFrom);
-            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions))
+            var captions = new ItemProperties.CaptionActions(SplitCaption, MergeCaption, ChangeCaptionStyle);
+            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions, captions))
             {
                 Properties.Add(parameter);
             }

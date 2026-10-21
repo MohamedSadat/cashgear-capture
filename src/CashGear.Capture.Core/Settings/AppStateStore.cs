@@ -59,6 +59,24 @@ public sealed record VideoEditorState
     /// <summary>Draw the preview on the graphics card when it can (false: always in memory).</summary>
     public bool GpuPreview { get; init; } = true;
 
+    /// <summary>Exports draw the captions that are shown into the pictures.</summary>
+    public bool ExportBurnCaptions { get; init; } = true;
+
+    /// <summary>Exports also save the captions as an SRT file.</summary>
+    public bool ExportSrt { get; init; }
+
+    /// <summary>Exports also save the captions as a WebVTT file.</summary>
+    public bool ExportVtt { get; init; }
+
+    /// <summary>The speech model last used for captions (its id; null: the default).</summary>
+    public string? TranscriptionModel { get; init; }
+
+    /// <summary>The language last asked for (two letters; null: detected).</summary>
+    public string? TranscriptionLanguage { get; init; }
+
+    /// <summary>Transcribe on the graphics card when it can.</summary>
+    public bool TranscriptionGpu { get; init; } = true;
+
     /// <summary>A copy with <paramref name="path"/> first among the recent projects (once).</summary>
     public VideoEditorState WithRecent(string path) =>
         this with { RecentProjects = [path, .. (RecentProjects ?? []).Where(p => !string.Equals(p, path, StringComparison.OrdinalIgnoreCase)).Take(MaxRecent - 1)] };

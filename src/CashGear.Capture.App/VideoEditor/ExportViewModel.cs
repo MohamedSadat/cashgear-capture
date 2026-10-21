@@ -3,6 +3,7 @@ using System.IO;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Export;
 using CashGear.Capture.VideoEditor.Model;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -21,13 +22,15 @@ public interface IExportPathPicker
 public sealed record QualityChoice(QualityPreset Value, string Name);
 
 /// <summary>
-/// The export window: the kind of file and its quality, where it goes, then the export running in the background
-/// with its progress and the time left (Cancel stops it and leaves no file), and when it is done Open and Show in
-/// folder. The project is the one the window was opened with: edits made meanwhile wait for the next export.
+/// The export window: the kind of file and its quality, where it goes, only the marked range or not, the captions
+/// burned in and/or saved beside it, then the export running in the background with its progress and the time left
+/// (Cancel stops it and leaves no file), and when it is done Open and Show in folder. The project is the one the
+/// window was opened with: edits made meanwhile wait for the next export.
 /// </summary>
 public sealed partial class ExportViewModel : ObservableObject
 {
     private readonly VideoProject _project;
+    private readonly TimeRange? _range;
     private readonly ProjectExporter _exporter;
     private readonly ISettingsService _settings;
     private readonly IAppStateStore _state;
@@ -36,9 +39,10 @@ public sealed partial class ExportViewModel : ObservableObject
     private CancellationTokenSource? _cancel;
     private string? _confirmed;
 
-    public ExportViewModel(VideoProject project, string name, string folder, ProjectExporter exporter, ISettingsService settings, IAppStateStore state, IShell shell, ILogger logger)
+    public ExportViewModel(VideoProject project, string name, string folder, ProjectExporter exporter, ISettingsService settings, IAppStateStore state, IShell shell, ILogger logger, TimeRange? range = null)
     {
         _project = project;
+        _range = range;
         _exporter = exporter;
         _settings = settings;
         _state = state;
@@ -48,7 +52,37 @@ public sealed partial class ExportViewModel : ObservableObject
         _selectedPreset = ExportPresets.Find(remembered.ExportPreset) ?? ExportPresets.Mp4H264Hd;
         _quality = Qualities.FirstOrDefault(q => q.Value == remembered.ExportQuality) ?? Qualities[2];
         _path = System.IO.Path.Combine(folder, Safe(name) + _selectedPreset.Extension);
+        _onlyRange = range is not null;
+        _burnCaptions = remembered.ExportBurnCaptions;
+        _saveSrt = remembered.ExportSrt;
+        _saveVtt = remembered.ExportVtt;
     }
+
+    /// <summary>A range is marked on the timeline: the export can be of it alone.</summary>
+    public bool HasRange => _range is not null;
+
+    public string RangeText => _range is { } range
+        ? $"Only the marked range ({TimeText(TimeSpan.FromSeconds(range.From))} to {TimeText(TimeSpan.FromSeconds(range.To))})"
+        : "";
+
+    /// <summary>The project has captions: they can be burned in and saved as files.</summary>
+    public bool HasCaptions => SubtitleFiles.Cues(_project).Count > 0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SizeText))]
+    private bool _onlyRange;
+
+    [ObservableProperty]
+    private bool _burnCaptions;
+
+    [ObservableProperty]
+    private bool _saveSrt;
+
+    [ObservableProperty]
+    private bool _saveVtt;
+
+    /// <summary>How long the export is: the marked range, or the whole timeline.</summary>
+    private double Duration => OnlyRange && _range is { } range ? Math.Min(range.To, _project.Duration) - range.From : _project.Duration;
 
     public IReadOnlyList<ExportPreset> Presets => ExportPresets.All;
 
@@ -103,11 +137,11 @@ public sealed partial class ExportViewModel : ObservableObject
         {
             if (!SelectedPreset.HasVideo)
             {
-                return $"Sound only, {TimeText(TimeSpan.FromSeconds(_project.Duration))} long";
+                return $"Sound only, {TimeText(TimeSpan.FromSeconds(Duration))} long";
             }
 
             var (width, height) = SelectedPreset.Size(_project.Canvas.Width, _project.Canvas.Height);
-            return $"{width} × {height}, {_project.Canvas.Fps} fps, {TimeText(TimeSpan.FromSeconds(_project.Duration))} long";
+            return $"{width} × {height}, {_project.Canvas.Fps} fps, {TimeText(TimeSpan.FromSeconds(Duration))} long";
         }
     }
 
@@ -141,6 +175,8 @@ public sealed partial class ExportViewModel : ObservableObject
         _cancel = new CancellationTokenSource();
         var preset = SelectedPreset;
         var quality = Quality.Value;
+        var (burn, srt, vtt) = (BurnCaptions, SaveSrt, SaveVtt);
+        var range = OnlyRange ? _range : null;
         var path = System.IO.Path.GetFullPath(Path);
         if (File.Exists(path) && !string.Equals(path, _confirmed, StringComparison.OrdinalIgnoreCase))
         {
@@ -158,6 +194,9 @@ public sealed partial class ExportViewModel : ObservableObject
                     ExportPreset = preset.Id,
                     ExportQuality = quality,
                     ExportFolder = System.IO.Path.GetDirectoryName(path),
+                    ExportBurnCaptions = burn,
+                    ExportSrt = srt,
+                    ExportVtt = vtt,
                 },
             });
             var progress = new Progress<ExportProgress>(p =>
@@ -167,12 +206,14 @@ public sealed partial class ExportViewModel : ObservableObject
                     ? string.Create(CultureInfo.CurrentCulture, $"{p.Fraction:P0} · about {TimeText(left)} left")
                     : string.Create(CultureInfo.CurrentCulture, $"{p.Fraction:P0}");
             });
+            var files = (srt ? CaptionFiles.Srt : CaptionFiles.None) | (vtt ? CaptionFiles.Vtt : CaptionFiles.None);
             var result = await _exporter.ExportAsync(
-                new ExportRequest(_project, preset, quality, path, _settings.Current.Recording.Encoder),
+                new ExportRequest(_project, preset, quality, path, _settings.Current.Recording.Encoder, range, burn, HasCaptions ? files : CaptionFiles.None),
                 progress,
                 _cancel.Token);
             Progress = 1;
-            ProgressText = $"Done in {TimeText(result.Elapsed)}: {System.IO.Path.GetFileName(result.Path)}, {result.Bytes / 1024.0 / 1024.0:0.0} MB{(result.Encoder is { } encoder ? $" ({encoder})" : "")}";
+            var captions = result.CaptionPaths is { Count: > 0 } written ? $", with {string.Join(" and ", written.Select(System.IO.Path.GetFileName))}" : "";
+            ProgressText = $"Done in {TimeText(result.Elapsed)}: {System.IO.Path.GetFileName(result.Path)}, {result.Bytes / 1024.0 / 1024.0:0.0} MB{(result.Encoder is { } encoder ? $" ({encoder})" : "")}{captions}";
             Result = result.Path;
         }
         catch (OperationCanceledException)

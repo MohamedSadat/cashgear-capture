@@ -28,6 +28,12 @@ public static class ItemProperties
     /// </summary>
     public sealed record ClipActions(Action<string, double, double?, string> SetSpeed, Action<string, double, string> SetFreeze, Action<string> Crossfade, Action<string> RemoveCrossfade);
 
+    /// <summary>
+    /// A caption's buttons and its track's look: split it at the playhead, merge it with the next, and change the
+    /// track's caption style ((track id, change, undo step's name)).
+    /// </summary>
+    public sealed record CaptionActions(Action<string> Split, Action<string> Merge, Action<string, Func<CaptionStyle, CaptionStyle>, string> ChangeStyle);
+
     private static readonly Lazy<IReadOnlyList<string>> FontFamilies =
         new(() => [.. System.Windows.Media.Fonts.SystemFontFamilies.Select(f => f.Source).Order(StringComparer.CurrentCultureIgnoreCase)]);
 
@@ -54,11 +60,12 @@ public static class ItemProperties
             EffectItem { Kind: EffectKind.Keystrokes } => "Keystrokes",
             EffectItem => "Pointer effects",
             ZoomItem => "Zoom",
+            CaptionItem => "Caption",
             _ => "Item",
         };
     }
 
-    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null, ClipActions? actions = null)
+    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null, ClipActions? actions = null, CaptionActions? captions = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(item);
@@ -77,6 +84,11 @@ public static class ItemProperties
         if (item is ZoomItem zoom)
         {
             return ForZoom(project, zoom, current, apply);
+        }
+
+        if (item is CaptionItem caption)
+        {
+            return ForCaption(project, caption, current, apply, captions);
         }
 
         var list = new List<EditParameter>();
@@ -374,6 +386,60 @@ public static class ItemProperties
             }
         }
 
+        return list;
+    }
+
+    /// <summary>A caption's text and buttons, and the look of every caption on its track.</summary>
+    private static IReadOnlyList<EditParameter> ForCaption(VideoProject project, CaptionItem caption, Func<VideoProject> current, Apply apply, CaptionActions? actions)
+    {
+        var list = new List<EditParameter>();
+        var text = new TextParameter("Text", caption.Text, multiline: true);
+        text.PropertyChanged += (_, e) =>
+        {
+            // Words written by hand have no times of their own: the caption keeps its whole text from now on.
+            if (e.PropertyName == "Value" && current().Find(caption.Id)?.Item is CaptionItem now && now.Text != text.Value)
+            {
+                apply(now with { Text = text.Value, Words = null }, "caption text", $"property {caption.Id} text");
+            }
+        };
+        list.Add(text);
+        if (actions is null || project.Find(caption.Id)?.Track is not { } track)
+        {
+            return list;
+        }
+
+        list.Add(new ActionParameter("Split it at the playhead", new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.Split(caption.Id))));
+        list.Add(new ActionParameter("Merge it with the next caption", new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.Merge(caption.Id))));
+        list.Add(new NoteParameter("The look below is for every caption on this track. It is drawn into exported videos while the track is shown (the eye in its header); the export can also save the captions as SRT or VTT files."));
+
+        void Style<T>(T parameter, string name, Func<CaptionStyle, CaptionStyle> change)
+            where T : EditParameter
+        {
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is "Value" or "Selected")
+                {
+                    actions.ChangeStyle(track.Id, change, name);
+                }
+            };
+            list.Add(parameter);
+        }
+
+        var style = track.Captions ?? new CaptionStyle();
+        var font = new FontParameter("Font", FontFamilies.Value, style.FontFamily);
+        Style(font, "caption font", s => s with { FontFamily = font.Value });
+        var size = new NumberParameter("Size", 12, 160, style.SizeFor(project.Canvas.Height), 1, " px");
+        Style(size, "caption size", s => s with { FontSize = size.Value });
+        var bold = new SwitchParameter("Bold", style.Bold);
+        Style(bold, "caption bold", s => s with { Bold = bold.Value });
+        var color = new ColorParameter("Text colour", FrameCompositor.Color(style.Color, SKColors.White));
+        Style(color, "caption colour", s => s with { Color = Hex(color.Value.Value) });
+        var box = new ColorParameter("Box", style.Box is null ? SKColors.Transparent : FrameCompositor.Color(style.Box, SKColors.Black), allowTransparent: true);
+        Style(box, "caption box", s => s with { Box = box.IsTransparent ? null : HexWithAlpha(box.Value.Value, 0xB4) });
+        var position = new ChoiceParameter("Position", [new(CaptionPosition.Bottom, "At the bottom"), new(CaptionPosition.Top, "At the top")], style.Position);
+        Style(position, "caption position", s => s with { Position = position.As<CaptionPosition>() });
+        var width = new NumberParameter("Lines up to", 30, 100, style.MaxWidth * 100, 5, " % of the width");
+        Style(width, "caption width", s => s with { MaxWidth = width.Value / 100 });
         return list;
     }
 

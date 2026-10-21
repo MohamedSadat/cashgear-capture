@@ -24,6 +24,7 @@
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
       <TextBlock Grid.Row="0" Text="Format" VerticalAlignment="Center" Margin="0,0,12,8" />
@@ -37,6 +38,15 @@
       <TextBlock Grid.Row="3" Text="File" VerticalAlignment="Center" Margin="0,0,12,0" />
       <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" />
       <Button Grid.Row="3" Grid.Column="2" Content="Browse…" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
+
+      <StackPanel Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
+        <CheckBox Content="{Binding RangeText}" IsChecked="{Binding OnlyRange}" Visibility="{Binding HasRange, Converter={StaticResource Visible}}" Margin="0,0,0,4" />
+        <StackPanel Visibility="{Binding HasCaptions, Converter={StaticResource Visible}}">
+          <CheckBox Content="Burn the captions into the video (the caption tracks that are shown)" IsChecked="{Binding BurnCaptions}" Margin="0,0,0,4" />
+          <CheckBox Content="Also save the captions as an SRT file beside it" IsChecked="{Binding SaveSrt}" Margin="0,0,0,4" />
+          <CheckBox Content="Also save the captions as a WebVTT file beside it" IsChecked="{Binding SaveVtt}" />
+        </StackPanel>
+      </StackPanel>
     </Grid>
 
     <ProgressBar Height="6" Margin="0,18,0,6" Minimum="0" Maximum="1" Value="{Binding Progress}" />
