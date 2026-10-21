@@ -186,13 +186,14 @@ public sealed class WorkflowRunnerTests : IDisposable
         made.Select(d => (d.Id, d.DisplayName, d.SupportsVideo)).Should().Equal(
             ("word", "Word document", false),
             ("powerpoint", "PowerPoint slide", false),
+            ("pdf", "PDF", false),
             ("copy-link", "Copy the link", true),
             ("server:a", "A", true),
             ("server:b", "B", true),
             ("upload:u", "Images", true),
             ("app:p", "Open with Paint", true));
-        made[3].Should().BeOfType<Outputs.Servers.FtpDestination>();
-        made[4].Should().BeOfType<Outputs.Servers.SftpDestination>();
+        made[4].Should().BeOfType<Outputs.Servers.FtpDestination>();
+        made[5].Should().BeOfType<Outputs.Servers.SftpDestination>();
     }
 
     [Fact]

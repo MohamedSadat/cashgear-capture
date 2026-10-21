@@ -19,7 +19,7 @@ public sealed class DestinationRegistry(IEnumerable<IDestinationSource> sources,
     private static readonly string[] BuiltInOrder =
     [
         DestinationIds.Editor, DestinationIds.File, DestinationIds.Clipboard, DestinationIds.Printer,
-        DestinationIds.Word, DestinationIds.PowerPoint, DestinationIds.CopyLink,
+        DestinationIds.Word, DestinationIds.PowerPoint, DestinationIds.Pdf, DestinationIds.CopyLink,
     ];
 
     private static readonly string[] ConfiguredOrder = [DestinationIds.ServerPrefix, DestinationIds.UploadPrefix, DestinationIds.AppPrefix];

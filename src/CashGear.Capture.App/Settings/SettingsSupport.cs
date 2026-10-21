@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Data;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Imaging;
+using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
 using Microsoft.Win32;
 
@@ -131,6 +132,13 @@ public sealed class EnumLabelConverter : IValueConverter
         PageOrientation.Auto => "Landscape for wide captures, else portrait",
         PageOrientation.Portrait => "Portrait",
         PageOrientation.Landscape => "Landscape",
+        PaperSize.Auto => "A4 or Letter (as used here)",
+        PaperSize.A4 => "A4",
+        PaperSize.Letter => "Letter",
+        PaperSize.Legal => "Legal",
+        PaperSize.A3 => "A3",
+        PaperSize.A5 => "A5",
+        PaperSize.Picture => "The size of the capture",
         ServerProtocol.Ftp => "FTP (not encrypted)",
         ServerProtocol.FtpsExplicit => "FTPS (FTP with TLS, port 21)",
         ServerProtocol.FtpsImplicit => "FTPS, implicit TLS (port 990)",

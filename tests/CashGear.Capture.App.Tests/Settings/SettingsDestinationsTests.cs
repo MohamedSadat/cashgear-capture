@@ -4,6 +4,7 @@ using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Settings;
 using CashGear.Capture.App.Tests.Capture;
 using CashGear.Capture.App.Tests.Editor;
+using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Outputs;
 using CashGear.Capture.Outputs.Apps;
@@ -239,6 +240,29 @@ public sealed class SettingsDestinationsTests : IDisposable
 
         _settings.Current.Destinations.Print.Should().Be(new PrintSettings(PrintFit.FillPage, PageOrientation.Landscape, 5, true, null));
         _settings.Current.Destinations.Word.Should().Be(new OfficeSettings(OfficeMode.NewFile, @"D:\Docs\Report.docx"), "the file stays remembered for next time");
+    }
+
+    [Fact]
+    public async Task The_pdf_settings_are_edited_saved_and_tested()
+    {
+        _settings.Current = (new AppSettings
+        {
+            Destinations = new DestinationSettings(Pdf: new PdfSettings(PaperSize.Letter, PageOrientation.Portrait, 20, PrintFit.ActualSize)),
+        }).Normalize();
+        var vm = Create();
+        var pdf = vm.Destinations.Pdf;
+
+        pdf.PageSize.Should().Be(PaperSize.Letter);
+        pdf.Fit.Should().Be(PrintFit.ActualSize);
+        pdf.PageSize = PaperSize.Picture;
+        pdf.MarginMm = 0;
+        await pdf.TestCommand.ExecuteAsync(null);
+        await vm.ApplyCommand.ExecuteAsync(null);
+
+        _settings.Current.Destinations.Pdf.Should().Be(new PdfSettings(PaperSize.Picture, PageOrientation.Portrait, 0, PrintFit.ActualSize));
+        pdf.TestFailed.Should().BeFalse(pdf.TestStatus);
+        pdf.TestStatus.Should().Contain("A new file is made for each capture");
+        vm.Destinations.Pdf.PageSizes.Should().Contain(PaperSize.A4);
     }
 
     [Fact]

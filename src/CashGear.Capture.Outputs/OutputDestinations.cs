@@ -4,6 +4,7 @@ using CashGear.Capture.Outputs.Apps;
 using CashGear.Capture.Outputs.Credentials;
 using CashGear.Capture.Outputs.Http;
 using CashGear.Capture.Outputs.Office;
+using CashGear.Capture.Outputs.Pdf;
 using CashGear.Capture.Outputs.Servers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -11,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.Outputs;
 
-/// <summary>Word, PowerPoint, Copy the link, and every configured server, upload and app.</summary>
+/// <summary>Word, PowerPoint, PDF, Copy the link, and every configured server, upload and app.</summary>
 public sealed class ConfiguredDestinations(AppPaths paths, IOutputService output, UploadHttpClient http, IProcessLauncher launcher) : IDestinationSource
 {
     public IEnumerable<IOutputDestination> Create(AppSettings settings, ICredentialStore credentials)
@@ -21,6 +22,7 @@ public sealed class ConfiguredDestinations(AppPaths paths, IOutputService output
         var folder = paths.ResolveCaptureDirectory(settings.Output);
         yield return new WordDestination(destinations.Word ?? new OfficeSettings(), folder);
         yield return new PowerPointDestination(destinations.PowerPoint ?? new OfficeSettings(), folder);
+        yield return new PdfDestination(destinations.Pdf ?? new PdfSettings(), folder);
         yield return new CopyLinkDestination(output);
 
         foreach (var server in destinations.Servers ?? [])

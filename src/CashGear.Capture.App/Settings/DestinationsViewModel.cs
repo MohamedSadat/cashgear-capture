@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using CashGear.Capture.App.Output;
+using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Outputs;
 using CashGear.Capture.Outputs.Credentials;
@@ -276,6 +277,40 @@ public sealed partial class PrinterViewModel : TestableViewModel
     }
 
     public PrintSettings Build() => new(Fit, Orientation, Math.Round(MarginMm, 1), ShowDialog, Printer?.Id);
+}
+
+/// <summary>Settings › Destinations › PDF.</summary>
+public sealed partial class PdfViewModel : TestableViewModel
+{
+    public override string DestinationId => DestinationIds.Pdf;
+
+    [ObservableProperty]
+    private PaperSize _pageSize;
+
+    [ObservableProperty]
+    private PageOrientation _orientation;
+
+    [ObservableProperty]
+    private double _marginMm;
+
+    [ObservableProperty]
+    private PrintFit _fit;
+
+    public IReadOnlyList<PaperSize> PageSizes { get; } = Enum.GetValues<PaperSize>();
+
+    public IReadOnlyList<PageOrientation> Orientations { get; } = Enum.GetValues<PageOrientation>();
+
+    public IReadOnlyList<PrintFit> Fits { get; } = Enum.GetValues<PrintFit>();
+
+    public void Load(PdfSettings settings)
+    {
+        PageSize = settings.PageSize;
+        Orientation = settings.Orientation;
+        MarginMm = settings.MarginMm;
+        Fit = settings.Fit;
+    }
+
+    public PdfSettings Build() => new(PageSize, Orientation, Math.Round(MarginMm, 1), Fit);
 }
 
 /// <summary>Settings › Destinations › Word or PowerPoint.</summary>
@@ -692,6 +727,8 @@ public sealed partial class DestinationsViewModel : ObservableObject
 
     public OfficeViewModel PowerPoint { get; }
 
+    public PdfViewModel Pdf { get; } = new();
+
     public ObservableCollection<ServerViewModel> Servers { get; } = [];
 
     public ObservableCollection<UploadViewModel> Uploads { get; } = [];
@@ -729,6 +766,7 @@ public sealed partial class DestinationsViewModel : ObservableObject
         Printer.Load(settings.Print ?? new PrintSettings(), _printer?.Printers() ?? []);
         Word.Load(settings.Word ?? new OfficeSettings());
         PowerPoint.Load(settings.PowerPoint ?? new OfficeSettings());
+        Pdf.Load(settings.Pdf ?? new PdfSettings());
         Replace(Servers, (settings.Servers ?? []).Select(s => new ServerViewModel(s, Secrets, _picker)));
         Replace(Uploads, (settings.Uploads ?? []).Select(u => new UploadViewModel(u, Secrets)));
         Replace(Apps, (settings.Apps ?? []).Select(a => new ExternalAppViewModel(a, _picker)));
@@ -744,6 +782,7 @@ public sealed partial class DestinationsViewModel : ObservableObject
         Print = Printer.Build(),
         Word = Word.Build(),
         PowerPoint = PowerPoint.Build(),
+        Pdf = Pdf.Build(),
         Servers = [.. Servers.Select(s => s.Build())],
         Uploads = [.. Uploads.Select(u => u.Build())],
         Apps = [.. Apps.Select(a => a.Build())],
@@ -830,7 +869,7 @@ public sealed partial class DestinationsViewModel : ObservableObject
     private bool HasSelectedApp() => SelectedApp is not null;
 
     private IEnumerable<TestableViewModel> Testables() =>
-        new TestableViewModel[] { Printer, Word, PowerPoint }.Concat(Servers).Concat(Uploads).Concat(Apps);
+        new TestableViewModel[] { Printer, Word, PowerPoint, Pdf }.Concat(Servers).Concat(Uploads).Concat(Apps);
 
     private void Replace<T>(ObservableCollection<T> list, IEnumerable<T> items)
         where T : ObservableObject

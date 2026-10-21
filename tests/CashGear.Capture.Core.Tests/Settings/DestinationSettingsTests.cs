@@ -1,4 +1,5 @@
 using System.Text.Json;
+using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
 
 namespace CashGear.Capture.Core.Tests.Settings;
@@ -16,6 +17,22 @@ public sealed class DestinationSettingsTests
         defaults.Print.Should().Be(new PrintSettings(PrintFit.FitToPage, PageOrientation.Auto, 10, ShowDialog: true));
         defaults.Word!.Mode.Should().Be(OfficeMode.NewFile);
         defaults.Servers.Should().BeEmpty();
+        defaults.Pdf.Should().Be(new PdfSettings(PaperSize.Auto, PageOrientation.Auto, 10, PrintFit.FitToPage));
+    }
+
+    [Fact]
+    public void The_pdf_section_is_cleaned_compared_and_read_from_older_files()
+    {
+        var wild = new DestinationSettings(Pdf: new PdfSettings((PaperSize)77, (PageOrientation)9, double.NaN, (PrintFit)5)).Normalize();
+        wild.Pdf.Should().Be(new PdfSettings());
+        var a4 = new DestinationSettings(Pdf: new PdfSettings(PaperSize.A4)).Normalize();
+        a4.Should().NotBe(new DestinationSettings().Normalize());
+        a4.Should().Be(new DestinationSettings(Pdf: new PdfSettings(PaperSize.A4)).Normalize());
+
+        // A Phase 14 file has no "pdf": the defaults.
+        var settings = JsonSerializer.Deserialize("{ \"destinations\": { \"workflow\": [ { \"destination\": \"pdf\" } ] } }", SettingsJsonContext.Default.AppSettings)!.Normalize();
+        settings.Destinations.Pdf.Should().Be(new PdfSettings());
+        settings.Destinations.IsEnabled(DestinationIds.Pdf).Should().BeTrue();
     }
 
     [Fact]

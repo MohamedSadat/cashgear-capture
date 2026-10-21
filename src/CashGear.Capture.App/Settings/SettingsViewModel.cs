@@ -957,6 +957,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         (DestinationIds.Printer, "Print", false),
         (DestinationIds.Word, "Word document", false),
         (DestinationIds.PowerPoint, "PowerPoint slide", false),
+        (DestinationIds.Pdf, "PDF", false),
         (DestinationIds.CopyLink, "Copy the link", true),
         .. Destinations.Servers.Select(s => (DestinationIds.Server(s.Id), s.Label, true)),
         .. Destinations.Uploads.Select(u => (DestinationIds.Upload(u.Id), u.Label, true)),

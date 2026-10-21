@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Where captures go besides the folder and the clipboard: Word and PowerPoint (Open XML), FTP/FTPS (FluentFTP), SFTP (SSH.NET), HTTP uploads and other apps. Credentials are kept with DPAPI. No WPF here: the app adds the destinations that need it (editor, file, clipboard, printer). -->
+  <!-- Where captures go besides the folder and the clipboard: Word and PowerPoint (Open XML), PDF (Skia), FTP/FTPS (FluentFTP), SFTP (SSH.NET), HTTP uploads and other apps. Credentials are kept with DPAPI. No WPF here: the app adds the destinations that need it (editor, file, clipboard, printer). -->
   <PropertyGroup>
     <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
     <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
@@ -18,6 +18,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
+    <!-- Skia, for PDFs. -->
+    <ProjectReference Include="..\CashGear.Capture.Editor\CashGear.Capture.Editor.csproj" />
   </ItemGroup>
 
   <ItemGroup>

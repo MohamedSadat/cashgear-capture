@@ -214,6 +214,34 @@
             <TextBlock Style="{StaticResource Section}" Text="PowerPoint" />
             <ContentControl Content="{Binding PowerPoint}" ContentTemplate="{StaticResource OfficeEditor}" Focusable="False" />
 
+            <!-- PDF -->
+            <TextBlock Style="{StaticResource Section}" Text="PDF" />
+            <TextBlock Style="{StaticResource Hint}" Text="Each capture becomes a one-page PDF in the capture folder, named like the capture. To put several pictures in one PDF, use Images to PDF (tray › Tools)." />
+            <Grid DataContext="{Binding Pdf}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <TextBlock Style="{StaticResource FieldLabel}" Text="Paper" />
+              <ComboBox Grid.Column="1" Margin="0,3" ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Paper" />
+              <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="Size on the page" />
+              <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Fits}" SelectedItem="{Binding Fit}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="Size on the PDF page" />
+              <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="Orientation" />
+              <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Orientations}" SelectedItem="{Binding Orientation}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="PDF orientation" />
+              <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="Margins" />
+              <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,3">
+                <Slider Minimum="0" Maximum="50" Value="{Binding MarginMm}" Width="200" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" AutomationProperties.Name="PDF margins in millimetres" />
+                <TextBlock VerticalAlignment="Center" Margin="8,0,0,0"><Run Text="{Binding MarginMm, Mode=OneWay}" /> <Run Text="mm" /></TextBlock>
+              </StackPanel>
+            </Grid>
+            <ContentControl Content="{Binding Pdf}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
+
             <!-- Servers -->
             <TextBlock Style="{StaticResource Section}" Text="FTP, FTPS and SFTP servers" />
             <Grid>

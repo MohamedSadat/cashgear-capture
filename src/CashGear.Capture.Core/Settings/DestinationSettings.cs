@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Serialization;
+using CashGear.Capture.Core.Output;
 
 namespace CashGear.Capture.Core.Settings;
 
@@ -16,6 +17,7 @@ public static class DestinationIds
     public const string Printer = "printer";
     public const string Word = "word";
     public const string PowerPoint = "powerpoint";
+    public const string Pdf = "pdf";
     public const string CopyLink = "copy-link";
 
     public const string ServerPrefix = "server:";
@@ -45,6 +47,7 @@ public static class DestinationIds
 /// <param name="Servers">FTP, FTPS and SFTP servers.</param>
 /// <param name="Uploads">HTTP upload endpoints.</param>
 /// <param name="Apps">Programs a capture can be opened with.</param>
+/// <param name="Pdf">PDF files.</param>
 public sealed record DestinationSettings(
     IReadOnlyList<WorkflowStep>? Workflow = null,
     IReadOnlyList<WorkflowStep>? RecordingWorkflow = null,
@@ -53,7 +56,8 @@ public sealed record DestinationSettings(
     OfficeSettings? PowerPoint = null,
     IReadOnlyList<ServerDestination>? Servers = null,
     IReadOnlyList<HttpDestination>? Uploads = null,
-    IReadOnlyList<ExternalApp>? Apps = null)
+    IReadOnlyList<ExternalApp>? Apps = null,
+    PdfSettings? Pdf = null)
 {
     /// <summary>What a new install does: open the editor. Save and Copy are there to be switched on (as before the workflow).</summary>
     public static IReadOnlyList<WorkflowStep> DefaultWorkflow { get; } =
@@ -78,6 +82,8 @@ public sealed record DestinationSettings(
     public IReadOnlyList<HttpDestination>? Uploads { get; init; } = Uploads ?? [];
 
     public IReadOnlyList<ExternalApp>? Apps { get; init; } = Apps ?? [];
+
+    public PdfSettings? Pdf { get; init; } = Pdf ?? new PdfSettings();
 
     /// <summary>Whether a capture would go anywhere at all.</summary>
     [JsonIgnore]
@@ -122,6 +128,7 @@ public sealed record DestinationSettings(
             Servers = servers,
             Uploads = uploads,
             Apps = apps,
+            Pdf = (Pdf ?? new PdfSettings()).Normalize(),
         };
     }
 
@@ -135,10 +142,11 @@ public sealed record DestinationSettings(
         && Equals(PowerPoint, other.PowerPoint)
         && Same(Servers, other.Servers)
         && Same(Uploads, other.Uploads)
-        && Same(Apps, other.Apps);
+        && Same(Apps, other.Apps)
+        && Equals(Pdf, other.Pdf);
 
     public override int GetHashCode() =>
-        HashCode.Combine((Workflow ?? []).Count, (RecordingWorkflow ?? []).Count, Print, Word, PowerPoint, (Servers ?? []).Count, (Uploads ?? []).Count, (Apps ?? []).Count);
+        HashCode.Combine(HashCode.Combine((Workflow ?? []).Count, (RecordingWorkflow ?? []).Count, Print, Word, PowerPoint, (Servers ?? []).Count, (Uploads ?? []).Count, (Apps ?? []).Count), Pdf);
 
     internal static bool Same<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) => (a ?? []).SequenceEqual(b ?? []);
 
@@ -251,6 +259,26 @@ public sealed record PrintSettings(
         Orientation = Enum.IsDefined(Orientation) ? Orientation : PageOrientation.Auto,
         MarginMm = double.IsFinite(MarginMm) ? Math.Clamp(MarginMm, 0, MaxMarginMm) : DefaultMarginMm,
         Printer = string.IsNullOrWhiteSpace(Printer) ? null : Printer.Trim(),
+    };
+}
+
+/// <summary>A PDF of each capture, one page, in the capture folder.</summary>
+/// <param name="PageSize">The paper, or the capture's own size.</param>
+/// <param name="Orientation">Portrait, landscape, or whichever suits the capture.</param>
+/// <param name="MarginMm">The margin on every side, in millimetres (0 to 50).</param>
+/// <param name="Fit">How the capture is sized on the page.</param>
+public sealed record PdfSettings(
+    PaperSize PageSize = PaperSize.Auto,
+    PageOrientation Orientation = PageOrientation.Auto,
+    double MarginMm = PrintSettings.DefaultMarginMm,
+    PrintFit Fit = PrintFit.FitToPage)
+{
+    public PdfSettings Normalize() => this with
+    {
+        PageSize = Enum.IsDefined(PageSize) ? PageSize : PaperSize.Auto,
+        Orientation = Enum.IsDefined(Orientation) ? Orientation : PageOrientation.Auto,
+        MarginMm = double.IsFinite(MarginMm) ? Math.Clamp(MarginMm, 0, PrintSettings.MaxMarginMm) : PrintSettings.DefaultMarginMm,
+        Fit = Enum.IsDefined(Fit) ? Fit : PrintFit.FitToPage,
     };
 }
 
