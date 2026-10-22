@@ -1,6 +1,57 @@
 # Licences of bundled components
 
-`THIRD-PARTY-NOTICES.txt` (shipped next to the app) lists every third-party component and its licence. This page explains the one that needs care: FFmpeg.
+`THIRD-PARTY-NOTICES.txt`, shipped next to the app, lists every third-party component and its licence. This page has the same list with what each one is for. Then it explains the components that need care: FFmpeg, RNNoise and Whisper.
+
+Every component the app ships has a licence that allows closed-source, commercial use:
+- **MIT, BSD, Apache 2.0 or zlib** for nearly everything.
+- **FFmpeg** is the exception: its LGPL v3 lets the app link to it dynamically. The conditions are below.
+
+No GPL or AGPL component ships.
+
+## Every component
+
+| Component (version) | Licence | What it does in the app |
+|---|---|---|
+| .NET runtime and WPF (10.0), including System.Security.Cryptography.ProtectedData, System.Numerics.Tensors and System.IO.Packaging | MIT | The runtime the app is published with (self-contained); the windows |
+| Microsoft.Extensions.Hosting, DependencyInjection, Logging, Configuration, Options (10.0.13), Microsoft.Extensions.AI.Abstractions | MIT | Start-up, services, logging plumbing |
+| C#/WinRT (WinRT.Runtime) and the Windows SDK projection (Microsoft.Windows.SDK.NET) | MIT | Windows.Graphics.Capture, OCR, webcams |
+| CommunityToolkit.Mvvm (8.4.2) | MIT | View models |
+| H.NotifyIcon.Wpf (2.4.1), H.GeneratedIcons.System.Drawing | MIT | The tray icon and its menu |
+| Serilog (4.4.0), Serilog.Extensions.Hosting, Serilog.Extensions.Logging, Serilog.Sinks.File | Apache 2.0 | The JSON log files |
+| Velopack (1.2.161) | MIT | Setup.exe, the portable zip, updates and channels |
+| Sentry (6.12.1) | MIT | Crash reports, only when the user agrees (see below) |
+| BouncyCastle.Cryptography (2.7.0) | MIT | Ed25519 for licence files; SSH.NET's cryptography |
+| Vortice.Windows: Direct3D 11, DXGI, Direct2D, DirectWrite, Mathematics (3.8.3); SharpGen.Runtime | MIT | GPU capture, tone mapping, drawing overlays into recordings |
+| SkiaSharp, SkiaSharp.HarfBuzz, SkiaSharp.Views.WPF (4.153.1); HarfBuzzSharp; Skia; HarfBuzz | MIT; Skia BSD 3-Clause; HarfBuzz "Old MIT" | The image editor, the video editor's preview and export, Arabic text shaping |
+| OpenTK (4.x), GLWpfControl; GLFW (`glfw3.dll`) | MIT; GLFW zlib/libpng | The video editor's preview on the graphics card (SkiaSharp.Views.WPF's OpenGL host) |
+| NAudio.Core, NAudio.Wasapi (3.1.0) | MIT | Sound devices: recording system audio and the microphone, playback in the video editor |
+| FFmpeg.AutoGen (9.0.1.1) | MIT | Bindings to FFmpeg |
+| FFmpeg (n9.0.2, LGPL build) | LGPL v3 | Encoding, decoding and writing recordings and exports (see below) |
+| RNNoise (0.2) | BSD 3-Clause | Microphone noise suppression (see below) |
+| Whisper.net, whisper.cpp, ggml (1.9.1) | MIT | Captions from speech (see below); the models are downloaded, not shipped |
+| DocumentFormat.OpenXml (3.5.1) | MIT | Word and PowerPoint destinations |
+| FluentFTP (55.0.0) | MIT | FTP and FTPS uploads |
+| SSH.NET (2026.0.0) | MIT | SFTP uploads |
+
+Only the tests and build use these, and none ships:
+- xunit.v3 (Apache 2.0);
+- AwesomeAssertions (Apache 2.0);
+- FxSsh (MIT; the SFTP tests' server);
+- Microsoft.CodeAnalysis.CSharp (MIT; the localization analyzer, build-time only).
+
+### Crash reports (Sentry)
+
+The Sentry SDK is MIT-licensed and ships in the app, but reports only go somewhere when two things are true:
+- the build was packaged with `-SentryDsn` (or `crashReports.dsn` is set in settings.json);
+- the user said yes when first asked, or in Settings › General › Privacy.
+
+A Sentry account (sentry.io, or a self-hosted Sentry or GlitchTip) is the seller's choice, under that service's terms. A report holds:
+- the crash and its stack;
+- the app's version and channel, Windows' version, the .NET runtime, the culture, memory figures;
+- the run id and the recording, capture or export id;
+- the last log lines' message templates, never their values.
+
+It never holds the user name, the PC's name, the time zone, screenshots, recordings, keystrokes, window titles, file names or passwords. The user folder is shown as `%USERPROFILE%`.
 
 ## FFmpeg (screen recording)
 

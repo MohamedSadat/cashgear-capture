@@ -1679,3 +1679,162 @@ Captures and recordings now cope with what Windows can do to them while they run
 - **A window off every monitor can't be captured on Windows 10:** Windows.Graphics.Capture has no picture of it. The message says how to bring it back.
 - **Diagnostics:** the logs keep window titles and file names, with the user folder replaced (they never hold keystrokes or passwords).
 - **ReadyToRun:** it makes the app about 120 MB bigger before compression.
+
+## Phase 19 — Product Shipping (2026-10-22)
+
+CashGear Capture can ship. The packages leave out debug symbols, and every file in them is checked for a signature and a timestamp once a certificate is given. Releases come in stable and beta channels, and the app shows their release notes. Crash reports go to Sentry only after the user agrees, without names, paths or typing. Every word of the UI is in .resx files, in English and Arabic, and the build rejects text outside them. In Arabic every window is laid out right to left. Every window can be used from the keyboard, with a screen reader and in high contrast. Licences can be issued, checked offline and activated, though every feature stays free in this version. Settings can be exported, imported and reset, and a portable copy keeps its data beside itself. The user guide is in `docs/user`, with every keyboard shortcut and a part in Arabic.
+
+### Added
+- **Packaging** (`tools\package.ps1`):
+  - **Smaller packages:** every `.pdb` is left out of the published app (libSkiaSharp's 96 MB and libHarfBuzzSharp's 23 MB among them), and the build fails if one is left.
+  - **Channels:** `-Channel stable|beta` (pre-release versions default to beta) makes `CashGear.Capture-<channel>-Setup.exe`, `-Portable.zip`, the `.nupkg` files and `releases.<channel>.json`. A stable release also writes `releases.win.json`, so copies of 1.0.x (which predate channels) find it.
+  - **Release notes:** `-ReleaseNotes` (default `docs\release-notes\<version>.md`) goes into the package and into the app as `RELEASE-NOTES.md`.
+  - **Build options:** `-SentryDsn` and `-LicensePublicKey` are built into the app. `-Fast` packs without ReadyToRun, for test packages.
+  - **Signature check:** after signing, `tools\verify-signatures.ps1` opens Setup.exe, the full package and the portable zip and checks every exe and DLL. Each must be signed (by `-SignerThumbprint` when given), intact and timestamped.
+  - **New scripts:** `tools\new-test-certificate.ps1` makes an untrusted code-signing PFX outside any certificate store, for trying the signing out. `tools\scan-release.ps1` runs Microsoft Defender over a release.
+  - `docs/SIGNING.md`: buying a certificate (OV, EV) or Azure Trusted Signing, the build server's variables, SmartScreen reputation, and what to do when Defender or another antivirus flags a release (Microsoft's submission portal).
+- **Update channels and release notes:**
+  - Settings › General › Updates picks the channel: as installed, stable or beta.
+  - The updater never installs an older version. A copy moved from beta to stable waits for the next stable release, and says so.
+  - A downloaded update's notes are kept, and **What's new** shows them, or this version's, in the app's language, rendered from Markdown. After an update, the notification opens them.
+- **Crash reports** (Sentry, opt-in):
+  - **When they are sent:** only when the build (`-SentryDsn`) or settings.json has an address and the user said yes. The first start that has an address asks once; Settings › General › Privacy changes the answer.
+  - **What a report holds:**
+    - the run id; the recording, capture or export id; where it happened;
+    - the last log lines as breadcrumbs, as message templates only (never their values: window titles, file names, typed keys);
+    - the user folder as `%USERPROFILE%`, also in module and thread paths.
+  - **What it never holds:** the user, the PC's name, the time zone, sessions, screenshots.
+  - Unsent reports wait in the data folder. The UI, AppDomain, task and startup handlers all report.
+- **Languages: English and Arabic:**
+  - **Where the strings are:** every window, menu, tooltip, notification, dialog, file filter and screen-reader name comes from .resx files: 22 in the app and one per library, each with Arabic. Sentences are whole format strings, and counts use plural forms (Arabic's six).
+  - **The build checks them:** a source generator (`src/CashGear.Capture.Analyzers`) turns each .resx into a class with a method per placeholder string. The build reports:
+    - text outside the .resx files (CG0001 in C#, CG0002 in XAML; there are none left);
+    - missing translations, and translations whose placeholders differ (CG0003–CG0007).
+  - **Choosing the language:** Settings › General › Language (Automatic follows Windows' display language), with an offer to restart (`--after-exit`).
+  - **Right to left:** in Arabic every window, the tray menu and every dialog are laid out right to left. These stay left to right, as the screen is: the canvas, the preview, the timeline, thumbnails, the ruler, the overlays. Icons that point the way the reading goes mirror; the pointer, the clock and step numbers don't. The countdown and the scrolling capture's progress sit in the left corner.
+  - **Arabic text:** the timeline's labels are shaped (Arabic file names), and keystroke captions use the UI's locale.
+  - **Formats:** dates and numbers keep the user's regional format, in the Gregorian calendar.
+  - `MessageBox` is replaced by `AppDialog`, which is themed, localized and right to left.
+  - `docs/localization.md`: where strings live, the checks, the writing rules and the glossary.
+- **Keyboard** (every promise in `docs/user/keyboard-shortcuts.md` was checked and made true):
+  - **Every window:** Tab reaches every control, with the buttons at the bottom last. Enter presses the default button, and Esc closes or cancels: History, the colour picker, the image tools, Settings (also from a hotkey box), the release notes, the dialogs, Export, Captions from speech, the overlay and scrolling progress.
+  - **New hotkey Ctrl+Alt+Shift+T:** puts the capture toolbar, or the recording toolbar while recording, under the keyboard. Tab and the arrows move, Enter and Space press, menus open with Enter (the sizes menu with Shift+F10), and Esc gives the foreground back to the window that had it. A capture started this way gives the foreground back first.
+  - **The tray icon:** Enter, Space, Shift+F10 or the menu key open its menu with the first item focused (before, they did nothing).
+  - **The countdown:** Esc cancels it.
+  - **Drawing on the screen:** Delete clears it.
+  - **The image editor:**
+    - the buttons are tab stops, and the tool letters work wherever the focus is, except while typing;
+    - Enter with a tool adds an item of the usual size in the middle (text opens its box there);
+    - Tab cycles the annotations (Ctrl+Tab leaves the picture);
+    - arrows move the selected one or the crop frame (Shift: 10 px), and Ctrl+Shift+arrows resize it;
+    - the picture shows where the focus is.
+  - **The video editor:**
+    - Tab selects the clips in turn (Ctrl+Tab leaves the timeline);
+    - ↑/↓ move the selected clip to the track above or below, and Alt+←/→ move it a frame (Shift: a second);
+    - Ctrl+[ and Ctrl+] trim it to the playhead;
+    - arrows in the preview move the selected picture, annotation or zoom;
+    - the single-letter keys leave the text boxes alone.
+  - **Settings:** the webcam's place moves with the arrows.
+- **Screen readers** (UI Automation):
+  - **The image editor's picture** lists the annotations as items ("Arrow", "Text: Hello", "Step 3") that can be selected, and Tab is announced.
+  - **The timeline** lists tracks and their clips ("Rec.mp4, 0:00.00 – 0:04.00"), which can be selected. The preview says the time.
+  - **The level meters** give their level in dB, and the region overlay reads out the size and the hint as it settles.
+  - **The ruler, magnifier and crosshair** give their readout.
+  - **Every icon-only button, swatch and toggle has a name.** The recording dot says "Recording" or "Paused" with the time.
+  - **List items and choices** read their text, not a type name, and enum choices read their label in the app's language. Status lines and progress are live regions.
+- **High contrast:**
+  - the app's own colours in XAML (error text, separators, borders, the recording dot) come from `{p:Chrome …}` brushes, which switch to the theme's colours as soon as high contrast is turned on or off;
+  - the overlays, the ruler, the magnifier, the crosshair, the level meters, the timeline, the editor's surround and handles and the preview's surround use the theme's Window, WindowText, Highlight and GrayText colours;
+  - the title bar isn't forced dark.
+- **Licensing** (`src/CashGear.Capture.Licensing`, all free for now):
+  - **Licences and tokens:** licence files and activation tokens are signed with Ed25519 (BouncyCastle) and checked offline against the public key built in.
+  - **Activation:** a salted machine id; activation online with a machine limit; a refresh date, with a 14-day grace period when the server can't be reached.
+  - **Pro features:** the video editor's annotations, speed, crossfades and freeze frames, metadata effects, zooms and auto-zoom, captions, and GIF export ask a feature gate first. In this version the gate always answers yes (`FeaturePolicy.AllFree`). Settings › General › Licence says every feature is included.
+  - `tools\LicenseTool`: keygen, issue, verify, revoke, and a reference activation endpoint. `docs/LICENSING.md` describes it.
+- **Settings import, export, reset; a portable copy:**
+  - **Export** writes the settings and presets to one file, without passwords.
+  - **Import** reads one back through the schema migrations, after backing up `settings.json` and `presets.json`.
+  - **Reset all settings** backs up `settings.json`, and keeps the language and the crash-report answer.
+  - **The portable copy** (Velopack's portable zip, or `.portable` beside the app) keeps settings, logs and data in `Data\` outside `current\`, so updates keep them. Its first start takes this account's settings, and it runs as its own instance.
+- **User guide** (`docs/user`): getting started, capturing, recording, the image and video editors, settings, privacy, troubleshooting and every keyboard shortcut, plus getting started and the shortcuts in Arabic (`docs/user/ar`). `docs/LICENSES.md` lists every third-party component with its licence, and `docs/release-notes/1.1.0.md` has the release notes in both languages.
+- **`tools\UpdateCheck`:** packs a beta and a stable release and unpacks the beta as a portable copy with settings and a recording. It starts that copy, updates it to stable through Velopack's own updater and starts it again, then checks the version, the channel, every setting and the recording.
+- **Version 1.1.0.**
+- **Inside:**
+  - **Core:** AppearanceSettings.Language, UpdateSettings.Channel, CrashReportSettings, SettingsTransfer, PortableMode, AppPaths.Portable, CoreStrings.
+  - **App:** AppLanguage, AppDialog, AppRestart, ReleaseNotes, CrashReporter and CrashBreadcrumbs, LicenseService, SettingsFiles, HighContrast and ChromeBrushes.
+  - **Editor:** PresetLibrary.MergedWith/ToJson/FromJson.
+  - **Every library:** `<Project>Strings`. Exception messages and OutputResult texts are `[Localizable(true)]`.
+  - **Tests:** TestCulture pins English in every test assembly.
+
+### Deviations from the spec
+- **Not signed with a real certificate:** there is none yet (the user's choice). Signing is a documented step. It was proven once with a throwaway certificate that no PC trusts, timestamped by DigiCert: every exe and DLL in Setup.exe, the package and the portable zip was signed, intact and timestamped, and Defender found nothing (see Tested).
+- **No Sentry address yet:** the reporting is built in and tested against a fake Sentry on 127.0.0.1. Nothing has been sent anywhere.
+- **Licensing is machinery only:** every feature is free and nothing asks for a licence (the user's choice). No activation server is running; `tools\LicenseTool serve` is the reference.
+- **Fresh installs on Windows 10 22H2 and Windows 11** are run by the user, by hand (TESTING.md › Phase 19 › Pending: by hand), as are Narrator and a real high-contrast switch. SmartScreen's verdict depends on the real certificate's reputation, so "no SmartScreen block" can only be checked once there is one.
+- **Kept English on purpose:** key names (they match the keycaps), file-name tokens, logs, the diagnostics zip, the titles of the sound tracks stored in MP4 files, and messages from FFmpeg, FluentFTP, SSH.NET and .NET.
+- **The update acceptance** is automated with portable copies, through Velopack's own updater: 1.1.0-beta.1 → 1.1.0 (started before and after) and 1.0.1 → 1.1.0 through the 1.0.x feed. The installed 1.0.1 → 1.1.0 update is a by-hand step, because installing from a session isn't possible here (AppData is virtualized).
+- **↑/↓ in the video editor** move the selected clip to the track above or below (the doc's "the track above / below"), rather than moving the selection.
+- **Tab cycles annotations and clips** while there are any, so Ctrl+Tab leaves the picture or the timeline.
+- **Ctrl+Shift+arrows resize by one pixel only:** Shift is already part of the keys.
+- **The webcam's place moves with the arrows but isn't resized by them:** its size is the slider, as with the mouse.
+- **Access keys:** menus and the main labels have them; OK, Cancel and similar buttons don't, as in Windows' own dialogs (Enter and Esc press them).
+- **The tray icon's keys** are tested through the messages Windows sends it, not with Win+B on the real taskbar.
+- **Digits in Arabic windows:** they follow the regional format's digits (Arabic-Indic for ar-SA), and dimensions read right to left ("٦٤٠ × ٤٠٠" reads 640 × 400 from the right).
+
+### Fixed during development
+- **Images to PDF:** a progress report arriving after the PDF was finished replaced "Done". (Batch Process had the same fix in Phase 18.)
+- **Crash reports:** the user folder showed in the loaded modules' paths, since an installed copy runs from inside it.
+- **.resx values:** line breaks in values were CRLF or LF depending on the file. The generated strings now always have LF.
+- **Screen readers read combo boxes' enum choices by the enum's English name** ("Png", "Balanced"), in Arabic too: the choices are now items labelled in the app's language.
+- **The tray icon did nothing with Enter or Shift+F10**: H.NotifyIcon only raised its keyboard events. They now open the menu.
+- **Delete didn't clear drawing on the screen**: the ink canvas took the key.
+- **A hotkey box swallowed Esc**, so Settings couldn't be cancelled from one.
+- **The region overlay's announcement** could run after the overlay closed and read its frozen picture after it was freed (a crash found by a desktop test).
+- **Arabic:**
+  - "H.264" showed as "264.H", and brackets after Latin names moved to the other end: WPF counts digits as Arabic numbers in an Arabic window. Left-to-right marks in the Arabic strings fix it.
+  - Code, paths, addresses and colours in text boxes were reordered; those boxes are left to right now.
+  - The video editor showed recordings' track titles ("Microphone") in English.
+- **Number boxes in the editor's dialogs** lost a value typed just before Enter.
+- **The drawing layer's invisible brush** (Phase 12) wasn't frozen, so a second drawing window on another thread crashed. The new drawing-keys test was the first to open one.
+- **Export presets, the image tools' "(none)" and the file-name tokens' help** kept their text in the first language they were read in (static lists). The app sets its language before any of them is read, so only the tests saw it; they are made on each use now.
+- **Tests:**
+  - A test process that crashed or was stopped while holding the desktop tests' lock (a named semaphore) left every later run waiting 15 minutes. It is a mutex now, which Windows frees when its owner dies, and skipped desktop tests no longer take it.
+  - Synthetic arrow keys lost Shift with Num Lock on; they are sent as extended keys now.
+  - The video editor's keyboard test checked for a pause 150 ms after Space. While it plays, the preview (drawn on the processor in tests) keeps the window busy and WPF handles input after drawing, so the test waits for it now.
+- **English text changed by the move to resources** (plural forms where a count of 1 read wrong): "1 capture", "1 part · 500 px", "1 minute". A watermark without text gets the default text.
+
+### Tested
+- **Automated tests:** without the desktop (`CASHGEAR_SKIP_INTERACTIVE=1`) 1627 tests: 1493 pass, 134 skipped (desktop and on-request tests), 0 failed. With the desktop (the user's go-ahead): 1616 pass, 11 skipped (6 need RNNoise, which isn't in a test build; 5 run only when asked for), 0 failed. The first full desktop run found a crash and three tests to fix (see Fixed during development).
+- **Acceptance:**
+  - **The signed installer:**
+    - `tools\package.ps1` with the test certificate (a full ReadyToRun build) signed the app's 20 files and Setup.exe, timestamped by DigiCert.
+    - `verify-signatures.ps1` found all 53 executables and DLLs in Setup.exe, the package and the portable zip signed, intact and timestamped. Microsoft's and .NET's own files keep their own signatures.
+    - Defender (engine 1.1.26090.9, signatures 1.461.139.0) found no threats in any of them.
+    - The installs on fresh Windows 10 22H2 and Windows 11 are the user's, by hand: pending.
+  - **The update keeps settings and recordings:** `tools\UpdateCheck` passed all 24 checks.
+    - A portable 1.1.0-beta.1 with settings and a recording was started, updated by Velopack's `Update.exe` to 1.1.0 on the stable channel and started again. The version, the channel, every setting, `Data` and the recording were right.
+    - A 1.0.1 portable copy was offered 1.1.0 by the 1.0.x feed and updated to it.
+    - The installed 1.0.1 → 1.1.0 update is by hand: pending.
+  - **The UI in Arabic:** `ArabicUiTests` passed. They opened every window in Arabic: right to left with left-to-right pixel surfaces, Arabic text, named controls, Tab and Esc. The 23 screenshots in `artifacts\arabic-ui` were checked by eye; that found the bidi problems fixed above.
+- **Packages:**
+  - ReadyToRun: Setup.exe 212.9 MB, the package 205.7 MB, unpacked 519 MB (1.0.1's Setup.exe: 119.0 MB). With `-Fast`: Setup.exe 169.6 MB.
+  - No `.pdb` is left: Phase 18 shipped 119 MB of the native libraries' symbols.
+- **Build:** `dotnet build --no-incremental` without warnings, with CG0001–CG0007 on in every project.
+
+### Known limitations
+- **Not signed for real yet:** without a certificate, SmartScreen warns about a downloaded Setup.exe. A new certificate earns SmartScreen reputation over downloads, so the first signed releases may still be warned about.
+- **Nothing to send crash reports to yet:** there is no Sentry address. The app only asks once a build has one.
+- **No activation server:** licensing is machinery only, and every feature is free.
+- **By hand, pending:**
+  - fresh installs on Windows 10 22H2 and Windows 11;
+  - an installed 1.0.1 updated to 1.1.0;
+  - Narrator on the real app;
+  - a real high-contrast switch;
+  - a keyboard-only capture from the toolbar end to end;
+  - the tray icon reached with Win+B on the real taskbar.
+- **High contrast:** secondary text drawn faded (hints, timings) stays faded, so it is lighter than the theme's text.
+- **Arabic:**
+  - Messages from FFmpeg, FluentFTP, SSH.NET and .NET stay in English inside the translated sentence.
+  - Digits follow the regional format: Arabic-Indic for ar-SA. Arabic-Indic digits, and dimensions written right to left, may surprise users who expect Western digits.
+  - Only the user guide's start, its index and the keyboard shortcuts are in Arabic; the other pages link to the English ones.
+- **Bigger downloads:** Setup.exe is 213 MB, against 119 MB for 1.0.1. FFmpeg's libraries, Whisper's runtimes (Vulkan too) and ReadyToRun account for the difference.

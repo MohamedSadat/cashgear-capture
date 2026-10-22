@@ -26,14 +26,17 @@ A Windows desktop screen capture and annotation tool (in the spirit of FastStone
 | 16 | Timeline video editor: projects (`.cgcap`), frame-exact cuts, sound tracks, webcam placement, music, annotations with keyframes (Arabic text, blur, pixelate), speed and ramps, fades, crossfades, freeze frames, clicks, keystrokes and the pointer from the metadata; preview on the graphics card; export to MP4 (H.264, HEVC), WebM (VP9, AV1), M4A and MP3 | done (by-hand checks in the installed app pending) |
 | 17 | Auto-zoom (zooms around clicks and typing that follow the pointer smoothly, editable on the timeline), captions (from speech with Whisper on this PC, English and Arabic; typed; SRT/WebVTT in and out; burned in, Arabic right to left), exports of the marked range, animated GIFs (in the editor and as a recording step) | done (by-hand checks in the installed app pending) |
 | 18 | Robustness and performance: HDR monitors captured in float and tone-mapped to SDR; clear messages for UAC and the lock screen, protected video, cloaked and off-screen windows, Remote Desktop; recordings that survive a lost graphics device, a resolution change (a new part), sleep (paused) and an unplugged monitor (saved); no allocations per frame; JSON logs with run and recording ids; Export Diagnostics; `tools\Bench` for the performance budgets | done (HDR monitor, real sleep, lock, UAC, RDP and resolution change by hand pending; the overlay's p95 is 4 ms over budget) |
+| 19 | Product shipping: signed and checked packages without debug symbols, stable and beta channels with release notes in the app, opt-in crash reports (Sentry), English and Arabic with right-to-left windows, keyboard, screen-reader and high-contrast use of every window, licensing machinery (Ed25519, offline, activation with a grace period; every feature free in this version), settings import/export/reset, a portable copy, the user guide | done (fresh installs on Windows 10 22H2 and 11, the installed 1.0.1 update, Narrator and real high contrast by hand pending; no real certificate, Sentry address or activation server yet) |
 
-See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix.
+See [docs/CHANGELOG.md](docs/CHANGELOG.md) for what each phase delivered and [docs/TESTING.md](docs/TESTING.md) for the manual test matrix. The user guide is in [docs/user](docs/user/README.md) ([in Arabic](docs/user/ar/README.md)), with every [keyboard shortcut](docs/user/keyboard-shortcuts.md).
 
 ## Install
 
-Run `CashGear.Capture-win-Setup.exe`. No administrator rights are needed: the app installs for the current user in `%LocalAppData%\CashGear.Capture`, adds Start menu and desktop shortcuts, and starts. Look for its icon in the notification area (under ^ if Windows hides it). It brings its own .NET runtime and FFmpeg. Remove it from Settings › Apps (Apps & Features); a running copy is closed first.
+Run `CashGear.Capture-stable-Setup.exe`. No administrator rights are needed: the app installs for the current user in `%LocalAppData%\CashGear.Capture`, adds Start menu and desktop shortcuts, and starts. Look for its icon in the notification area (under ^ if Windows hides it). It brings its own .NET runtime and FFmpeg. Remove it from Settings › Apps (Apps & Features); a running copy is closed first.
 
-Until the build is signed, Windows SmartScreen may say "Windows protected your PC" for a downloaded Setup.exe (More info › Run anyway).
+- **Channels.** A release is either **stable** or **beta** (`CashGear.Capture-beta-Setup.exe`). An installed copy follows its own channel; Settings › General › Updates can switch it. Moving from beta to stable doesn't go back to an older version: the copy waits for the next stable release newer than its beta.
+- **Portable.** `CashGear.Capture-stable-Portable.zip` runs from any folder and keeps its settings, logs and data in `Data\` beside itself, so updating it (Settings › General › Updates) keeps them. Its first start takes this Windows account's settings, if any. It runs as its own instance beside an installed copy.
+- **Signing.** Releases are meant to be Authenticode-signed and timestamped ([docs/SIGNING.md](docs/SIGNING.md)). Until there is a certificate, Windows SmartScreen may say "Windows protected your PC" for a downloaded Setup.exe (More info › Run anyway).
 
 ## Requirements (building)
 
@@ -69,13 +72,17 @@ The bench measures a Release, self-contained, ReadyToRun copy of the app (as the
 ### Installer, signing and updates
 
 ```powershell
-powershell -File tools\package.ps1                       # version from Directory.Build.props
-powershell -File tools\package.ps1 -Version 1.0.1 -UpdateFeedUrl https://downloads.example.com/capture
+powershell -File tools\package.ps1                       # version from Directory.Build.props, stable channel
+powershell -File tools\package.ps1 -Version 1.1.0 -UpdateFeedUrl https://downloads.example.com/capture
+powershell -File tools\package.ps1 -Version 1.2.0-beta.1 -UpdateFeedUrl https://downloads.example.com/capture   # beta channel
+powershell -File tools\package.ps1 -Fast -NoRnnoise      # a quick test package (no ReadyToRun)
 ```
 
-- **Output.** The script publishes the app self-contained (win-x64, single-file exe plus WPF's and SkiaSharp's native DLLs, `ffmpeg\`, `rnnoise\`, `THIRD-PARTY-NOTICES.txt`). Velopack (`vpk`, a local dotnet tool pinned in `dotnet-tools.json`) then writes `artifacts\releases\`: `CashGear.Capture-win-Setup.exe`, a portable zip, the full and delta `.nupkg` files and `releases.win.json`. Keep that folder between releases; deltas are made against the previous version in it.
+- **Output.** The script publishes the app self-contained (win-x64, single-file exe plus WPF's and SkiaSharp's native DLLs, `ffmpeg\`, `rnnoise\`, `THIRD-PARTY-NOTICES.txt`, `RELEASE-NOTES.md`), without any `.pdb` (the native libraries' symbols alone were 119 MB). Velopack (`vpk`, a local dotnet tool pinned in `dotnet-tools.json`) then writes `artifacts\releases\`: `CashGear.Capture-<channel>-Setup.exe`, `CashGear.Capture-<channel>-Portable.zip`, the full and delta `.nupkg` files and `releases.<channel>.json`. A stable release also writes `releases.win.json`, which copies of 1.0.x check. Keep that folder between releases; deltas are made against the previous version in it.
+- **Channels and release notes.** `-Channel stable|beta` (a pre-release version such as `1.2.0-beta.1` defaults to beta). `-ReleaseNotes` defaults to `docs\release-notes\<version>.md`: English, then `<!-- lang:ar -->` and the Arabic. The app shows the notes in its language before and after updating.
 - **Updates.** `-UpdateFeedUrl` builds in where installed copies look for updates: an https address or a shared folder holding the contents of `artifacts\releases`. It can be overridden by `updates.feedUrl` in settings.json. Without one, the app doesn't check. Installed copies check a minute after start and then daily (Settings › General can turn that off or check now), download in the background, and offer tray › **Restart to Update**. A downloaded update is otherwise installed at the next start.
-- **Signing.** Pass `-SignParams "/a /fd sha256 /tr http://timestamp.digicert.com /td sha256 /f cert.pfx /p …"` (signtool arguments), `-SignTemplate "<any command with {{file}}>"` or `-AzureTrustedSignFile metadata.json`. A build server can set `CASHGEAR_SIGN_PARAMS`, `CASHGEAR_SIGN_TEMPLATE` or `CASHGEAR_AZURE_SIGN_FILE` instead. The app's binaries, the updater and Setup.exe are all signed.
+- **Crash reports and licences.** `-SentryDsn` (or `CASHGEAR_SENTRY_DSN`) builds in where crash reports go; without it the app has none. `-LicensePublicKey` (or `CASHGEAR_LICENSE_PUBLIC_KEY`, from `tools\LicenseTool keygen`) is the key licences are checked against ([docs/LICENSING.md](docs/LICENSING.md)).
+- **Signing** ([docs/SIGNING.md](docs/SIGNING.md)). Pass `-SignParams "/fd sha256 /tr http://timestamp.digicert.com /td sha256 /f cert.pfx /p …"` (signtool arguments), `-SignTemplate "<any command with {{file}}>"` or `-AzureTrustedSignFile metadata.json`. A build server can set `CASHGEAR_SIGN_PARAMS`, `CASHGEAR_SIGN_TEMPLATE` or `CASHGEAR_AZURE_SIGN_FILE` instead. Every exe and DLL of the app (the native ones too), the updater and Setup.exe are signed. `tools\verify-signatures.ps1` then opens the packages and fails the build if any file isn't signed (by `-SignerThumbprint`, when given), intact and timestamped. `tools\scan-release.ps1` runs Microsoft Defender over a release. `tools\new-test-certificate.ps1` makes an untrusted certificate for trying the signing out.
 - **Leaving FFmpeg out.** `-NoFfmpeg` packages without it; recording then explains what is missing. FFmpeg is an LGPL v3 build loaded as separate DLLs (replaceable); its licence texts ship in `ffmpeg\`, and [docs/LICENSES.md](docs/LICENSES.md) says where its source is.
 - **RNNoise.** The script builds it with `get-rnnoise.ps1` if `tools\rnnoise` doesn't have it yet; `-NoRnnoise` packages without it (no noise suppression).
 - **Icon.** `tools\make-icon.ps1` redraws `src\CashGear.Capture.App\Assets\app.ico`.
@@ -111,8 +118,9 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 | `Ctrl+Alt+PrintScreen` | Capture Text (OCR) |
 | `Ctrl+Shift+D` | Draw on the screen (only while recording; the key is free otherwise) |
 | `Ctrl+Alt+Shift+PrintScreen` | Repeat the last capture |
+| `Ctrl+Alt+Shift+T` | Use the capture toolbar (or the recording toolbar while recording) from the keyboard; Esc gives the focus back |
 
-Capture Window, the other capture modes, the capture toolbar and the screen tools have no hotkey at first; set them in Settings › Hotkeys.
+Capture Window, the other capture modes, the capture toolbar and the screen tools have no hotkey at first; set them in Settings › Hotkeys. Every window's keys are in [docs/user/keyboard-shortcuts.md](docs/user/keyboard-shortcuts.md).
 
 Change them in **Settings › Hotkeys** (click a box and press the keys) or in `settings.json` under `hotkeys`. A key another app or Windows already owns is reported, and a single typing key (e.g. `A`) is refused because it would stop working everywhere else.
 
@@ -128,9 +136,26 @@ Tray › **Settings…** opens the settings window (light/dark follows Windows, 
 | Recording | Frames per second (15/30/60), quality (Small / Balanced / High / Near lossless), encoder (Automatic, Software only, or any encoder, each marked with whether it works here; Check again), pointer. Sound: system audio on/off, all sound / only one app / all except one app, the output device (the default, followed, or one by name), the microphone (none, the Windows default or a connected one); with both, one mixed track, a track per source, or both. Microphone processing (noise suppression with its strength, noise gate with its threshold, compressor, limiter), live level meters, the microphone test, evening out loudness when saving. FFmpeg's version |
 | Overlays | Draw the overlays into the video or add them later; the metadata file; clicks (colours, size, sound); pointer (halo or spotlight, size, hide when idle); keystrokes (shortcuts or all keys, position, font, size, time, apps never shown); webcam (camera, picture, shape, size, border, mirror, placement preview); drawing (pen colour, width, fade) |
 | Hotkeys | Record hotkeys; each shows whether it is active. Push to talk |
-| General | Start with Windows, text recognition language (Automatic or one installed language), screen tools (the ruler's pixels per inch, how the colour picker copies), theme (follows Windows live), how many captures the history keeps, version and updates, open the settings file, Export diagnostics |
+| General | Start with Windows, language (Automatic, English, Arabic; offers a restart), text recognition language (Automatic or one installed language), screen tools (the ruler's pixels per inch, how the colour picker copies), theme (follows Windows live), how many captures the history keeps, version, updates and their channel, What's new, crash reports (privacy), the licence, Export/Import/Reset all settings, where a portable copy keeps its data, open the settings file, Export diagnostics |
 
-Everything is stored in `%AppData%\CashGear\Capture\settings.json`; edits to the file apply as soon as it is saved. The destinations' passwords and tokens are not in it (see [Output destinations](#output-destinations)).
+Everything is stored in `%AppData%\CashGear\Capture\settings.json` (a portable copy: `Data\settings.json` beside it); edits to the file apply as soon as it is saved. The destinations' passwords and tokens are not in it (see [Output destinations](#output-destinations)).
+
+- **Export** writes the settings and presets to one `.json` file, without passwords. **Import** reads one back (from this version or an older one) after backing up `settings.json` and `presets.json` as `*.before-import-<time>`; destinations whose password isn't on this PC ask for it again. **Reset all settings** backs up `settings.json` as `settings.json.before-reset-<time>` (presets stay) and keeps the language and the crash-report answer.
+
+## Language, keyboard and accessibility
+
+- **English and Arabic.** The app follows Windows' display language, or Settings › General › Language. In Arabic every window, menu and dialog is laid out right to left; the image editor's canvas, the video editor's preview and timeline, thumbnails and the screen tools stay left to right, as the screen is. Key names, file-name tokens, logs and the diagnostics zip stay English. How strings are kept and checked: [docs/localization.md](docs/localization.md).
+- **Keyboard.** Every window works from the keyboard: Tab, the underlined letters, Enter and Esc; the editors have keys for everything the mouse does (Tab through annotations and clips, arrows to move them). The toolbars have their own hotkey, and the tray icon opens with Win+B, then Enter or Shift+F10. The full list: [docs/user/keyboard-shortcuts.md](docs/user/keyboard-shortcuts.md).
+- **Screen readers.** Every control has a name for Narrator and other UI Automation readers, the editors expose their annotations and clips as items, the level meters their level, and the region overlay reads out the size.
+- **High contrast.** Windows' high-contrast themes are followed live: the app's own colours (separators, error text, the recording dot, the timeline, overlays, meters) become the theme's.
+
+## Privacy and crash reports
+
+Crash reports go to Sentry only when the build has an address for them (`-SentryDsn`) and the user says yes. The app asks once, at the first start; Settings › General › Privacy changes the answer. A report holds the error, the app's version and Windows', the run's id, and the last log lines as message templates: never their values, window titles, file names, keystrokes or screenshots, and the user folder shows as `%USERPROFILE%`. Reports wait in the data folder when offline. See [docs/user/privacy.md](docs/user/privacy.md).
+
+## Licensing
+
+Licences are files signed with Ed25519 and checked offline; an activation binds one to a PC, refreshed online with a 14-day grace period when the server can't be reached. **Every feature is free in this version**, and the app never asks for a licence. How to issue licences and run the activation endpoint: [docs/LICENSING.md](docs/LICENSING.md).
 
 File-name tokens: `{yyyy} {MM} {dd} {HH} {mm} {ss}` (capture time), `{counter}` (0001, 0002, … kept across restarts), `{kind}` (fullscreen, monitor, region, window, scrolling, object, menu, recording), `{monitor}` (e.g. DISPLAY1), `{window}` (window title). Default: `Capture_{yyyy}-{MM}-{dd}_{HH}-{mm}-{ss}_{kind}`.
 
@@ -357,13 +382,21 @@ src/CashGear.Capture.Overlays   Recording overlays: input hooks + keystroke priv
 src/CashGear.Capture.Recording  Screen recording: timestamped WGC pictures + sound -> overlays on the GPU -> encoders -> temp file -> MP4; webcam track; recovery; adding overlays later
 src/CashGear.Capture.VideoEditor  Video editor core: projects (.cgcap), undo, timeline edits, decoding for the preview, the sound mixer and playback, the Skia compositor (preview and export), metadata effects, zooms and auto-zoom, captions (SRT/WebVTT), export (GIF too)
 src/CashGear.Capture.Transcription  Speech to text: Whisper (whisper.cpp through Whisper.net) on the processor or the graphics card (Vulkan), models downloaded and checked
+src/CashGear.Capture.Licensing  Licences and activation tokens (Ed25519, BouncyCastle), the machine id, the activation client, grace period, Pro features (net10.0)
+src/CashGear.Capture.Analyzers  Build-time only: .resx files into string classes (plurals, placeholders), and the checks for text outside them (CG0001-CG0007)
 tools/get-ffmpeg.ps1            Downloads the pinned LGPL FFmpeg build into tools/ffmpeg (not committed)
 tools/get-rnnoise.ps1           Builds rnnoise.dll from the pinned RNNoise source into tools/rnnoise (not committed; needs MSVC)
 tools/get-whisper-models.ps1    Downloads the Whisper models the transcription tests use into tools/whisper (not committed)
 tools/SyncTest                  Recording acceptance test: flashes + beeps, then sync, drift, CPU (docs/TESTING.md)
 tools/Bench                     Performance budgets: cold start, idle CPU/memory, hotkey to overlay; by hand a long recording and per-frame allocations
 tools/licenses                  License texts shipped with FFmpeg
-tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/
+tools/package.ps1               Builds the installer and update packages (Velopack) into artifacts/, by channel
+tools/verify-signatures.ps1     Checks every exe and DLL in Setup.exe, the package and the portable zip is signed and timestamped
+tools/new-test-certificate.ps1  An untrusted code-signing certificate (PFX) for trying the signing out
+tools/scan-release.ps1          Microsoft Defender scan of a release
+tools/UpdateCheck               Update acceptance test: a portable beta updated to stable keeps its settings and recordings
+tools/LicenseTool               Licence keys, issuing and checking licences, a reference activation endpoint
+tools/strings.py                Adds English and Arabic strings to .resx files from a JSON spec
 tools/make-icon.ps1             Draws the app icon
 src/CashGear.Capture.Outputs    Output destinations: registry, workflow runner, Word/PowerPoint (Open XML), PDF (Skia), FTP/FTPS (FluentFTP), SFTP (SSH.NET), HTTP upload, open with, DPAPI secrets
 src/CashGear.Capture.App        WPF app: tray, capture toolbar, screen tools, image tools (batch, combine, PDF), windows, view models, output (editor, file, clipboard, printer)
@@ -391,3 +424,8 @@ tests/                          xUnit v3 + AwesomeAssertions (Core, Editor, Engi
 | Passwords and tokens of the destinations (DPAPI, this Windows user only) | `%LocalAppData%\CashGear\Capture\secrets.json` |
 | Captures on their way to an upload or app (deleted after each workflow; copies opened in apps after a day) | `%LocalAppData%\CashGear\Capture\outgoing\` |
 | Installed app (Setup.exe) | `%LocalAppData%\CashGear.Capture\` (removed by uninstall; the rows above are kept) |
+| Licence and activation | `%LocalAppData%\CashGear\Capture\license.json` |
+| Crash reports waiting to be sent (only after saying yes) | `%LocalAppData%\CashGear\Capture\crash-reports\` |
+| Release notes of downloaded updates | `%LocalAppData%\CashGear\Capture\release-notes\` |
+| Settings backed up by an import or reset | `settings.json.before-import-<time>` and `presets.json.before-import-<time>`, `settings.json.before-reset-<time>`, beside them |
+| A portable copy's settings, logs and data (every `%AppData%` and `%LocalAppData%` row above) | `Data\` beside the copy (the app itself is in `current\`) |

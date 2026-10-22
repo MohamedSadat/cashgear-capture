@@ -739,3 +739,61 @@ Measured by `tools\Bench` on the reference PC with the final build (Release, sel
 - **Protected video:** Netflix or a PlayReady test page in Edge, captured and recorded.
 - **`Bench soak --hours 4`** (a real 4-hour WGC recording) and **`Bench alloc`** (1080p30 of the primary monitor).
 - **Export Diagnostics** from the installed app, and open the zip.
+
+## Phase 19 results (2026-10-22)
+
+**How it was tested.**
+- **Signing:** there is no real certificate yet (the user's choice). Signing was proven with a throwaway code-signing certificate that no PC trusts ("CashGear Capture test signing", made by `tools\new-test-certificate.ps1`, kept out of every certificate store), timestamped by DigiCert's public timestamp server (`http://timestamp.digicert.com`, allowed by the user).
+- **Crash reports** went only to a fake Sentry on 127.0.0.1; nothing was sent anywhere.
+- **Installing:** nothing was installed from the session (its AppData is virtualized). The update was checked on portable copies through Velopack's own updater. Fresh installs and the installed update are by-hand steps for the user (below).
+- **Desktop tests:** allowed by the user for this phase.
+
+### Acceptance
+
+| Item | Automated (result) | By hand |
+|---|---|---|
+| A signed installer installs cleanly on a fresh Windows 10 22H2 and Windows 11, with no SmartScreen block and no Defender detection | **Signed and checked:** `tools\package.ps1 -SignParams … -SignerThumbprint …` (full ReadyToRun build, 4 min). Velopack's signtool signed the app's 20 files and Setup.exe. `tools\verify-signatures.ps1` then opened Setup.exe, the full package and the portable zip: **53 files, every one signed, intact and timestamped, 0 failed**. Microsoft's and .NET's own DLLs keep their own signatures. **Defender** (`tools\scan-release.ps1`, engine 1.1.26090.9, signatures 1.461.139.0 of 2026-10-21): **no threats** in Setup.exe, the package, the portable zip and the published folder | **pending:** the user runs `CashGear.Capture-stable-Setup.exe` on a fresh Windows 10 22H2 and a fresh Windows 11 (steps below). Without the real certificate SmartScreen will still warn ("Windows protected your PC"); with it, the warning goes once the certificate has reputation |
+| An update from the previous version keeps settings and recordings | **`tools\UpdateCheck --previous artifacts\releases\CashGear.Capture-win-Portable.zip`: all 24 checks pass.** It packed 1.1.0-beta.1 (beta) and 1.1.0 (stable). A portable beta copy with its own settings (theme, history size, capture folder, the stable channel) and a recording was started (version 1.1.0-beta.1 in its own `Data\logs`), exited, updated by `Update.exe` from the feed, and started again: version 1.1.0, `current\sq.version` 1.1.0 on the stable channel, every setting and the recording untouched. A 1.0.1 portable copy was offered 1.1.0 by the 1.0.x feed (`releases.win.json`), updated to it, and follows the stable channel. `UpdateFrom101Tests` also load a settings.json written by 1.0.1 with every value kept | **pending:** an installed 1.0.1 updated to 1.1.0 from a local feed (steps below) |
+| The whole UI is usable in Arabic RTL | **`ArabicUiTests` (desktop, 9 tests): pass.** Every window was made in Arabic as the app makes it: Settings on all 7 tabs, the image editor with annotations, History, the colour picker, a question dialog, the release notes, the countdown, scrolling and overlay progress, the tray warning, both toolbars, Batch Process, Combine Images, Images to PDF, the video editor and Export. Each was checked for: right to left, with its pixel surfaces left to right; Arabic text only (apart from product, format and key names and data); a screen-reader name on every control and list item; Tab reaching every control; Esc closing dialogs. The 23 screenshots in `artifacts\arabic-ui` were looked at one by one (they found "264.H", reordered code in text boxes and English track titles, all fixed) | **pending:** the user walks through the real app in Arabic, with an Arabic keyboard |
+
+### Other checks
+
+| Check | Result |
+|---|---|
+| Package size | ReadyToRun stable release: Setup.exe 212.9 MB, full package and portable zip 205.7 MB; unpacked 519 MB, of which the exe is 293 MB (1.0.1: Setup.exe 119.0 MB). Without ReadyToRun (`-Fast`): Setup.exe 169.6 MB, package 162.4 MB, unpacked 400 MB. No `.pdb` is left (Phase 18's package carried 119 MB of SkiaSharp and HarfBuzz symbols) |
+| Localization checks | CG0001/CG0002 (text outside .resx): 0 in every `src` project; CG0003–CG0007 (translations): 0. Analyzer and generator tests: 29 pass. Every test assembly runs in English (`TestCulture`) |
+| Keyboard, screen readers, high contrast | Per area: `EditorSessionKeyboardTests` (19), `EditorAccessibilityTests` (6), `KeyboardEditTests` (8), `TimelinePaletteTests` (2), `VideoEditorAccessibilityTests` (5), `LevelMeterTests`, `RecordingToolbarAccessibilityTests`, `HotkeyRouterTests`, `UseToolbarHotkeyTests`, `RegionOverlayAccessibilityTests`, `ScreenToolAccessibilityTests`, `ImageToolAccessibilityTests`, `SettingsAccessibilityTests`, `HighContrastTests`: pass. Desktop, with real key presses: `EditorWindowKeyboardTests`, `VideoEditorKeyboardTests`, `ToolbarKeyboardTests` (4), `CountdownEscapeTests` (3), `DrawingKeysTests`, `TrayKeyboardTests` (2), `OverlayProgressKeyboardTests`, `SettingsKeyboardTests`, `DialogKeyboardTests`: pass |
+| Crash reports (`CrashReporterTests`, fake Sentry on 127.0.0.1) | pass: nothing before consent or without an address; a report carries the run id, the recording id and the template-only breadcrumbs, and none of the planted window title, typed text, file name, user folder, PC or user name; module and thread paths scrubbed |
+| Licensing (`LicensingTests`) | pass: signatures and forgeries, expiry, another product or PC, the 14-day grace on a test clock, activation against the reference endpoint on 127.0.0.1, the machine limit, revocation, every Pro entry point closed under a Pro split and open in this version |
+| Settings transfer and portable mode | pass: export/import/reset with backups, the language and crash-report answer kept, a 1.0.1 settings.json, portable paths and first-start seeding |
+| The whole suite | without the desktop (`CASHGEAR_SKIP_INTERACTIVE=1`): 1627 tests, 1493 pass, 134 skipped, 0 failed (2 min 46 s). With the desktop: 1616 pass, 11 skipped, 0 failed (5 min 6 s). The skips are the ones of Phase 18: six need RNNoise, which isn't in a test build, and five run only when asked for (the 4-hour run, sound played aloud, another app's sound, the WGC leak run, a browser password field). The first desktop run crashed: the drawing layer shared an unfrozen brush between threads. It also found two Arabic checks reading names cached in English by earlier tests, and a keyboard test that checked for a pause too soon. All of them are fixed (CHANGELOG › Fixed during development) |
+
+### Pending: by hand
+- **Fresh install on Windows 10 22H2 and Windows 11** (a PC or VM that never had CashGear Capture):
+  1. Copy over `CashGear.Capture-stable-Setup.exe`. Use one signed with the real certificate once there is one; until then, `artifacts\signed-test\releases` (test-signed) or an unsigned `tools\package.ps1` build.
+  2. Run it from Downloads. Note what SmartScreen and Defender say.
+  3. Check that the app starts without an administrator prompt and its icon appears in the notification area.
+  4. Press PrintScreen and capture a region; press Shift+PrintScreen and record 10 s with sound; open the recording in the video editor.
+  5. Settings › General › Language › العربية, then restart. Every window should be right to left; repeat step 4.
+  6. Settings › Apps › CashGear Capture › Uninstall: the app goes; `%AppData%\CashGear` and the captures stay.
+- **An installed 1.0.1 updated to 1.1.0:**
+  1. Install 1.0.1 with `artifacts\releases\CashGear.Capture-win-Setup.exe`.
+  2. Change a few settings (theme, history size, the output folder, a hotkey). Make a capture and a recording.
+  3. Copy the 1.1.0 stable release's files into a folder. Set `"updates": { "feedUrl": "<that folder>" }` in `%AppData%\CashGear\Capture\settings.json`.
+  4. Settings › General › Check now, then tray › Restart to Update.
+  5. Check:
+     - the version in Settings › General is 1.1.0;
+     - the settings and hotkeys are unchanged;
+     - the capture and the recording are in History and in their folders;
+     - What's new shows the release notes.
+- **Narrator** (Ctrl+Win+Enter):
+  - Tab through Settings;
+  - the image editor: the tool buttons, and Tab through the annotations;
+  - the video editor: Tab through the clips;
+  - the recording toolbar: the level meter's value and the recording state;
+  - the region overlay: the size read out.
+
+  Each control should be read with its name.
+- **High contrast** (Settings › Accessibility › Contrast themes, or left Alt+left Shift+PrintScreen): with the app's windows open, switch it on and off. Separators, error text, the recording dot, the timeline, the level meters and the overlays should take the theme's colours at once.
+- **The toolbars from the keyboard:** Ctrl+Alt+Shift+T, Tab to Region, Enter. The region overlay should take the keyboard; Esc should give it back to the window that had it.
+- **Arabic:** look at the screenshots in `artifacts\arabic-ui`, and use the real windows with an Arabic keyboard. Type Arabic into the editor's text and into captions. Use file names with Arabic in History and on the timeline.

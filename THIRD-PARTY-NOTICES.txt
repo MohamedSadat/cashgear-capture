@@ -42,3 +42,14 @@ Open XML SDK (DocumentFormat.OpenXml: Word documents and PowerPoint slides) - MI
 FluentFTP (FTP and FTPS uploads) - MIT License - https://github.com/robinrodricks/FluentFTP
 SSH.NET (SFTP uploads) - MIT License - https://github.com/sshnet/SSH.NET
   Bouncy Castle (BouncyCastle.Cryptography, used by SSH.NET) - MIT License - https://www.bouncycastle.org/csharp
+Sentry (Sentry .NET SDK) - MIT License - https://github.com/getsentry/sentry-dotnet
+  Crash reports, sent only when the user agrees and the build has an address to send them to.
+BouncyCastle.Cryptography - MIT License - https://www.bouncycastle.org/csharp
+  Ed25519 signatures for licence files (and SSH.NET's cryptography).
+OpenTK (OpenTK.Graphics, OpenTK.Windowing and related) and GLWpfControl - MIT License - https://github.com/opentk/opentk, https://github.com/opentk/GLWpfControl
+  GLFW (glfw3.dll) - zlib/libpng License - https://www.glfw.org
+  The video editor's preview drawn on the graphics card.
+SharpGen.Runtime, SharpGen.Runtime.COM (used by Vortice.Windows) - MIT License - https://github.com/SharpGenTools/SharpGenTools
+Serilog.Extensions.Logging - Apache License 2.0 - https://github.com/serilog/serilog-extensions-logging
+Microsoft.Windows.SDK.NET (Windows SDK projection), System.Numerics.Tensors, Microsoft.Extensions.AI.Abstractions - MIT License - https://github.com/microsoft/CsWinRT, https://github.com/dotnet/runtime, https://github.com/dotnet/extensions
+H.GeneratedIcons.System.Drawing (used by H.NotifyIcon) - MIT License - https://github.com/HavenDV/H.NotifyIcon
