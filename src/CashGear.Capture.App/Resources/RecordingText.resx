@@ -302,4 +302,28 @@
     <value>{0} · started {1}</value>
     <comment>{0}: length; {1}: date and time</comment>
   </data>
+  <data name="StateRecording" xml:space="preserve">
+    <value>Recording</value>
+    <comment>screen reader: the state of the recording (the red dot)</comment>
+  </data>
+  <data name="StatePaused" xml:space="preserve">
+    <value>Paused</value>
+    <comment>screen reader: the state of the recording (the grey square)</comment>
+  </data>
+  <data name="ElapsedRecording" xml:space="preserve">
+    <value>Recording, {0}</value>
+    <comment>screen reader: the recording toolbar's clock while recording; {0} is the time recorded, e.g. 1:23</comment>
+  </data>
+  <data name="ElapsedPaused" xml:space="preserve">
+    <value>Paused, {0}</value>
+    <comment>screen reader: the recording toolbar's clock while paused; {0} is the time recorded, e.g. 1:23</comment>
+  </data>
+  <data name="MuteSystemAudio" xml:space="preserve">
+    <value>Mute system audio</value>
+    <comment>screen reader: the Mute box next to System audio in the Sound panel</comment>
+  </data>
+  <data name="MuteMicrophone" xml:space="preserve">
+    <value>Mute microphone</value>
+    <comment>screen reader: the Mute box next to Microphone in the Sound panel</comment>
+  </data>
 </root>

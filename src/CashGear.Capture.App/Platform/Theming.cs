@@ -28,7 +28,8 @@ internal static class Theming
         };
 #pragma warning restore WPF0001
 
-        var dark = IsDark(theme);
+        // A high-contrast theme draws its own title bar colours.
+        var dark = IsDark(theme) && !HighContrast.IsOn;
         var hwnd = new WindowInteropHelper(window).Handle;
         if (hwnd != 0)
         {

@@ -4,6 +4,7 @@ using CashGear.Capture.App.History;
 using CashGear.Capture.App.Output;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Tests.Editor;
+using CashGear.Capture.App.Tests.Platform;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
 using CashGear.Capture.Core.History;
@@ -139,7 +140,36 @@ public sealed class HistoryTests : IDisposable
         vm.Selected.Should().BeNull();
     }
 
-    private static CapturedImage Checkerboard(int width, int height)
+    [Fact]
+    public Task The_window_names_its_captures_puts_its_buttons_last_and_closes_with_Esc() => StaDispatcher.RunAsync(async () =>
+    {
+        var saved = Path.Combine(_root, "Capture_saved.png");
+        await _history.AddPngAsync(Checkerboard(8, 8), saved);
+        await _history.AddPngAsync(Checkerboard(9, 9), null);
+        var window = new HistoryWindow(ViewModel(), AppTheme.Light, _root);
+        var closed = false;
+        window.Closed += (_, _) => closed = true;
+        var content = TestLayout.Layout(window);
+
+        var list = TestLayout.FindAll<System.Windows.Controls.ListBox>(content).Single();
+        var names = TestLayout.ItemNames(list);
+        names.Should().HaveCount(2);
+        names[0].Should().EndWith("Region · 9 × 9", "a screen reader hears when and what, not the item's type");
+        names[1].Should().EndWith("Region · 8 × 8, saved as Capture_saved.png");
+        TestLayout.FindAll<System.Windows.Controls.ListBoxItem>(list)
+            .Select(i => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(i).GetName())
+            .Should().Equal(names, "the item's own element has the same name");
+
+        var controls = TestLayout.FindAll<System.Windows.Controls.Control>(content).Where(c => c.Focusable).ToList();
+        var buttons = controls.OfType<System.Windows.Controls.Button>().ToList();
+        buttons.Should().HaveCount(6);
+        controls.IndexOf(list).Should().BeLessThan(buttons.Min(controls.IndexOf), "Tab reaches the list before the buttons under it");
+
+        TestKeys.Press(list, System.Windows.Input.Key.Escape).Should().BeTrue();
+        closed.Should().BeTrue("Esc closes the window");
+    });
+
+    internal static CapturedImage Checkerboard(int width, int height)
     {
         var image = CapturedImage.Allocate(width, height, new CaptureMetadata { Kind = CaptureKind.Region, SourceBounds = new PixelRect(0, 0, width, height) });
         var pixels = image.Pixels;
@@ -160,7 +190,7 @@ public sealed class HistoryTests : IDisposable
     }
 
     /// <summary>A history in a temp folder with real PNGs (written by WPF), and no limit.</summary>
-    private sealed class FakeHistory(string folder) : ICaptureHistory
+    internal sealed class FakeHistory(string folder) : ICaptureHistory
     {
         private readonly List<CaptureHistoryEntry> _entries = [];
         private int _next;
@@ -207,7 +237,7 @@ public sealed class HistoryTests : IDisposable
         }
     }
 
-    private sealed class FakeEditor : IEditorLauncher
+    internal sealed class FakeEditor : IEditorLauncher
     {
         public List<(int Width, string? SavedPath)> Opened { get; } = [];
 
@@ -218,7 +248,7 @@ public sealed class HistoryTests : IDisposable
         }
     }
 
-    private sealed class FakeShell : IShell
+    internal sealed class FakeShell : IShell
     {
         public List<string> Shown { get; } = [];
 

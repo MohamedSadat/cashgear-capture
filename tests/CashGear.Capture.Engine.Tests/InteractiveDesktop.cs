@@ -59,18 +59,58 @@ public sealed class DesktopCollection : ICollectionFixture<DesktopLock>
 
 /// <summary>
 /// Held while one test assembly's desktop tests run, across processes: another assembly's top-most test window
-/// would cover this one's, and its synthetic clicks land in it.
+/// would cover this one's, and its synthetic clicks land in it. Not taken when the desktop tests are skipped.
 /// </summary>
+/// <remarks>
+/// A named mutex rather than a semaphore: Windows frees a mutex whose owner died (a test process that crashed or was
+/// stopped), where a semaphore would stay taken until every process had closed it. A mutex belongs to the thread
+/// that took it, and the fixture is made and disposed on different threads, so a thread of its own holds it.
+/// </remarks>
 public sealed class DesktopLock : IDisposable
 {
-    private static readonly Semaphore Gate = new(1, 1, @"Local\CashGear.Tests.Desktop");
-    private readonly bool _held = Gate.WaitOne(TimeSpan.FromMinutes(15));
+    private readonly ManualResetEventSlim _done = new();
+    private readonly Thread? _holder;
+
+    public DesktopLock()
+    {
+        if (!InteractiveDesktop.IsAvailable)
+        {
+            return;
+        }
+
+        using var taken = new ManualResetEventSlim();
+        _holder = new Thread(() =>
+        {
+            using var gate = new Mutex(false, @"Local\CashGear.Tests.DesktopMutex");
+            bool owned;
+            try
+            {
+                owned = gate.WaitOne(TimeSpan.FromMinutes(15));
+            }
+            catch (AbandonedMutexException)
+            {
+                owned = true; // its last owner died holding it; it is ours now
+            }
+
+            taken.Set();
+            _done.Wait();
+            if (owned)
+            {
+                gate.ReleaseMutex();
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "Desktop lock",
+        };
+        _holder.Start();
+        taken.Wait();
+    }
 
     public void Dispose()
     {
-        if (_held)
-        {
-            Gate.Release();
-        }
+        _done.Set();
+        _holder?.Join(TimeSpan.FromSeconds(5));
+        _done.Dispose();
     }
 }

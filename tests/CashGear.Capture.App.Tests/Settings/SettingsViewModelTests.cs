@@ -105,7 +105,9 @@ public sealed class SettingsViewModelTests : IDisposable
         vm.Theme.Should().Be(AppTheme.Dark);
         vm.StartWithWindows.Should().BeTrue();
         vm.Hotkeys.Select(h => h.Text).Take(8).Should().Equal("PrintScreen", "Alt+PrintScreen", "Ctrl+PrintScreen", "Ctrl+Shift+PrintScreen", "Shift+PrintScreen", "Ctrl+Alt+PrintScreen", "Ctrl+Shift+D", "Ctrl+Alt+Shift+PrintScreen");
-        vm.Hotkeys.Skip(8).Should().OnlyContain(h => h.Text.Length == 0, "the other modes, the toolbar and the tools have no hotkey at first");
+        vm.Hotkeys.Skip(8).Where(h => h.Action != HotkeyAction.UseToolbar)
+            .Should().OnlyContain(h => h.Text.Length == 0, "the other modes, the toolbar and the tools have no hotkey at first");
+        vm.Hotkeys.Single(h => h.Action == HotkeyAction.UseToolbar).Text.Should().Be(HotkeySettings.DefaultUseToolbar);
         vm.Hotkeys.Should().HaveCount(Enum.GetValues<HotkeyAction>().Length);
         vm.Hotkeys.Single(h => h.Action == HotkeyAction.ToggleDrawing).Status.Should().Be("Works while recording");
         vm.HasErrors.Should().BeFalse();
@@ -425,7 +427,7 @@ public sealed class SettingsViewModelTests : IDisposable
                 await vm.MonitorWork;
 
                 var boxes = FindAll<System.Windows.Controls.ComboBox>(window).Where(b => b.IsVisible).ToList();
-                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Quality" && b.SelectedItem is QualityPreset);
+                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Quality" && b.SelectedValue is QualityPreset);
                 boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Encoder" && b.SelectedItem is EncoderChoice);
                 boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Sound tracks");
                 monitor.Requests.Should().ContainSingle("the meters listen once the Recording page shows");
@@ -528,8 +530,8 @@ public sealed class SettingsViewModelTests : IDisposable
                 await Task.Delay(300, TestContext.Current.CancellationToken);
 
                 var boxes = FindAll<System.Windows.Controls.ComboBox>(window).Where(b => b.IsVisible).ToList();
-                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Keystrokes shown" && Equals(b.SelectedItem, KeystrokeMode.Shortcuts));
-                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Pointer effect" && Equals(b.SelectedItem, PointerEffect.None));
+                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Keystrokes shown" && Equals(b.SelectedValue, KeystrokeMode.Shortcuts));
+                boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Pointer effect" && Equals(b.SelectedValue, PointerEffect.None));
                 boxes.Should().Contain(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Left button colour" && b.SelectedItem is ColorChoice);
                 var radios = FindAll<System.Windows.Controls.RadioButton>(window).ToList();
                 radios.Should().ContainSingle(r => r.IsChecked == true && ((string)r.Content).StartsWith("Keep the video clean", StringComparison.Ordinal));
@@ -842,7 +844,7 @@ public sealed class SettingsViewModelTests : IDisposable
         _hotkeyService.Registered.Should().BeEmpty();
 
         vm.EndHotkeyRecording();
-        _hotkeyService.Registered.Should().HaveCount(7);
+        _hotkeyService.Registered.Should().HaveCount(DefaultRegistered);
     }
 
     [Fact]
@@ -853,7 +855,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         vm.Dispose();
 
-        _hotkeyService.Registered.Should().HaveCount(7);
+        _hotkeyService.Registered.Should().HaveCount(DefaultRegistered);
     }
 
     [Fact]
@@ -880,6 +882,10 @@ public sealed class SettingsViewModelTests : IDisposable
         _settings.Current.Updates.CheckAutomatically.Should().BeTrue();
         _settings.Current.Updates.FeedUrl.Should().Be(@"\\server\capture-releases", "the address is only edited in the file and must survive");
     }
+
+    /// <summary>The hotkeys registered outside a recording: every action with a key by default but drawing (registered only while recording).</summary>
+    private static int DefaultRegistered =>
+        Enum.GetValues<HotkeyAction>().Count(a => a != HotkeyAction.ToggleDrawing && !string.IsNullOrEmpty(new HotkeySettings().For(a)));
 
     private SettingsViewModel Create(
         IAudioDevices? audio = null, IRecordingEncoders? encoders = null, IAudioApps? apps = null, IAudioMonitor? monitor = null, CashGear.Capture.Overlays.Webcam.IWebcams? webcams = null) =>

@@ -80,6 +80,7 @@ public static unsafe partial class User32
 
     public const uint InputKeyboard = 1;
     public const uint KeyEventFKeyUp = 0x0002;
+    public const uint KeyEventFExtendedKey = 0x0001;
 
     public const uint InputMouse = 0;
     public const uint MouseEventFWheel = 0x0800;

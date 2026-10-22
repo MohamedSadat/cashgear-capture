@@ -88,6 +88,32 @@ public sealed class InverseBooleanConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => value is not true;
 }
 
+/// <summary>
+/// An enum value and its label, as a combo box's item. The label is what the item says everywhere: in the list, in
+/// the closed box and to a screen reader, which reads an item's <see cref="ToString"/> (the bare value would be read
+/// as its English name).
+/// </summary>
+public sealed record EnumChoice(object Value, string Label)
+{
+    public override string ToString() => Label;
+}
+
+/// <summary>
+/// A list of enum values as <see cref="EnumChoice"/>s labelled by <see cref="EnumLabelConverter"/>. The combo box
+/// then binds its choice with <c>SelectedValuePath="Value" SelectedValue="{Binding …}"</c>.
+/// </summary>
+public sealed class EnumChoicesConverter : IValueConverter
+{
+    private static readonly EnumLabelConverter Labels = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is System.Collections.IEnumerable items and not string
+            ? items.Cast<object>().Select(v => new EnumChoice(v, Labels.Convert(v, typeof(string), null, culture) as string ?? v.ToString() ?? string.Empty)).ToList()
+            : value;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
 /// <summary>Friendly names for the enums shown in the settings window.</summary>
 public sealed class EnumLabelConverter : IValueConverter
 {

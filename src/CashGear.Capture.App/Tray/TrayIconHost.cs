@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Platform;
@@ -67,8 +68,41 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
         _ids = [.. Enumerable.Range(0, IdSlots).Select(slot => IconId(programPath, slot))];
         icon.Icon = _image;
         icon.TrayBalloonTipClicked += OnNotificationClicked;
+        icon.TrayIcon.MessageWindow.KeyboardEventReceived += OnTrayKey;
         _icon = icon;
         TryCreate();
+    }
+
+    /// <summary>
+    /// The icon chosen from the keyboard (Win+B, then the arrows): Enter or Space, and Shift+F10 or the menu key, open
+    /// the menu with its first item focused. H.NotifyIcon only raises events for these keys; a click opens the menu
+    /// itself (and a right click also sends the menu key's message, so an open menu is left alone).
+    /// </summary>
+    private void OnTrayKey(object? sender, MessageWindow.KeyboardEventReceivedEventArgs e)
+    {
+        if (e.KeyboardEvent is KeyboardEvent.KeySelect or KeyboardEvent.ContextMenu)
+        {
+            var anchor = e.Point; // the icon, in physical pixels
+            Dispatcher.CurrentDispatcher.BeginInvoke(() => OpenMenuFromKeyboard(anchor), DispatcherPriority.Input);
+        }
+    }
+
+    /// <summary>Opens the menu at <paramref name="anchor"/> (physical pixels) and focuses its first item.</summary>
+    internal void OpenMenuFromKeyboard(System.Drawing.Point anchor)
+    {
+        if (_icon is not { ContextMenu: { } menu } icon || menu.IsOpen)
+        {
+            return;
+        }
+
+        // Where H.NotifyIcon opens it for a click: the point at the system DPI (a visual on no screen has that DPI).
+        var dpi = VisualTreeHelper.GetDpi(new DrawingVisual());
+        icon.ShowContextMenu(new System.Drawing.Point((int)(anchor.X / dpi.DpiScaleX), (int)(anchor.Y / dpi.DpiScaleY)));
+        LogKeyboardMenu(menu.IsOpen);
+        if (menu.IsOpen)
+        {
+            Toolbar.MenuKeyboard.FocusFirstItemSoon(menu);
+        }
     }
 
     /// <summary>
@@ -201,6 +235,7 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
         }
 
         _icon.TrayBalloonTipClicked -= OnNotificationClicked;
+        _icon.TrayIcon.MessageWindow.KeyboardEventReceived -= OnTrayKey;
 
         // Removes the icon immediately instead of leaving a ghost until the user hovers the tray.
         _icon.Dispose();
@@ -276,4 +311,7 @@ internal sealed partial class TrayIconHost(IUiDispatcher ui, AppPaths paths, ISe
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "SetWindowDisplayAffinity on tray menu failed (Win32 error {Error})")]
     private partial void LogAffinityFailed(int error);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Tray menu opened from the keyboard (open: {Open})")]
+    private partial void LogKeyboardMenu(bool open);
 }

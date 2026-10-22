@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -58,7 +59,6 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
         Title = ToolsText.RulerWindowTitle;
         WindowStyle = WindowStyle.None;
         ResizeMode = ResizeMode.NoResize;
-        Background = RulerVisual.Body;
         ShowInTaskbar = false;
         Topmost = true;
         WindowStartupLocation = WindowStartupLocation.Manual;
@@ -107,11 +107,29 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
     /// <summary>Its thickness across (physical pixels).</summary>
     internal int Thickness => (int)Math.Round(ThicknessDips * DpiHelper.GetScale(this).ScaleX);
 
+    /// <summary>What a screen reader reads as its value: its length and direction, and where the pointer is along it.</summary>
+    internal string Readout
+    {
+        get
+        {
+            var dpi = Dpi;
+            var length = RulerScale.Format(Length, Unit, dpi);
+            var ruler = IsVertical ? ToolsText.RulerDownValue(length) : ToolsText.RulerAcrossValue(length);
+            return Pointer is { } pointer ? ToolsText.RulerPointerValue(ruler, RulerScale.Format(pointer, Unit, dpi)) : ruler;
+        }
+    }
+
     public void ApplyTheme(AppTheme theme)
     {
         Theming.Apply(this, theme);
+
+        // The ruler measures the screen: its zero end and marks stay where they are in every language.
+        FlowDirection = FlowDirection.LeftToRight;
+        Background = RulerPalette.Current.Body;
         _visual?.InvalidateVisual();
     }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new ReadoutWindowPeer(this, () => Readout);
 
     /// <summary>Puts it at <paramref name="origin"/> with its current length and direction, and remembers that.</summary>
     public void Place(PixelPoint origin)
@@ -316,22 +334,20 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
     /// <summary>Draws the ruler on its physical canvas: one unit is one screen pixel.</summary>
     private sealed class RulerVisual(RulerWindow ruler) : FrameworkElement
     {
-        public static readonly Brush Body = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0xF2, 0xB3)));
-        private static readonly Brush Ink = Frozen(new SolidColorBrush(Color.FromRgb(0x30, 0x30, 0x30)));
-        private static readonly Brush Marker = Frozen(new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23)));
-        private static readonly Brush Readout = Frozen(new SolidColorBrush(Color.FromArgb(0xF0, 0x1C, 0x1C, 0x1C)));
         [Localizable(false)] // a font's name
         private static readonly Typeface Face = new("Segoe UI");
 
         protected override void OnRender(DrawingContext dc)
         {
+            var palette = RulerPalette.Current;
+            var ink = palette.Ink;
             var length = ruler.Length;
             var thickness = ruler.Thickness;
             var vertical = ruler.IsVertical;
             var scale = DpiHelper.GetScale(this);
             var dpi = ruler.Dpi;
             var (w, h) = vertical ? (thickness, length) : (length, thickness);
-            dc.DrawRectangle(Body, new Pen(Ink, 1), new Rect(0.5, 0.5, w - 1, h - 1));
+            dc.DrawRectangle(palette.Body, new Pen(ink, 1), new Rect(0.5, 0.5, w - 1, h - 1));
 
             foreach (var tick in RulerScale.Ticks(length, ruler.Unit, dpi))
             {
@@ -339,16 +355,16 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
                 var at = Math.Floor(tick.Position) + 0.5;
                 if (vertical)
                 {
-                    dc.DrawLine(new Pen(Ink, 1), new Point(0, at), new Point(size, at));
+                    dc.DrawLine(new Pen(ink, 1), new Point(0, at), new Point(size, at));
                 }
                 else
                 {
-                    dc.DrawLine(new Pen(Ink, 1), new Point(at, 0), new Point(at, size));
+                    dc.DrawLine(new Pen(ink, 1), new Point(at, 0), new Point(at, size));
                 }
 
                 if (tick.Label is { } label)
                 {
-                    var text = Text(label, 10, scale, Ink);
+                    var text = Text(label, 10, scale, ink);
                     if (at + 2 + (vertical ? text.Height : text.Width) > length - EndGrip)
                     {
                         continue; // would run into the grip at the far end
@@ -362,25 +378,25 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
             }
 
             var unitName = UnitName(ruler.Unit);
-            var unitText = Text(ruler.Unit == RulerUnit.Pixels ? unitName : ToolsText.UnitAtDpi(unitName, dpi.ToString("0", CultureInfo.InvariantCulture)), 9, scale, Ink);
+            var unitText = Text(ruler.Unit == RulerUnit.Pixels ? unitName : ToolsText.UnitAtDpi(unitName, dpi.ToString("0", CultureInfo.InvariantCulture)), 9, scale, ink);
             dc.DrawText(unitText, vertical ? new Point(thickness - unitText.Width - 3, length - unitText.Height - 16) : new Point(length - unitText.Width - 18, thickness - unitText.Height - 2));
 
             if (ruler.Pointer is { } pointer)
             {
                 var at = pointer + 0.5;
-                var readout = Text(RulerScale.Format(pointer, ruler.Unit, dpi), 11, scale, Brushes.White);
+                var readout = Text(RulerScale.Format(pointer, ruler.Unit, dpi), 11, scale, palette.ReadoutText);
                 if (vertical)
                 {
-                    dc.DrawLine(new Pen(Marker, 1), new Point(0, at), new Point(thickness, at));
+                    dc.DrawLine(new Pen(palette.Marker, 1), new Point(0, at), new Point(thickness, at));
                     var y = Math.Clamp(at - readout.Height - 2, 0, length - readout.Height - 4);
-                    dc.DrawRectangle(Readout, null, new Rect(thickness - readout.Width - 6, y, readout.Width + 4, readout.Height + 2));
+                    dc.DrawRectangle(palette.Readout, null, new Rect(thickness - readout.Width - 6, y, readout.Width + 4, readout.Height + 2));
                     dc.DrawText(readout, new Point(thickness - readout.Width - 4, y + 1));
                 }
                 else
                 {
-                    dc.DrawLine(new Pen(Marker, 1), new Point(at, 0), new Point(at, thickness));
+                    dc.DrawLine(new Pen(palette.Marker, 1), new Point(at, 0), new Point(at, thickness));
                     var x = Math.Clamp(at + 3, 0, length - readout.Width - 6);
-                    dc.DrawRectangle(Readout, null, new Rect(x, thickness - readout.Height - 4, readout.Width + 4, readout.Height + 2));
+                    dc.DrawRectangle(palette.Readout, null, new Rect(x, thickness - readout.Height - 4, readout.Width + 4, readout.Height + 2));
                     dc.DrawText(readout, new Point(x + 2, thickness - readout.Height - 3));
                 }
             }
@@ -392,11 +408,11 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
                 var p = end + (i * 2) + 0.5;
                 if (vertical)
                 {
-                    dc.DrawLine(new Pen(Ink, 1), new Point(thickness * 0.35, p), new Point(thickness * 0.65, p));
+                    dc.DrawLine(new Pen(ink, 1), new Point(thickness * 0.35, p), new Point(thickness * 0.65, p));
                 }
                 else
                 {
-                    dc.DrawLine(new Pen(Ink, 1), new Point(p, thickness * 0.35), new Point(p, thickness * 0.65));
+                    dc.DrawLine(new Pen(ink, 1), new Point(p, thickness * 0.35), new Point(p, thickness * 0.65));
                 }
             }
         }
@@ -410,12 +426,33 @@ public sealed class RulerWindow : Window, IThemedWindow, IScreenToolWindow
 
         private FormattedText Text(string text, double dips, Core.Geometry.DpiScale scale, Brush brush) =>
             new(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, Face, DpiHelper.DipsToPhysical(dips, scale), brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+    }
+}
 
-        private static T Frozen<T>(T freezable)
-            where T : Freezable
-        {
-            freezable.Freeze();
-            return freezable;
-        }
+/// <summary>
+/// The ruler's colours, read each time it is drawn: a pale yellow strip with dark marks and a red pointer line, or
+/// the system's colours while high contrast is on (the strip Window, the marks WindowText, the pointer and its
+/// readout Highlight).
+/// </summary>
+internal sealed record RulerPalette(Brush Body, Brush Ink, Brush Marker, Brush Readout, Brush ReadoutText)
+{
+    private static readonly Brush NormalBody = Frozen(Color.FromRgb(0xFF, 0xF2, 0xB3));
+    private static readonly Brush NormalInk = Frozen(Color.FromRgb(0x30, 0x30, 0x30));
+    private static readonly Brush NormalMarker = Frozen(Color.FromRgb(0xE8, 0x11, 0x23));
+    private static readonly Brush NormalReadout = Frozen(Color.FromArgb(0xF0, 0x1C, 0x1C, 0x1C));
+
+    /// <summary>The colours for now (high contrast may have been turned on or off since the last time).</summary>
+    public static RulerPalette Current => new(
+        HighContrast.Pick(NormalBody, () => HighContrast.Window),
+        HighContrast.Pick(NormalInk, () => HighContrast.WindowText),
+        HighContrast.Pick(NormalMarker, () => HighContrast.Highlight),
+        HighContrast.Pick(NormalReadout, () => HighContrast.Highlight),
+        HighContrast.Pick(Brushes.White, () => HighContrast.HighlightText));
+
+    private static SolidColorBrush Frozen(Color color)
+    {
+        var brush = new SolidColorBrush(color);
+        brush.Freeze();
+        return brush;
     }
 }

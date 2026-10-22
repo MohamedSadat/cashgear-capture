@@ -113,11 +113,23 @@ public struct INPUT
     [FieldOffset(8)]
     public MOUSEINPUT mi;
 
+    /// <summary>
+    /// A key press or release. The arrows, Home, End, Page Up/Down, Insert, Delete and the Windows and menu keys are
+    /// sent as extended keys: without that, Windows takes them for the number pad's keys, and with Num Lock on a
+    /// Shift held with them is dropped.
+    /// </summary>
     public static INPUT Key(ushort virtualKey, bool up) => new()
     {
         type = User32.InputKeyboard,
-        ki = new KEYBDINPUT { wVk = virtualKey, dwFlags = up ? User32.KeyEventFKeyUp : 0 },
+        ki = new KEYBDINPUT
+        {
+            wVk = virtualKey,
+            dwFlags = (up ? User32.KeyEventFKeyUp : 0) | (IsExtended(virtualKey) ? User32.KeyEventFExtendedKey : 0),
+        },
     };
+
+    private static bool IsExtended(ushort virtualKey) =>
+        virtualKey is >= 0x21 and <= 0x28 or 0x2D or 0x2E or 0x5B or 0x5C or 0x5D or 0xA3 or 0xA5 or 0x6F or 0x90;
 
     /// <summary>Mouse wheel at the cursor; positive delta scrolls up (120 per notch).</summary>
     public static INPUT Wheel(int delta) => new()

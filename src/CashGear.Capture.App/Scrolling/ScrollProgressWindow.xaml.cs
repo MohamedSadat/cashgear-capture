@@ -74,13 +74,16 @@ public partial class ScrollProgressWindow : Window, IThemedWindow
         Loaded += (_, _) => Place();
     }
 
-    /// <summary>Top-right of the work area, or bottom-right if that would sit where the wheel is turned.</summary>
+    /// <summary>
+    /// Top-right of the work area (top-left in a right-to-left language), or the bottom corner if that would sit where
+    /// the wheel is turned.
+    /// </summary>
     private void Place()
     {
         var scale = DpiHelper.GetScale(this);
         var width = (int)Math.Ceiling(ActualWidth * scale.ScaleX);
         var height = (int)Math.Ceiling(ActualHeight * scale.ScaleY);
-        var x = _workArea.Right - width - EdgeMargin;
+        var x = AppLanguage.IsRightToLeft ? _workArea.X + EdgeMargin : _workArea.Right - width - EdgeMargin;
         var y = _workArea.Y + EdgeMargin;
         if (new PixelRect(x, y, width, height).Contains(_avoid))
         {

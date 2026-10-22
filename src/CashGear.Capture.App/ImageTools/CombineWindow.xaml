@@ -1,6 +1,7 @@
 <local:ImageToolWindow x:Class="CashGear.Capture.App.ImageTools.CombineWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="clr-namespace:CashGear.Capture.App.Platform"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.ImageTools"
@@ -20,12 +21,12 @@
     </ResourceDictionary>
   </Window.Resources>
 
-  <DockPanel Margin="16">
-    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-      <TextBlock Text="{Binding Error}" Foreground="#C42B1C" VerticalAlignment="Center" Margin="0,0,12,0" MaxWidth="460" TextWrapping="Wrap" />
-      <Button Content="{x:Static r:EditorText.SaveAs}" Command="{Binding SaveAsCommand}" MinWidth="90" Margin="0,0,8,0" />
-      <Button Content="{x:Static r:ImageToolsText.OpenInEditor}" Command="{Binding OpenInEditorCommand}" IsDefault="True" FontWeight="SemiBold" />
-    </StackPanel>
+  <!-- In Tab order: the content, then the buttons at the bottom. -->
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
 
     <Grid>
       <Grid.ColumnDefinitions>
@@ -58,10 +59,16 @@
 
       <DockPanel Grid.Column="4">
         <TextBlock DockPanel.Dock="Top" Text="{Binding SizeText}" Margin="0,0,0,6" Opacity="0.8" />
-        <Border BorderBrush="#40808080" BorderThickness="1">
-          <Image Source="{Binding Preview}" Stretch="Uniform" StretchDirection="DownOnly" Margin="8" />
+        <Border BorderBrush="{p:Chrome Separator}" BorderThickness="1">
+          <Image FlowDirection="LeftToRight" Source="{Binding Preview}" Stretch="Uniform" StretchDirection="DownOnly" Margin="8" />
         </Border>
       </DockPanel>
     </Grid>
-  </DockPanel>
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+      <TextBlock Text="{Binding Error}" Foreground="{p:Chrome Error}" VerticalAlignment="Center" Margin="0,0,12,0" MaxWidth="460" TextWrapping="Wrap" p:LiveText.IsLive="True" />
+      <Button Content="{x:Static r:EditorText.SaveAs}" Command="{Binding SaveAsCommand}" MinWidth="90" Margin="0,0,8,0" />
+      <Button Content="{x:Static r:ImageToolsText.OpenInEditor}" Command="{Binding OpenInEditorCommand}" IsDefault="True" FontWeight="SemiBold" />
+    </StackPanel>
+  </Grid>
 </local:ImageToolWindow>

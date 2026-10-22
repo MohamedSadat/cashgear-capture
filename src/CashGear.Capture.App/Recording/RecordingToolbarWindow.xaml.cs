@@ -1,9 +1,11 @@
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Resources;
+using CashGear.Capture.App.Toolbar;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Core.Geometry;
@@ -46,10 +48,11 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     public const double MaxVolume = 200;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ElapsedName))]
     private string _elapsedText = "0:00";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsRecordingNow), nameof(PauseText))]
+    [NotifyPropertyChangedFor(nameof(IsRecordingNow), nameof(PauseText), nameof(StateText), nameof(ElapsedName))]
     private bool _isPaused;
 
     /// <summary>A source, or the mix, clipped in the last two seconds.</summary>
@@ -80,6 +83,12 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
     public bool IsRecordingNow => !IsPaused;
 
     public string PauseText => IsPaused ? CommonText.Resume : CommonText.Pause;
+
+    /// <summary>"Recording" or "Paused": what the red dot or the grey square shows, for a screen reader.</summary>
+    public string StateText => IsPaused ? RecordingText.StatePaused : RecordingText.StateRecording;
+
+    /// <summary>The clock for a screen reader: "Recording, 1:23" or "Paused, 1:23".</summary>
+    public string ElapsedName => IsPaused ? RecordingText.ElapsedPaused(ElapsedText) : RecordingText.ElapsedRecording(ElapsedText);
 
     public bool HasSound { get; }
 
@@ -237,15 +246,22 @@ public sealed partial class RecordingToolbarViewModel : ObservableObject
 
 /// <summary>
 /// The small bar shown while recording. It is left out of the recording itself (and of screenshots), never takes
-/// the focus, stays on top at the top centre of the recorded monitor, and can be dragged out of the way.
+/// the focus, stays on top at the top centre of the recorded monitor, and can be dragged out of the way. The "Use
+/// the toolbar from the keyboard" hotkey gives it the focus for a while (<see cref="UseKeyboard"/>): its buttons,
+/// boxes and sliders become focusable until Esc gives the focus back or it loses the focus.
 /// </summary>
 public partial class RecordingToolbarWindow : Window, IThemedWindow
 {
+    /// <summary>Its controls take the focus (the keyboard is using it); bound by their <c>Focusable</c>.</summary>
+    public static readonly DependencyProperty UsesKeyboardProperty =
+        DependencyProperty.Register(nameof(UsesKeyboard), typeof(bool), typeof(RecordingToolbarWindow), new PropertyMetadata(false));
+
     private const int EdgeMargin = 8;
 
     private readonly PixelRect _workArea;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _meters;
+    private readonly ToolbarKeyboardMode _keyboard;
 
     public RecordingToolbarWindow(RecordingToolbarViewModel viewModel, AppTheme theme, PixelRect workArea)
     {
@@ -253,6 +269,8 @@ public partial class RecordingToolbarWindow : Window, IThemedWindow
         DataContext = viewModel;
         _workArea = workArea;
         ApplyTheme(theme);
+        _keyboard = new ToolbarKeyboardMode(this, on => UsesKeyboard = on);
+        viewModel.PropertyChanged += OnViewModelChanged;
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => viewModel.Refresh(), Dispatcher);
         var clock = System.Diagnostics.Stopwatch.StartNew();
         _meters = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Background, (_, _) => viewModel.RefreshMeters(clock.Elapsed), Dispatcher);
@@ -271,10 +289,29 @@ public partial class RecordingToolbarWindow : Window, IThemedWindow
         {
             _timer.Stop();
             _meters.Stop();
+            viewModel.PropertyChanged -= OnViewModelChanged;
         };
     }
 
+    public bool UsesKeyboard
+    {
+        get => (bool)GetValue(UsesKeyboardProperty);
+        private set => SetValue(UsesKeyboardProperty, value);
+    }
+
     public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
+
+    /// <summary>Takes the focus, its first button focused, until Esc (which gives the focus back) or until it loses the focus.</summary>
+    public void UseKeyboard() => _keyboard.Start();
+
+    /// <summary>Paused or resumed: a screen reader says so (the clock is a polite live region).</summary>
+    private void OnViewModelChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(RecordingToolbarViewModel.IsPaused) && AutomationPeer.ListenerExists(AutomationEvents.LiveRegionChanged))
+        {
+            UIElementAutomationPeer.CreatePeerForElement(Elapsed)?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+        }
+    }
 
     /// <summary>Back above every other top-most window (the drawing layer, when the pen goes on), without taking the focus.</summary>
     public void BringToTop() => User32.SetWindowPos(

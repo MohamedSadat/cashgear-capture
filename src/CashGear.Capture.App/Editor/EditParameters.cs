@@ -18,6 +18,9 @@ public abstract partial class EditParameter(string label) : ObservableObject
 
     [ObservableProperty]
     private bool _isVisible = true;
+
+    /// <summary>Screen readers read the items of a list of settings by this.</summary>
+    public override string ToString() => Label;
 }
 
 /// <summary>A number on a slider, with its value shown next to it.</summary>
@@ -183,6 +186,8 @@ public sealed class AnchorCell(AnchorParameter owner, Anchor anchor) : Observabl
     }
 
     internal void Refresh() => OnPropertyChanged(nameof(IsSelected));
+
+    public override string ToString() => Name;
 }
 
 /// <summary>A line of explanation among the settings (why some can't be changed).</summary>

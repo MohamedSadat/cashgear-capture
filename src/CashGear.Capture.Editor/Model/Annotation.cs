@@ -122,4 +122,29 @@ public static class AnnotationKindExtensions
         AnnotationKind.Magnify => EditorStrings.KindMagnifier,
         _ => kind.ToString().ToLowerInvariant(),
     };
+
+    /// <summary>What a screen reader calls the annotation, in the UI language: "Arrow", "Text: Hello", "Step 3".</summary>
+    public static string SpokenName(this Annotation annotation)
+    {
+        ArgumentNullException.ThrowIfNull(annotation);
+        return annotation switch
+        {
+            TextAnnotation text => EditorStrings.SpokenText(string.Join(' ', TextLayout.SplitLines(text.Text)).Trim()),
+            StepNumberAnnotation step => EditorStrings.SpokenStep(step.Number),
+            _ => annotation.Kind switch
+            {
+                AnnotationKind.Arrow => EditorStrings.SpokenArrow,
+                AnnotationKind.Line => EditorStrings.SpokenLine,
+                AnnotationKind.Rectangle => EditorStrings.SpokenRectangle,
+                AnnotationKind.Ellipse => EditorStrings.SpokenEllipse,
+                AnnotationKind.Freehand => EditorStrings.SpokenDrawing,
+                AnnotationKind.Highlight => EditorStrings.SpokenHighlight,
+                AnnotationKind.Blur => EditorStrings.SpokenBlur,
+                AnnotationKind.Pixelate => EditorStrings.SpokenPixelation,
+                AnnotationKind.Spotlight => EditorStrings.SpokenSpotlight,
+                AnnotationKind.Magnify => EditorStrings.SpokenMagnifier,
+                _ => annotation.Kind.DisplayName(),
+            },
+        };
+    }
 }

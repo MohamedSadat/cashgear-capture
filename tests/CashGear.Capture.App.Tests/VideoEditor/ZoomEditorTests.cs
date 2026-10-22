@@ -84,7 +84,7 @@ public sealed class ZoomEditorTests : VideoEditorTestBase
         vm.PreviewPointerMove(200, 100);
         vm.PreviewPointerUp();
         var moved = (ZoomItem)vm.Project.Find(id)!.Value.Item;
-        (moved.Focus, moved.CenterX, moved.CenterY, moved.Auto).Should().Be((ZoomFocus.Fixed, 0.625, 0.5556, false));
+        (moved.Focus, moved.CenterX, moved.CenterY, moved.Auto).Should().Be((ZoomFocus.Fixed, 0.625, 0.555556, false));
         vm.UndoText.Should().Be("Undo move zoom");
 
         // Its corner: 40 px wider is a smaller zoom, the top left kept.

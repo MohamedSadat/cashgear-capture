@@ -1,8 +1,10 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Media;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Display;
@@ -14,24 +16,31 @@ namespace CashGear.Capture.App.Tools;
 /// The crosshair: a line across and a line down every monitor through the pointer, and a small readout of where it
 /// is — on the virtual screen and on its monitor, with the monitor's scale. It follows the pointer every frame, lets
 /// every click through (the apps underneath work as usual), never takes the focus, and is left out of captures.
-/// The hotkey, the tray or the toolbar turns it off.
+/// The hotkey, the tray or the toolbar turns it off. While high contrast is on (when it is shown), the lines are
+/// Highlight and the readout WindowText on Window.
 /// </summary>
 public sealed class Crosshair
 {
-    private static readonly Brush LineBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23)));
+    private static readonly Brush NormalLine = Frozen(new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23)));
+    private static readonly Brush NormalPanel = Frozen(new SolidColorBrush(Color.FromRgb(0x1C, 0x1C, 0x1C)));
 
     private readonly IMonitorService _monitors;
-    private readonly ToolOverlay _across = new(LineBrush, clickThrough: true);
-    private readonly ToolOverlay _down = new(LineBrush, clickThrough: true);
-    private readonly ToolOverlay _readout = new(Frozen(new SolidColorBrush(Color.FromRgb(0x1C, 0x1C, 0x1C))), clickThrough: false); // never under the pointer
+    private readonly ToolOverlay _across;
+    private readonly ToolOverlay _down;
+    private readonly ToolOverlay _readout;
     [Localizable(false)] // a font's name
-    private readonly TextBlock _text = new() { Foreground = Brushes.White, FontFamily = new FontFamily("Segoe UI"), FontSize = 12, Padding = new Thickness(6, 3, 6, 4) };
+    private readonly TextBlock _text = new() { FontFamily = new FontFamily("Segoe UI"), FontSize = 12, Padding = new Thickness(6, 3, 6, 4) };
     private PixelPoint? _last;
     private bool _closed;
 
     private Crosshair(IMonitorService monitors)
     {
         _monitors = monitors;
+        var line = HighContrast.Pick(NormalLine, () => HighContrast.Highlight);
+        _across = new ToolOverlay(line, clickThrough: true);
+        _down = new ToolOverlay(line, clickThrough: true);
+        _readout = new ToolOverlay(HighContrast.Pick(NormalPanel, () => HighContrast.Window), clickThrough: false, () => _text.Text); // never under the pointer
+        _text.Foreground = HighContrast.Pick(Brushes.White, () => HighContrast.WindowText);
         _readout.Content = _text;
         _readout.SizeToContent = SizeToContent.WidthAndHeight;
     }
@@ -112,13 +121,15 @@ public sealed class Crosshair
         return freezable;
     }
 
-    /// <summary>A borderless, top-most window of the crosshair, placed in physical pixels.</summary>
+    /// <summary>A borderless, top-most window of the crosshair, placed in physical pixels; the readout's tells a screen reader where the pointer is.</summary>
     private sealed class ToolOverlay : Window, IScreenToolWindow
     {
+        private readonly Func<string>? _readout;
         private PixelRect _bounds;
 
-        public ToolOverlay(Brush background, bool clickThrough)
+        public ToolOverlay(Brush background, bool clickThrough, Func<string>? readout = null)
         {
+            _readout = readout;
             Title = ToolsText.CrosshairWindowTitle;
             WindowStyle = WindowStyle.None;
             ResizeMode = ResizeMode.NoResize;
@@ -140,6 +151,9 @@ public sealed class Crosshair
             _bounds = bounds;
             ToolWindowStyle.Place(this, bounds);
         }
+
+        protected override AutomationPeer OnCreateAutomationPeer() =>
+            _readout is { } readout ? new ReadoutWindowPeer(this, readout) : base.OnCreateAutomationPeer();
 
         /// <summary>
         /// A line spanning monitors changes DPI when most of it moves onto a monitor of another scale, and WPF then

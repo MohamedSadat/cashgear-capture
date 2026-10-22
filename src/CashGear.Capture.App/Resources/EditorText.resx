@@ -108,7 +108,8 @@
     <value>Magnify (G)</value>
   </data>
   <data name="ImageMenu" xml:space="preserve">
-    <value>Image ▾</value>
+    <value>_Image ▾</value>
+    <comment>the editor's menu of image edits (Alt+I)</comment>
   </data>
   <data name="RotateLeft" xml:space="preserve">
     <value>Rotate left</value>
@@ -135,7 +136,8 @@
     <value>Trim plain borders</value>
   </data>
   <data name="EffectsMenu" xml:space="preserve">
-    <value>Effects ▾</value>
+    <value>_Effects ▾</value>
+    <comment>the editor's menu of effects (Alt+E)</comment>
   </data>
   <data name="Effects" xml:space="preserve">
     <value>Effects</value>
@@ -190,7 +192,8 @@
     <value>Save as (Ctrl+Shift+S)</value>
   </data>
   <data name="SendToMenu" xml:space="preserve">
-    <value>Send to ▾</value>
+    <value>Se_nd to ▾</value>
+    <comment>the editor's menu of destinations (Alt+N)</comment>
   </data>
   <data name="SendTo" xml:space="preserve">
     <value>Send to</value>
@@ -437,7 +440,8 @@
     <value>Applied in this order</value>
   </data>
   <data name="AddMenu" xml:space="preserve">
-    <value>Add ▾</value>
+    <value>_Add ▾</value>
+    <comment>the Effects window's menu of effects to add (Alt+A)</comment>
   </data>
   <data name="AddEffect" xml:space="preserve">
     <value>Add an effect</value>
@@ -637,5 +641,89 @@
   </data>
   <data name="InTheCorners" xml:space="preserve">
     <value>In the corners</value>
+  </data>
+  <data name="CanvasControlType" xml:space="preserve">
+    <value>editing area</value>
+    <comment>the kind of control the picture in the editor is, for screen readers</comment>
+  </data>
+  <data name="CanvasHelp" xml:space="preserve">
+    <value>Tab selects the next annotation, the arrow keys move it (Shift: 10 px), Ctrl+Shift with the arrow keys resizes it, Delete removes it. Enter adds an item with the chosen tool. Ctrl+Tab moves on to the next control.</value>
+    <comment>help a screen reader gives for the picture in the editor</comment>
+  </data>
+  <data name="ZoomOut" xml:space="preserve">
+    <value>Zoom out</value>
+    <comment>the − button's name for screen readers</comment>
+  </data>
+  <data name="ZoomIn" xml:space="preserve">
+    <value>Zoom in</value>
+    <comment>the + button's name for screen readers</comment>
+  </data>
+  <data name="NoFill" xml:space="preserve">
+    <value>No fill</value>
+    <comment>the Fill section's None button, for screen readers</comment>
+  </data>
+  <data name="ColourRed" xml:space="preserve">
+    <value>Red</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourOrange" xml:space="preserve">
+    <value>Orange</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourYellow" xml:space="preserve">
+    <value>Yellow</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourGreen" xml:space="preserve">
+    <value>Green</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourTeal" xml:space="preserve">
+    <value>Teal</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourBlue" xml:space="preserve">
+    <value>Blue</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourPurple" xml:space="preserve">
+    <value>Purple</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourPink" xml:space="preserve">
+    <value>Pink</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourBlack" xml:space="preserve">
+    <value>Black</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourDarkGrey" xml:space="preserve">
+    <value>Dark grey</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourMidGrey" xml:space="preserve">
+    <value>Mid grey</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourGrey" xml:space="preserve">
+    <value>Grey</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="ColourWhite" xml:space="preserve">
+    <value>White</value>
+    <comment>a palette colour, for screen readers</comment>
+  </data>
+  <data name="CurrentColourIs" xml:space="preserve">
+    <value>Current colour: {0}</value>
+    <comment>the colour swatch beside the hex box, for screen readers; {0} is a colour name or #RRGGBB</comment>
+  </data>
+  <data name="CurrentFillIs" xml:space="preserve">
+    <value>Current fill: {0}</value>
+    <comment>the fill swatch, for screen readers; {0} is a colour name or #RRGGBB</comment>
+  </data>
+  <data name="ImageMenuName" xml:space="preserve">
+    <value>Image</value>
+    <comment>the Image menu's name for screen readers (without the arrow)</comment>
   </data>
 </root>

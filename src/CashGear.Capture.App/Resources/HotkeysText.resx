@@ -104,4 +104,8 @@
     <value>Choose other keys in Settings.</value>
     <comment>the last line, under the problems</comment>
   </data>
+  <data name="UseToolbar" xml:space="preserve">
+    <value>Use the Toolbar from the Keyboard</value>
+    <comment>Settings › Hotkeys: the capture or recording toolbar takes the keyboard (Tab, Enter; Esc gives the focus back)</comment>
+  </data>
 </root>

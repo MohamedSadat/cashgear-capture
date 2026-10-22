@@ -115,6 +115,7 @@ internal static class AppHost
         builder.Services.AddSingleton<ThemeService>();
         builder.Services.AddSingleton<CaptureCoordinator>();
         builder.Services.AddSingleton<Toolbar.CaptureToolbarService>();
+        builder.Services.AddSingleton<Toolbar.IToolbarKeyboard, Toolbar.ToolbarKeyboard>();
         builder.Services.AddSingleton<Tools.ScreenTools>();
         builder.Services.AddSingleton<UiReadySignal>();
         builder.Services.AddSingleton<TrayIconHost>();

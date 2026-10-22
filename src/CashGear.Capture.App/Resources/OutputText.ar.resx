@@ -159,4 +159,7 @@
   <data name="InFolderClickToShow" xml:space="preserve">
     <value>في {0} (انقر للإظهار)</value>
   </data>
+  <data name="StepSeparator" xml:space="preserve">
+    <value> ← </value>
+  </data>
 </root>

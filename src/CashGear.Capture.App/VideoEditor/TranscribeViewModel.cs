@@ -13,14 +13,23 @@ using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.App.VideoEditor;
 
-/// <summary>A sound track to listen to (null: all of them).</summary>
-public sealed record SoundChoice(string? TrackId, string Name);
+/// <summary>A sound track to listen to (null: all of them). Its name is what screen readers read for it.</summary>
+public sealed record SoundChoice(string? TrackId, string Name)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>A language to listen for (null: found out from the speech).</summary>
-public sealed record LanguageChoice(string? Code, string Name);
+public sealed record LanguageChoice(string? Code, string Name)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>A speech model as the window lists it.</summary>
-public sealed record ModelChoice(WhisperModel Model, string Name);
+public sealed record ModelChoice(WhisperModel Model, string Name)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>
 /// Captions from Speech: which sound track (the microphone first), the language, the model (downloaded the first

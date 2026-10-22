@@ -92,15 +92,18 @@ public static class PlacementEdits
         return null;
     }
 
-    /// <summary>The placement moved by (<paramref name="dx"/>, <paramref name="dy"/>) canvas pixels, its centre kept on the canvas.</summary>
+    /// <summary>
+    /// The placement moved by (<paramref name="dx"/>, <paramref name="dy"/>) canvas pixels, its centre kept on the
+    /// canvas (to a millionth of it, so a pixel's move by the keys is a pixel on any canvas).
+    /// </summary>
     public static Placement Move(Placement placement, ProjectCanvas canvas, double dx, double dy)
     {
         ArgumentNullException.ThrowIfNull(placement);
         ArgumentNullException.ThrowIfNull(canvas);
         return placement with
         {
-            CenterX = Math.Round(Math.Clamp(placement.CenterX + (dx / canvas.Width), 0, 1), 4),
-            CenterY = Math.Round(Math.Clamp(placement.CenterY + (dy / canvas.Height), 0, 1), 4),
+            CenterX = Math.Round(Math.Clamp(placement.CenterX + (dx / canvas.Width), 0, 1), 6),
+            CenterY = Math.Round(Math.Clamp(placement.CenterY + (dy / canvas.Height), 0, 1), 6),
         };
     }
 
@@ -146,8 +149,8 @@ public static class PlacementEdits
         return zoom with
         {
             Focus = ZoomFocus.Fixed,
-            CenterX = Math.Round(Math.Clamp((frame.MidX + dx) / canvas.Width, 0, 1), 4),
-            CenterY = Math.Round(Math.Clamp((frame.MidY + dy) / canvas.Height, 0, 1), 4),
+            CenterX = Math.Round(Math.Clamp((frame.MidX + dx) / canvas.Width, 0, 1), 6),
+            CenterY = Math.Round(Math.Clamp((frame.MidY + dy) / canvas.Height, 0, 1), 6),
             Auto = false,
         };
     }
@@ -156,6 +159,50 @@ public static class PlacementEdits
 /// <summary>Track edits that aren't about time.</summary>
 public static class TrackEdits
 {
+    /// <summary>
+    /// Whether <paramref name="track"/> can hold <paramref name="item"/>: a clip's pictures go on picture tracks
+    /// (the screen's or a webcam's) and its sound on sound tracks; annotations, captions, zooms and metadata effects
+    /// each on their own kind of track (zooms and effects never share one).
+    /// </summary>
+    public static bool Accepts(VideoProject project, Track track, TimelineItem item)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(track);
+        return item switch
+        {
+            Clip clip => IsSound(project, clip) ? track.HasSound : track.HasPictures,
+            AnnotationItem => track.Kind == TrackKind.Annotation,
+            CaptionItem => track.Kind == TrackKind.Caption,
+            ZoomItem => track.Kind == TrackKind.Effect && track.Items.All(i => i is ZoomItem),
+            EffectItem => track.Kind == TrackKind.Effect && !track.Items.Any(i => i is ZoomItem),
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// The project with item <paramref name="id"/> moved to track <paramref name="trackId"/> at the same time (its
+    /// linked clips stay where they are). Unchanged when either track is locked, the track doesn't take it
+    /// (<see cref="Accepts"/>) or something there is in its way.
+    /// </summary>
+    public static VideoProject MoveItem(VideoProject project, string id, string trackId)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        if (project.Find(id) is not { } found || project.Track(trackId) is not { } target || found.Track.Id == target.Id
+            || found.Track.Locked || target.Locked || !Accepts(project, target, found.Item)
+            || target.Items.Any(i => i.Overlaps(found.Item.Start, found.Item.End)))
+        {
+            return project;
+        }
+
+        return project
+            .WithTrack(found.Track.WithItems(found.Track.Items.Where(i => i.Id != id)))
+            .WithTrack(target.WithItems([.. target.Items, found.Item]));
+    }
+
+    /// <summary>Whether a clip plays sound (its stream's kind; the kind of its track when the media isn't known).</summary>
+    private static bool IsSound(VideoProject project, Clip clip) =>
+        project.Asset(clip.AssetId)?.Stream(clip.Stream)?.Kind is { } kind ? kind == StreamKind.Audio : project.Find(clip.Id)?.Track.HasSound == true;
+
     /// <summary>The project without the track (and without the media nothing else uses).</summary>
     public static VideoProject Remove(VideoProject project, string trackId)
     {

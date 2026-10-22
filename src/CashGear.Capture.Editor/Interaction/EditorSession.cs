@@ -18,6 +18,9 @@ public sealed class EditorSession
     /// <summary>Drags shorter than this (image pixels) are clicks: they don't create shapes.</summary>
     public const float MinShapeSize = 2;
 
+    /// <summary>The points of the wavy stroke Enter adds with the pen.</summary>
+    private const int WavePoints = 17;
+
     private Drag? _drag;
     private EditorTool _tool = EditorTool.Arrow;
     private AnnotationId? _selectedId;
@@ -30,6 +33,9 @@ public sealed class EditorSession
     }
 
     public EditorDocument Document { get; }
+
+    /// <summary>The size of what Enter adds with a drawing tool (<see cref="AddDefaultItem"/>), in image pixels.</summary>
+    public static SKSize DefaultItemSize { get; } = new(160, 100);
 
     public EditorTool Tool
     {
@@ -378,14 +384,148 @@ public sealed class EditorSession
         }
     }
 
-    /// <summary>Moves the selection by whole pixels (arrow keys); repeated nudges are one undo step.</summary>
-    public void Nudge(float dx, float dy)
+    /// <summary>
+    /// Moves the selection by whole pixels (arrow keys); repeated nudges are one undo step. With nothing selected, the
+    /// Crop or Area frame moves instead (kept inside the image). False when there was nothing to move.
+    /// </summary>
+    public bool Nudge(float dx, float dy)
     {
-        if (Selected is { } selected && !IsDragging)
+        if (IsDragging || TextEdit is not null)
+        {
+            return false;
+        }
+
+        if (Selected is { } selected)
         {
             Document.Execute(new ReplaceAnnotationCommand(
                 selected, selected.Offset(dx, dy), EditorStrings.UndoMove(selected.Kind.DisplayName()), "nudge"));
+            return true;
         }
+
+        if (Tool is not (EditorTool.Crop or EditorTool.Area) || Marquee is not { } frame)
+        {
+            return false;
+        }
+
+        var x = Math.Clamp(frame.Left + (int)MathF.Round(dx), 0, Document.Width - frame.Width);
+        var y = Math.Clamp(frame.Top + (int)MathF.Round(dy), 0, Document.Height - frame.Height);
+        Marquee = SKRectI.Create(x, y, frame.Width, frame.Height);
+        Invalidate();
+        return true;
+    }
+
+    /// <summary>
+    /// Ctrl+Shift+arrows: makes the selection bigger (positive) or smaller (negative) by whole pixels, keeping its
+    /// top-left corner; repeated presses are one undo step. Lines and arrows get longer or shorter, text and step
+    /// numbers a larger or smaller font, a magnifier a larger or smaller circle. With nothing selected, the Crop or
+    /// Area frame changes size instead. False when there was nothing to resize.
+    /// </summary>
+    public bool ResizeBy(float dx, float dy)
+    {
+        if (IsDragging || TextEdit is not null)
+        {
+            return false;
+        }
+
+        if (Selected is not { } selected)
+        {
+            return ResizeMarquee((int)MathF.Round(dx), (int)MathF.Round(dy));
+        }
+
+        var resized = Resized(selected, dx, dy);
+        if (resized == selected)
+        {
+            return false;
+        }
+
+        Document.Execute(new ReplaceAnnotationCommand(selected, resized, EditorStrings.UndoResize(selected.Kind.DisplayName()), "resize"));
+        return true;
+    }
+
+    /// <summary>
+    /// Tab (Shift+Tab: backwards): selects the next annotation in the order they were added, after the last one the
+    /// first again. False when there are none.
+    /// </summary>
+    public bool SelectNext(bool backwards = false)
+    {
+        var annotations = Document.Annotations;
+        if (annotations.Count == 0 || IsDragging || TextEdit is not null)
+        {
+            return false;
+        }
+
+        var index = _selectedId is { } id ? Document.IndexOf(id) : -1;
+        var next = index < 0
+            ? (backwards ? annotations.Count - 1 : 0)
+            : (index + (backwards ? annotations.Count - 1 : 1)) % annotations.Count;
+        Select(annotations[next].Id);
+        return true;
+    }
+
+    /// <summary>
+    /// Enter with a drawing tool: adds what a drag would make, of the usual size (<see cref="DefaultItemSize"/>, less
+    /// when little of the image is in view), in the middle of <paramref name="visible"/> (the part of the image in
+    /// view, in image pixels; empty for the whole image). Lines and arrows go across the middle; the Text tool asks
+    /// for typing there instead; Crop and Area get a frame over most of the view, to adjust. False with Select.
+    /// </summary>
+    public bool AddDefaultItem(SKRect visible)
+    {
+        if (IsDragging || TextEdit is not null || Preview is not null || Tool == EditorTool.Select)
+        {
+            return false;
+        }
+
+        var image = SKRect.Create(Document.Width, Document.Height);
+        var view = SKRect.Intersect(visible, image);
+        if (view.Width < MinShapeSize || view.Height < MinShapeSize)
+        {
+            view = image;
+        }
+
+        var centre = new SKPoint(view.MidX, view.MidY);
+        var width = MathF.Min(DefaultItemSize.Width, view.Width * 0.6f);
+        var height = MathF.Min(DefaultItemSize.Height, view.Height * 0.6f);
+        var box = SKRect.Create(centre.X - (width / 2), centre.Y - (height / 2), width, height);
+        if (Tool is EditorTool.Crop or EditorTool.Area)
+        {
+            var inset = MathF.Min(view.Width, view.Height) * 0.1f;
+            var frame = SKRectI.Intersect(
+                SKRectI.Round(new SKRect(view.Left + inset, view.Top + inset, view.Right - inset, view.Bottom - inset)),
+                SKRectI.Create(Document.Width, Document.Height));
+            if (frame.Width < MinShapeSize || frame.Height < MinShapeSize)
+            {
+                return false;
+            }
+
+            Select(null);
+            Marquee = frame;
+            Invalidate();
+            return true;
+        }
+
+        Select(null);
+        if (Tool == EditorTool.Text)
+        {
+            BeginTextEdit(new TextEditRequest(null, new SKPoint(box.Left, centre.Y - (Style.FontSize * 0.7f)), string.Empty, Style));
+            return true;
+        }
+
+        var item = DefaultItem(box);
+        Document.Execute(new AddAnnotationCommand(item));
+        Select(item.Id);
+        return true;
+    }
+
+    /// <summary>Enter on selected text: types into it again, as a double-click does. False when the selection isn't text.</summary>
+    public bool EditSelectedText()
+    {
+        if (IsDragging || TextEdit is not null || Selected is not TextAnnotation text)
+        {
+            return false;
+        }
+
+        BeginTextEdit(text);
+        return true;
     }
 
     /// <summary>
@@ -650,6 +790,98 @@ public sealed class EditorSession
             EditorTool.Magnify => MagnifyAnnotation.Place(id, Style, empty, new SKSizeI(Document.Width, Document.Height)),
             _ => throw new InvalidOperationException($"{Tool} does not draw shapes."),
         };
+    }
+
+    /// <summary>What the tool draws in <paramref name="box"/>: a box, a line across its middle, a wavy pen stroke, a step number or a magnifier in its centre.</summary>
+    private Annotation DefaultItem(SKRect box)
+    {
+        var id = Document.NewId();
+        var centre = new SKPoint(box.MidX, box.MidY);
+        var left = new SKPoint(box.Left, centre.Y);
+        var right = new SKPoint(box.Right, centre.Y);
+        switch (Tool)
+        {
+            case EditorTool.Arrow:
+                return new ArrowAnnotation(id, Style, left, right);
+            case EditorTool.Line:
+                return new LineAnnotation(id, Style, left, right);
+            case EditorTool.Freehand:
+                return new FreehandAnnotation(id, Style, [.. Enumerable.Range(0, WavePoints).Select(i =>
+                    new SKPoint(box.Left + (box.Width * i / (WavePoints - 1)), centre.Y - (box.Height / 4 * MathF.Sin(MathF.PI * 2 * i / (WavePoints - 1)))))]);
+            case EditorTool.StepNumber:
+                return new StepNumberAnnotation(id, Style, centre, Document.NextStepNumber);
+            case EditorTool.Magnify:
+                var side = MathF.Min(box.Width, box.Height) * 0.6f;
+                var source = SKRect.Create(centre.X - (side / 2), centre.Y - (side / 2), side, side);
+                return MagnifyAnnotation.Place(id, Style, source, new SKSizeI(Document.Width, Document.Height));
+            default:
+                return Tool switch
+                {
+                    EditorTool.Rectangle => new RectangleAnnotation(id, Style, box),
+                    EditorTool.Ellipse => new EllipseAnnotation(id, Style, box),
+                    EditorTool.Highlight => new HighlightAnnotation(id, Style, box),
+                    EditorTool.Blur => new BlurAnnotation(id, Style, box),
+                    EditorTool.Pixelate => new PixelateAnnotation(id, Style, box),
+                    EditorTool.Spotlight => new SpotlightAnnotation(id, Style, box),
+                    _ => throw new InvalidOperationException($"{Tool} does not draw shapes."),
+                };
+        }
+    }
+
+    /// <summary><paramref name="annotation"/> grown by <paramref name="dx"/>, <paramref name="dy"/> pixels (see <see cref="ResizeBy"/>), never below <see cref="MinShapeSize"/>.</summary>
+    private static Annotation Resized(Annotation annotation, float dx, float dy)
+    {
+        switch (annotation)
+        {
+            case BoxAnnotation box:
+                var rect = box.Rect;
+                return box with
+                {
+                    Rect = new SKRect(rect.Left, rect.Top, MathF.Max(rect.Left + MinShapeSize, rect.Right + dx), MathF.Max(rect.Top + MinShapeSize, rect.Bottom + dy)),
+                };
+
+            case TwoPointAnnotation line:
+                var length = line.Length;
+                var direction = length > 1e-3f ? new SKPoint((line.End.X - line.Start.X) / length, (line.End.Y - line.Start.Y) / length) : new SKPoint(1, 0);
+                var longer = MathF.Max(MinShapeSize, length + dx + dy);
+                return line with { End = new SKPoint(line.Start.X + (direction.X * longer), line.Start.Y + (direction.Y * longer)) };
+
+            case FreehandAnnotation pen when pen.Points.Count > 1:
+                var from = pen.PointBounds;
+                var corner = new SKPoint(
+                    from.Width > 0 ? MathF.Max(from.Left + MinShapeSize, from.Right + dx) : from.Right,
+                    from.Height > 0 ? MathF.Max(from.Top + MinShapeSize, from.Bottom + dy) : from.Bottom);
+                return pen.WithHandleMoved(HandleKind.BottomRight, corner, constrain: false);
+
+            case TextAnnotation or StepNumberAnnotation:
+                var size = Math.Clamp(annotation.Style.FontSize + dx + dy, AnnotationStyle.MinFontSize, AnnotationStyle.MaxFontSize);
+                return annotation with { Style = annotation.Style with { FontSize = size } };
+
+            case MagnifyAnnotation lens:
+                return lens with { Radius = MathF.Max(MagnifyAnnotation.MinRadius, lens.Radius + dx + dy) };
+
+            default:
+                return annotation;
+        }
+    }
+
+    private bool ResizeMarquee(int dx, int dy)
+    {
+        if (Tool is not (EditorTool.Crop or EditorTool.Area) || Marquee is not { } frame)
+        {
+            return false;
+        }
+
+        var right = Math.Clamp(frame.Right + dx, Math.Min(frame.Left + (int)MinShapeSize, Document.Width), Document.Width);
+        var bottom = Math.Clamp(frame.Bottom + dy, Math.Min(frame.Top + (int)MinShapeSize, Document.Height), Document.Height);
+        if (right == frame.Right && bottom == frame.Bottom)
+        {
+            return false;
+        }
+
+        Marquee = new SKRectI(frame.Left, frame.Top, right, bottom);
+        Invalidate();
+        return true;
     }
 
     private Annotation UpdateDraft(Annotation draft, SKPoint origin, SKPoint p, bool constrain) => draft switch

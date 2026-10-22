@@ -1327,4 +1327,72 @@
     <value>Format</value>
     <comment>the kind of file to export</comment>
   </data>
+  <data name="TrackVolumeFormat" xml:space="preserve">
+    <value>{0} volume</value>
+    <comment>screen reader name of a track's volume slider; {0} is the track's name</comment>
+  </data>
+  <data name="MuteTrackFormat" xml:space="preserve">
+    <value>Mute {0}</value>
+    <comment>screen reader name of a track's M switch; {0} is the track's name</comment>
+  </data>
+  <data name="SoloTrackFormat" xml:space="preserve">
+    <value>Solo {0}</value>
+    <comment>screen reader name of a track's S switch; {0} is the track's name</comment>
+  </data>
+  <data name="ShowTrackFormat" xml:space="preserve">
+    <value>Show {0}</value>
+    <comment>screen reader name of a track's Shown check box; {0} is the track's name</comment>
+  </data>
+  <data name="LockTrackFormat" xml:space="preserve">
+    <value>Lock {0}</value>
+    <comment>screen reader name of a track's L switch; {0} is the track's name</comment>
+  </data>
+  <data name="PlayButtonName" xml:space="preserve">
+    <value>Play (Space)</value>
+    <comment>screen reader name of the play button while paused</comment>
+  </data>
+  <data name="PauseButtonName" xml:space="preserve">
+    <value>Pause (Space)</value>
+    <comment>screen reader name of the play button while playing</comment>
+  </data>
+  <data name="TimelineName" xml:space="preserve">
+    <value>Timeline</value>
+    <comment>screen reader name of the timeline</comment>
+  </data>
+  <data name="TimelineHelp" xml:space="preserve">
+    <value>Tab and Shift+Tab select the next or previous clip, Up and Down move it to the track above or below, and Alt with Left or Right moves it a frame. Ctrl+Tab moves on.</value>
+    <comment>screen reader help of the timeline</comment>
+  </data>
+  <data name="PreviewName" xml:space="preserve">
+    <value>Preview</value>
+    <comment>screen reader name of the video preview</comment>
+  </data>
+  <data name="PreviewHelp" xml:space="preserve">
+    <value>The arrow keys move the selected picture, annotation or zoom at the playhead a pixel (Shift: 10 px).</value>
+    <comment>screen reader help of the video preview</comment>
+  </data>
+  <data name="ItemAutomationName" xml:space="preserve">
+    <value>{0}, {1} – {2}</value>
+    <comment>screen reader name of a clip on the timeline: its name, start and end times</comment>
+  </data>
+  <data name="TimelineSplitterName" xml:space="preserve">
+    <value>Timeline height</value>
+    <comment>screen reader name of the bar between the preview and the timeline (arrows resize)</comment>
+  </data>
+  <data name="TrimStartMenu" xml:space="preserve">
+    <value>_Trim the Start to the Playhead</value>
+    <comment>Edit menu, Ctrl+[</comment>
+  </data>
+  <data name="TrimEndMenu" xml:space="preserve">
+    <value>Trim the _End to the Playhead</value>
+    <comment>Edit menu, Ctrl+]</comment>
+  </data>
+  <data name="ExportProgressName" xml:space="preserve">
+    <value>Export progress</value>
+    <comment>screen reader name of the export window's progress bar</comment>
+  </data>
+  <data name="TranscribeProgressName" xml:space="preserve">
+    <value>Captions progress</value>
+    <comment>screen reader name of the Captions from Speech window's progress bar</comment>
+  </data>
 </root>

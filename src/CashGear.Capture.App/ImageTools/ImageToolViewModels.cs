@@ -38,6 +38,9 @@ public interface IImageFilePicker
 public sealed record ImageFileItem(string Path)
 {
     public string Name => System.IO.Path.GetFileName(Path);
+
+    /// <summary>Its file name: what the list shows, and what a screen reader says for it.</summary>
+    public override string ToString() => Name;
 }
 
 /// <summary>The pictures a tool works on, in order: added as files, a folder or by dragging them in.</summary>

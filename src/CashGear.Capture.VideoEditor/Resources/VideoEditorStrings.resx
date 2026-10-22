@@ -212,4 +212,8 @@
     <value>trim end</value>
     <comment>undo step, after Undo/Redo</comment>
   </data>
+  <data name="UndoMoveToTrack" xml:space="preserve">
+    <value>move to another track</value>
+    <comment>undo step: Up/Down moved the selected clip to the track above or below</comment>
+  </data>
 </root>

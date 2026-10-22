@@ -3,11 +3,13 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Core.Display;
@@ -217,19 +219,29 @@ public sealed unsafe class ScreenMagnifier
         return User32.CallNextHookEx(0, code, wParam, lParam);
     }
 
-    /// <summary>The lens: the zoomed pixels on a physical canvas, the centre pixel's frame, and its position and colour.</summary>
+    /// <summary>
+    /// The lens: the zoomed pixels on a physical canvas, the centre pixel's frame, and its position and colour. Its
+    /// colours are the system's while high contrast is on (picked when it opens; it closes when it loses the focus).
+    /// </summary>
     private sealed class LensWindow : Window, IScreenToolWindow
     {
-        private static readonly Brush Panel = Frozen(new SolidColorBrush(Color.FromArgb(0xE6, 0x1C, 0x1C, 0x1C)));
+        private static readonly Brush NormalPanel = Frozen(new SolidColorBrush(Color.FromArgb(0xE6, 0x1C, 0x1C, 0x1C)));
+        private static readonly Brush NormalFrame = Frozen(new SolidColorBrush(Color.FromRgb(0x1E, 0x90, 0xFF)));
 
         private readonly ScreenMagnifier _owner;
         private readonly Canvas _canvas = new() { ClipToBounds = true };
         private readonly Image _image = new();
-        private readonly Rectangle _marker = new() { Stroke = Brushes.White, StrokeThickness = 1 };
-        private readonly Rectangle _markerShadow = new() { Stroke = Brushes.Black, StrokeThickness = 1 };
-        private readonly Border _frame = new() { BorderBrush = new SolidColorBrush(Color.FromRgb(0x1E, 0x90, 0xFF)), BorderThickness = new Thickness(2) };
+        private readonly Rectangle _marker = new() { Stroke = HighContrast.Pick(Brushes.White, () => HighContrast.Highlight), StrokeThickness = 1 };
+        private readonly Rectangle _markerShadow = new() { Stroke = HighContrast.Pick(Brushes.Black, () => HighContrast.Window), StrokeThickness = 1 };
+        private readonly Border _frame = new() { BorderBrush = HighContrast.Pick(NormalFrame, () => HighContrast.Highlight), BorderThickness = new Thickness(2) };
         [Localizable(false)] // a font's name
-        private readonly TextBlock _info = new() { Foreground = Brushes.White, Padding = new Thickness(6, 2, 6, 3), FontFamily = new FontFamily("Segoe UI"), FontSize = 12 };
+        private readonly TextBlock _info = new()
+        {
+            Foreground = HighContrast.Pick(Brushes.White, () => HighContrast.WindowText),
+            Padding = new Thickness(6, 2, 6, 3),
+            FontFamily = new FontFamily("Segoe UI"),
+            FontSize = 12,
+        };
 
         public LensWindow(ScreenMagnifier owner)
         {
@@ -255,7 +267,7 @@ public sealed unsafe class ScreenMagnifier
             root.Children.Add(_frame);
             root.Children.Add(new Border
             {
-                Background = Panel,
+                Background = HighContrast.Pick(NormalPanel, () => HighContrast.Window),
                 Child = _info,
                 VerticalAlignment = VerticalAlignment.Bottom,
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -263,6 +275,9 @@ public sealed unsafe class ScreenMagnifier
             Content = root;
             SourceInitialized += (_, _) => ToolWindowStyle.Apply(this, clickThrough: false, popup: true);
         }
+
+        /// <summary>What the lens shows under it: the pixel's position and colour, and the zoom.</summary>
+        public string Readout => _info.Text;
 
         /// <summary>Shows <paramref name="pixels"/> (the <paramref name="source"/> square) at <paramref name="zoom"/>, cropped to <paramref name="size"/> pixels.</summary>
         public void Present(WriteableBitmap pixels, PixelRect source, int zoom, int size, PixelPoint cursor, (byte R, byte G, byte B) centre)
@@ -324,6 +339,8 @@ public sealed unsafe class ScreenMagnifier
             base.OnDeactivated(e);
             _owner.Close(); // another window came to the front (Alt+Tab, the Win key): let go of the mouse
         }
+
+        protected override AutomationPeer OnCreateAutomationPeer() => new ReadoutWindowPeer(this, () => Readout);
 
         private static void Place(Rectangle rectangle, double at, double side)
         {

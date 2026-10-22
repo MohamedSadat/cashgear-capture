@@ -1,6 +1,7 @@
 <ResourceDictionary x:Class="CashGear.Capture.App.Editor.EditParameterTemplates"
                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:p="clr-namespace:CashGear.Capture.App.Platform"
                     xmlns:local="clr-namespace:CashGear.Capture.App.Editor"
                     xmlns:r="clr-namespace:CashGear.Capture.App.Resources">
   <!-- One template per kind of setting, for the Effects window and the other image dialogs. No explicit styles on
@@ -59,11 +60,14 @@
   <DataTemplate DataType="{x:Type local:ColorParameter}">
     <StackPanel Margin="0,8,0,0" Visibility="{Binding IsVisible, Converter={StaticResource ParameterVisible}}">
       <DockPanel>
-        <Border DockPanel.Dock="Right" Width="22" Height="22" CornerRadius="3" Background="{Binding Value.Brush}" BorderBrush="#80808080" BorderThickness="1"
-                ToolTip="{Binding Value.Name}" />
+        <!-- A label around the swatch, so a screen reader can read the colour. -->
+        <Label DockPanel.Dock="Right" Padding="0" AutomationProperties.Name="{Binding Value.Label}">
+          <Border Width="22" Height="22" CornerRadius="3" Background="{Binding Value.Brush}" BorderBrush="{p:Chrome Border}" BorderThickness="1"
+                  ToolTip="{Binding Value.Name}" />
+        </Label>
         <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
       </DockPanel>
-      <ItemsControl Margin="0,4,0,0" ItemsSource="{Binding Palette}" Focusable="False">
+      <ItemsControl Margin="0,4,0,0" ItemsSource="{Binding Palette}" Focusable="False" AutomationProperties.Name="{Binding Label}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <WrapPanel />
@@ -72,8 +76,9 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate DataType="{x:Type local:ColorSwatch}">
             <Button Command="{Binding DataContext.SetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"
-                    Padding="0" MinWidth="0" MinHeight="0" BorderThickness="0" Background="Transparent" ToolTip="{Binding Name}">
-              <Border Width="20" Height="20" Margin="0,0,4,4" CornerRadius="3" Background="{Binding Brush}" BorderBrush="#80808080" BorderThickness="1" />
+                    Padding="0" MinWidth="0" MinHeight="0" BorderThickness="0" Background="Transparent" ToolTip="{Binding Name}"
+                    AutomationProperties.Name="{Binding Label}">
+              <Border Width="20" Height="20" Margin="0,0,4,4" CornerRadius="3" Background="{Binding Brush}" BorderBrush="{p:Chrome Border}" BorderThickness="1" />
             </Button>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
@@ -96,7 +101,8 @@
   <DataTemplate DataType="{x:Type local:AnchorParameter}">
     <StackPanel Margin="0,8,0,0" Visibility="{Binding IsVisible, Converter={StaticResource ParameterVisible}}">
       <TextBlock Text="{Binding Label}" />
-      <ItemsControl Margin="0,4,0,0" ItemsSource="{Binding Cells}" Focusable="False" HorizontalAlignment="Left" FlowDirection="LeftToRight">
+      <ItemsControl Margin="0,4,0,0" ItemsSource="{Binding Cells}" Focusable="False" HorizontalAlignment="Left" FlowDirection="LeftToRight"
+                    AutomationProperties.Name="{Binding Label}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <UniformGrid Rows="3" Columns="3" />

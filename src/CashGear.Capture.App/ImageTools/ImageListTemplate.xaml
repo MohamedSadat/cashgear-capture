@@ -3,11 +3,25 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:CashGear.Capture.App.ImageTools"
                     xmlns:r="clr-namespace:CashGear.Capture.App.Resources">
-  <!-- The list of pictures every image tool starts with: add files or a folder, drag them in, order them. -->
+  <!-- The list of pictures every image tool starts with: add files or a folder, drag them in, order them.
+       In Tab order: the list, then the buttons under it. -->
   <DataTemplate DataType="{x:Type local:ImageListViewModel}">
-    <DockPanel>
-      <TextBlock DockPanel.Dock="Top" Text="{Binding CountText}" Margin="0,0,0,4" TextWrapping="Wrap" />
-      <WrapPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <TextBlock Text="{Binding CountText}" Margin="0,0,0,4" TextWrapping="Wrap" />
+      <ListBox Grid.Row="1" ItemsSource="{Binding Files}" SelectedItem="{Binding Selected}" AllowDrop="True" AutomationProperties.Name="{x:Static r:ImageToolsText.Pictures}"
+               VirtualizingPanel.IsVirtualizing="True">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="{x:Type local:ImageFileItem}">
+            <TextBlock Text="{Binding Name}" ToolTip="{Binding Path}" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <WrapPanel Grid.Row="2" Margin="0,6,0,0">
         <Button Content="{x:Static r:ImageToolsText.AddFiles}" Command="{Binding AddFilesCommand}" Margin="0,0,4,4" />
         <Button Content="{x:Static r:ImageToolsText.AddFolder}" Command="{Binding AddFolderCommand}" Margin="0,0,4,4" />
         <Button Content="{x:Static r:CommonText.Remove}" Command="{Binding RemoveCommand}" Margin="0,0,4,4" />
@@ -16,14 +30,6 @@
         <Button Content="{x:Static r:ImageToolsText.Clear}" Command="{Binding ClearCommand}" Margin="0,0,4,4" />
         <CheckBox Content="{x:Static r:ImageToolsText.WithSubfolders}" IsChecked="{Binding IncludeSubfolders}" VerticalAlignment="Center" Margin="4,0,0,4" />
       </WrapPanel>
-      <ListBox ItemsSource="{Binding Files}" SelectedItem="{Binding Selected}" AllowDrop="True" AutomationProperties.Name="{x:Static r:ImageToolsText.Pictures}"
-               VirtualizingPanel.IsVirtualizing="True">
-        <ListBox.ItemTemplate>
-          <DataTemplate DataType="{x:Type local:ImageFileItem}">
-            <TextBlock Text="{Binding Name}" ToolTip="{Binding Path}" />
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
-    </DockPanel>
+    </Grid>
   </DataTemplate>
 </ResourceDictionary>

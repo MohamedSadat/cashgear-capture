@@ -27,8 +27,10 @@ public sealed class HotkeyRegistrarTests
             [HotkeyAction.Record] = HotkeyGesture.Parse("Shift+PrintScreen"),
             [HotkeyAction.CaptureText] = HotkeyGesture.Parse("Ctrl+Alt+PrintScreen"),
             [HotkeyAction.RepeatLastCapture] = HotkeyGesture.Parse("Ctrl+Alt+Shift+PrintScreen"),
+            [HotkeyAction.UseToolbar] = HotkeyGesture.Parse("Ctrl+Alt+Shift+T"),
         });
         _notifier.Messages.Should().BeEmpty();
+        HotkeyRegistrar.Label(HotkeyAction.UseToolbar).Should().Be("Use the Toolbar from the Keyboard", "its row in Settings › Hotkeys");
     }
 
     [Fact]
@@ -39,7 +41,7 @@ public sealed class HotkeyRegistrarTests
         using var registrar = Start();
 
         registrar.Active.Should().NotContainKey(HotkeyAction.CaptureFullScreen);
-        registrar.Active.Should().HaveCount(6);
+        registrar.Active.Should().HaveCount(7);
         var message = _notifier.Messages.Should().ContainSingle().Subject;
         message.Kind.Should().Be(NotificationKind.Warning);
         message.Text.Should().Contain("Capture Full Screen: Ctrl+PrintScreen is already used");
@@ -57,7 +59,8 @@ public sealed class HotkeyRegistrarTests
                 CaptureScrolling: null,
                 Record: null,
                 CaptureText: null,
-                RepeatLastCapture: null),
+                RepeatLastCapture: null,
+                UseToolbar: null),
         };
 
         using var registrar = Start();
@@ -135,7 +138,7 @@ public sealed class HotkeyRegistrarSuspendTests
         suspension.Dispose();
         _hotkeys.Registered[HotkeyAction.CaptureRegion].Should().Be(HotkeyGesture.Parse("Ctrl+F9"));
         suspension.Dispose(); // idempotent
-        _hotkeys.Registered.Should().HaveCount(7);
+        _hotkeys.Registered.Should().HaveCount(8);
     }
 
     [Fact]
@@ -149,7 +152,7 @@ public sealed class HotkeyRegistrarSuspendTests
         _hotkeys.Registered.Should().BeEmpty();
 
         outer.Dispose();
-        _hotkeys.Registered.Should().HaveCount(7);
+        _hotkeys.Registered.Should().HaveCount(8);
     }
 
     [Fact]
@@ -163,7 +166,7 @@ public sealed class HotkeyRegistrarSuspendTests
         registrar.SetRecording(true);
         registrar.Active[HotkeyAction.ToggleDrawing].Should().Be(drawing);
         _hotkeys.Registered[HotkeyAction.ToggleDrawing].Should().Be(drawing);
-        _hotkeys.Registered.Should().HaveCount(8, "the others stay");
+        _hotkeys.Registered.Should().HaveCount(9, "the others stay");
         registrar.SetRecording(false);
         _hotkeys.Registered.Should().NotContainKey(HotkeyAction.ToggleDrawing);
         HotkeyRegistrar.Label(HotkeyAction.ToggleDrawing).Should().Be("Draw on Screen (while recording)");

@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace CashGear.Capture.App.Editor;
 
@@ -13,6 +15,13 @@ public partial class EffectsWindow : Window
 {
     public EffectsWindow() => InitializeComponent();
 
+    /// <summary>
+    /// Enter presses the default button while a number box still has the focus: its value only reaches the setting
+    /// when the box loses the focus, so it is passed on first.
+    /// </summary>
+    internal static void CommitTypedText() =>
+        (Keyboard.FocusedElement as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
     private async void OnApply(object sender, RoutedEventArgs e)
     {
         if (DataContext is not PreviewDialogViewModel viewModel)
@@ -20,6 +29,7 @@ public partial class EffectsWindow : Window
             return;
         }
 
+        CommitTypedText();
         ApplyButton.IsEnabled = false;
         try
         {
@@ -42,6 +52,7 @@ public partial class ImageEditWindow : Window
 
     private async void OnApply(object sender, RoutedEventArgs e)
     {
+        EffectsWindow.CommitTypedText();
         if (DataContext is PreviewDialogViewModel viewModel && await viewModel.ApplyAsync())
         {
             DialogResult = true;

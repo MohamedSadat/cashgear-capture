@@ -380,4 +380,8 @@
     <value>BMP</value>
     <comment>a file format's name, which stays as it is</comment>
   </data>
+  <data name="Progress" xml:space="preserve">
+    <value>Progress</value>
+    <comment>screen-reader name of the progress bar</comment>
+  </data>
 </root>

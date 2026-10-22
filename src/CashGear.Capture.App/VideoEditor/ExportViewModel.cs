@@ -21,14 +21,23 @@ public interface IExportPathPicker
     string? Pick(string filter, string fileName, string folder);
 }
 
-/// <summary>A quality as the export window lists it.</summary>
-public sealed record QualityChoice(QualityPreset Value, string Name);
+/// <summary>A quality as the export window lists it (its name is what screen readers read for it).</summary>
+public sealed record QualityChoice(QualityPreset Value, string Name)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>A GIF's dithering as the export window lists it.</summary>
-public sealed record DitherChoice(GifDither Value, string Name);
+public sealed record DitherChoice(GifDither Value, string Name)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>A size a GIF must stay under (0: no limit).</summary>
-public sealed record SizeLimitChoice(double Megabytes, string Name);
+public sealed record SizeLimitChoice(double Megabytes, string Name)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>
 /// The export window: the kind of file and its quality, where it goes, only the marked range or not, the captions

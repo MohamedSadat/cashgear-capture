@@ -1,3 +1,4 @@
+using CashGear.Capture.App.Toolbar;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.Hotkeys;
@@ -8,7 +9,7 @@ namespace CashGear.Capture.App.Hotkeys;
 /// Turns hotkey presses into captures, through the tray commands so a capture already running is not stacked.
 /// Runs on the UI thread (where <c>WM_HOTKEY</c> arrives).
 /// </summary>
-public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows, TrayViewModel tray) : IDisposable
+public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows, TrayViewModel tray, IToolbarKeyboard toolbarKeyboard) : IDisposable
 {
     public void Start() => hotkeys.Pressed += OnPressed;
 
@@ -97,6 +98,10 @@ public sealed class HotkeyRouter(IHotkeyService hotkeys, IWindowService windows,
 
             case HotkeyAction.Crosshair:
                 tray.ToggleCrosshairCommand.Execute(null);
+                break;
+
+            case HotkeyAction.UseToolbar:
+                toolbarKeyboard.UseToolbar();
                 break;
         }
     }

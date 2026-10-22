@@ -165,4 +165,7 @@
   <data name="UndoTrimEnd" xml:space="preserve">
     <value>قص النهاية</value>
   </data>
+  <data name="UndoMoveToTrack" xml:space="preserve">
+    <value>النقل إلى مسار آخر</value>
+  </data>
 </root>

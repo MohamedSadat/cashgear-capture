@@ -12,12 +12,12 @@
   <StackPanel Margin="16,12,16,14" Width="280">
     <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding Summary, Mode=OneWay}" />
     <TextBlock Margin="0,2,0,0" Opacity="0.7" Text="{Binding MethodText, Mode=OneWay}" />
-    <ProgressBar IsIndeterminate="True" Height="4" Margin="0,10,0,0" />
+    <ProgressBar IsIndeterminate="True" Height="4" Margin="0,10,0,0" AutomationProperties.Name="{x:Static r:CapturingText.ScrollingCapture}" />
     <TextBlock Margin="0,10,0,0" Opacity="0.7" TextWrapping="Wrap"
                Text="{x:Static r:CapturingText.ScrollHint}" />
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
       <Button Content="{x:Static r:CapturingText.FinishNow}" Command="{Binding FinishCommand}" MinWidth="96" Margin="0,0,8,0" />
-      <Button Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelCommand}" MinWidth="80" />
+      <Button Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelCommand}" MinWidth="80" IsCancel="True" />
     </StackPanel>
   </StackPanel>
 </Window>

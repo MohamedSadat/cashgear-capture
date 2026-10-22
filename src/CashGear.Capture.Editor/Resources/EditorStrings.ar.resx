@@ -216,4 +216,40 @@
   <data name="NameTemplateUnknownToken" xml:space="preserve">
     <value>{{{0}}} ليس جزءًا من الاسم يعرفه هذا التطبيق.</value>
   </data>
+  <data name="SpokenArrow" xml:space="preserve">
+    <value>سهم</value>
+  </data>
+  <data name="SpokenLine" xml:space="preserve">
+    <value>خط</value>
+  </data>
+  <data name="SpokenRectangle" xml:space="preserve">
+    <value>مستطيل</value>
+  </data>
+  <data name="SpokenEllipse" xml:space="preserve">
+    <value>شكل بيضاوي</value>
+  </data>
+  <data name="SpokenDrawing" xml:space="preserve">
+    <value>رسم حر</value>
+  </data>
+  <data name="SpokenHighlight" xml:space="preserve">
+    <value>تمييز</value>
+  </data>
+  <data name="SpokenBlur" xml:space="preserve">
+    <value>منطقة مموَّهة</value>
+  </data>
+  <data name="SpokenPixelation" xml:space="preserve">
+    <value>منطقة مقطَّعة إلى بكسلات</value>
+  </data>
+  <data name="SpokenSpotlight" xml:space="preserve">
+    <value>تسليط الضوء</value>
+  </data>
+  <data name="SpokenMagnifier" xml:space="preserve">
+    <value>مكبّر</value>
+  </data>
+  <data name="SpokenText" xml:space="preserve">
+    <value>نص: {0}</value>
+  </data>
+  <data name="SpokenStep" xml:space="preserve">
+    <value>الخطوة {0}</value>
+  </data>
 </root>

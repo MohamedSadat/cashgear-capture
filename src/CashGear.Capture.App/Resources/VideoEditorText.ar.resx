@@ -1155,4 +1155,55 @@
   <data name="FileFormat" xml:space="preserve">
     <value>التنسيق</value>
   </data>
+  <data name="TrackVolumeFormat" xml:space="preserve">
+    <value>مستوى صوت «{0}»</value>
+  </data>
+  <data name="MuteTrackFormat" xml:space="preserve">
+    <value>كتم صوت «{0}»</value>
+  </data>
+  <data name="SoloTrackFormat" xml:space="preserve">
+    <value>«{0}» منفردًا</value>
+  </data>
+  <data name="ShowTrackFormat" xml:space="preserve">
+    <value>إظهار «{0}»</value>
+  </data>
+  <data name="LockTrackFormat" xml:space="preserve">
+    <value>قفل «{0}»</value>
+  </data>
+  <data name="PlayButtonName" xml:space="preserve">
+    <value>تشغيل (Space)</value>
+  </data>
+  <data name="PauseButtonName" xml:space="preserve">
+    <value>إيقاف مؤقت (Space)</value>
+  </data>
+  <data name="TimelineName" xml:space="preserve">
+    <value>المخطط الزمني</value>
+  </data>
+  <data name="TimelineHelp" xml:space="preserve">
+    <value>يحدد Tab وShift+Tab المقطع التالي أو السابق، وينقله السهمان لأعلى ولأسفل إلى المسار الذي فوقه أو تحته، وينقله Alt مع السهم الأيسر أو الأيمن إطارًا واحدًا. ينتقل Ctrl+Tab إلى العنصر التالي.</value>
+  </data>
+  <data name="PreviewName" xml:space="preserve">
+    <value>المعاينة</value>
+  </data>
+  <data name="PreviewHelp" xml:space="preserve">
+    <value>تنقل مفاتيح الأسهم الصورة أو التعليق التوضيحي أو التكبير المحدد عند مؤشر التشغيل بكسلًا واحدًا (Shift: 10 px).</value>
+  </data>
+  <data name="ItemAutomationName" xml:space="preserve">
+    <value>{0}، {1} – {2}</value>
+  </data>
+  <data name="TimelineSplitterName" xml:space="preserve">
+    <value>ارتفاع المخطط الزمني</value>
+  </data>
+  <data name="TrimStartMenu" xml:space="preserve">
+    <value>قص البداية حتى مؤشر التشغيل (_T)</value>
+  </data>
+  <data name="TrimEndMenu" xml:space="preserve">
+    <value>قص النهاية حتى مؤشر التشغيل (_E)</value>
+  </data>
+  <data name="ExportProgressName" xml:space="preserve">
+    <value>تقدم التصدير</value>
+  </data>
+  <data name="TranscribeProgressName" xml:space="preserve">
+    <value>تقدم إنشاء التسميات التوضيحية</value>
+  </data>
 </root>

@@ -10,11 +10,13 @@
         Title="{x:Static r:RecordingText.AddOverlays}" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="ToolWindow"
         WindowStartupLocation="CenterScreen" ShowInTaskbar="True">
   <StackPanel Margin="16,12,16,14" Width="340">
-    <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-    <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress, Mode=OneWay}" Height="6" Margin="0,10,0,0" />
+    <TextBlock x:Name="Heading" FontSize="14" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+    <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress, Mode=OneWay}" Height="6" Margin="0,10,0,0"
+                 AutomationProperties.Name="{Binding Title}" />
     <TextBlock Margin="0,6,0,0" Opacity="0.7" Text="{Binding PercentText}" />
     <TextBlock Margin="0,8,0,0" Opacity="0.7" TextWrapping="Wrap"
                Text="{x:Static r:RecordingText.OverlaysDrawnNote}" />
-    <Button Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelCommand}" MinWidth="80" HorizontalAlignment="Right" Margin="0,12,0,0" />
+    <!-- Esc cancels too. -->
+    <Button Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelCommand}" IsCancel="True" MinWidth="80" HorizontalAlignment="Right" Margin="0,12,0,0" />
   </StackPanel>
 </Window>

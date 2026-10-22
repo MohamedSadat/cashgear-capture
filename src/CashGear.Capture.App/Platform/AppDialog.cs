@@ -169,9 +169,9 @@ internal static class AppDialog
         window.Content = body;
         window.Loaded += (_, _) => (row.Children[0] as Button)?.Focus();
         Theming.Apply(window, theme);
-        if (SystemParameters.HighContrast)
+        if (HighContrast.IsOn)
         {
-            glyph.Foreground = SystemColors.WindowTextBrush;
+            glyph.Foreground = HighContrast.WindowText;
         }
 
         answer = () => result;

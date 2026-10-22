@@ -22,7 +22,11 @@ public sealed class EffectEditorContext(IReadOnlyList<string> fontFamilies, Func
 }
 
 /// <summary>A kind of effect that can be added to the list.</summary>
-public sealed record EffectKind(string Id, string Name, Func<ImageEffect> Create);
+public sealed record EffectKind(string Id, string Name, Func<ImageEffect> Create)
+{
+    /// <summary>Screen readers read the Add menu's items by this.</summary>
+    public override string ToString() => Name;
+}
 
 /// <summary>One effect in the Effects window: its settings as parameters, turned back into the effect on every change.</summary>
 public abstract class EffectItemViewModel : ObservableObject
@@ -52,6 +56,9 @@ public abstract class EffectItemViewModel : ObservableObject
     public event EventHandler? Changed;
 
     public abstract ImageEffect ToEffect();
+
+    /// <summary>Screen readers read the items of the effects list by this.</summary>
+    public override string ToString() => Name;
 
     public static EffectItemViewModel From(ImageEffect effect, EffectEditorContext context) => effect switch
     {

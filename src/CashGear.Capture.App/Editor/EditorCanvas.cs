@@ -1,7 +1,10 @@
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Input;
+using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.Editor.Interaction;
+using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Editor.Rendering;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
@@ -10,9 +13,33 @@ using SkiaSharp.Views.WPF;
 namespace CashGear.Capture.App.Editor;
 
 /// <summary>
+/// The colours the editor draws around and over the picture: the surround, the grips, the shade over what a crop
+/// cuts away and the size labels. Under high contrast they are the system colours (the picture itself stays as it is).
+/// </summary>
+internal sealed record CanvasColors(SKColor Background, SKColor HandleFill, SKColor HandleOutline, SKColor CropShade, SKColor LabelBackground, SKColor LabelText)
+{
+    private static readonly SKColor DarkSurround = new(0x1E, 0x1E, 0x1E);
+    private static readonly SKColor LightSurround = new(0xE3, 0xE3, 0xE3);
+
+    /// <summary>The colours for a dark or light theme, or high contrast's (read each time: it can be switched while the editor is open).</summary>
+    public static CanvasColors For(bool dark)
+    {
+        var contrast = HighContrast.IsOn;
+        return new CanvasColors(
+            HighContrast.Pick(dark ? DarkSurround : LightSurround, () => SystemColors.WindowColor),
+            HighContrast.Pick(SKColors.White, () => SystemColors.HighlightColor),
+            HighContrast.Pick(EditorColors.Accent, () => SystemColors.HighlightTextColor),
+            contrast ? HighContrast.ToSkia(SystemColors.WindowColor).WithAlpha(160) : new SKColor(0, 0, 0, 140),
+            HighContrast.Pick(new SKColor(0, 0, 0, 180), () => SystemColors.WindowColor),
+            HighContrast.Pick(SKColors.White, () => SystemColors.WindowTextColor));
+    }
+}
+
+/// <summary>
 /// The Skia surface the image is edited on. Draws through <see cref="ViewRenderer"/> at physical-pixel resolution
 /// and turns mouse input into image coordinates for the <see cref="EditorSession"/>. Panning (middle button, or
-/// Space + drag) and wheel zoom are handled here; everything else is the session's.
+/// Space + drag) and wheel zoom are handled here; everything else is the session's. Screen readers see the
+/// annotations as its children (<see cref="EditorCanvasAutomationPeer"/>).
 /// </summary>
 internal sealed class EditorCanvas : SKElement
 {
@@ -22,26 +49,37 @@ internal sealed class EditorCanvas : SKElement
     private MouseButton _panButton;
     private SKPoint _lastImagePoint;
     private bool _spaceHeld;
+    private CanvasColors _colors = CanvasColors.For(dark: true);
+    private AnnotationId? _selected;
 
     public EditorCanvas()
     {
-        Focusable = true;
-        FocusVisualStyle = null;
+        Focusable = true; // its focus rectangle is the window's CanvasFocus style
         ClipToBounds = true;
+        Colors = _colors;
     }
 
     /// <summary>Raised when the session asks for text to be typed at a point (the window shows its text box).</summary>
     public event EventHandler<TextEditRequest>? TextEditRequested;
 
-    public SKColor CanvasColor
+    /// <summary>The surround and the colours of the grips, crop shade and size labels.</summary>
+    public CanvasColors Colors
     {
-        get => _renderer.Background;
+        get => _colors;
         set
         {
-            _renderer.Background = value;
+            _colors = value;
+            _renderer.Background = value.Background;
+            _renderer.HandleFill = value.HandleFill;
+            _renderer.HandleOutline = value.HandleOutline;
+            _renderer.CropShade = value.CropShade;
+            _renderer.LabelBackground = value.LabelBackground;
+            _renderer.LabelText = value.LabelText;
             InvalidateVisual();
         }
     }
+
+    internal EditorViewModel? ViewModel => _viewModel;
 
     /// <summary>Space held: left-drag pans instead of editing.</summary>
     public bool SpaceHeld
@@ -59,8 +97,45 @@ internal sealed class EditorCanvas : SKElement
         _viewModel = viewModel;
         viewModel.Session.Invalidated += (_, _) => InvalidateVisual();
         viewModel.Session.TextEditRequested += (_, request) => TextEditRequested?.Invoke(this, request);
-        viewModel.Document.Changed += (_, _) => InvalidateVisual();
+        viewModel.Session.SelectionChanged += (_, _) => OnSelectionChanged();
+        viewModel.Document.Changed += (_, _) =>
+        {
+            InvalidateVisual();
+            UIElementAutomationPeer.FromElement(this)?.InvalidatePeer(); // annotations added, removed or changed
+        };
         viewModel.Viewport.Changed += (_, _) => InvalidateVisual();
+    }
+
+    /// <summary>An area of the image (image pixels) on the screen (physical pixels), for screen readers; empty while the canvas isn't shown.</summary>
+    internal Rect ImageToScreen(SKRect area)
+    {
+        if (_viewModel is null || PresentationSource.FromVisual(this) is null)
+        {
+            return Rect.Empty;
+        }
+
+        var viewport = _viewModel.Viewport;
+        var topLeft = PointToScreen(ToDips(viewport.ToView(new SKPoint(area.Left, area.Top))));
+        var bottomRight = PointToScreen(ToDips(viewport.ToView(new SKPoint(area.Right, area.Bottom))));
+        return new Rect(topLeft, bottomRight);
+    }
+
+    /// <summary>Where the canvas is on the screen (physical pixels); empty while it isn't shown.</summary>
+    internal Rect ScreenBounds => PresentationSource.FromVisual(this) is null
+        ? Rect.Empty
+        : new Rect(PointToScreen(new Point(0, 0)), PointToScreen(new Point(ActualWidth, ActualHeight)));
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new EditorCanvasAutomationPeer(this);
+
+    /// <summary>Tells a screen reader which annotation is selected now (and says its name if the canvas has the focus).</summary>
+    private void OnSelectionChanged()
+    {
+        var before = _selected;
+        _selected = _viewModel?.Session.SelectedId;
+        if (UIElementAutomationPeer.FromElement(this) is EditorCanvasAutomationPeer peer)
+        {
+            peer.RaiseSelectionChanged(before, _selected, announce: IsKeyboardFocused);
+        }
     }
 
     /// <summary>Physical pixels per DIP for this element (follows the monitor under PerMonitorV2).</summary>

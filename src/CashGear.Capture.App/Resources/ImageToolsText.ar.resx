@@ -435,4 +435,7 @@
   <data name="FormatBmp" xml:space="preserve">
     <value>BMP</value>
   </data>
+  <data name="Progress" xml:space="preserve">
+    <value>التقدّم</value>
+  </data>
 </root>

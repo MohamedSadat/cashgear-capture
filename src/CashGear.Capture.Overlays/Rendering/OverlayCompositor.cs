@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Numerics;
 using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Core.Settings;
@@ -398,7 +399,10 @@ public sealed class OverlayCompositor : IDisposable
     {
         if (!_formats.TryGetValue((family, size), out var format))
         {
-            format = _write.CreateTextFormat(family, null, FontWeight.SemiBold, FontStyle.Normal, FontStretch.Normal, size, "en-us");
+            // The UI language's locale picks the fallback fonts for its script (Arabic letters typed on an Arabic
+            // layout); the paragraph stays left to right, and an Arabic run within it still reads right to left.
+            var locale = CultureInfo.CurrentUICulture.Name is { Length: > 0 } name ? name : "en-us";
+            format = _write.CreateTextFormat(family, null, FontWeight.SemiBold, FontStyle.Normal, FontStretch.Normal, size, locale);
             format.WordWrapping = WordWrapping.NoWrap;
             _formats[(family, size)] = format;
         }

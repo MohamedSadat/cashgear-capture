@@ -144,6 +144,7 @@ internal sealed partial class RegionOverlayWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _model.Changed -= OnModelChanged;
+        _visual.StopAnnouncing();
         base.OnClosed(e);
     }
 
@@ -292,7 +293,7 @@ internal sealed partial class RegionOverlayWindow : Window
         }
     }
 
-    private void OnModelChanged(object? sender, EventArgs e) => _visual.InvalidateVisual();
+    private void OnModelChanged(object? sender, EventArgs e) => _visual.Refresh();
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Overlay shown {SinceHotkeyMs:0.0} ms after its hotkey (QPC {ShownQpc}): {Steps}")]
     private partial void LogShownAfterHotkey(double sinceHotkeyMs, long shownQpc, string steps);

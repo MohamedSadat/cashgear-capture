@@ -99,4 +99,7 @@
   <data name="ChooseOtherKeys" xml:space="preserve">
     <value>اختر مفاتيح أخرى من الإعدادات.</value>
   </data>
+  <data name="UseToolbar" xml:space="preserve">
+    <value>استخدام شريط الأدوات من لوحة المفاتيح</value>
+  </data>
 </root>

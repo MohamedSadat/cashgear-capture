@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
@@ -7,7 +9,10 @@ using Microsoft.Win32;
 
 namespace CashGear.Capture.App.VideoEditor;
 
-/// <summary>The export window: settings, then the export's progress; closing it cancels a running export.</summary>
+/// <summary>
+/// The export window: settings, then the export's progress; closing it cancels a running export. Enter exports, Esc
+/// cancels the export or closes the window, and screen readers hear the progress and errors.
+/// </summary>
 public partial class ExportWindow : Window, IThemedWindow
 {
     public ExportWindow(ExportViewModel viewModel, AppTheme theme)
@@ -36,6 +41,15 @@ public partial class ExportWindow : Window, IThemedWindow
     }
 
     private void UpdateCancel() => CancelButton.Content = DataContext is ExportViewModel { IsRunning: true } ? CommonText.Cancel : CommonText.Close;
+
+    /// <summary>The progress line or the error changed: screen readers read it.</summary>
+    private void OnLiveTextUpdated(object? sender, DataTransferEventArgs e)
+    {
+        if (sender is TextBlock text)
+        {
+            LiveText.Announce(text);
+        }
+    }
 
     private sealed class SaveDialogPicker(Window owner) : IExportPathPicker
     {

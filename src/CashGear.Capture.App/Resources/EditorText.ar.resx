@@ -103,7 +103,7 @@
     <value>تكبير (G)</value>
   </data>
   <data name="ImageMenu" xml:space="preserve">
-    <value>الصورة ▾</value>
+    <value>الصورة (_I) ▾</value>
   </data>
   <data name="RotateLeft" xml:space="preserve">
     <value>تدوير لليسار</value>
@@ -130,7 +130,7 @@
     <value>اقتصاص الحواف السادة</value>
   </data>
   <data name="EffectsMenu" xml:space="preserve">
-    <value>التأثيرات ▾</value>
+    <value>التأثيرات (_E) ▾</value>
   </data>
   <data name="Effects" xml:space="preserve">
     <value>التأثيرات</value>
@@ -184,7 +184,7 @@
     <value>حفظ باسم (Ctrl+Shift+S)</value>
   </data>
   <data name="SendToMenu" xml:space="preserve">
-    <value>إرسال إلى ▾</value>
+    <value>إرسال إلى (_N) ▾</value>
   </data>
   <data name="SendTo" xml:space="preserve">
     <value>إرسال إلى</value>
@@ -406,7 +406,7 @@
     <value>تُطبَّق بهذا الترتيب</value>
   </data>
   <data name="AddMenu" xml:space="preserve">
-    <value>إضافة ▾</value>
+    <value>إضافة (_A) ▾</value>
   </data>
   <data name="AddEffect" xml:space="preserve">
     <value>إضافة تأثير</value>
@@ -599,5 +599,68 @@
   </data>
   <data name="InTheCorners" xml:space="preserve">
     <value>في الزوايا</value>
+  </data>
+  <data name="CanvasControlType" xml:space="preserve">
+    <value>منطقة التحرير</value>
+  </data>
+  <data name="CanvasHelp" xml:space="preserve">
+    <value>يحدد Tab التعليق التوضيحي التالي، وتنقله مفاتيح الأسهم (مع Shift: ‏10 px)، ويغيّر Ctrl+Shift مع مفاتيح الأسهم حجمه، ويحذفه Delete. ويضيف Enter عنصرًا بالأداة المختارة، وينتقل Ctrl+Tab إلى عنصر التحكم التالي.</value>
+  </data>
+  <data name="ZoomOut" xml:space="preserve">
+    <value>تصغير</value>
+  </data>
+  <data name="ZoomIn" xml:space="preserve">
+    <value>تكبير</value>
+  </data>
+  <data name="NoFill" xml:space="preserve">
+    <value>بلا تعبئة</value>
+  </data>
+  <data name="ColourRed" xml:space="preserve">
+    <value>أحمر</value>
+  </data>
+  <data name="ColourOrange" xml:space="preserve">
+    <value>برتقالي</value>
+  </data>
+  <data name="ColourYellow" xml:space="preserve">
+    <value>أصفر</value>
+  </data>
+  <data name="ColourGreen" xml:space="preserve">
+    <value>أخضر</value>
+  </data>
+  <data name="ColourTeal" xml:space="preserve">
+    <value>أزرق مخضر</value>
+  </data>
+  <data name="ColourBlue" xml:space="preserve">
+    <value>أزرق</value>
+  </data>
+  <data name="ColourPurple" xml:space="preserve">
+    <value>بنفسجي</value>
+  </data>
+  <data name="ColourPink" xml:space="preserve">
+    <value>وردي</value>
+  </data>
+  <data name="ColourBlack" xml:space="preserve">
+    <value>أسود</value>
+  </data>
+  <data name="ColourDarkGrey" xml:space="preserve">
+    <value>رمادي داكن</value>
+  </data>
+  <data name="ColourMidGrey" xml:space="preserve">
+    <value>رمادي متوسط</value>
+  </data>
+  <data name="ColourGrey" xml:space="preserve">
+    <value>رمادي</value>
+  </data>
+  <data name="ColourWhite" xml:space="preserve">
+    <value>أبيض</value>
+  </data>
+  <data name="CurrentColourIs" xml:space="preserve">
+    <value>اللون الحالي: {0}</value>
+  </data>
+  <data name="CurrentFillIs" xml:space="preserve">
+    <value>التعبئة الحالية: {0}</value>
+  </data>
+  <data name="ImageMenuName" xml:space="preserve">
+    <value>الصورة</value>
   </data>
 </root>

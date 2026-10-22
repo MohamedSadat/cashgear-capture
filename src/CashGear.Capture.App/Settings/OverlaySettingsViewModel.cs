@@ -138,6 +138,22 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
         WebcamCenterY = Math.Round(Math.Clamp(y, 0, 1) * 100, 1);
     }
 
+    /// <summary>
+    /// Moves the webcam by <paramref name="dx"/> and <paramref name="dy"/> percentage points of the recorded area (the
+    /// arrow keys), keeping all of it inside: its centre stays <paramref name="halfWidth"/> and
+    /// <paramref name="halfHeight"/> points in from the edges. A centre set outside that moves from where the box shows.
+    /// </summary>
+    public void NudgeWebcam(double dx, double dy, double halfWidth, double halfHeight)
+    {
+        static double Step(double centre, double by, double half)
+        {
+            half = Math.Clamp(half, 0, 50);
+            return Math.Clamp(Math.Clamp(centre, half, 100 - half) + by, half, 100 - half);
+        }
+
+        MoveWebcam(Step(WebcamCenterX, dx, halfWidth) / 100, Step(WebcamCenterY, dy, halfHeight) / 100);
+    }
+
     private CameraChoice CameraFor(string? id)
     {
         if (id is null)

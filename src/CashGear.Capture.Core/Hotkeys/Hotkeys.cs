@@ -199,6 +199,12 @@ public enum HotkeyAction
 
     /// <summary>Show or hide the crosshair with the pointer's coordinates.</summary>
     Crosshair,
+
+    /// <summary>
+    /// The keyboard goes to the recording toolbar while recording, otherwise to the capture toolbar (shown first if
+    /// hidden): Tab, the arrows, Enter and Space work there, and Esc gives the focus back.
+    /// </summary>
+    UseToolbar,
 }
 
 /// <summary>System-wide hotkeys. Registration and presses happen on the thread that owns the service (the UI thread).</summary>

@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -9,7 +11,6 @@ using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Interaction;
 using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Editor.Text;
-using SkiaSharp;
 
 namespace CashGear.Capture.App.Editor;
 
@@ -39,6 +40,8 @@ public partial class EditorWindow : Window, IThemedWindow
         TextEditor.LostKeyboardFocus += (_, _) => CommitText();
         TextEditor.PreviewKeyDown += OnTextEditorKeyDown;
         TextEditor.TextChanged += (_, _) => FollowTextDirection();
+        viewModel.PropertyChanged += OnViewModelChanged;
+        AddHandler(ButtonBase.ClickEvent, new RoutedEventHandler(OnButtonClick), handledEventsToo: true);
         SizeToImage(viewModel.Document.Width, viewModel.Document.Height);
         Loaded += (_, _) => Surface.Focus();
     }
@@ -46,7 +49,7 @@ public partial class EditorWindow : Window, IThemedWindow
     public void ApplyTheme(AppTheme theme)
     {
         Theming.Apply(this, theme);
-        Surface.CanvasColor = Theming.IsDark(theme) ? new SKColor(0x1E, 0x1E, 0x1E) : new SKColor(0xE3, 0xE3, 0xE3);
+        Surface.Colors = CanvasColors.For(Theming.IsDark(theme)); // the system's under high contrast
     }
 
     /// <summary>Closes the window, asking about unsaved changes first. False if the user chose to keep it open.</summary>
@@ -96,42 +99,64 @@ public partial class EditorWindow : Window, IThemedWindow
         base.OnClosed(e);
     }
 
-    /// <summary>Single-key tools and editing keys. Ctrl shortcuts are key bindings in the XAML.</summary>
+    /// <summary>
+    /// The editor's keys. Tool letters, Delete and Esc work wherever the focus is, except while typing (a text box,
+    /// the font list, a menu); Tab, the arrows, Enter and Space are the canvas's while it has the focus (elsewhere
+    /// they move between and press controls). Ctrl shortcuts are key bindings in the XAML.
+    /// </summary>
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
         base.OnPreviewKeyDown(e);
         var focus = Keyboard.FocusedElement;
-        if (e.Handled || (focus is not null && focus != Surface && focus != this))
-        {
-            return; // typing in a text box, a slider or the font list
-        }
-
-        var shift = Keyboard.Modifiers == ModifierKeys.Shift;
-        if (Keyboard.Modifiers is not (ModifierKeys.None or ModifierKeys.Shift))
+        if (e.Handled || OwnsLetters(focus))
         {
             return;
         }
 
+        var onCanvas = focus == Surface;
+        var modifiers = Keyboard.Modifiers;
+        if (modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            // Ctrl+Shift+arrows: resize (right and down make it bigger).
+            e.Handled = onCanvas && Arrow(e.Key) is { } grow && _viewModel.Session.ResizeBy(grow.X, grow.Y);
+            return;
+        }
+
+        if (modifiers is not (ModifierKeys.None or ModifierKeys.Shift))
+        {
+            return; // Ctrl+Tab and Alt keys keep their usual meaning: Ctrl+Tab leaves the canvas
+        }
+
+        var shift = modifiers == ModifierKeys.Shift;
         var session = _viewModel.Session;
         switch (e.Key)
         {
-            case Key.Space:
+            case Key.Space when onCanvas || focus is not ButtonBase:
                 Surface.SpaceHeld = true;
                 break;
-            case Key.Delete or Key.Back:
+            case Key.Delete or Key.Back when session.Selected is not null:
                 session.DeleteSelection();
                 break;
             case Key.Escape:
-                session.Cancel();
+                if (!session.Cancel() && !onCanvas)
+                {
+                    return;
+                }
+
                 break;
-            case Key.Enter when _viewModel.IsCropping:
-                _viewModel.ApplyCropCommand.Execute(null);
+            case Key.Enter when onCanvas:
+                _viewModel.Enter();
                 break;
-            case Key.Left or Key.Right or Key.Up or Key.Down when session.Selected is not null:
-                var step = shift ? 10 : 1;
-                session.Nudge(
-                    e.Key == Key.Left ? -step : e.Key == Key.Right ? step : 0,
-                    e.Key == Key.Up ? -step : e.Key == Key.Down ? step : 0);
+            case Key.Tab when onCanvas:
+                if (!session.SelectNext(backwards: shift))
+                {
+                    return; // nothing to select: on to the next control
+                }
+
+                break;
+            case Key.Left or Key.Right or Key.Up or Key.Down when onCanvas:
+                var step = Arrow(e.Key)!.Value;
+                _viewModel.Nudge(shift ? step.X * 10 : step.X, shift ? step.Y * 10 : step.Y);
                 break;
             default:
                 if (ToolForKey(e.Key) is not { } tool || shift)
@@ -145,6 +170,20 @@ public partial class EditorWindow : Window, IThemedWindow
 
         e.Handled = true;
     }
+
+    /// <summary>Controls that need letters and the editing keys themselves: text boxes, the font list, menus.</summary>
+    private static bool OwnsLetters(IInputElement? focus) =>
+        focus is TextBoxBase or PasswordBox or ComboBox or ComboBoxItem or MenuItem or Menu;
+
+    /// <summary>An arrow key's direction (one pixel), or null for other keys.</summary>
+    private static (int X, int Y)? Arrow(Key key) => key switch
+    {
+        Key.Left => (-1, 0),
+        Key.Right => (1, 0),
+        Key.Up => (0, -1),
+        Key.Down => (0, 1),
+        _ => null,
+    };
 
     protected override void OnPreviewKeyUp(KeyEventArgs e)
     {
@@ -208,6 +247,32 @@ public partial class EditorWindow : Window, IThemedWindow
     /// <summary>Arabic or Hebrew text is typed right to left, as the annotation will show it (right-aligned).</summary>
     private void FollowTextDirection() =>
         TextEditor.FlowDirection = Bidi.IsRightToLeft(TextEditor.Text) ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+
+    /// <summary>
+    /// A button clicked with the mouse gives the focus back to the canvas, so the canvas's keys (arrows, Space+drag)
+    /// go on working as before the click; buttons reached with Tab keep it.
+    /// </summary>
+    private void OnButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (e.OriginalSource is ButtonBase { IsKeyboardFocused: true }
+            && InputManager.Current.MostRecentInputDevice is not KeyboardDevice
+            && _viewModel.Session.TextEdit is null)
+        {
+            Surface.Focus();
+        }
+    }
+
+    /// <summary>A status message ("Copied to the clipboard") is read out by screen readers when it appears.</summary>
+    private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(EditorViewModel.Message) && _viewModel.Message.Length > 0
+            && AutomationPeer.ListenerExists(AutomationEvents.LiveRegionChanged))
+        {
+            // Once the binding has put the new text in the label.
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+                UIElementAutomationPeer.CreatePeerForElement(MessageText)?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged));
+        }
+    }
 
     /// <summary>Presets saved since the menu was last opened show up at once.</summary>
     private void OnEffectsOpened(object sender, RoutedEventArgs e) => (DataContext as EditorViewModel)?.RefreshPresets();

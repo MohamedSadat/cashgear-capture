@@ -420,6 +420,9 @@ public sealed partial class ServerViewModel : TestableViewModel
 
     public string Label => $"{(Name.Length > 0 ? Name : Host.Length > 0 ? Host : DestinationsText.NewServer)} ({Describe(Protocol)})";
 
+    /// <summary>Its label: what a screen reader says for it in the list.</summary>
+    public override string ToString() => Label;
+
     public bool IsSftp => Protocol == ServerProtocol.Sftp;
 
     public bool IsFtp => !IsSftp;
@@ -583,6 +586,9 @@ public sealed partial class UploadViewModel : TestableViewModel
 
     public string Label => Name.Length > 0 ? Name : Uri.TryCreate(Url, UriKind.Absolute, out var url) ? url.Host : DestinationsText.NewUpload;
 
+    /// <summary>Its label: what a screen reader says for it in the list.</summary>
+    public override string ToString() => Label;
+
     public string TokenState => _secrets.Get(CredentialKeys.Token(Build())) is null ? DestinationsText.NoValueSaved : DestinationsText.ValueSaved;
 
     /// <summary>The secret header's value typed into the window; an emptied box keeps the saved one (Forget removes it).</summary>
@@ -669,6 +675,9 @@ public sealed partial class ExternalAppViewModel(ExternalApp app, IFilePicker? p
     private string _arguments = app.Arguments;
 
     public string Label => Name.Length > 0 ? Name : Path.Length > 0 ? System.IO.Path.GetFileNameWithoutExtension(Path) : DestinationsText.NewApp;
+
+    /// <summary>Its label: what a screen reader says for it in the list.</summary>
+    public override string ToString() => Label;
 
     public bool CanBrowse => picker is not null;
 

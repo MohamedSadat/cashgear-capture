@@ -133,4 +133,8 @@
     <value>", "</value>
     <comment>between window titles inside the quotes of CoreStrings.ProtectedInCapture/InRecording: "A", "B" / «A»، «B»</comment>
   </data>
+  <data name="RegionSpoken" xml:space="preserve">
+    <value>{0}. {1}</value>
+    <comment>what a screen reader says on the selection overlay: the size label, then the hint</comment>
+  </data>
 </root>

@@ -1,6 +1,7 @@
 <Window x:Class="CashGear.Capture.App.Toolbar.CaptureToolbarWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="clr-namespace:CashGear.Capture.App.Platform"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.Toolbar"
@@ -8,7 +9,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CaptureToolbarViewModel}"
         Title="{x:Static r:ToolbarText.WindowTitle}" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="None"
-        Topmost="True" ShowInTaskbar="False" ShowActivated="False" BorderThickness="1" BorderBrush="#60808080">
+        Topmost="True" ShowInTaskbar="False" ShowActivated="False" BorderThickness="1" BorderBrush="{p:Chrome FaintBorder}">
   <Window.Resources>
     <!-- The buttons keep the theme's own style; their size is set in code (CaptureToolbarWindow.Compact). -->
     <!-- 16 x 16 line icons in the button's text colour. -->
@@ -94,7 +95,7 @@
       <Path Style="{StaticResource Icon}" Data="M2.5,1.5 H13.5 V9.5 H2.5 Z M8,11 V15 M5.5,12.5 L8,15 L10.5,12.5" />
     </Button>
 
-    <Border Tag="Separator" Width="1" Height="24" Margin="3,0" Background="#60808080" />
+    <Border Tag="Separator" Width="1" Height="24" Margin="3,0" Background="{p:Chrome FaintBorder}" />
 
     <Button x:Name="FixedButton" Command="{Binding Tray.CaptureFixedRegionCommand}" ToolTip="{Binding FixedTip}"
             AutomationProperties.Name="{x:Static r:ToolbarText.CaptureFixedRegion}" MouseRightButtonUp="OnFixedSizes">
@@ -122,7 +123,7 @@
       <Path Style="{StaticResource Icon}" Data="M1.5,4.5 V1.5 H4.5 M11.5,1.5 H14.5 V4.5 M14.5,11.5 V14.5 H11.5 M4.5,14.5 H1.5 V11.5 M4.5,5 H11.5 M8,5 V11.5" />
     </Button>
 
-    <Border Tag="Separator" Width="1" Height="24" Margin="3,0" Background="#60808080" />
+    <Border Tag="Separator" Width="1" Height="24" Margin="3,0" Background="{p:Chrome FaintBorder}" />
 
     <Button x:Name="ToolsButton" Click="OnTools" ToolTip="{x:Static r:ToolbarText.ToolsTip}" AutomationProperties.Name="{x:Static r:ToolbarText.ScreenTools}">
       <Path Style="{StaticResource Icon}" Data="M6.5,11.5 A5,5 0 1 1 6.5,1.5 A5,5 0 1 1 6.5,11.5 Z M10,10 L14.5,14.5" />
@@ -131,15 +132,16 @@
       <TextBlock Text="&#xE8EE;" Style="{StaticResource Glyph}" />
     </Button>
     <Button Command="{Binding Tray.ToggleRecordingCommand}" ToolTip="{Binding RecordTip}" AutomationProperties.Name="{x:Static r:ToolbarText.RecordScreen}">
-      <Ellipse Width="13" Height="13" Fill="#E81123" />
+      <Ellipse Width="13" Height="13" Fill="{p:Chrome Record}" />
     </Button>
     <Button x:Name="DelayButton" Click="OnDelay" ToolTip="{x:Static r:ToolbarText.CaptureDelay}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureDelay}">
-      <Path Style="{StaticResource Icon}" Data="M8,15 A6,6 0 1 1 8,3 A6,6 0 1 1 8,15 Z M8,6 V9 L10,10.5 M6.5,1 H9.5" />
+      <!-- A stopwatch's hand turns the same way in every language. -->
+      <Path Style="{StaticResource Icon}" FlowDirection="LeftToRight" Data="M8,15 A6,6 0 1 1 8,3 A6,6 0 1 1 8,15 Z M8,6 V9 L10,10.5 M6.5,1 H9.5" />
     </Button>
     <Button x:Name="AfterButton" Click="OnAfterCapture" ToolTip="{x:Static r:ToolbarText.AfterCaptureTip}" AutomationProperties.Name="{x:Static r:ToolbarText.AfterCapture}">
       <Path Style="{StaticResource Icon}" Data="M8,1.5 V10 M4.5,6.5 L8,10 L11.5,6.5 M2,12 V14.5 H14 V12" />
     </Button>
-    <Button Command="{Binding Tray.OpenSettingsCommand}" ToolTip="{x:Static r:ToolbarText.Settings}" AutomationProperties.Name="{x:Static r:ToolbarText.Settings}">
+    <Button x:Name="SettingsButton" Command="{Binding Tray.OpenSettingsCommand}" ToolTip="{x:Static r:ToolbarText.Settings}" AutomationProperties.Name="{x:Static r:ToolbarText.Settings}">
       <TextBlock Text="&#xE713;" Style="{StaticResource Glyph}" />
     </Button>
     <Button Command="{Binding HideToolbarCommand}" ToolTip="{x:Static r:ToolbarText.HideTip}" AutomationProperties.Name="{x:Static r:ToolbarText.HideToolbar}">

@@ -277,4 +277,52 @@
     <value>{{{0}}} isn't a name part this app knows.</value>
     <comment>{0} is the unknown token without its braces</comment>
   </data>
+  <data name="SpokenArrow" xml:space="preserve">
+    <value>Arrow</value>
+    <comment>an annotation, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenLine" xml:space="preserve">
+    <value>Line</value>
+    <comment>an annotation, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenRectangle" xml:space="preserve">
+    <value>Rectangle</value>
+    <comment>an annotation, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenEllipse" xml:space="preserve">
+    <value>Ellipse</value>
+    <comment>an annotation, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenDrawing" xml:space="preserve">
+    <value>Drawing</value>
+    <comment>a pen stroke, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenHighlight" xml:space="preserve">
+    <value>Highlight</value>
+    <comment>an annotation, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenBlur" xml:space="preserve">
+    <value>Blurred area</value>
+    <comment>an annotation, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenPixelation" xml:space="preserve">
+    <value>Pixelated area</value>
+    <comment>an annotation, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenSpotlight" xml:space="preserve">
+    <value>Spotlight</value>
+    <comment>an annotation, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenMagnifier" xml:space="preserve">
+    <value>Magnifier</value>
+    <comment>an annotation, as a screen reader names it</comment>
+  </data>
+  <data name="SpokenText" xml:space="preserve">
+    <value>Text: {0}</value>
+    <comment>a text annotation, as a screen reader names it; {0} is its text</comment>
+  </data>
+  <data name="SpokenStep" xml:space="preserve">
+    <value>Step {0}</value>
+    <comment>a step number badge, as a screen reader names it; {0} is its number</comment>
+  </data>
 </root>

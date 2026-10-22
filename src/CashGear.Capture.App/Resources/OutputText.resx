@@ -162,4 +162,8 @@
     <value>in {0} (click to show)</value>
     <comment>a notification's line under the saved files; {0}: folder</comment>
   </data>
+  <data name="StepSeparator" xml:space="preserve">
+    <value> → </value>
+    <comment>Between the steps of a workflow: points the way the steps run (to the left in Arabic)</comment>
+  </data>
 </root>

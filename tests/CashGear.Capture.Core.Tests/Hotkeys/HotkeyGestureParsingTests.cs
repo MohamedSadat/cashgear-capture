@@ -64,11 +64,12 @@ public sealed class HotkeyGestureParsingTests
         hotkeys.For(HotkeyAction.CaptureFullScreen).Should().Be("Ctrl+PrintScreen");
         hotkeys.For(HotkeyAction.CaptureScrolling).Should().Be("Ctrl+Shift+PrintScreen");
         hotkeys.For(HotkeyAction.RepeatLastCapture).Should().Be("Ctrl+Alt+Shift+PrintScreen");
+        hotkeys.For(HotkeyAction.UseToolbar).Should().Be("Ctrl+Alt+Shift+T");
 
         // Every hotkey set by default parses; the newer modes start without one (set in Settings).
         var set = Enum.GetValues<HotkeyAction>().Where(a => hotkeys.For(a) is not null).ToList();
         set.Should().AllSatisfy(a => HotkeyGesture.TryParse(hotkeys.For(a), out _).Should().BeTrue());
-        set.Should().HaveCount(8);
+        set.Should().HaveCount(9);
     }
 
     [Fact]

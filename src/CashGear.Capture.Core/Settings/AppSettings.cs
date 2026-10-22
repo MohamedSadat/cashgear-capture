@@ -450,9 +450,13 @@ public sealed record HotkeySettings(
     string? Magnifier = null,
     string? ColorPicker = null,
     string? Ruler = null,
-    string? Crosshair = null)
+    string? Crosshair = null,
+    string? UseToolbar = HotkeySettings.DefaultUseToolbar)
 {
     public const string DefaultRepeatLastCapture = "Ctrl+Alt+Shift+PrintScreen";
+
+    /// <summary>Moves the keyboard to the capture or recording toolbar.</summary>
+    public const string DefaultUseToolbar = "Ctrl+Alt+Shift+T";
 
     public const string DefaultCaptureRegion = "PrintScreen";
     public const string DefaultCaptureActiveWindow = "Alt+PrintScreen";
@@ -488,6 +492,7 @@ public sealed record HotkeySettings(
         HotkeyAction.ColorPicker => ColorPicker,
         HotkeyAction.Ruler => Ruler,
         HotkeyAction.Crosshair => Crosshair,
+        HotkeyAction.UseToolbar => UseToolbar,
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 
@@ -514,6 +519,7 @@ public sealed record HotkeySettings(
         HotkeyAction.ColorPicker => this with { ColorPicker = text },
         HotkeyAction.Ruler => this with { Ruler = text },
         HotkeyAction.Crosshair => this with { Crosshair = text },
+        HotkeyAction.UseToolbar => this with { UseToolbar = text },
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null),
     };
 

@@ -26,7 +26,30 @@ public sealed record ColorSwatch(SKColor Value)
 {
     public SolidColorBrush Brush { get; } = EditorViewModel.ToBrush(Value);
 
+    /// <summary>"#RRGGBB" (the tooltip).</summary>
     public string Name => EditorColors.ToHex(Value);
+
+    /// <summary>What a screen reader calls it: the palette colours by name ("Red"), others by <see cref="Name"/>.</summary>
+    public string Label => Value.Alpha == 0 ? EditorText.NoneTransparent : (uint)Value.WithAlpha(255) switch
+    {
+        0xFFE81123 => EditorText.ColourRed,
+        0xFFFF8C00 => EditorText.ColourOrange,
+        0xFFFFF100 => EditorText.ColourYellow,
+        0xFF16C60C => EditorText.ColourGreen,
+        0xFF00B7C3 => EditorText.ColourTeal,
+        0xFF0078D4 => EditorText.ColourBlue,
+        0xFF886CE4 => EditorText.ColourPurple,
+        0xFFE3008C => EditorText.ColourPink,
+        0xFF000000 => EditorText.ColourBlack,
+        0xFF4C4C4C => EditorText.ColourDarkGrey,
+        0xFF808080 => EditorText.ColourMidGrey,
+        0xFFA0A0A0 => EditorText.ColourGrey,
+        0xFFFFFFFF => EditorText.ColourWhite,
+        _ => Name,
+    };
+
+    /// <summary>Lists of swatches are read out by this.</summary>
+    public override string ToString() => Label;
 }
 
 /// <summary>
@@ -217,6 +240,14 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private SolidColorBrush? _fillBrush;
 
+    /// <summary>"Current colour: Red", for screen readers.</summary>
+    [ObservableProperty]
+    private string _colorName = string.Empty;
+
+    /// <summary>"Current fill: Yellow", for screen readers.</summary>
+    [ObservableProperty]
+    private string _fillName = string.Empty;
+
     [ObservableProperty]
     private double _strokeWidth;
 
@@ -318,7 +349,9 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         {
             ColorBrush = ToBrush(style.Color);
             ColorHex = EditorColors.ToHex(style.Color);
+            ColorName = EditorText.CurrentColourIs(new ColorSwatch(style.Color).Label);
             FillBrush = style.HasFill ? ToBrush(style.Fill) : null;
+            FillName = style.HasFill ? EditorText.CurrentFillIs(new ColorSwatch(style.Fill).Label) : string.Empty;
             StrokeWidth = Math.Round(style.StrokeWidth, 1);
             Opacity = Math.Round(style.Opacity * 100);
             FontFamily = style.FontFamily;
@@ -437,7 +470,10 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     private void Grayscale() => ImageEdit(() => Session.ApplyEffects([new GrayscaleEffect()], toArea: true, SKColors.White));
 
     /// <summary>One entry of the Effects › Presets menu.</summary>
-    public sealed record PresetMenuItem(string Name, IRelayCommand Apply);
+    public sealed record PresetMenuItem(string Name, IRelayCommand Apply)
+    {
+        public override string ToString() => Name;
+    }
 
     [ObservableProperty]
     private IReadOnlyList<PresetMenuItem> _effectPresets = [];
@@ -479,6 +515,55 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         {
             LogEditFailed(ex);
             _dialogs.ShowError(EditorText.ChangeFailed(ex.Message));
+        }
+    }
+
+    // ---------------------------------------------------------------- keys on the canvas
+
+    /// <summary>
+    /// Enter on the canvas: crops when cropping; with the Select tool, types into the selected text; with a drawing
+    /// tool, adds an item of the usual size in the middle of the view (Crop and Area: a frame to adjust). False when
+    /// there was nothing to do.
+    /// </summary>
+    public bool Enter()
+    {
+        if (IsCropping)
+        {
+            ApplyCrop();
+            return true;
+        }
+
+        return Tool == EditorTool.Select ? Session.EditSelectedText() : Session.AddDefaultItem(VisibleArea);
+    }
+
+    /// <summary>
+    /// Arrow keys: move the selected annotation (or the crop or area frame) by whole image pixels, as one undo step
+    /// while the keys repeat; with nothing to move, scroll the view.
+    /// </summary>
+    public void Nudge(int dx, int dy)
+    {
+        if (!Session.Nudge(dx, dy))
+        {
+            Viewport.PanBy(-dx * PanStep, -dy * PanStep);
+        }
+    }
+
+    /// <summary>How far one arrow press scrolls the view, in view pixels (Shift: ten times).</summary>
+    private const float PanStep = 20;
+
+    /// <summary>The part of the image in view, in image pixels (empty before the canvas is laid out).</summary>
+    private SKRect VisibleArea
+    {
+        get
+        {
+            if (Viewport.ViewSize.Width <= 0 || Viewport.ViewSize.Height <= 0)
+            {
+                return SKRect.Empty;
+            }
+
+            var topLeft = Viewport.ToImage(new SKPoint(0, 0));
+            var bottomRight = Viewport.ToImage(new SKPoint(Viewport.ViewSize.Width, Viewport.ViewSize.Height));
+            return new SKRect(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
         }
     }
 
@@ -536,7 +621,10 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     // ---------------------------------------------------------------- send to and the rest of the workflow
 
     /// <summary>One entry of the Send to menu.</summary>
-    public sealed record SendMenuItem(string Id, string Name, IAsyncRelayCommand Send);
+    public sealed record SendMenuItem(string Id, string Name, IAsyncRelayCommand Send)
+    {
+        public override string ToString() => Name;
+    }
 
     public bool CanSend => _outputs is not null;
 

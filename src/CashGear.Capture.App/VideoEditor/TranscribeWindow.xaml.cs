@@ -1,12 +1,17 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
 
 namespace CashGear.Capture.App.VideoEditor;
 
-/// <summary>The Captions from Speech window; closing it cancels a running transcription.</summary>
+/// <summary>
+/// The Captions from Speech window; closing it cancels a running transcription. Enter starts, Esc cancels or closes,
+/// and screen readers hear the progress and errors.
+/// </summary>
 public partial class TranscribeWindow : Window, IThemedWindow
 {
     public TranscribeWindow(TranscribeViewModel viewModel, AppTheme theme)
@@ -34,4 +39,13 @@ public partial class TranscribeWindow : Window, IThemedWindow
     }
 
     private void UpdateCancel() => CancelButton.Content = DataContext is TranscribeViewModel { IsRunning: true } ? CommonText.Cancel : CommonText.Close;
+
+    /// <summary>The status line or the error changed: screen readers read it.</summary>
+    private void OnLiveTextUpdated(object? sender, DataTransferEventArgs e)
+    {
+        if (sender is TextBlock text)
+        {
+            LiveText.Announce(text);
+        }
+    }
 }

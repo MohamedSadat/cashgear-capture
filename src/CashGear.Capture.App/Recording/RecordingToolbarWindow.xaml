@@ -1,6 +1,7 @@
 <Window x:Class="CashGear.Capture.App.Recording.RecordingToolbarWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="clr-namespace:CashGear.Capture.App.Platform"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.Recording"
@@ -9,22 +10,24 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:RecordingToolbarViewModel}"
         Title="{x:Static r:RecordingText.Recording}" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="None"
-        Topmost="True" ShowInTaskbar="False" ShowActivated="False" BorderThickness="1" BorderBrush="#60808080">
+        Topmost="True" ShowInTaskbar="False" ShowActivated="False" BorderThickness="1" BorderBrush="{p:Chrome FaintBorder}">
   <Window.Resources>
     <BooleanToVisibilityConverter x:Key="Visible" />
   </Window.Resources>
   <Border Padding="10,6" MouseLeftButtonDown="OnDrag" Background="Transparent" ToolTip="{x:Static r:RecordingText.DragToMove}">
     <StackPanel>
     <StackPanel Orientation="Horizontal">
-      <Ellipse Width="12" Height="12" Fill="#E81123" VerticalAlignment="Center" Margin="0,0,8,0"
+      <Ellipse Width="12" Height="12" Fill="{p:Chrome Record}" VerticalAlignment="Center" Margin="0,0,8,0"
                Visibility="{Binding IsRecordingNow, Converter={StaticResource Visible}}" />
-      <Rectangle Width="12" Height="12" Fill="#808080" VerticalAlignment="Center" Margin="0,0,8,0"
+      <Rectangle Width="12" Height="12" Fill="{p:Chrome Idle}" VerticalAlignment="Center" Margin="0,0,8,0"
                  Visibility="{Binding IsPaused, Converter={StaticResource Visible}}" />
-      <TextBlock Text="{Binding ElapsedText}" FontSize="15" FontFamily="Segoe UI Semibold" VerticalAlignment="Center" MinWidth="48" />
+      <!-- The dot and the square are only colour: the clock says "Recording, 1:23" or "Paused, 1:23" to a screen reader, which hears it when paused or resumed. -->
+      <TextBlock x:Name="Elapsed" Text="{Binding ElapsedText}" FontSize="15" FontFamily="Segoe UI Semibold" VerticalAlignment="Center" MinWidth="48"
+                 AutomationProperties.Name="{Binding ElapsedName}" AutomationProperties.ItemStatus="{Binding StateText}" AutomationProperties.LiveSetting="Polite" />
       <!-- Sound: a speaker and a level meter per source (system audio above the microphone), or a crossed-out speaker when sound was asked for but isn't available. -->
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0" ToolTip="{Binding SoundToolTip}"
                   Visibility="{Binding HasSound, Converter={StaticResource Visible}}">
-        <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0" />
+        <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0" AutomationProperties.Name="{Binding SoundToolTip}" />
         <StackPanel VerticalAlignment="Center">
           <wpf:LevelMeter Width="60" Height="4" Margin="0,1" Peak="{Binding SystemMeter.Peak}" Rms="{Binding SystemMeter.Rms}" Hold="{Binding SystemMeter.Hold}"
                           Clipping="{Binding SystemMeter.Clipping}" AutomationProperties.Name="{x:Static r:RecordingText.SystemAudioLevel}"
@@ -35,8 +38,8 @@
         </StackPanel>
       </StackPanel>
       <TextBlock Text="&#xE74F;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="10,0,0,0" Opacity="0.7"
-                 ToolTip="{Binding SoundToolTip}" Visibility="{Binding IsSoundMissing, Converter={StaticResource Visible}}" />
-      <Button Content="{Binding MicrophoneText}" Command="{Binding ToggleMicrophoneCommand}" Margin="12,0,0,0" MinWidth="90" Focusable="False"
+                 ToolTip="{Binding SoundToolTip}" AutomationProperties.Name="{Binding SoundToolTip}" Visibility="{Binding IsSoundMissing, Converter={StaticResource Visible}}" />
+      <Button Content="{Binding MicrophoneText}" Command="{Binding ToggleMicrophoneCommand}" Margin="12,0,0,0" MinWidth="90" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}"
               ToolTip="{x:Static r:RecordingText.MuteMicTip}"
               Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
       <TextBlock Text="{Binding PushToTalkText}" VerticalAlignment="Center" Margin="10,0,0,0" MinWidth="64"
@@ -47,7 +50,7 @@
             <Setter Property="Opacity" Value="0.7" />
             <Style.Triggers>
               <DataTrigger Binding="{Binding IsTalking}" Value="True">
-                <Setter Property="Foreground" Value="#E81123" />
+                <Setter Property="Foreground" Value="{p:Chrome Record}" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="Opacity" Value="1" />
               </DataTrigger>
@@ -55,29 +58,29 @@
           </Style>
         </TextBlock.Style>
       </TextBlock>
-      <ToggleButton IsChecked="{Binding KeystrokesShown}" Margin="6,0,0,0" MinWidth="34" Focusable="False"
+      <ToggleButton IsChecked="{Binding KeystrokesShown}" Margin="6,0,0,0" MinWidth="34" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}"
                     ToolTip="{Binding KeystrokesToolTip}" AutomationProperties.Name="{x:Static r:RecordingText.ShowKeystrokes}"
                     Visibility="{Binding HasKeystrokes, Converter={StaticResource Visible}}">
         <TextBlock Text="&#xE765;" FontFamily="Segoe MDL2 Assets" />
       </ToggleButton>
-      <Button Command="{Binding ToggleSoundPanelCommand}" Margin="6,0,0,0" MinWidth="34" Focusable="False"
+      <Button Command="{Binding ToggleSoundPanelCommand}" Margin="6,0,0,0" MinWidth="34" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}"
               ToolTip="{x:Static r:RecordingText.SoundSettingsTip}" AutomationProperties.Name="{x:Static r:RecordingText.SoundSettings}"
               Visibility="{Binding HasSound, Converter={StaticResource Visible}}">
         <TextBlock Text="&#xE9E9;" FontFamily="Segoe MDL2 Assets" />
       </Button>
-      <ToggleButton IsChecked="{Binding Drawing.IsActive}" Margin="6,0,0,0" MinWidth="34" Focusable="False" AutomationProperties.Name="{x:Static r:RecordingText.DrawOnScreen}"
+      <ToggleButton IsChecked="{Binding Drawing.IsActive}" Margin="6,0,0,0" MinWidth="34" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" AutomationProperties.Name="{x:Static r:RecordingText.DrawOnScreen}"
                     ToolTip="{x:Static r:RecordingText.DrawOnScreenTip}" Visibility="{Binding HasDrawing, Converter={StaticResource Visible}}">
         <TextBlock Text="&#xEE56;" FontFamily="Segoe MDL2 Assets" />
       </ToggleButton>
-      <Button Content="{Binding PauseText}" Command="{Binding PauseCommand}" Margin="12,0,6,0" MinWidth="80" Focusable="False" />
-      <Button Content="{x:Static r:CommonText.Stop}" Command="{Binding StopCommand}" MinWidth="70" Focusable="False" ToolTip="{x:Static r:RecordingText.StopTip}" />
+      <Button Content="{Binding PauseText}" Command="{Binding PauseCommand}" Margin="12,0,6,0" MinWidth="80" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" />
+      <Button Content="{x:Static r:CommonText.Stop}" Command="{Binding StopCommand}" MinWidth="70" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{x:Static r:RecordingText.StopTip}" />
     </StackPanel>
     <!-- The pen's tools, while drawing: also in the toolbar's own window, so they are left out of the recording. -->
     <StackPanel Orientation="Horizontal" Margin="0,8,0,2" Visibility="{Binding Drawing.IsActive, Converter={StaticResource Visible}, FallbackValue=Collapsed}">
-      <RadioButton Content="{x:Static r:RecordingText.Pen}" IsChecked="{Binding Drawing.IsPen}" Margin="0,0,8,0" VerticalAlignment="Center" Focusable="False" ToolTip="{x:Static r:RecordingText.PenTip}" />
-      <RadioButton Content="{x:Static r:RecordingText.Highlighter}" IsChecked="{Binding Drawing.IsHighlighter}" Margin="0,0,8,0" VerticalAlignment="Center" Focusable="False" ToolTip="{x:Static r:RecordingText.HighlighterTip}" />
-      <RadioButton Content="{x:Static r:RecordingText.Arrow}" IsChecked="{Binding Drawing.IsArrow}" Margin="0,0,8,0" VerticalAlignment="Center" Focusable="False" ToolTip="{x:Static r:RecordingText.ArrowTip}" />
-      <RadioButton Content="{x:Static r:RecordingText.Rectangle}" IsChecked="{Binding Drawing.IsRectangle}" Margin="0,0,12,0" VerticalAlignment="Center" Focusable="False" ToolTip="{x:Static r:RecordingText.RectangleTip}" />
+      <RadioButton Content="{x:Static r:RecordingText.Pen}" IsChecked="{Binding Drawing.IsPen}" Margin="0,0,8,0" VerticalAlignment="Center" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{x:Static r:RecordingText.PenTip}" />
+      <RadioButton Content="{x:Static r:RecordingText.Highlighter}" IsChecked="{Binding Drawing.IsHighlighter}" Margin="0,0,8,0" VerticalAlignment="Center" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{x:Static r:RecordingText.HighlighterTip}" />
+      <RadioButton Content="{x:Static r:RecordingText.Arrow}" IsChecked="{Binding Drawing.IsArrow}" Margin="0,0,8,0" VerticalAlignment="Center" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{x:Static r:RecordingText.ArrowTip}" />
+      <RadioButton Content="{x:Static r:RecordingText.Rectangle}" IsChecked="{Binding Drawing.IsRectangle}" Margin="0,0,12,0" VerticalAlignment="Center" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{x:Static r:RecordingText.RectangleTip}" />
       <ItemsControl ItemsSource="{Binding Drawing.Colors}" VerticalAlignment="Center">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
@@ -86,17 +89,17 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <Button Width="18" Height="18" Margin="0,0,4,0" Focusable="False" ToolTip="{Binding Label}" AutomationProperties.Name="{Binding Label}"
+            <Button Width="18" Height="18" Margin="0,0,4,0" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{Binding Label}" AutomationProperties.Name="{Binding Label}"
                     Command="{Binding DataContext.Drawing.UseColorCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding Value}"
-                    Background="{Binding Value}" BorderBrush="#80808080" />
+                    Background="{Binding Value}" BorderBrush="{p:Chrome Border}" />
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <Slider Minimum="1" Maximum="20" Width="80" Margin="8,0,0,0" Value="{Binding Drawing.Width}" Focusable="False" VerticalAlignment="Center"
+      <Slider Minimum="1" Maximum="20" Width="80" Margin="8,0,0,0" Value="{Binding Drawing.Width}" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"
               ToolTip="{x:Static r:RecordingText.PenWidth}" AutomationProperties.Name="{x:Static r:RecordingText.PenWidth}" />
-      <Button Content="{x:Static r:CommonText.Undo}" Command="{Binding Drawing.UndoCommand}" Margin="12,0,6,0" Focusable="False" ToolTip="{x:Static r:RecordingText.UndoStrokeTip}" />
-      <Button Content="{x:Static r:RecordingText.Clear}" Command="{Binding Drawing.ClearCommand}" Margin="0,0,6,0" Focusable="False" ToolTip="{x:Static r:RecordingText.ClearTip}" />
-      <Button Content="{x:Static r:CommonText.Done}" Command="{Binding Drawing.DoneCommand}" Focusable="False" ToolTip="{x:Static r:RecordingText.DoneTip}" />
+      <Button Content="{x:Static r:CommonText.Undo}" Command="{Binding Drawing.UndoCommand}" Margin="12,0,6,0" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{x:Static r:RecordingText.UndoStrokeTip}" />
+      <Button Content="{x:Static r:RecordingText.Clear}" Command="{Binding Drawing.ClearCommand}" Margin="0,0,6,0" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{x:Static r:RecordingText.ClearTip}" />
+      <Button Content="{x:Static r:CommonText.Done}" Command="{Binding Drawing.DoneCommand}" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{x:Static r:RecordingText.DoneTip}" />
     </StackPanel>
     <!-- Inside the toolbar's own window, not a popup: a popup is a window of its own and would be in the recording. -->
     <Grid Margin="0,8,0,2" Visibility="{Binding IsSoundPanelOpen, Converter={StaticResource Visible}}">
@@ -113,27 +116,27 @@
         <RowDefinition />
       </Grid.RowDefinitions>
       <TextBlock Text="{x:Static r:RecordingText.SystemAudio}" VerticalAlignment="Center" Margin="0,0,10,0" Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
-      <Slider Grid.Column="1" Minimum="0" Maximum="200" SmallChange="5" LargeChange="25" Value="{Binding SystemAudioVolume}" Focusable="False"
+      <Slider Grid.Column="1" Minimum="0" Maximum="200" SmallChange="5" LargeChange="25" Value="{Binding SystemAudioVolume}" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}"
               VerticalAlignment="Center" AutomationProperties.Name="{x:Static r:RecordingText.SystemAudioVolume}" Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
       <TextBlock Grid.Column="2" Text="{Binding SystemAudioVolumeText}" VerticalAlignment="Center" TextAlignment="Right"
                  Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
-      <CheckBox Grid.Column="3" Content="{x:Static r:RecordingText.Mute}" IsChecked="{Binding SystemAudioMuted}" Margin="10,0,0,0" VerticalAlignment="Center" Focusable="False"
+      <CheckBox Grid.Column="3" Content="{x:Static r:RecordingText.Mute}" AutomationProperties.Name="{x:Static r:RecordingText.MuteSystemAudio}" IsChecked="{Binding SystemAudioMuted}" Margin="10,0,0,0" VerticalAlignment="Center" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}"
                 Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
       <wpf:LevelMeter Grid.Column="4" Width="110" Height="8" Margin="12,0,0,0" VerticalAlignment="Center" ToolTip="{Binding SystemMeter.Text}"
                       Peak="{Binding SystemMeter.Peak}" Rms="{Binding SystemMeter.Rms}" Hold="{Binding SystemMeter.Hold}" Clipping="{Binding SystemMeter.Clipping}"
                       AutomationProperties.Name="{x:Static r:RecordingText.SystemAudioLevel}" Visibility="{Binding HasSystemAudio, Converter={StaticResource Visible}}" />
       <TextBlock Grid.Row="1" Text="{x:Static r:RecordingText.Microphone}" VerticalAlignment="Center" Margin="0,6,10,0" Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
-      <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="200" SmallChange="5" LargeChange="25" Value="{Binding MicrophoneVolume}" Focusable="False"
+      <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="200" SmallChange="5" LargeChange="25" Value="{Binding MicrophoneVolume}" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}"
               VerticalAlignment="Center" Margin="0,6,0,0" AutomationProperties.Name="{x:Static r:RecordingText.MicrophoneVolume}" Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
       <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding MicrophoneVolumeText}" VerticalAlignment="Center" TextAlignment="Right" Margin="0,6,0,0"
                  Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
-      <CheckBox Grid.Row="1" Grid.Column="3" Content="{x:Static r:RecordingText.Mute}" IsChecked="{Binding MicrophoneMuted}" Margin="10,6,0,0" VerticalAlignment="Center" Focusable="False"
+      <CheckBox Grid.Row="1" Grid.Column="3" Content="{x:Static r:RecordingText.Mute}" AutomationProperties.Name="{x:Static r:RecordingText.MuteMicrophone}" IsChecked="{Binding MicrophoneMuted}" Margin="10,6,0,0" VerticalAlignment="Center" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}"
                 Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
       <wpf:LevelMeter Grid.Row="1" Grid.Column="4" Width="110" Height="8" Margin="12,6,0,0" VerticalAlignment="Center" ToolTip="{Binding MicrophoneMeter.Text}"
                       Peak="{Binding MicrophoneMeter.Peak}" Rms="{Binding MicrophoneMeter.Rms}" Hold="{Binding MicrophoneMeter.Hold}" Clipping="{Binding MicrophoneMeter.Clipping}"
                       AutomationProperties.Name="{x:Static r:RecordingText.MicrophoneLevel}" Visibility="{Binding HasMicrophone, Converter={StaticResource Visible}}" />
       <CheckBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Content="{x:Static r:RecordingText.NoiseSuppressionOnMicrophone}" IsChecked="{Binding NoiseSuppression}"
-                Margin="0,6,0,0" Focusable="False" ToolTip="{x:Static r:RecordingText.NoiseSuppressionTip}"
+                Margin="0,6,0,0" Focusable="{Binding UsesKeyboard, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="{x:Static r:RecordingText.NoiseSuppressionTip}"
                 Visibility="{Binding CanSuppressNoise, Converter={StaticResource Visible}}" />
     </Grid>
     </StackPanel>

@@ -235,6 +235,38 @@ public sealed class TimelineView
         }
     }
 
+    /// <summary>
+    /// Scrolls just enough to show the time from <paramref name="start"/> to <paramref name="end"/>, with a little
+    /// room round it (its start, when it is wider than the view).
+    /// </summary>
+    public void RevealSpan(double start, double end)
+    {
+        const double room = 10;
+        if (X(start) < 0)
+        {
+            Scroll = start - (room / PixelsPerSecond);
+        }
+        else if (X(end) > Width - room)
+        {
+            Scroll = Math.Min(start - (room / PixelsPerSecond), end - ((Width - room) / PixelsPerSecond));
+        }
+    }
+
+    /// <summary>Scrolls the rows just enough to show <paramref name="row"/> whole (its top, when they are shorter than it).</summary>
+    public void RevealRow(TrackRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        var shown = Math.Max(0, Height - RulerHeight);
+        if (row.Top < ScrollRows)
+        {
+            ScrollRows = row.Top;
+        }
+        else if (row.Top + row.Height > ScrollRows + shown)
+        {
+            ScrollRows = Math.Min(row.Top, row.Top + row.Height - shown);
+        }
+    }
+
     /// <summary>A step between ruler ticks that leaves room for their labels: 1, 2, 5, 10 … frames or seconds.</summary>
     public double TickStep(int fps)
     {

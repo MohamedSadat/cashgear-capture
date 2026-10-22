@@ -62,6 +62,16 @@ public sealed partial class CaptureToolbarService(
 
     public void Hide() => _window?.Close();
 
+    /// <summary>
+    /// The "use the toolbar from the keyboard" hotkey: shows the toolbar if it is hidden, and gives it the focus with
+    /// its first button focused; Esc gives the focus back.
+    /// </summary>
+    public void UseFromKeyboard()
+    {
+        Show();
+        _window?.UseKeyboard();
+    }
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Capture toolbar shown: {Shown}")]
     private partial void LogShown(bool shown);
 }

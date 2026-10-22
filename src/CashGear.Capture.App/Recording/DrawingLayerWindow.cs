@@ -54,7 +54,7 @@ public sealed class DrawingLayerWindow : Window
         _ink.PreviewMouseLeftButtonDown += OnShapeStart;
         _ink.PreviewMouseMove += OnShapeMove;
         _ink.PreviewMouseLeftButtonUp += OnShapeEnd;
-        KeyDown += OnKey;
+        PreviewKeyDown += OnKey; // before the ink canvas: it takes Delete for its own (empty) selection
         drawing.PropertyChanged += OnDrawingChanged;
         drawing.ClearRequested += OnClear;
         drawing.UndoRequested += OnUndo;

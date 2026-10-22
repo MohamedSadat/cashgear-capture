@@ -87,7 +87,7 @@ public sealed partial class OutputWorkflow(
             .Where(d => !DestinationIds.Same(d.Id, DestinationIds.Editor) && !DestinationIds.Same(d.Id, DestinationIds.VideoEditor) && !DestinationIds.Same(d.Id, DestinationIds.CopyLink))
             .Select(d => new SendTarget(d.Id, d.DisplayName))];
 
-    public string Describe(IReadOnlyList<WorkflowStep> steps) => string.Join(" → ", (steps ?? []).Select(s => registry.NameOf(s.Destination)));
+    public string Describe(IReadOnlyList<WorkflowStep> steps) => string.Join(OutputText.StepSeparator, (steps ?? []).Select(s => registry.NameOf(s.Destination)));
 
     public async Task<EditorSendResult> SendAsync(CapturedImage image, IReadOnlyList<WorkflowStep> steps, string? savedPath, CancellationToken ct = default)
     {

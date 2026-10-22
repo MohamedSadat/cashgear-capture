@@ -16,6 +16,21 @@ public sealed class ViewRenderer : IDisposable
 
     public SKColor Background { get; set; } = new(0x2B, 0x2B, 0x2B);
 
+    /// <summary>The inside of the grips (the host sets system colours under high contrast).</summary>
+    public SKColor HandleFill { get; set; } = SKColors.White;
+
+    /// <summary>The outline of the grips.</summary>
+    public SKColor HandleOutline { get; set; } = EditorColors.Accent;
+
+    /// <summary>What dims the part of the image a crop cuts away.</summary>
+    public SKColor CropShade { get; set; } = new(0, 0, 0, 140);
+
+    /// <summary>The background of the size shown on a crop or area frame.</summary>
+    public SKColor LabelBackground { get; set; } = new(0, 0, 0, 180);
+
+    /// <summary>The text of the size shown on a crop or area frame.</summary>
+    public SKColor LabelText { get; set; } = SKColors.White;
+
     /// <summary>Physical pixels per device-independent pixel, so grips and lines look the same at any display scale.</summary>
     public float UiScale { get; set; } = 1;
 
@@ -114,7 +129,7 @@ public sealed class ViewRenderer : IDisposable
         var crop = Geometry.MapRect(viewport.Matrix, new SKRect(area.Left, area.Top, area.Right, area.Bottom));
 
         // Dim what will be cut away.
-        using (var shade = new SKPaint { Color = new SKColor(0, 0, 0, 140), Style = SKPaintStyle.Fill })
+        using (var shade = new SKPaint { Color = CropShade, Style = SKPaintStyle.Fill })
         {
             canvas.DrawRect(new SKRect(image.Left, image.Top, image.Right, crop.Top), shade);
             canvas.DrawRect(new SKRect(image.Left, crop.Bottom, image.Right, image.Bottom), shade);
@@ -141,7 +156,7 @@ public sealed class ViewRenderer : IDisposable
         DrawLabel(canvas, $"{area.Width} × {area.Height}", new SKPoint(rect.Left, rect.Top));
     }
 
-    /// <summary>White dashes over a dark line: visible on any background.</summary>
+    /// <summary>White dashes over a dark line: visible on any background (high contrast too, so these colours stay).</summary>
     private void DrawDashedRect(SKCanvas canvas, SKRect rect)
     {
         using var under = new SKPaint { Color = new SKColor(0, 0, 0, 160), Style = SKPaintStyle.Stroke, StrokeWidth = UiScale };
@@ -154,8 +169,8 @@ public sealed class ViewRenderer : IDisposable
 
     private void DrawHandles(SKCanvas canvas, IEnumerable<SKPoint> positions)
     {
-        using var fill = new SKPaint { Color = SKColors.White, Style = SKPaintStyle.Fill };
-        using var border = new SKPaint { Color = EditorColors.Accent, Style = SKPaintStyle.Stroke, StrokeWidth = UiScale };
+        using var fill = new SKPaint { Color = HandleFill, Style = SKPaintStyle.Fill };
+        using var border = new SKPaint { Color = HandleOutline, Style = SKPaintStyle.Stroke, StrokeWidth = UiScale };
         var half = HandleSize / 2;
         foreach (var p in positions)
         {
@@ -172,8 +187,8 @@ public sealed class ViewRenderer : IDisposable
         var width = font.MeasureText(text);
         var pad = 4 * UiScale;
         var box = SKRect.Create(corner.X + pad, corner.Y + pad, width + (2 * pad), font.Spacing + pad);
-        using var back = new SKPaint { Color = new SKColor(0, 0, 0, 180), IsAntialias = true };
-        using var fore = new SKPaint { Color = SKColors.White, IsAntialias = true };
+        using var back = new SKPaint { Color = LabelBackground, IsAntialias = true };
+        using var fore = new SKPaint { Color = LabelText, IsAntialias = true };
         canvas.DrawRoundRect(box, 3 * UiScale, 3 * UiScale, back);
         canvas.DrawText(text, box.Left + pad, box.Top + (pad / 2) - font.Metrics.Ascent, SKTextAlign.Left, font, fore);
     }

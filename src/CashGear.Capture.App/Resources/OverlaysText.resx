@@ -315,4 +315,12 @@
   <data name="ColorCustom" xml:space="preserve">
     <value>Custom ({0})</value>
   </data>
+  <data name="WebcamPlacementValue" xml:space="preserve">
+    <value>Centre {0:0}% from the left and {1:0}% from the top, {2:0}% of the height</value>
+    <comment>the webcam placement preview's value for a screen reader</comment>
+  </data>
+  <data name="WebcamPlacementHelp" xml:space="preserve">
+    <value>The arrow keys move it (with Shift, ten times as far).</value>
+    <comment>help text of the webcam placement preview</comment>
+  </data>
 </root>

@@ -315,4 +315,10 @@
   <data name="ColorCustom" xml:space="preserve">
     <value>مخصص ({0})</value>
   </data>
+  <data name="WebcamPlacementValue" xml:space="preserve">
+    <value>المركز على بُعد {0:0}% من اليسار و{1:0}% من الأعلى، والارتفاع {2:0}%</value>
+  </data>
+  <data name="WebcamPlacementHelp" xml:space="preserve">
+    <value>تحرّكها مفاتيح الأسهم (مع Shift، أبعد بعشر مرات).</value>
+  </data>
 </root>

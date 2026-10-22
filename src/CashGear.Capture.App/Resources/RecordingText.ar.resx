@@ -318,4 +318,22 @@
   <data name="StartedAt" xml:space="preserve">
     <value>{0} · بدأ في {1}</value>
   </data>
+  <data name="StateRecording" xml:space="preserve">
+    <value>جارٍ التسجيل</value>
+  </data>
+  <data name="StatePaused" xml:space="preserve">
+    <value>متوقف مؤقتًا</value>
+  </data>
+  <data name="ElapsedRecording" xml:space="preserve">
+    <value>جارٍ التسجيل، {0}</value>
+  </data>
+  <data name="ElapsedPaused" xml:space="preserve">
+    <value>متوقف مؤقتًا، {0}</value>
+  </data>
+  <data name="MuteSystemAudio" xml:space="preserve">
+    <value>كتم صوت النظام</value>
+  </data>
+  <data name="MuteMicrophone" xml:space="preserve">
+    <value>كتم الميكروفون</value>
+  </data>
 </root>

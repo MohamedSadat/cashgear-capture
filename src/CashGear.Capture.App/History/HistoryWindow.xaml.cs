@@ -54,6 +54,17 @@ public partial class HistoryWindow : Window, IThemedWindow
         base.OnClosed(e);
     }
 
+    /// <summary>Esc closes the window (it has no Cancel button).</summary>
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (!e.Handled && e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            Close();
+        }
+    }
+
     private void OnDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (e.OriginalSource is FrameworkElement { DataContext: HistoryItem } && _viewModel.OpenCommand.CanExecute(null))

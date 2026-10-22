@@ -88,4 +88,12 @@
     <value>Couldn't save the capture: {0}</value>
     <comment>{0} is the reason</comment>
   </data>
+  <data name="Spoken" xml:space="preserve">
+    <value>{0}, {1}</value>
+    <comment>a capture in the History list for a screen reader: when, what</comment>
+  </data>
+  <data name="SpokenSaved" xml:space="preserve">
+    <value>{0}, {1}, saved as {2}</value>
+    <comment>a capture in the History list for a screen reader: when, what, the file name</comment>
+  </data>
 </root>

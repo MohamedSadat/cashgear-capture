@@ -273,6 +273,89 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     /// <summary>The timeline's rows were scrolled: the headers follow.</summary>
     public void RowsScrolled() => OnPropertyChanged(nameof(RowsOffset));
 
+    /// <summary>The selection's outline on the preview (the window sets the high-contrast one).</summary>
+    public SKColor SelectionColor { get; set; } = new(0xFF, 0xB0, 0x20);
+
+    /// <summary>Selects item <paramref name="id"/> and scrolls the timeline to it (a screen reader selecting it).</summary>
+    public void SelectItem(string id)
+    {
+        Timeline.Reveal(id);
+        Timeline.Select(id);
+        RowsScrolled();
+        TimelineInvalidated?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Tab on the timeline: the next item (<paramref name="backward"/>: the previous), scrolled into view. False when there is none.</summary>
+    public bool SelectNextItem(bool backward)
+    {
+        if (!Timeline.SelectNext(backward))
+        {
+            return false;
+        }
+
+        RowsScrolled();
+        TimelineInvalidated?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    /// <summary>↑/↓ on the timeline: the selected item to the track above (<paramref name="direction"/> -1) or below (+1).</summary>
+    public bool MoveToTrack(int direction)
+    {
+        StopPlaying();
+        if (!Timeline.MoveSelectedToTrack(direction))
+        {
+            return false;
+        }
+
+        RowsScrolled();
+        return true;
+    }
+
+    /// <summary>Alt+←/→: the selected item <paramref name="frames"/> frames later (earlier when negative).</summary>
+    public bool MoveInTime(int frames)
+    {
+        StopPlaying();
+        return Timeline.MoveSelectedByFrames(frames);
+    }
+
+    /// <summary>
+    /// The arrow keys on the preview: moves the selected picture, annotation or zoom shown at the playhead by
+    /// (<paramref name="dx"/>, <paramref name="dy"/>) output pixels, like a drag; moves one after another are one undo
+    /// step. False when nothing selected is shown there to move (or its track is locked).
+    /// </summary>
+    public bool NudgeOnPreview(double dx, double dy)
+    {
+        StopPlaying();
+        if (Timeline.Selected is not { } item || !item.Covers(Timeline.Playhead) || Project.Find(item.Id)?.Track is not { Locked: false, Hidden: false } track)
+        {
+            return false;
+        }
+
+        TimelineItem moved;
+        string name;
+        switch (item)
+        {
+            case ZoomItem zoom:
+                moved = PlacementEdits.DragZoom(zoom, Project.Canvas, ZoomFrame(zoom), PreviewGrip.None, dx, dy);
+                name = VideoEditorText.UndoMoveZoom;
+                break;
+            case AnnotationItem annotation:
+                moved = AnnotationEdits.Drag(annotation, Timeline.Playhead, PreviewGrip.None, SKPoint.Empty, new SKPoint((float)dx, (float)dy), Project.Canvas.Fps);
+                name = VideoEditorText.UndoMoveAnnotation;
+                break;
+            case Clip clip when track.HasPictures:
+                moved = clip with { Placement = PlacementEdits.Move(clip.Placement ?? Placement.Fit, Project.Canvas, dx, dy) };
+                name = VideoEditorText.UndoMovePicture;
+                break;
+            default:
+                return false;
+        }
+
+        _applied = moved;
+        History.Apply(name, Project.WithItem(moved), $"nudge-preview {item.Id}");
+        return true;
+    }
+
     /// <summary>The media the project uses that can't be found.</summary>
     public IReadOnlyList<MediaAsset> MissingMedia => [.. Project.Assets.Where(a => !File.Exists(a.Path))];
 
@@ -337,17 +420,17 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         var result = Compositor.Render(canvas, zoomShown is null ? Project : WithoutZooms(Project), Timeline.Playhead);
         if (zoomShown is not null)
         {
-            DrawSelection(canvas, ZoomFrame(zoomShown), scale, corner: true);
+            DrawSelection(canvas, ZoomFrame(zoomShown), scale, corner: true, SelectionColor);
         }
         else if (!Engine.IsPlaying && Timeline.Selected is { } selected && selected.Covers(Timeline.Playhead))
         {
             if (selected is Clip clip && Project.Find(clip.Id)?.Track is { HasPictures: true })
             {
-                DrawSelection(canvas, PlacementEdits.Area(Project, clip), scale, corner: true);
+                DrawSelection(canvas, PlacementEdits.Area(Project, clip), scale, corner: true, SelectionColor);
             }
             else if (selected is AnnotationItem annotation)
             {
-                DrawSelection(canvas, annotation, Timeline.Playhead, scale);
+                DrawSelection(canvas, annotation, Timeline.Playhead, scale, SelectionColor);
             }
         }
 
@@ -558,6 +641,22 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     {
         Timeline.SetRange(null);
         Timeline.Select(null);
+    }
+
+    /// <summary>Ctrl+[: the selected item's start to the playhead.</summary>
+    [RelayCommand]
+    private void TrimStartToPlayhead()
+    {
+        StopPlaying();
+        Timeline.TrimSelectedToPlayhead(ItemEdge.Start);
+    }
+
+    /// <summary>Ctrl+]: the selected item's end to the playhead.</summary>
+    [RelayCommand]
+    private void TrimEndToPlayhead()
+    {
+        StopPlaying();
+        Timeline.TrimSelectedToPlayhead(ItemEdge.End);
     }
 
     [RelayCommand]
@@ -1242,34 +1341,32 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         project with { Tracks = [.. project.Tracks.Select(t => t.Kind == TrackKind.Effect && t.Items.Any(i => i is ZoomItem) ? t.WithItems(t.Items.Where(i => i is not ZoomItem)) : t)] };
 
     /// <summary>The selection's outline and its resize grip, over the preview (never exported).</summary>
-    private static void DrawSelection(SKCanvas canvas, SKRect area, float scale, bool corner)
+    private static void DrawSelection(SKCanvas canvas, SKRect area, float scale, bool corner, SKColor color)
     {
-        using var outline = new SKPaint { Color = SelectionColor, Style = SKPaintStyle.Stroke, StrokeWidth = 2 / scale, IsAntialias = true };
+        using var outline = new SKPaint { Color = color, Style = SKPaintStyle.Stroke, StrokeWidth = 2 / scale, IsAntialias = true };
         canvas.DrawRect(area, outline);
         if (corner)
         {
             var grip = 6 / scale;
-            using var fill = new SKPaint { Color = SelectionColor, IsAntialias = true };
+            using var fill = new SKPaint { Color = color, IsAntialias = true };
             canvas.DrawRect(SKRect.Create(area.Right - grip, area.Bottom - grip, grip * 2, grip * 2), fill);
         }
     }
 
     /// <summary>An annotation's outline (or, for a line, its two ends) and grips.</summary>
-    private static void DrawSelection(SKCanvas canvas, AnnotationItem item, double time, float scale)
+    private static void DrawSelection(SKCanvas canvas, AnnotationItem item, double time, float scale, SKColor color)
     {
         if (!item.IsLine)
         {
-            DrawSelection(canvas, FrameCompositor.Bounds(item, time), scale, corner: item.Shape != AnnotationShape.Text);
+            DrawSelection(canvas, FrameCompositor.Bounds(item, time), scale, corner: item.Shape != AnnotationShape.Text, color);
             return;
         }
 
         var place = item.At(time);
-        using var fill = new SKPaint { Color = SelectionColor, IsAntialias = true };
+        using var fill = new SKPaint { Color = color, IsAntialias = true };
         canvas.DrawCircle((float)place.X, (float)place.Y, 6 / scale, fill);
         canvas.DrawCircle((float)(place.X + place.Width), (float)(place.Y + place.Height), 6 / scale, fill);
     }
-
-    private static readonly SKColor SelectionColor = new(0xFF, 0xB0, 0x20);
 
     private sealed record PreviewDrag(VideoProject Base, TimelineItem Item, SKPoint Start, SKRect Area, PreviewGrip Grip, int Number);
 

@@ -1,6 +1,7 @@
 <local:ImageToolWindow x:Class="CashGear.Capture.App.ImageTools.PdfWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="clr-namespace:CashGear.Capture.App.Platform"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CashGear.Capture.App.ImageTools"
@@ -15,24 +16,16 @@
       <ResourceDictionary.MergedDictionaries>
         <local:ImageListTemplate />
       </ResourceDictionary.MergedDictionaries>
-      <settings:EnumLabelConverter x:Key="Label" />
-      <DataTemplate x:Key="EnumItem">
-        <TextBlock Text="{Binding Converter={StaticResource Label}}" />
-      </DataTemplate>
+      <settings:EnumChoicesConverter x:Key="Choices" />
     </ResourceDictionary>
   </Window.Resources>
 
-  <DockPanel Margin="16">
-    <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
-      <ProgressBar Height="6" Maximum="100" Value="{Binding Progress}" />
-      <TextBlock Text="{Binding Status}" Margin="0,6,0,0" TextWrapping="Wrap" />
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-        <Button Content="{x:Static r:ImageToolsText.OpenPdf}" Command="{Binding OpenCommand}" Margin="0,0,8,0" />
-        <Button Content="{x:Static r:ImageToolsText.ShowInFolder}" Command="{Binding ShowInFolderCommand}" Margin="0,0,8,0" />
-        <Button Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelCommand}" MinWidth="90" Margin="0,0,8,0" />
-        <Button Content="{x:Static r:ImageToolsText.MakePdf}" Command="{Binding MakeCommand}" IsDefault="True" FontWeight="SemiBold" />
-      </StackPanel>
-    </StackPanel>
+  <!-- In Tab order: the content, then the buttons at the bottom. -->
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
 
     <Grid>
       <Grid.ColumnDefinitions>
@@ -46,11 +39,11 @@
       <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
         <StackPanel Margin="0,0,8,0">
           <TextBlock Text="{x:Static r:ImageToolsText.Paper}" />
-          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:ImageToolsText.Paper}" />
+          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding PageSizes, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding PageSize}" AutomationProperties.Name="{x:Static r:ImageToolsText.Paper}" />
           <TextBlock Text="{x:Static r:ImageToolsText.Orientation}" />
-          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding Orientations}" SelectedItem="{Binding Orientation}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:ImageToolsText.Orientation}" />
+          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding Orientations, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding Orientation}" AutomationProperties.Name="{x:Static r:ImageToolsText.Orientation}" />
           <TextBlock Text="{x:Static r:ImageToolsText.SizeOnPage}" />
-          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding Fits}" SelectedItem="{Binding Fit}" ItemTemplate="{StaticResource EnumItem}" AutomationProperties.Name="{x:Static r:ImageToolsText.SizeOnPage}" />
+          <ComboBox Margin="0,2,0,8" ItemsSource="{Binding Fits, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding Fit}" AutomationProperties.Name="{x:Static r:ImageToolsText.SizeOnPage}" />
           <TextBlock Text="{Binding MarginMm, Mode=OneWay, StringFormat={x:Static r:ImageToolsText.MarginsFormat}}" />
           <Slider Minimum="0" Maximum="50" Value="{Binding MarginMm}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,2,0,8" AutomationProperties.Name="{x:Static r:ImageToolsText.MarginsInMm}" />
           <TextBlock Text="{Binding PerPageText}" />
@@ -66,5 +59,16 @@
         </StackPanel>
       </ScrollViewer>
     </Grid>
-  </DockPanel>
+
+    <StackPanel Grid.Row="1" Margin="0,12,0,0">
+      <ProgressBar Height="6" Maximum="100" Value="{Binding Progress}" AutomationProperties.Name="{x:Static r:ImageToolsText.Progress}" />
+      <TextBlock Text="{Binding Status}" Margin="0,6,0,0" TextWrapping="Wrap" p:LiveText.IsLive="True" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+        <Button Content="{x:Static r:ImageToolsText.OpenPdf}" Command="{Binding OpenCommand}" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:ImageToolsText.ShowInFolder}" Command="{Binding ShowInFolderCommand}" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelCommand}" MinWidth="90" Margin="0,0,8,0" />
+        <Button Content="{x:Static r:ImageToolsText.MakePdf}" Command="{Binding MakeCommand}" IsDefault="True" FontWeight="SemiBold" />
+      </StackPanel>
+    </StackPanel>
+  </Grid>
 </local:ImageToolWindow>

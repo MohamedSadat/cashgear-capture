@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
+using CashGear.Capture.Editor.Text;
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.VideoEditor.Playback;
 using CashGear.Capture.VideoEditor.Resources;
@@ -7,9 +8,43 @@ using SkiaSharp;
 
 namespace CashGear.Capture.VideoEditor.Timeline;
 
-/// <summary>The timeline's colours for a light or dark window.</summary>
+/// <summary>
+/// The timeline's colours for a light or dark window (or, made by the app from the system colours, for high
+/// contrast). A colour left transparent (<see cref="ItemOutline"/>, <see cref="SelectedItem"/>,
+/// <see cref="LabelShadow"/>) isn't drawn.
+/// </summary>
 public sealed record TimelineColors(SKColor Background, SKColor RowA, SKColor RowB, SKColor Ruler, SKColor Text, SKColor Tick, SKColor Picture, SKColor Webcam, SKColor Sound, SKColor Other, SKColor Selection, SKColor Range, SKColor Playhead)
 {
+    /// <summary>The names on the items.</summary>
+    public SKColor Label { get; init; } = SKColors.White;
+
+    /// <summary>The names on the items of muted or hidden tracks.</summary>
+    public SKColor DimmedLabel { get; init; } = SKColors.White;
+
+    /// <summary>A shadow under the names, a pixel down and right.</summary>
+    public SKColor LabelShadow { get; init; } = SKColors.Black.WithAlpha(0x80);
+
+    /// <summary>The keyframe diamonds along a moving annotation.</summary>
+    public SKColor Mark { get; init; } = SKColors.White;
+
+    /// <summary>The waveform in sound clips.</summary>
+    public SKColor Waveform { get; init; } = SKColors.White.WithAlpha(0xB0);
+
+    /// <summary>The slopes over a clip's fades.</summary>
+    public SKColor Fade { get; init; } = SKColors.Black.WithAlpha(0x60);
+
+    /// <summary>A line round every item, so items on a background of their own colour stand out.</summary>
+    public SKColor ItemOutline { get; init; } = SKColors.Transparent;
+
+    /// <summary>The selected item's fill (transparent: its usual colour, with the <see cref="Selection"/> outline).</summary>
+    public SKColor SelectedItem { get; init; } = SKColors.Transparent;
+
+    /// <summary>The selected item's name, on <see cref="SelectedItem"/>.</summary>
+    public SKColor SelectedLabel { get; init; } = SKColors.White;
+
+    /// <summary>The frame round the timeline while it has the keyboard focus.</summary>
+    public SKColor Focus { get; init; } = new(0x00, 0x78, 0xD4);
+
     public static TimelineColors Light { get; } = new(
         new SKColor(0xF3, 0xF3, 0xF3), new SKColor(0xEC, 0xEC, 0xEC), new SKColor(0xE4, 0xE4, 0xE4), new SKColor(0xFA, 0xFA, 0xFA),
         new SKColor(0x20, 0x20, 0x20), new SKColor(0x90, 0x90, 0x90), new SKColor(0x4A, 0x7F, 0xC1), new SKColor(0x7B, 0x5F, 0xB8),
@@ -175,8 +210,11 @@ public sealed class TimelineRenderer : IDisposable
             }
 
             var box = new SKRect(left, top + 3, Math.Max(left + 2, right), top + height - 3);
-            DrawItem(canvas, project, item, box, dimmed ? color.WithAlpha(0x70) : color, view);
-            if (item.Id == selected)
+            var isSelected = item.Id == selected;
+            var fill = isSelected && Colors.SelectedItem.Alpha > 0 ? Colors.SelectedItem : dimmed ? color.WithAlpha(0x70) : color;
+            var label = isSelected && Colors.SelectedItem.Alpha > 0 ? Colors.SelectedLabel : dimmed ? Colors.DimmedLabel : Colors.Label;
+            DrawItem(canvas, project, item, box, fill, label, view);
+            if (isSelected)
             {
                 using var outline = new SKPaint { Color = Colors.Selection, Style = SKPaintStyle.Stroke, StrokeWidth = 2, IsAntialias = true };
                 canvas.DrawRoundRect(box, 4, 4, outline);
@@ -184,12 +222,14 @@ public sealed class TimelineRenderer : IDisposable
         }
     }
 
-    private void DrawItem(SKCanvas canvas, VideoProject project, TimelineItem item, SKRect box, SKColor color, TimelineView view)
+    /// <summary>
+    /// What an item is called on the timeline: a clip's file name (with its speed when it isn't 1×), a text's words,
+    /// an annotation's or an effect's kind, a zoom's scale, a caption's words.
+    /// </summary>
+    public static string Label(VideoProject project, TimelineItem item)
     {
-        using var fill = new SKPaint { Color = color, IsAntialias = true };
-        canvas.DrawRoundRect(box, 4, 4, fill);
-        canvas.Save();
-        canvas.ClipRect(box);
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(item);
         var label = item switch
         {
             Clip clip => project.Asset(clip.AssetId)?.Name ?? VideoEditorStrings.MissingMedia,
@@ -203,10 +243,43 @@ public sealed class TimelineRenderer : IDisposable
             _ => item.GetType().Name,
         };
 
+        if (item is Clip shaped)
+        {
+            if (shaped.IsFreeze)
+            {
+                label = VideoEditorStrings.FreezeLabel(label);
+            }
+            else if (shaped.IsRamp)
+            {
+                label = string.Create(CultureInfo.InvariantCulture, $"{shaped.Speed:0.##}× → {shaped.EndSpeed:0.##}× · {label}");
+            }
+            else if (Math.Abs(shaped.Speed - 1) > 1e-9)
+            {
+                label = string.Create(CultureInfo.InvariantCulture, $"{shaped.Speed:0.##}× · {label}");
+            }
+        }
+
+        return label;
+    }
+
+    private void DrawItem(SKCanvas canvas, VideoProject project, TimelineItem item, SKRect box, SKColor color, SKColor labelColor, TimelineView view)
+    {
+        using var fill = new SKPaint { Color = color, IsAntialias = true };
+        canvas.DrawRoundRect(box, 4, 4, fill);
+        if (Colors.ItemOutline.Alpha > 0)
+        {
+            using var outline = new SKPaint { Color = Colors.ItemOutline, Style = SKPaintStyle.Stroke, StrokeWidth = 1, IsAntialias = true };
+            canvas.DrawRoundRect(box, 4, 4, outline);
+        }
+
+        canvas.Save();
+        canvas.ClipRect(box);
+        var label = Label(project, item);
+
         if (item is AnnotationItem { Keyframes.Count: > 1 } moving)
         {
             // A diamond at each keyframe.
-            using var mark = new SKPaint { Color = SKColors.White, IsAntialias = true };
+            using var mark = new SKPaint { Color = Colors.Mark, IsAntialias = true };
             foreach (var keyframe in moving.Keyframes)
             {
                 var at = (float)view.X(moving.Start + keyframe.Time);
@@ -231,32 +304,27 @@ public sealed class TimelineRenderer : IDisposable
             }
             else if (stream?.Kind == StreamKind.Audio)
             {
-                DrawWaveform(canvas, previews.WaveformOf(asset, media.Stream), media, box, view);
+                DrawWaveform(canvas, previews.WaveformOf(asset, media.Stream), media, box, view, Colors.Waveform);
             }
         }
 
         if (item is Clip shaped)
         {
-            DrawFades(canvas, shaped, box, view);
-            if (shaped.IsFreeze)
-            {
-                label = VideoEditorStrings.FreezeLabel(label);
-            }
-            else if (shaped.IsRamp)
-            {
-                label = string.Create(CultureInfo.InvariantCulture, $"{shaped.Speed:0.##}× → {shaped.EndSpeed:0.##}× · {label}");
-            }
-            else if (Math.Abs(shaped.Speed - 1) > 1e-9)
-            {
-                label = string.Create(CultureInfo.InvariantCulture, $"{shaped.Speed:0.##}× · {label}");
-            }
+            DrawFades(canvas, shaped, box, view, Colors.Fade);
         }
 
-        using var shadow = new SKPaint { Color = SKColors.Black.WithAlpha(0x80), IsAntialias = true };
-        using var text = new SKPaint { Color = SKColors.White, IsAntialias = true };
+        using var shadow = new SKPaint { Color = Colors.LabelShadow, IsAntialias = true };
+        using var text = new SKPaint { Color = labelColor, IsAntialias = true };
         var x = Math.Max(box.Left, 0) + 5;
-        canvas.DrawText(label, x + 1, box.Top + 14, SKTextAlign.Left, _font, shadow);
-        canvas.DrawText(label, x, box.Top + 13, SKTextAlign.Left, _font, text);
+
+        // Shaped like the editors' text: names in Arabic (a file's, a track's) join their letters and read right to left.
+        var line = TextShaper.Shape(label, _font.Typeface, _font.Size, Bidi.IsRightToLeft(label));
+        if (Colors.LabelShadow.Alpha > 0)
+        {
+            line.Draw(canvas, x + 1, box.Top + 14, _font, shadow);
+        }
+
+        line.Draw(canvas, x, box.Top + 13, _font, text);
         canvas.Restore();
     }
 
@@ -301,14 +369,14 @@ public sealed class TimelineRenderer : IDisposable
         }
     }
 
-    private static void DrawWaveform(SKCanvas canvas, Waveform? wave, Clip clip, SKRect box, TimelineView view)
+    private static void DrawWaveform(SKCanvas canvas, Waveform? wave, Clip clip, SKRect box, TimelineView view, SKColor color)
     {
         if (wave is null || clip.IsFreeze)
         {
             return;
         }
 
-        using var paint = new SKPaint { Color = SKColors.White.WithAlpha(0xB0), StrokeWidth = 1, IsAntialias = false };
+        using var paint = new SKPaint { Color = color, StrokeWidth = 1, IsAntialias = false };
         var middle = box.MidY + 4;
         var half = (box.Height - 18) / 2;
         var gain = (float)Math.Min(2, clip.Volume);
@@ -322,9 +390,9 @@ public sealed class TimelineRenderer : IDisposable
         }
     }
 
-    private static void DrawFades(SKCanvas canvas, Clip clip, SKRect box, TimelineView view)
+    private static void DrawFades(SKCanvas canvas, Clip clip, SKRect box, TimelineView view, SKColor color)
     {
-        using var shade = new SKPaint { Color = SKColors.Black.WithAlpha(0x60), IsAntialias = true };
+        using var shade = new SKPaint { Color = color, IsAntialias = true };
         if (clip.FadeIn > 0)
         {
             var w = (float)(clip.FadeIn * view.PixelsPerSecond);

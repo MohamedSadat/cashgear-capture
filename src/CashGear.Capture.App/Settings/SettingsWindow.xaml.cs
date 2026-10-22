@@ -21,9 +21,11 @@ public partial class SettingsWindow : Window, IThemedWindow
     private const double PreviewWidth = 320;
     private const double PreviewHeight = 180;
 
+    /// <summary>The webcam's box before a camera's picture shows (the system's highlight under high contrast).</summary>
+    private static readonly Brush NormalPlaceholder = Frozen(Color.FromRgb(0x6A, 0x6A, 0x6A));
+
     private readonly SettingsViewModel _viewModel;
     private readonly DispatcherTimer _meters;
-    private readonly Brush _placeholder = new SolidColorBrush(Color.FromRgb(0x6A, 0x6A, 0x6A));
     private IWebcamSource? _preview;
     private WriteableBitmap? _previewBitmap;
     private int _previewPending;
@@ -44,7 +46,11 @@ public partial class SettingsWindow : Window, IThemedWindow
         Loaded += (_, _) => PlaceWebcam();
     }
 
-    public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
+    public void ApplyTheme(AppTheme theme)
+    {
+        Theming.Apply(this, theme);
+        PlaceWebcam(); // its placeholder follows high contrast
+    }
 
     protected override void OnClosed(EventArgs e)
     {
@@ -209,7 +215,15 @@ public partial class SettingsWindow : Window, IThemedWindow
             ? new SolidColorBrush(Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb))
             : Brushes.White;
         WebcamImage.RelativeTransform = overlays.WebcamMirror ? new ScaleTransform(-1, 1, 0.5, 0.5) : Transform.Identity;
-        WebcamBox.Background = WebcamImage.ImageSource is null ? _placeholder : WebcamImage;
+        WebcamBox.Background = WebcamImage.ImageSource is null ? HighContrast.Pick(NormalPlaceholder, () => HighContrast.Highlight) : WebcamImage;
+        WebcamArea.HalfBox = (width / 2 / PreviewWidth * 100, height / 2 / PreviewHeight * 100);
+    }
+
+    private static SolidColorBrush Frozen(Color color)
+    {
+        var brush = new SolidColorBrush(color);
+        brush.Freeze();
+        return brush;
     }
 
     private void OnWebcamDragStart(object sender, MouseButtonEventArgs e)

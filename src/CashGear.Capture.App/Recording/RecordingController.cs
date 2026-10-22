@@ -303,6 +303,21 @@ public sealed partial class RecordingController
     /// <summary>Turns the pen on or off (the hotkey and the toolbar); nothing when not recording.</summary>
     public void ToggleDrawing() => _ = _ui.InvokeAsync(() => _drawing?.Toggle());
 
+    /// <summary>
+    /// The "use the toolbar from the keyboard" hotkey while recording: the recording toolbar takes the focus until
+    /// Esc. False when it isn't up (no recording, or one being saved). UI thread.
+    /// </summary>
+    public bool UseToolbarFromKeyboard()
+    {
+        if (_toolbar is null)
+        {
+            return false;
+        }
+
+        _toolbar.UseKeyboard();
+        return true;
+    }
+
     public void TogglePause()
     {
         if (_recorder.IsPaused)

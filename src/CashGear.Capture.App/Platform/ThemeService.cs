@@ -23,7 +23,7 @@ public sealed partial class ThemeService : IDisposable
     private readonly IUiDispatcher _ui;
     private readonly Func<bool> _windowsIsDark;
     private readonly ILogger<ThemeService> _logger;
-    private (AppTheme Theme, bool Dark) _applied;
+    private (AppTheme Theme, bool Dark, bool HighContrast) _applied;
     private bool _started;
 
     public ThemeService(ISettingsService settings, IUiDispatcher ui, ILogger<ThemeService> logger)
@@ -54,6 +54,7 @@ public sealed partial class ThemeService : IDisposable
         _started = true;
         _settings.Changed += OnChanged;
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+        SystemParameters.StaticPropertyChanged += OnSystemParameterChanged;
     }
 
     /// <summary>Re-checks the theme (the setting and, for System, Windows) and re-themes the open windows if it changed.</summary>
@@ -65,8 +66,13 @@ public sealed partial class ThemeService : IDisposable
             return;
         }
 
+        if (current.HighContrast != _applied.HighContrast)
+        {
+            ChromeBrushes.Current.Refresh();
+        }
+
         _applied = current;
-        LogChanged(current.Theme, current.Dark);
+        LogChanged(current.Theme, current.Dark, current.HighContrast);
         if (Application.Current is { } app)
         {
             foreach (var window in app.Windows.OfType<IThemedWindow>())
@@ -84,10 +90,11 @@ public sealed partial class ThemeService : IDisposable
         {
             _settings.Changed -= OnChanged;
             SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+            SystemParameters.StaticPropertyChanged -= OnSystemParameterChanged;
         }
     }
 
-    private (AppTheme Theme, bool Dark) Current()
+    private (AppTheme Theme, bool Dark, bool HighContrast) Current()
     {
         var theme = _settings.Current.Appearance.Theme;
         return (theme, theme switch
@@ -95,7 +102,7 @@ public sealed partial class ThemeService : IDisposable
             AppTheme.Dark => true,
             AppTheme.Light => false,
             _ => _windowsIsDark(),
-        });
+        }, HighContrast.IsOn);
     }
 
     private void OnChanged(object? sender, EventArgs e) => _ = _ui.InvokeAsync(Refresh);
@@ -103,6 +110,15 @@ public sealed partial class ThemeService : IDisposable
     // Windows sends this (category General) when the app theme is switched.
     private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e) => _ = _ui.InvokeAsync(Refresh);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Theme is now {Theme} (dark: {Dark})")]
-    private partial void LogChanged(AppTheme theme, bool dark);
+    // WPF updates SystemParameters.HighContrast when high contrast is turned on or off.
+    private void OnSystemParameterChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(SystemParameters.HighContrast))
+        {
+            _ = _ui.InvokeAsync(Refresh);
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Theme is now {Theme} (dark: {Dark}, high contrast: {HighContrast})")]
+    private partial void LogChanged(AppTheme theme, bool dark, bool highContrast);
 }

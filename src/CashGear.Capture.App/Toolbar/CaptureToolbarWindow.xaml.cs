@@ -24,6 +24,9 @@ namespace CashGear.Capture.App.Toolbar;
 /// on the left and right edges and in a row at the top and bottom. Where it was is remembered.</item>
 /// <item>When a column (or row) is longer than the monitor's work area (20 buttons at 150% on a 1080p screen), it
 /// wraps into a second one.</item>
+/// <item>The "Use the toolbar from the keyboard" hotkey gives it the focus for a while (<see cref="UseKeyboard"/>):
+/// Tab and the arrows move between the buttons, Enter and Space press them and open the menus, Shift+F10 opens the
+/// fixed sizes, Esc gives the focus back. A button that captures gives the focus back first, as a click does.</item>
 /// </list>
 /// Positions are physical pixels (<c>SetWindowPos</c>), so it lands exactly at any mix of monitor scales.
 /// </summary>
@@ -35,6 +38,7 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
     private readonly IAppStateStore _state;
     private readonly IMonitorService _monitors;
     private readonly ToolbarPlacement? _placement;
+    private readonly ToolbarKeyboardMode _keyboard;
     private nint _hwnd;
     private bool _dragging;
     private PixelPoint _grab; // where in the window (physical pixels) the grip was pressed
@@ -51,6 +55,9 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
         SetVertical(_placement?.Vertical ?? false);
         Edge = _placement?.Edge ?? DockEdge.Top;
         ApplyTheme(theme);
+        _keyboard = new ToolbarKeyboardMode(this, SetFocusable);
+        AddHandler(ButtonBase.ClickEvent, new RoutedEventHandler(OnButtonClick));
+        PreviewKeyDown += OnPreviewKeyDown;
 
         SourceInitialized += (_, _) =>
         {
@@ -72,7 +79,13 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
 
     internal FrameworkElement GripElement => Grip;
 
+    /// <summary>The keyboard is using it (<see cref="UseKeyboard"/>), until Esc or until it loses the focus.</summary>
+    internal bool UsesKeyboard => _keyboard.IsOn;
+
     public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
+
+    /// <summary>Takes the focus, its first button focused, until Esc (which gives the focus back) or until it loses the focus.</summary>
+    public void UseKeyboard() => _keyboard.Start();
 
     /// <summary>Where it is on the screen (physical pixels).</summary>
     internal unsafe PixelRect Bounds()
@@ -107,6 +120,39 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
             button.Background = Brushes.Transparent;
             button.BorderThickness = new Thickness(0);
             ToolTipService.SetInitialShowDelay(button, 400);
+        }
+    }
+
+    private void SetFocusable(bool focusable)
+    {
+        foreach (var button in Bar.Children.OfType<Button>())
+        {
+            button.Focusable = focusable;
+        }
+    }
+
+    /// <summary>
+    /// A button pressed while the keyboard uses the toolbar (before its command runs): one that captures, records or
+    /// hides gives the focus back first, as if the toolbar had been clicked, so "active window" is the user's and the
+    /// capture starts from what was on the screen. The menus keep the keyboard; Settings opens its window instead.
+    /// </summary>
+    private void OnButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (_keyboard.IsOn && e.OriginalSource is Button button && button != ToolsButton && button != DelayButton && button != AfterButton)
+        {
+            _keyboard.End(giveBack: button != SettingsButton);
+        }
+    }
+
+    /// <summary>Shift+F10 or the menu key on the fixed-size button: its sizes, which a right click shows.</summary>
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        var menuKey = key == Key.Apps || (key == Key.F10 && Keyboard.Modifiers == ModifierKeys.Shift);
+        if (menuKey && Keyboard.FocusedElement == FixedButton)
+        {
+            Open((ContextMenu)Resources["SizesMenu"], FixedButton);
+            e.Handled = true;
         }
     }
 
@@ -167,10 +213,12 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
 
     private void OnGripDown(object sender, MouseButtonEventArgs e)
     {
-        // From the press itself: by the time it is handled the pointer may have moved on.
-        var scale = Wpf.DpiHelper.GetScale(this);
-        var at = e.GetPosition(this);
-        _grab = new PixelPoint((int)Math.Round(at.X * scale.ScaleX), (int)Math.Round(at.Y * scale.ScaleY));
+        // Where the bar was taken hold of, from the press itself (the pointer may have moved on since), measured on
+        // the screen from the window's top-left corner: positions inside the window are mirrored in a right-to-left
+        // language, PointToScreen's (physical pixels) never are.
+        var press = PointToScreen(e.GetPosition(this));
+        var bounds = Bounds();
+        _grab = new PixelPoint((int)Math.Round(press.X) - bounds.X, (int)Math.Round(press.Y) - bounds.Y);
         _dragging = true;
         Grip.CaptureMouse();
         e.Handled = true;
@@ -286,5 +334,9 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
         menu.PlacementTarget = button;
         menu.Placement = IsVertical ? PlacementMode.Right : PlacementMode.Bottom;
         menu.IsOpen = true;
+        if (_keyboard.IsOn)
+        {
+            MenuKeyboard.FocusFirstItemSoon(menu);
+        }
     }
 }

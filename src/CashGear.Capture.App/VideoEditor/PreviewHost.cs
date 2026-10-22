@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -16,7 +17,8 @@ namespace CashGear.Capture.App.VideoEditor;
 /// (an OpenGL Skia surface, <see cref="SKGLElement"/>) when it can, else in memory (<see cref="SKElement"/>). The
 /// choice is made once: a graphics card that fails (no OpenGL, Remote Desktop, a driver error while drawing) switches
 /// the preview to memory for good. While the window is shown, WPF's render loop advances playback and draws a new
-/// frame when one is due.
+/// frame when one is due. It takes the focus (a frame round it shows it), and then the arrow keys move the selected
+/// picture, annotation or zoom a pixel (Shift: 10 pixels).
 /// </summary>
 internal sealed partial class PreviewHost : Border
 {
@@ -28,6 +30,14 @@ internal sealed partial class PreviewHost : Border
     private SKColor _surround = new(0x10, 0x10, 0x10);
     private int _renderWidth;
     private long _drawnFrame = -1;
+
+    public PreviewHost()
+    {
+        Focusable = true;
+        FocusVisualStyle = null; // the frame is drawn with the picture
+    }
+
+    internal VideoEditorViewModel? ViewModel => _viewModel;
 
     /// <summary>Drawing on the graphics card.</summary>
     public bool UsesGpu { get; private set; }
@@ -181,6 +191,43 @@ internal sealed partial class PreviewHost : Border
         {
             _dirty = true; // a picture is still on its way: draw again when it comes
         }
+
+        if (IsKeyboardFocused)
+        {
+            var scale = (float)DpiHelper.GetScale(this).ScaleX;
+            using var frame = new SKPaint { Color = VideoEditorPalette.Focus, Style = SKPaintStyle.Stroke, StrokeWidth = 2 * scale };
+            canvas.DrawRect(SKRect.Create(scale, scale, width - (2 * scale), height - (2 * scale)), frame);
+        }
+    }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new PreviewAutomationPeer(this);
+
+    protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
+    {
+        base.OnGotKeyboardFocus(e);
+        Invalidate();
+    }
+
+    protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
+    {
+        base.OnLostKeyboardFocus(e);
+        Invalidate();
+    }
+
+    /// <summary>The arrow keys move the selected picture, annotation or zoom; with nothing to move, ← and → step through the frames.</summary>
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        var modifiers = Keyboard.Modifiers;
+        if (e.Handled || _viewModel is null || e.Key is not (Key.Left or Key.Right or Key.Up or Key.Down) || modifiers is not (ModifierKeys.None or ModifierKeys.Shift))
+        {
+            return;
+        }
+
+        var step = modifiers == ModifierKeys.Shift ? 10 : 1;
+        var dx = e.Key == Key.Left ? -step : e.Key == Key.Right ? step : 0;
+        var dy = e.Key == Key.Up ? -step : e.Key == Key.Down ? step : 0;
+        e.Handled = _viewModel.NudgeOnPreview(dx, dy) || dy != 0 || modifiers != ModifierKeys.None;
     }
 
     /// <summary>A position on the preview in the pixels it is drawn in (DIPs times the surface's own scale).</summary>
@@ -200,6 +247,7 @@ internal sealed partial class PreviewHost : Border
         }
 
         var at = ToPixels(e);
+        Focus();
         CaptureMouse();
         _viewModel.PreviewPointerDown(at.X, at.Y);
         e.Handled = true;

@@ -190,6 +190,7 @@ public sealed partial class HotkeyRegistrar(
         HotkeyAction.ColorPicker => HotkeysText.ColorPicker,
         HotkeyAction.Ruler => HotkeysText.Ruler,
         HotkeyAction.Crosshair => HotkeysText.Crosshair,
+        HotkeyAction.UseToolbar => HotkeysText.UseToolbar,
         _ => action.ToString(),
     };
 

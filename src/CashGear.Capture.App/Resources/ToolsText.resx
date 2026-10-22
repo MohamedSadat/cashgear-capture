@@ -80,4 +80,20 @@
     <value>{0} at {1} dpi</value>
     <comment>drawn on the screen ruler: in at 96 dpi</comment>
   </data>
+  <data name="CopyAsFormat" xml:space="preserve">
+    <value>Copy {0}</value>
+    <comment>screen-reader name of a colour picker Copy button; {0} is HEX, RGB, HSL or C#</comment>
+  </data>
+  <data name="RulerAcrossValue" xml:space="preserve">
+    <value>{0} long, across</value>
+    <comment>the ruler's value for a screen reader; {0} is its length, e.g. 800 px</comment>
+  </data>
+  <data name="RulerDownValue" xml:space="preserve">
+    <value>{0} long, down</value>
+    <comment>the ruler's value for a screen reader; {0} is its length, e.g. 800 px</comment>
+  </data>
+  <data name="RulerPointerValue" xml:space="preserve">
+    <value>{0}; the pointer is at {1}</value>
+    <comment>{0} is RulerAcrossValue or RulerDownValue, {1} the pointer's distance from the zero end</comment>
+  </data>
 </root>

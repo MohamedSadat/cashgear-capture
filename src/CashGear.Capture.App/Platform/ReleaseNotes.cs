@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -28,12 +29,16 @@ public sealed partial class ReleaseNotes(UpdateService updates, ISettingsService
             ? Markdown.Render(UpdatesText.NoReleaseNotes(version))
             : Markdown.Render(ForLanguage(notes, CultureInfo.CurrentUICulture));
 
+        // Esc or Enter closes it; in Tab order the notes come first, then Close.
         var close = new Button { Content = CommonText.Close, MinWidth = 90, IsCancel = true, IsDefault = true, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
         var viewer = new FlowDocumentScrollViewer { Document = document, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, IsToolBarVisible = false };
-        var panel = new DockPanel { Margin = new Thickness(16) };
-        DockPanel.SetDock(close, Dock.Bottom);
-        panel.Children.Add(close);
+        AutomationProperties.SetName(viewer, UpdatesText.ReleaseNotesTitle(version));
+        var panel = new Grid { Margin = new Thickness(16) };
+        panel.RowDefinitions.Add(new RowDefinition());
+        panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        Grid.SetRow(close, 1);
         panel.Children.Add(viewer);
+        panel.Children.Add(close);
 
         var window = new Window
         {

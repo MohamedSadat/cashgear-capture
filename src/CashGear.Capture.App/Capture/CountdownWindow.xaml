@@ -1,13 +1,16 @@
 <Window x:Class="CashGear.Capture.App.Capture.CountdownWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="clr-namespace:CashGear.Capture.App.Platform"
         xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         Title="{x:Static r:CapturingText.CountdownTitle}" SizeToContent="WidthAndHeight" ResizeMode="NoResize" WindowStyle="None"
         Topmost="True" ShowInTaskbar="False" ShowActivated="False" Focusable="False"
-        BorderThickness="1" BorderBrush="#60808080">
+        BorderThickness="1" BorderBrush="{p:Chrome FaintBorder}">
   <StackPanel Margin="18,10,18,14" MinWidth="150">
     <TextBlock x:Name="Heading" Text="{x:Static r:CapturingText.CountdownHeading}" HorizontalAlignment="Center" Opacity="0.75" />
-    <TextBlock x:Name="Seconds" Text="3" FontSize="44" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,-2,0,6" />
+    <!-- A screen reader hears each second (the window never has the focus). -->
+    <TextBlock x:Name="Seconds" Text="3" FontSize="44" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,-2,0,6"
+               AutomationProperties.LiveSetting="Polite" />
     <Button x:Name="CancelButton" Content="{x:Static r:CommonText.Cancel}" HorizontalAlignment="Center" MinWidth="90" Focusable="False" Click="OnCancel" />
   </StackPanel>
 </Window>

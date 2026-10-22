@@ -75,4 +75,16 @@
   <data name="UnitAtDpi" xml:space="preserve">
     <value>{0} عند {1} dpi</value>
   </data>
+  <data name="CopyAsFormat" xml:space="preserve">
+    <value>نسخ {0}</value>
+  </data>
+  <data name="RulerAcrossValue" xml:space="preserve">
+    <value>بطول {0}، أفقية</value>
+  </data>
+  <data name="RulerDownValue" xml:space="preserve">
+    <value>بطول {0}، عمودية</value>
+  </data>
+  <data name="RulerPointerValue" xml:space="preserve">
+    <value>{0}؛ المؤشر عند {1}</value>
+  </data>
 </root>

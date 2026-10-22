@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Input;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Batch;
@@ -14,10 +15,24 @@ public partial class ImageListTemplate : ResourceDictionary
     public ImageListTemplate() => InitializeComponent();
 }
 
-/// <summary>What the image tool windows share: theming, pictures dropped on them, and stopping their work when closed.</summary>
+/// <summary>
+/// What the image tool windows share: theming, pictures dropped on them, Esc to close them, and stopping their work
+/// when closed.
+/// </summary>
 public class ImageToolWindow : Window, IThemedWindow
 {
     public void ApplyTheme(AppTheme theme) => Theming.Apply(this, theme);
+
+    /// <summary>Esc closes the window (its Cancel button stops a run, it doesn't close it); an open drop-down takes Esc first.</summary>
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (!e.Handled && e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            Close();
+        }
+    }
 
     /// <summary>Wires the window to its view model (after <c>InitializeComponent</c>).</summary>
     protected void Attach(object viewModel, AppTheme theme)

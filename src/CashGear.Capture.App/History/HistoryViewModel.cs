@@ -32,6 +32,14 @@ public sealed class HistoryItem
     /// <summary>For the tray menu: when and what.</summary>
     public string Label => $"{When} — {Description}";
 
+    /// <summary>What a screen reader says for it in the History list: when, what, and the file it was saved to.</summary>
+    public string SpokenName => Entry.SavedPath is { Length: > 0 } saved
+        ? HistoryText.SpokenSaved(When, Description, Path.GetFileName(saved))
+        : HistoryText.Spoken(When, Description);
+
+    /// <summary>The list item's name for a screen reader (the History list shows a template, not this text).</summary>
+    public override string ToString() => SpokenName;
+
     /// <remarks>The date and time are in the current culture's formats, the words in the UI language.</remarks>
     public static string FormatWhen(DateTimeOffset at, DateTimeOffset now)
     {

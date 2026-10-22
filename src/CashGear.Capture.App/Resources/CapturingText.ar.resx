@@ -141,4 +141,7 @@
   <data name="WindowNamesSeparator" xml:space="preserve">
     <value>»، «</value>
   </data>
+  <data name="RegionSpoken" xml:space="preserve">
+    <value>{0}. {1}</value>
+  </data>
 </root>

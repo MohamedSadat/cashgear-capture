@@ -1,6 +1,8 @@
+using System.Windows.Automation.Peers;
 using System.Windows.Input;
 using CashGear.Capture.App.Wpf;
 using CashGear.Capture.VideoEditor.Timeline;
+using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using SkiaSharp.Views.WPF;
 
@@ -9,7 +11,9 @@ namespace CashGear.Capture.App.VideoEditor;
 /// <summary>
 /// The timeline, drawn with Skia by <see cref="TimelineRenderer"/> at physical-pixel resolution; the mouse goes to
 /// the <see cref="TimelineSession"/> in view pixels (DIPs). The wheel scrolls in time, Ctrl+wheel zooms at the mouse
-/// and Shift+wheel scrolls the rows.
+/// and Shift+wheel scrolls the rows. With the focus (a frame round it shows it): Tab and Shift+Tab select the next
+/// and previous item, ↑ and ↓ move the selected one to the track above or below; Ctrl+Tab moves on to the next
+/// control. Screen readers see its tracks and items (<see cref="TimelineAutomationPeer"/>).
 /// </summary>
 internal sealed class TimelineControl : SKElement
 {
@@ -19,9 +23,11 @@ internal sealed class TimelineControl : SKElement
     public TimelineControl()
     {
         Focusable = true;
-        FocusVisualStyle = null;
+        FocusVisualStyle = null; // the frame is drawn with the timeline
         ClipToBounds = true;
     }
+
+    internal VideoEditorViewModel? ViewModel => _viewModel;
 
     public TimelineColors Colors
     {
@@ -39,7 +45,12 @@ internal sealed class TimelineControl : SKElement
         _renderer.Previews = viewModel.Previews;
         viewModel.TimelineInvalidated += (_, _) => Dispatcher.BeginInvoke(InvalidateVisual);
         viewModel.View.Changed += (_, _) => InvalidateVisual();
-        viewModel.Timeline.Changed += (_, _) => InvalidateVisual();
+        viewModel.Timeline.Changed += (_, _) =>
+        {
+            InvalidateVisual();
+            (UIElementAutomationPeer.FromElement(this) as TimelineAutomationPeer)?.TimelineChanged();
+        };
+        viewModel.History.Changed += (_, _) => (UIElementAutomationPeer.FromElement(this) as TimelineAutomationPeer)?.ProjectChanged();
         SizeChanged += (_, _) =>
         {
             viewModel.View.Width = ActualWidth;
@@ -48,6 +59,8 @@ internal sealed class TimelineControl : SKElement
     }
 
     public void Release() => _renderer.Dispose();
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new TimelineAutomationPeer(this);
 
     protected override void OnPaintSurface(SKPaintSurfaceEventArgs e)
     {
@@ -60,7 +73,47 @@ internal sealed class TimelineControl : SKElement
         var view = _viewModel.View;
         view.Width = ActualWidth;
         view.Height = ActualHeight;
-        _renderer.Render(e.Surface.Canvas, _viewModel.Timeline, (float)DpiHelper.GetScale(this).ScaleX);
+        var scale = (float)DpiHelper.GetScale(this).ScaleX;
+        _renderer.Render(e.Surface.Canvas, _viewModel.Timeline, scale);
+        if (IsKeyboardFocused)
+        {
+            using var frame = new SKPaint { Color = Colors.Focus, Style = SKPaintStyle.Stroke, StrokeWidth = 2 * scale };
+            e.Surface.Canvas.DrawRect(SKRect.Create(scale, scale, e.Info.Width - (2 * scale), e.Info.Height - (2 * scale)), frame);
+        }
+    }
+
+    protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
+    {
+        base.OnGotKeyboardFocus(e);
+        InvalidateVisual();
+    }
+
+    protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e)
+    {
+        base.OnLostKeyboardFocus(e);
+        InvalidateVisual();
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.Handled || _viewModel is null)
+        {
+            return;
+        }
+
+        var modifiers = Keyboard.Modifiers;
+        switch (e.Key)
+        {
+            case Key.Tab when modifiers is ModifierKeys.None or ModifierKeys.Shift:
+                // An empty timeline lets Tab move on.
+                e.Handled = _viewModel.SelectNextItem(backward: modifiers == ModifierKeys.Shift);
+                break;
+            case Key.Up or Key.Down when modifiers == ModifierKeys.None:
+                _viewModel.MoveToTrack(e.Key == Key.Up ? -1 : 1);
+                e.Handled = true; // the arrows never take the focus off the timeline
+                break;
+        }
     }
 
     protected override void OnMouseDown(MouseButtonEventArgs e)

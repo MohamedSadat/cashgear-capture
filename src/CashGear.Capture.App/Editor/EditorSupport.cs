@@ -9,13 +9,13 @@ namespace CashGear.Capture.App.Editor;
 /// <summary>
 /// A toolbar tool: a radio button drawn as a toggle button. The style is a dynamic reference to the theme's
 /// toggle-button style, so it follows light/dark (a <c>BasedOn</c> static reference would freeze one theme's colours).
+/// It is a tab stop; a click with the mouse gives the focus back to the canvas (see the window's button handler).
 /// </summary>
 public sealed class ToolButton : RadioButton
 {
     public ToolButton()
     {
         SetResourceReference(StyleProperty, typeof(ToggleButton));
-        Focusable = false; // keys belong to the canvas (tool shortcuts, Delete, arrows)
         MinWidth = 58;
         Padding = new Thickness(4);
         Margin = new Thickness(0, 0, 2, 0);

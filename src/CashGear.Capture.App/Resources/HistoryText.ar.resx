@@ -102,4 +102,10 @@
   <data name="CouldNotSave" xml:space="preserve">
     <value>تعذّر حفظ اللقطة: {0}</value>
   </data>
+  <data name="Spoken" xml:space="preserve">
+    <value>{0}، {1}</value>
+  </data>
+  <data name="SpokenSaved" xml:space="preserve">
+    <value>{0}، {1}، محفوظة باسم {2}</value>
+  </data>
 </root>

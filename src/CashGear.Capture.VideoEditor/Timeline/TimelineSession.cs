@@ -86,6 +86,143 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>Every item in the order Tab goes through them: the rows from the top (<see cref="TimelineView.Rows"/>), each by start.</summary>
+    public static IReadOnlyList<TimelineItem> TabOrder(VideoProject project) =>
+        [.. TimelineView.Rows(project).SelectMany(r => r.Track.Items.OrderBy(i => i.Start))];
+
+    /// <summary>
+    /// Tab: selects the item after the selected one in <see cref="TabOrder"/> (before it when
+    /// <paramref name="backward"/>; the first or last when nothing is selected), round from the end to the start,
+    /// and scrolls to it. False when the timeline is empty.
+    /// </summary>
+    public bool SelectNext(bool backward = false)
+    {
+        var items = TabOrder(History.Project);
+        if (items.Count == 0)
+        {
+            return false;
+        }
+
+        var index = -1;
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (items[i].Id == SelectedId)
+            {
+                index = i;
+                break;
+            }
+        }
+
+        var next = index < 0
+            ? (backward ? items.Count - 1 : 0)
+            : (index + (backward ? items.Count - 1 : 1)) % items.Count;
+        Reveal(items[next].Id);
+        Select(items[next].Id);
+        return true;
+    }
+
+    /// <summary>Scrolls the view (in time and down the rows) to show the item <paramref name="id"/>.</summary>
+    public void Reveal(string id)
+    {
+        var project = History.Project;
+        if (project.Find(id) is not { } found)
+        {
+            return;
+        }
+
+        View.RevealSpan(found.Item.Start, found.Item.End);
+        if (TimelineView.Rows(project).FirstOrDefault(r => r.Track.Id == found.Track.Id) is { } row)
+        {
+            View.RevealRow(row);
+        }
+    }
+
+    /// <summary>
+    /// ↑/↓: moves the selected item to the nearest track above (<paramref name="direction"/> below 0) or below that
+    /// takes it and has room for it at its time (<see cref="TrackEdits.MoveItem"/>), as one undo step. False when
+    /// there is none, or its own track is locked.
+    /// </summary>
+    public bool MoveSelectedToTrack(int direction)
+    {
+        var project = History.Project;
+        if (direction == 0 || SelectedId is not { } id || project.Find(id) is not { } found)
+        {
+            return false;
+        }
+
+        var rows = TimelineView.Rows(project);
+        var from = -1;
+        for (var i = 0; i < rows.Count; i++)
+        {
+            if (rows[i].Track.Id == found.Track.Id)
+            {
+                from = i;
+                break;
+            }
+        }
+
+        var step = Math.Sign(direction);
+        for (var i = from + step; from >= 0 && i >= 0 && i < rows.Count; i += step)
+        {
+            var after = TrackEdits.MoveItem(project, id, rows[i].Track.Id);
+            if (!ReferenceEquals(after, project))
+            {
+                History.Apply(VideoEditorStrings.UndoMoveToTrack, after);
+                Reveal(id);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Alt+←/→: moves the selected item (with its linked clips) <paramref name="frames"/> frames later, or earlier
+    /// when negative, from frame start to frame start, as far as the items next to it allow. Moves of the same item
+    /// one after another are one undo step. False when it can't move.
+    /// </summary>
+    public bool MoveSelectedByFrames(int frames)
+    {
+        var project = History.Project;
+        if (frames == 0 || Selected is not { } item)
+        {
+            return false;
+        }
+
+        var fps = project.Canvas.Fps;
+        var at = item.Start * fps;
+        var tolerance = Times.Epsilon * fps;
+        var start = (frames > 0 ? Math.Floor(at + tolerance) + frames : Math.Ceiling(at - tolerance) + frames) / fps;
+        var after = TimelineEdits.Move(project, item.Id, Math.Max(0, start));
+        if (ReferenceEquals(after, project))
+        {
+            return false;
+        }
+
+        History.Apply(VideoEditorStrings.UndoMove, after, $"nudge {item.Id}");
+        Reveal(item.Id);
+        return true;
+    }
+
+    /// <summary>Ctrl+[ / Ctrl+]: trims the selected item's start or end (and its linked clips') to the playhead, as one undo step.</summary>
+    public bool TrimSelectedToPlayhead(ItemEdge edge)
+    {
+        var project = History.Project;
+        if (Selected is not { } item)
+        {
+            return false;
+        }
+
+        var after = TimelineEdits.Trim(project, item.Id, edge, Playhead);
+        if (ReferenceEquals(after, project))
+        {
+            return false;
+        }
+
+        History.Apply(edge == ItemEdge.Start ? VideoEditorStrings.UndoTrimStart : VideoEditorStrings.UndoTrimEnd, after);
+        return true;
+    }
+
     public TimelineCursor CursorAt(double x, double y)
     {
         if (_drag is Drag.Move)
