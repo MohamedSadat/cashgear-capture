@@ -148,7 +148,7 @@
     <value>نسخ إعدادات برنامج الترميز</value>
   </data>
   <data name="SettingBt709Conversion" xml:space="preserve">
-    <value>ضبط التحويل إلى BT.709</value>
+    <value>ضبط التحويل إلى BT.&#x200E;709</value>
   </data>
   <data name="ConvertingFrame" xml:space="preserve">
     <value>تحويل إطار</value>

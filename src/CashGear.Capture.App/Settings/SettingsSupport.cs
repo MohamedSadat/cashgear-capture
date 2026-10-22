@@ -160,10 +160,11 @@ public sealed class EnumLabelConverter : IValueConverter
         OverlayAnchor.TopRight => OverlaysText.AnchorTopRight,
         WebcamShape.Circle => OverlaysText.ShapeCircle,
         WebcamShape.RoundedRectangle => OverlaysText.ShapeRoundedRectangle,
-        ColorFormat.Hex => "HEX (#1E90FF)",
-        ColorFormat.Rgb => "RGB (rgb(30, 144, 255))",
-        ColorFormat.Hsl => "HSL (hsl(210, 100%, 56%))",
-        ColorFormat.CSharp => "C# (Color.FromArgb(…))",
+        ColorFormat.Hex => Code("HEX (#1E90FF)"),
+        ColorFormat.Rgb => Code("RGB (rgb(30, 144, 255))"),
+        ColorFormat.Hsl => Code("HSL (hsl(210, 100%, 56%))"),
+        ColorFormat.CSharp => Code("C# (Color.FromArgb(…))"),
+
         PrintFit.FitToPage => DestinationsText.PrintFitToPage,
         PrintFit.FillPage => DestinationsText.PrintFillPage,
         PrintFit.ActualSize => DestinationsText.PrintActualSize,
@@ -189,4 +190,11 @@ public sealed class EnumLabelConverter : IValueConverter
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
+
+    /// <summary>
+    /// Code shown as an example (<c>rgb(30, 144, 255)</c>), kept in its order in a right-to-left window: in Arabic, WPF
+    /// takes digits for Arabic numbers, which would move the brackets and the # around them. A left-to-right mark
+    /// before each number and at both ends keeps every bracket and separator between left-to-right letters.
+    /// </summary>
+    private static string Code(string example) => '‎' + System.Text.RegularExpressions.Regex.Replace(example, "[0-9]+", "‎$0") + '‎';
 }

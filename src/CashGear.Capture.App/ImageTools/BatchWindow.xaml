@@ -75,7 +75,7 @@
           </StackPanel>
 
           <TextBlock Style="{StaticResource Section}" Text="{x:Static r:ImageToolsText.SectionNames}" />
-          <TextBox Text="{Binding NameTemplate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:ImageToolsText.NameTemplate}" />
+          <TextBox FlowDirection="LeftToRight" Text="{Binding NameTemplate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:ImageToolsText.NameTemplate}" />
           <TextBlock Margin="0,4,0,0" Opacity="0.8" TextWrapping="Wrap">
             <Run Text="{x:Static r:ImageToolsText.ForExample}" /> <Run Text="{Binding NameExample, Mode=OneWay}" />
           </TextBlock>
@@ -86,7 +86,7 @@
           <TextBlock Style="{StaticResource Section}" Text="{x:Static r:ImageToolsText.SectionOutput}" />
           <DockPanel>
             <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseOutputCommand}" Margin="6,0,0,0" />
-            <TextBox Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:ImageToolsText.OutputFolder}" />
+            <TextBox FlowDirection="LeftToRight" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:ImageToolsText.OutputFolder}" />
           </DockPanel>
           <DockPanel Margin="0,6,0,0">
             <TextBlock Text="{x:Static r:ImageToolsText.WhenNameTaken}" VerticalAlignment="Center" Margin="0,0,8,0" />

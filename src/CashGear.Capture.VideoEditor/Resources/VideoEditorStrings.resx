@@ -216,4 +216,20 @@
     <value>move to another track</value>
     <comment>undo step: Up/Down moved the selected clip to the track above or below</comment>
   </data>
+  <data name="TrackMicrophone" xml:space="preserve">
+    <value>Microphone</value>
+    <comment>A recording's microphone track, shown in the timeline (the file keeps the English title)</comment>
+  </data>
+  <data name="TrackSystemAudio" xml:space="preserve">
+    <value>System audio</value>
+    <comment>A recording's system audio track, shown in the timeline (the file keeps the English title)</comment>
+  </data>
+  <data name="TrackClickSounds" xml:space="preserve">
+    <value>Click sounds</value>
+    <comment>A recording's click sounds track, shown in the timeline (the file keeps the English title)</comment>
+  </data>
+  <data name="TrackMixed" xml:space="preserve">
+    <value>Mixed</value>
+    <comment>A recording's track with every sound mixed together, shown in the timeline (the file keeps the English title)</comment>
+  </data>
 </root>

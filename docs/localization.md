@@ -71,6 +71,11 @@ The messages of .NET's own exceptions (`ArgumentException`, `InvalidOperationExc
 - **Seconds and minutes** are translated: `{0} s` → `{0} ث`, `{0} min` → `{0} د`.
 - **Arabic punctuation:** `،` `؛` `؟`. Use «» around names in Arabic sentences, and keep the `…` of menu items that open a window.
 - **Style.** Modern Standard Arabic in the style of Windows' Arabic text. Commands and menu items are verbal nouns (التقاط، حفظ، فتح، تصدير); messages are short full sentences.
+- **Technical names in Arabic text (bidi).** In an Arabic window, WPF counts digits as Arabic numbers, so some Latin names are shown out of order. Put a left-to-right mark, `&#x200E;`, in the Arabic value:
+  - after a dot between a letter and a digit: `H.&#x200E;264`, `BT.&#x200E;709` (otherwise «264.H»);
+  - after a closing bracket that ends Latin text, when the value starts with Latin text: `NVIDIA NVENC (H.&#x200E;264)&#x200E;`, `M4A (AAC)&#x200E;، صوت فقط` (otherwise the bracket moves to the other end).
+
+  Code shown as an example in the UI (`rgb(30, 144, 255)`) gets a mark before each number and at both ends (`EnumLabelConverter.Code`). Text boxes holding code, paths, addresses, file-name templates or colours are `FlowDirection="LeftToRight"`, as Windows' own path boxes are. `ArabicUiTests` saves every window as it is on the screen in `artifacts\arabic-ui` to check this by eye.
 
 ## Glossary
 

@@ -39,7 +39,7 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="SemiBold" />
-            <TextBox Grid.Column="1" Text="{Binding Text, Mode=OneWay}" IsReadOnly="True" FontFamily="Consolas" VerticalAlignment="Center"
+            <TextBox FlowDirection="LeftToRight" Grid.Column="1" Text="{Binding Text, Mode=OneWay}" IsReadOnly="True" FontFamily="Consolas" VerticalAlignment="Center"
                      AutomationProperties.Name="{Binding Label}" />
             <Button Grid.Column="2" Content="{x:Static r:CommonText.Copy}" Command="{Binding CopyCommand}" Margin="8,0,0,0" MinWidth="64"
                     AutomationProperties.Name="{Binding Label, StringFormat={x:Static r:ToolsText.CopyAsFormat}}" />

@@ -59,7 +59,7 @@ public sealed partial class TranscribeViewModel : ObservableObject
         _done = done;
         // The microphone's track first: tracks are named after a recording's sound streams, whose titles stay English.
         var sounds = project.Tracks.Where(t => t.HasSound).OrderBy(t => t.Name.Contains(MicrophoneTitle, StringComparison.OrdinalIgnoreCase) ? 0 : 1).ToList();
-        Sounds = [.. sounds.Select(t => new SoundChoice(t.Id, t.Name)), .. sounds.Count > 1 ? [new SoundChoice(null, VideoEditorText.AllSoundTracks)] : Array.Empty<SoundChoice>()];
+        Sounds = [.. sounds.Select(t => new SoundChoice(t.Id, TrackNames.Display(t.Name))), .. sounds.Count > 1 ? [new SoundChoice(null, VideoEditorText.AllSoundTracks)] : Array.Empty<SoundChoice>()];
         _sound = Sounds.FirstOrDefault();
         var remembered = state.Current.VideoEditor ?? new VideoEditorState();
         Models = [.. WhisperModels.All.Select(m => new ModelChoice(m, models.Has(m) ? VideoEditorText.ModelDownloaded(m.Name, m.About) : VideoEditorText.ModelToDownload(m.Name, m.About, m.SizeText)))];

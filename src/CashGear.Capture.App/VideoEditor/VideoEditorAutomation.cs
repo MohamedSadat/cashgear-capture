@@ -173,7 +173,7 @@ internal sealed class TrackAutomationPeer(TimelineAutomationPeer timeline, strin
         return children;
     }
 
-    protected override string GetNameCore() => timeline.ViewModel?.Project.Track(trackId)?.Name ?? "";
+    protected override string GetNameCore() => timeline.ViewModel?.Project.Track(trackId) is { } track ? TrackNames.Display(track.Name) : "";
 
     protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Group;
 

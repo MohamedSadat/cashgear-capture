@@ -163,28 +163,28 @@
     <value>عنصر</value>
   </data>
   <data name="EncoderNvencH264" xml:space="preserve">
-    <value>NVIDIA NVENC (H.264)</value>
+    <value>NVIDIA NVENC (H.&#x200E;264)&#x200E;</value>
   </data>
   <data name="EncoderNvencHevc" xml:space="preserve">
-    <value>NVIDIA NVENC (HEVC)</value>
+    <value>NVIDIA NVENC (HEVC)&#x200E;</value>
   </data>
   <data name="EncoderNvencAv1" xml:space="preserve">
-    <value>NVIDIA NVENC (AV1)</value>
+    <value>NVIDIA NVENC (AV1)&#x200E;</value>
   </data>
   <data name="EncoderQuickSyncH264" xml:space="preserve">
-    <value>Intel Quick Sync (H.264)</value>
+    <value>Intel Quick Sync (H.&#x200E;264)&#x200E;</value>
   </data>
   <data name="EncoderAmfH264" xml:space="preserve">
-    <value>AMD AMF (H.264)</value>
+    <value>AMD AMF (H.&#x200E;264)&#x200E;</value>
   </data>
   <data name="EncoderWindowsHardwareH264" xml:space="preserve">
-    <value>مرمّز Windows العتادي (H.264)</value>
+    <value>مرمّز Windows العتادي (H.&#x200E;264)</value>
   </data>
   <data name="EncoderWindowsHardwareHevc" xml:space="preserve">
     <value>مرمّز Windows العتادي (HEVC)</value>
   </data>
   <data name="EncoderWindowsSoftwareH264" xml:space="preserve">
-    <value>مرمّز Windows البرمجي (H.264)</value>
+    <value>مرمّز Windows البرمجي (H.&#x200E;264)</value>
   </data>
   <data name="EncoderOpenH264" xml:space="preserve">
     <value>OpenH264 (برمجي)</value>

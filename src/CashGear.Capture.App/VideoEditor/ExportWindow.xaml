@@ -69,7 +69,7 @@
       <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding SizeText}" Opacity="0.75" Margin="0,0,0,8" />
 
       <TextBlock x:Name="FileLabel" Grid.Row="3" Text="{x:Static r:VideoEditorText.File}" VerticalAlignment="Center" Margin="0,0,12,0" />
-      <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}"
+      <TextBox FlowDirection="LeftToRight" Grid.Row="3" Grid.Column="1" Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}"
                AutomationProperties.LabeledBy="{Binding ElementName=FileLabel}" />
       <Button Grid.Row="3" Grid.Column="2" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
 

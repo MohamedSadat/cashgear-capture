@@ -166,7 +166,7 @@
     <value>عنوان الرفع</value>
   </data>
   <data name="UploadAddressTip" xml:space="preserve">
-    <value>https://example.com/api/upload: تُرسَل اللقطة إلى هنا كنموذج (multipart/form-data)</value>
+    <value>https://example.com/api/upload: تُرسَل اللقطة إلى هنا كنموذج (multipart/form-data)&#x200E;</value>
   </data>
   <data name="FileField" xml:space="preserve">
     <value>حقل الملف</value>

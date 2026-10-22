@@ -305,7 +305,7 @@
               <Label DockPanel.Dock="Left" Padding="0" Margin="0,0,8,0" AutomationProperties.Name="{Binding ColorName}">
                 <Border Width="28" Height="28" CornerRadius="4" Background="{Binding ColorBrush}" BorderBrush="{p:Chrome Border}" BorderThickness="1" />
               </Label>
-              <TextBox Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:EditorText.ColourHex}" />
+              <TextBox FlowDirection="LeftToRight" Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:EditorText.ColourHex}" />
             </DockPanel>
           </StackPanel>
 

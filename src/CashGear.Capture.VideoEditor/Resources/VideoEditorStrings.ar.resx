@@ -13,13 +13,13 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="PresetMp4Hd" xml:space="preserve">
-    <value>MP4، H.264، 1080p</value>
+    <value>MP4، H.&#x200E;264، 1080p</value>
   </data>
   <data name="PresetMp4Small" xml:space="preserve">
-    <value>MP4، H.264، 720p</value>
+    <value>MP4، H.&#x200E;264، 720p</value>
   </data>
   <data name="PresetMp4Project" xml:space="preserve">
-    <value>MP4، H.264، بحجم المشروع</value>
+    <value>MP4، H.&#x200E;264، بحجم المشروع</value>
   </data>
   <data name="PresetMp4Hevc" xml:space="preserve">
     <value>MP4، HEVC، بحجم المشروع</value>
@@ -31,7 +31,7 @@
     <value>WebM، AV1</value>
   </data>
   <data name="PresetM4a" xml:space="preserve">
-    <value>M4A (AAC)، صوت فقط</value>
+    <value>M4A (AAC)&#x200E;، صوت فقط</value>
   </data>
   <data name="PresetMp3" xml:space="preserve">
     <value>MP3، صوت فقط</value>
@@ -167,5 +167,17 @@
   </data>
   <data name="UndoMoveToTrack" xml:space="preserve">
     <value>النقل إلى مسار آخر</value>
+  </data>
+  <data name="TrackMicrophone" xml:space="preserve">
+    <value>الميكروفون</value>
+  </data>
+  <data name="TrackSystemAudio" xml:space="preserve">
+    <value>صوت النظام</value>
+  </data>
+  <data name="TrackClickSounds" xml:space="preserve">
+    <value>أصوات النقرات</value>
+  </data>
+  <data name="TrackMixed" xml:space="preserve">
+    <value>الصوت المدمج</value>
   </data>
 </root>

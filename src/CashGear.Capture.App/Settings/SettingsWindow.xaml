@@ -97,7 +97,7 @@
         <RadioButton Margin="0,2" Content="{x:Static r:DestinationsText.AppendToFile}" IsChecked="{Binding Append}" />
         <DockPanel Margin="20,2,0,0" IsEnabled="{Binding Append}">
           <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
-          <TextBox Text="{Binding AppendPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.AppendFileName}" />
+          <TextBox FlowDirection="LeftToRight" Text="{Binding AppendPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.AppendFileName}" />
         </DockPanel>
         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
       </StackPanel>
@@ -133,7 +133,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <TextBox x:Name="FolderBox" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:SettingsText.CaptureFolder}" />
+              <TextBox FlowDirection="LeftToRight" x:Name="FolderBox" Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:SettingsText.CaptureFolder}" />
               <Button Grid.Column="1" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseFolderCommand}" Margin="8,0,0,0" />
               <Button Grid.Column="2" Content="{x:Static r:CommonText.Open}" Command="{Binding OpenCaptureFolderCommand}" Margin="8,0,0,0" />
             </Grid>
@@ -153,7 +153,7 @@
             </StackPanel>
 
             <TextBlock Style="{StaticResource Section}" Text="{x:Static r:SettingsText.FileNameSection}" />
-            <TextBox Text="{Binding FileNameTemplate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:SettingsText.FileNameTemplate}" />
+            <TextBox FlowDirection="LeftToRight" Text="{Binding FileNameTemplate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:SettingsText.FileNameTemplate}" />
             <TextBlock Style="{StaticResource Hint}">
               <Run Text="{x:Static r:SettingsText.FileNameExample}" />
               <Run Text="{Binding FileNamePreview, Mode=OneWay}" FontWeight="SemiBold" />
@@ -274,10 +274,10 @@
                         <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Protocol}" />
                         <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,3" ItemsSource="{Binding Protocols, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding Protocol}" AutomationProperties.Name="{x:Static r:DestinationsText.Protocol}" />
                         <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Server}" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.ServerAddress}" ToolTip="{x:Static r:DestinationsText.ServerAddressExample}" />
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.ServerAddress}" ToolTip="{x:Static r:DestinationsText.ServerAddressExample}" />
                         <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Port}" />
                         <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,3">
-                          <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Width="70" AutomationProperties.Name="{x:Static r:DestinationsText.Port}" />
+                          <TextBox FlowDirection="LeftToRight" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Width="70" AutomationProperties.Name="{x:Static r:DestinationsText.Port}" />
                           <TextBlock Text="{Binding PortHint}" Opacity="0.7" VerticalAlignment="Center" Margin="8,0,0,0" />
                         </StackPanel>
                         <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.UserName}" />
@@ -293,7 +293,7 @@
                         <TextBlock Grid.Row="6" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.KeyFile}" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}" />
                         <DockPanel Grid.Row="6" Grid.Column="1" Margin="0,3" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}">
                           <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseKeyFileCommand}" Margin="8,0,0,0" />
-                          <TextBox Text="{Binding KeyFile, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.PrivateKeyFile}" ToolTip="{x:Static r:DestinationsText.KeyFileTip}" />
+                          <TextBox FlowDirection="LeftToRight" Text="{Binding KeyFile, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.PrivateKeyFile}" ToolTip="{x:Static r:DestinationsText.KeyFileTip}" />
                         </DockPanel>
                         <TextBlock Grid.Row="7" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.KeyPassphrase}" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}" />
                         <StackPanel Grid.Row="7" Grid.Column="1" Margin="0,3" Visibility="{Binding IsSftp, Converter={StaticResource Visible}}">
@@ -301,10 +301,10 @@
                           <TextBlock Text="{Binding PassphraseState}" Opacity="0.7" Margin="0,2,0,0" />
                         </StackPanel>
                         <TextBlock Grid.Row="8" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.ServerFolder}" />
-                        <TextBox Grid.Row="8" Grid.Column="1" Margin="0,3" Text="{Binding RemoteFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.FolderOnServer}"
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="8" Grid.Column="1" Margin="0,3" Text="{Binding RemoteFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.FolderOnServer}"
                                  ToolTip="{x:Static r:DestinationsText.ServerFolderTip}" />
                         <TextBlock Grid.Row="9" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.PublicAddress}" />
-                        <TextBox Grid.Row="9" Grid.Column="1" Margin="0,3" Text="{Binding PublicUrl, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.PublicAddress}"
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="9" Grid.Column="1" Margin="0,3" Text="{Binding PublicUrl, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.PublicAddress}"
                                  ToolTip="{x:Static r:DestinationsText.PublicAddressTip}" />
                         <CheckBox Grid.Row="10" Grid.Column="1" Margin="0,3" Content="{x:Static r:DestinationsText.PassiveMode}" IsChecked="{Binding Passive}"
                                   Visibility="{Binding IsFtp, Converter={StaticResource Visible}}" />
@@ -361,17 +361,17 @@
                         <TextBlock Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Name}" />
                         <TextBox Grid.Column="1" Margin="0,3" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.UploadName}" />
                         <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Address}" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,3" Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.UploadAddress}" ToolTip="{x:Static r:DestinationsText.UploadAddressTip}" />
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="1" Grid.Column="1" Margin="0,3" Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.UploadAddress}" ToolTip="{x:Static r:DestinationsText.UploadAddressTip}" />
                         <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.FileField}" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding FileField, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.FileField}" />
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding FileField, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.FileField}" />
                         <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.FormFields}" VerticalAlignment="Top" />
-                        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,3" Text="{Binding FieldsText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="44" VerticalScrollBarVisibility="Auto"
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="3" Grid.Column="1" Margin="0,3" Text="{Binding FieldsText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="44" VerticalScrollBarVisibility="Auto"
                                  AutomationProperties.Name="{x:Static r:DestinationsText.FormFields}" ToolTip="{x:Static r:DestinationsText.FormFieldsTip}" />
                         <TextBlock Grid.Row="4" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Headers}" VerticalAlignment="Top" />
-                        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,3" Text="{Binding HeadersText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="44" VerticalScrollBarVisibility="Auto"
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="4" Grid.Column="1" Margin="0,3" Text="{Binding HeadersText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="44" VerticalScrollBarVisibility="Auto"
                                  AutomationProperties.Name="{x:Static r:DestinationsText.Headers}" ToolTip="{x:Static r:DestinationsText.HeadersTip}" />
                         <TextBlock Grid.Row="5" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.SecretHeader}" />
-                        <TextBox Grid.Row="5" Grid.Column="1" Margin="0,3" Text="{Binding AuthHeader, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.SecretHeaderName}" ToolTip="{x:Static r:DestinationsText.SecretHeaderTip}" />
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="5" Grid.Column="1" Margin="0,3" Text="{Binding AuthHeader, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.SecretHeaderName}" ToolTip="{x:Static r:DestinationsText.SecretHeaderTip}" />
                         <TextBlock Grid.Row="6" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.SecretValue}" />
                         <StackPanel Grid.Row="6" Grid.Column="1" Margin="0,3">
                           <PasswordBox Tag="token" PasswordChanged="OnSecretChanged" AutomationProperties.Name="{x:Static r:DestinationsText.SecretHeaderValue}" ToolTip="{x:Static r:DestinationsText.SecretValueTip}" />
@@ -381,7 +381,7 @@
                           </StackPanel>
                         </StackPanel>
                         <TextBlock Grid.Row="7" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.LinkInReply}" />
-                        <TextBox Grid.Row="7" Grid.Column="1" Margin="0,3" Text="{Binding LinkPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.LinkInReplyName}"
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="7" Grid.Column="1" Margin="0,3" Text="{Binding LinkPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.LinkInReplyName}"
                                  ToolTip="{x:Static r:DestinationsText.LinkInReplyTip}" />
                       </Grid>
                       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
@@ -425,10 +425,10 @@
                         <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.Program}" />
                         <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,3">
                           <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
-                          <TextBox Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.Program}" />
+                          <TextBox FlowDirection="LeftToRight" Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.Program}" />
                         </DockPanel>
                         <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.CommandLine}" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Arguments, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.CommandLine}"
+                        <TextBox FlowDirection="LeftToRight" Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Arguments, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.CommandLine}"
                                  ToolTip="{x:Static r:DestinationsText.CommandLineTip}" />
                       </Grid>
                       <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />

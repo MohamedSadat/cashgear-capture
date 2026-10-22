@@ -93,7 +93,7 @@
       <TextBlock Text="{Binding Label}" />
       <DockPanel Margin="0,2,0,0">
         <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseCommand}" Margin="6,0,0,0" />
-        <TextBox Text="{Binding Path, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="{Binding Label}" />
+        <TextBox FlowDirection="LeftToRight" Text="{Binding Path, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="{Binding Label}" />
       </DockPanel>
     </StackPanel>
   </DataTemplate>

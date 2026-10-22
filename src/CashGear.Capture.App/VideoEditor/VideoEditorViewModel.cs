@@ -71,7 +71,7 @@ public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Tra
 {
     public Track Track { get; private set; } = track;
 
-    public string Name => Track.Name;
+    public string Name => TrackNames.Display(Track.Name);
 
     public double Height { get; } = height;
 
