@@ -25,7 +25,7 @@ public sealed class DrawingLayerWindow : Window
 {
     private const long WsExTransparent = 0x20;
     private const long WsExNoActivate = 0x08000000;
-    private static readonly Brush Catcher = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)); // hit-testable, invisible
+    private static readonly Brush Catcher = (Brush)new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)).GetAsFrozen(); // hit-testable, invisible; frozen, as every window shares it
 
     private readonly DrawingViewModel _drawing;
     private readonly PixelRect _area;

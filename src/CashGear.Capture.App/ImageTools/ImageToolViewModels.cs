@@ -166,7 +166,7 @@ public sealed partial class ImageListViewModel(IImageFilePicker picker) : Observ
 public sealed partial class BatchViewModel : ObservableObject, IDisposable
 {
     /// <summary>The choice of no preset, first in the lists of preset names.</summary>
-    private static readonly string NoPreset = ImageToolsText.NoPreset;
+    private static string NoPreset => ImageToolsText.NoPreset;
 
     private readonly IPresetStore _presets;
     private readonly IImageFilePicker _picker;

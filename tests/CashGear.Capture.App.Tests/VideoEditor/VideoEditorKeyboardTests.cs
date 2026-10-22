@@ -135,7 +135,15 @@ public sealed class VideoEditorKeyboardTests : VideoEditorTestBase
             vm.IsPlaying.Should().BeTrue("Space plays on the timeline");
             AutomationProperties.GetName(window.PlayButton).Should().Be("Pause (Space)");
             await Press(Key.Space);
-            vm.IsPlaying.Should().BeFalse();
+
+            // While it plays, the preview (drawn on the processor here) keeps the window busy, and WPF handles input
+            // after drawing, so the key may take a moment to arrive.
+            for (var waited = 0; waited < 20 && vm.IsPlaying; waited++)
+            {
+                await Task.Delay(100);
+            }
+
+            vm.IsPlaying.Should().BeFalse("Space pauses");
 
             // The preview: a click selects the picture under it, and the arrows move it a pixel (Shift: 10).
             vm.Seek(1);

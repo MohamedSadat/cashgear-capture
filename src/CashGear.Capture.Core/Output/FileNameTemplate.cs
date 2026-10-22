@@ -25,8 +25,8 @@ public static partial class FileNameTemplate
 
     private const string Fallback = "Capture";
 
-    /// <summary>Every token with a one-line description (for the settings window).</summary>
-    public static IReadOnlyList<(string Token, string Description)> Tokens { get; } =
+    /// <summary>Every token with a one-line description (for the settings window), in the UI's language when asked.</summary>
+    public static IReadOnlyList<(string Token, string Description)> Tokens =>
     [
         ("{yyyy}", CoreStrings.TokenYear),
         ("{MM}", CoreStrings.TokenMonth),
