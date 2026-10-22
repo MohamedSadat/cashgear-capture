@@ -67,6 +67,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashGear.Capture.LicenseToo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashGear.Capture.Licensing.Tests", "tests\CashGear.Capture.Licensing.Tests\CashGear.Capture.Licensing.Tests.csproj", "{5C820161-1F11-420A-8867-A40D8E52912E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashGear.Capture.UpdateCheck", "tools\UpdateCheck\CashGear.Capture.UpdateCheck.csproj", "{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -425,6 +427,18 @@ Global
 		{5C820161-1F11-420A-8867-A40D8E52912E}.Release|x64.Build.0 = Release|Any CPU
 		{5C820161-1F11-420A-8867-A40D8E52912E}.Release|x86.ActiveCfg = Release|Any CPU
 		{5C820161-1F11-420A-8867-A40D8E52912E}.Release|x86.Build.0 = Release|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Debug|x64.Build.0 = Debug|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Debug|x86.Build.0 = Debug|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Release|x64.ActiveCfg = Release|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Release|x64.Build.0 = Release|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Release|x86.ActiveCfg = Release|Any CPU
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -459,5 +473,6 @@ Global
 		{FEB93552-C71B-4127-9A88-9AD2CAC4D39C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{47027FA1-1E96-4CCC-A35F-65307C869036} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 		{5C820161-1F11-420A-8867-A40D8E52912E} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{F7028A35-8ED6-4FC3-B88B-C48142D4F47F} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal
