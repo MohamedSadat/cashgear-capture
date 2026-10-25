@@ -55,7 +55,7 @@ public sealed class RegionSelectionModelTests
     }
 
     [Fact]
-    public void Drag_selects_both_corner_pixels_inclusive()
+    public void Drag_confirms_on_release_with_both_corner_pixels_inclusive()
     {
         var model = Create(new PixelPoint(0, 0));
 
@@ -64,8 +64,9 @@ public sealed class RegionSelectionModelTests
         model.Phase.Should().Be(SelectionPhase.Dragging);
         model.PointerReleased(new PixelPoint(19, 19));
 
-        model.Phase.Should().Be(SelectionPhase.Selected);
+        model.Phase.Should().Be(SelectionPhase.Confirmed);
         model.Selection.Should().Be(new PixelRect(10, 10, 10, 10));
+        model.Result.Should().Be(new RegionSelectionResult(model.Selection, null));
     }
 
     [Fact]
@@ -78,6 +79,8 @@ public sealed class RegionSelectionModelTests
 
         // Released beyond the threshold without an intermediate move still counts as a drag.
         model.Selection.Should().Be(PixelRect.FromLTRB(20, 10, 51, 41));
+        model.Phase.Should().Be(SelectionPhase.Confirmed);
+        model.Result.Should().Be(new RegionSelectionResult(model.Selection, null));
     }
 
     [Fact]
@@ -90,7 +93,7 @@ public sealed class RegionSelectionModelTests
         model.PointerReleased(new PixelPoint(99, 49));
 
         model.Selection.Should().Be(PixelRect.FromLTRB(-100, -50, 100, 50));
-        model.Confirm().Should().BeTrue();
+        model.IsFinished.Should().BeTrue();
         model.Result.Should().Be(new RegionSelectionResult(PixelRect.FromLTRB(-100, -50, 100, 50), null));
     }
 
@@ -143,11 +146,13 @@ public sealed class RegionSelectionModelTests
     }
 
     [Fact]
-    public void Clicking_inside_the_selection_keeps_it_and_double_click_confirms()
+    public void Rounded_selection_waits_for_confirmation_and_clicking_inside_keeps_it()
     {
-        var model = Create(new PixelPoint(0, 0));
+        var model = Create(new PixelPoint(0, 0), SelectionMode.RoundedRectangle);
         model.PointerPressed(new PixelPoint(400, 400));
         model.PointerReleased(new PixelPoint(600, 450)); // a region over Editor and Dialog
+        model.Phase.Should().Be(SelectionPhase.Selected);
+        model.Result.Should().BeNull();
 
         var dragged = model.Selection;
         model.PointerPressed(new PixelPoint(420, 410));
@@ -163,7 +168,7 @@ public sealed class RegionSelectionModelTests
     [Fact]
     public void Clicking_outside_the_selection_picks_the_target_there()
     {
-        var model = Create(new PixelPoint(0, 0));
+        var model = Create(new PixelPoint(0, 0), SelectionMode.RoundedRectangle);
         model.PointerPressed(new PixelPoint(1500, 900));
         model.PointerReleased(new PixelPoint(1600, 1000));
 
@@ -176,7 +181,7 @@ public sealed class RegionSelectionModelTests
     [Fact]
     public void Double_click_outside_the_selection_does_not_confirm()
     {
-        var model = Create(new PixelPoint(0, 0));
+        var model = Create(new PixelPoint(0, 0), SelectionMode.RoundedRectangle);
         model.PointerPressed(new PixelPoint(10, 10));
         model.PointerReleased(new PixelPoint(20, 20));
 
@@ -188,7 +193,7 @@ public sealed class RegionSelectionModelTests
     [Fact]
     public void New_drag_replaces_the_selection()
     {
-        var model = Create(new PixelPoint(0, 0));
+        var model = Create(new PixelPoint(0, 0), SelectionMode.RoundedRectangle);
         model.PointerPressed(new PixelPoint(10, 10));
         model.PointerReleased(new PixelPoint(20, 20));
 
@@ -317,19 +322,38 @@ public sealed class RegionSelectionModelTests
         model.PointerReleased(new PixelPoint(9, 9));
         model.Confirm();
 
-        raised.Should().Be(4);
+        raised.Should().Be(3, "releasing the drag confirms it, so later confirmation does nothing");
+        model.IsFinished.Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_confirmed_drag_ignores_later_pointer_input()
+    {
+        var model = Create(new PixelPoint(0, 0));
+        model.PointerPressed(new PixelPoint(10, 10));
+        model.PointerReleased(new PixelPoint(20, 20));
+        var result = model.Result;
+
+        model.PointerPressed(new PixelPoint(100, 100));
+        model.PointerMoved(new PixelPoint(200, 200));
+        model.PointerReleased(new PixelPoint(200, 200));
+        model.DoubleClicked(new PixelPoint(15, 15));
+        model.Cancel();
+
+        model.Phase.Should().Be(SelectionPhase.Confirmed);
+        model.Result.Should().BeSameAs(result);
     }
 
     [Fact]
     public void Requires_a_monitor() =>
         FluentActions.Invoking(() => new RegionSelectionModel([], [], default)).Should().Throw<ArgumentException>();
 
-    private static RegionSelectionModel Create(PixelPoint cursor) =>
-        new(Monitors, [Spanning, Editor, Dialog], cursor);
+    private static RegionSelectionModel Create(PixelPoint cursor, SelectionMode mode = SelectionMode.RegionOrWindow) =>
+        new(Monitors, [Spanning, Editor, Dialog], cursor, mode: mode);
 
     private static RegionSelectionModel SelectedAt(PixelRect rect)
     {
-        var model = new RegionSelectionModel(Monitors, [], rect.TopLeft);
+        var model = new RegionSelectionModel(Monitors, [], rect.TopLeft, mode: SelectionMode.RoundedRectangle);
         model.PointerPressed(rect.TopLeft);
         model.PointerReleased(new PixelPoint(rect.Right - 1, rect.Bottom - 1));
         model.Selection.Should().Be(rect);

@@ -45,7 +45,7 @@ public sealed class CaptureModesTests : IDisposable
         var to = At(pattern, 239, 179);
         var capture = harness.Coordinator.CaptureRegionAsync();
         await harness.WaitForOverlayAsync();
-        await Input(() => TestInput.Drag(Line(from, to, 8)) && TestInput.DoubleClick(from.X + 50, from.Y + 50));
+        await Input(() => TestInput.Drag(Line(from, to, 8)));
         await capture;
 
         var image = harness.Output.Last;

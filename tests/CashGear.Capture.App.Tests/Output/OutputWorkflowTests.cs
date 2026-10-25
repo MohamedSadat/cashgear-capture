@@ -6,6 +6,7 @@ using CashGear.Capture.App.Tests.Capture;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Capture;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.History;
 using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
@@ -105,6 +106,30 @@ public sealed class OutputWorkflowTests : IDisposable
         kind.Should().Be(NotificationKind.Info);
         _notifier.ClickActions.Single()!();
         _shell.Shown.Should().Equal(saved);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Disabling_save_opens_the_editor_without_writing_a_capture_or_history_copy(bool editorFirst)
+    {
+        Workflow(editorFirst ? ["editor", "file"] : ["file", "editor"]);
+        _settings.Current = _settings.Current with { Destinations = _settings.Current.Destinations.WithStep(DestinationIds.File, false) };
+        var image = Image();
+        using var history = new FileCaptureHistory(_paths, _settings, _output, TimeProvider.System, NullLogger<FileCaptureHistory>.Instance);
+
+        var delivery = await Create().DeliverCaptureAsync(image, [image], _settings.Current, TestContext.Current.CancellationToken);
+        var entry = await history.AddAsync(image, delivery.SavedPath, null, TestContext.Current.CancellationToken);
+
+        delivery.SavedPath.Should().BeNull();
+        var opened = _editor.Opened.Should().ContainSingle().Subject;
+        opened.SavedPath.Should().BeNull();
+        opened.Pending.Should().BeEmpty();
+        entry.Should().BeNull();
+        history.Entries.Should().BeEmpty();
+        Directory.Exists(Captures).Should().BeFalse();
+        Directory.Exists(_paths.HistoryDirectory).Should().BeFalse();
+        Directory.Exists(Path.Combine(_paths.DataDirectory, "outgoing")).Should().BeFalse();
     }
 
     [Fact]

@@ -534,7 +534,7 @@ public sealed partial class CaptureCoordinator
     /// <summary>
     /// Sends the capture through the after-capture workflow (Settings › Output): saving <paramref name="files"/>
     /// under the file-name template, copying, the editor, uploads and the rest, and says what happened.
-    /// <paramref name="primary"/> also goes into the history. <paramref name="hidden"/> brings our windows back first,
+    /// A saved <paramref name="primary"/> also goes into the history. <paramref name="hidden"/> brings our windows back first,
     /// so the editor (or the print dialog) ends up in front of them.
     /// </summary>
     private async Task DeliverAsync(

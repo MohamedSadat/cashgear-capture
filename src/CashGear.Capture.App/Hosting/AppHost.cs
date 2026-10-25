@@ -1,3 +1,4 @@
+using CashGear.Capture.App.About;
 using CashGear.Capture.App.Capture;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.History;
@@ -69,6 +70,7 @@ internal static class AppHost
         builder.Services.AddSingleton<IFolderPicker, WpfFolderPicker>();
         builder.Services.AddSingleton<IFilePicker, WpfFilePicker>();
         builder.Services.AddSingleton<SettingsWindowService>();
+        builder.Services.AddSingleton<AboutWindowService>();
         builder.Services.AddSingleton<SettingsFiles>();
         builder.Services.AddSingleton<ReleaseNotes>();
         builder.Services.AddSingleton<Diagnostics.CrashReporter>();

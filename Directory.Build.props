@@ -16,7 +16,7 @@
 
     <Company>CashGear</Company>
     <Product>CashGear Capture</Product>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
 
     <!-- A new security advisory on a package must never break the build. -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>

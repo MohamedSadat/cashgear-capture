@@ -93,7 +93,7 @@ The app starts hidden in the system tray. Command-line switches forward to the r
 |---|---|
 | *(none)* | Start, or tell the running instance to show an "already running" notice |
 | `--capture-fullscreen` | Capture every monitor plus the stitched virtual screen |
-| `--capture-region` | Open the region overlay (drag a rectangle or click a window, Enter to capture, Esc to cancel) |
+| `--capture-region` | Open the region overlay (drag a rectangle and release to capture, or click a window and press Enter; Esc cancels) |
 | `--capture-window` | Open the window picker (click a window to capture its own content) |
 | `--capture-scrolling` | Open the window picker, then scroll the clicked window to the bottom and stitch one tall image |
 | `--record` | Start a screen recording (pick the area), or stop the one running |
@@ -241,7 +241,7 @@ Each tool remembers its choices (in `presets.json`).
 
 ## Capture history
 
-The last 20 captures are kept (Settings › General: off to 100), even ones that were only copied or edited.
+The last 20 saved captures are kept (Settings › General: off to 100). With **Save to file** off, captures opened in the editor or copied to the clipboard create no history files.
 
 - Tray › **Recent Captures** shows the newest with thumbnails; click one to open it in the editor.
 - Tray › **Capture History…** shows them all: Open in Editor (double-click or Enter), Copy (Ctrl+C), Show in Folder, Save As…, Remove (Delete) and Clear History.
@@ -259,7 +259,7 @@ Tray › **Scrolling Capture** (or `Ctrl+Shift+PrintScreen`): click the window o
 
 ## Screen recording
 
-Tray › **Record Screen…** (or `Shift+PrintScreen`): drag the area to record, or click a window or a monitor, and press Enter. A small toolbar at the top of the screen shows the time and has **Pause** and **Stop**; it is never in the video. Stop (or the hotkey again) saves an MP4 (H.264) to the capture folder and says how long and how big it is.
+Tray › **Record Screen…** (or `Shift+PrintScreen`): drag the area to record and release to start, or click a window or a monitor and press Enter. A small toolbar at the top of the screen shows the time and has **Pause** and **Stop**; it is never in the video. Stop (or the hotkey again) saves an MP4 (H.264) to the capture folder and says how long and how big it is.
 
 - One monitor at a time (Windows.Graphics.Capture); an area that spans two is limited to the monitor holding its centre. On Windows 10 Windows draws a yellow border around the recorded monitor.
 - **Encoding** happens inside the app (FFmpeg). Which encoders work is found out once (Settings › Recording shows the result, and **Check again** repeats it after a driver update): the graphics card's own encoder (NVIDIA, Intel, AMD), then the card's encoder through Windows (Media Foundation), then Windows' software encoder, then OpenH264. If the encoder stops working in the middle, the next one takes over and the rest is saved as a second file, "name (part 2).mp4".
@@ -319,7 +319,7 @@ Tray › **Video Editor** › **Open a Recording or Project…** (or **Edit the 
 
 ## Capture Text
 
-Tray › **Capture Text** (or `Ctrl+Alt+PrintScreen`): drag around the text, or click a window, and press Enter. The text is read with Windows OCR and copied to the clipboard. A notification shows the start of the text and the language used. Nothing is saved, and the image isn't opened in the editor.
+Tray › **Capture Text** (or `Ctrl+Alt+PrintScreen`): drag around the text and release to capture, or click a window and press Enter. The text is read with Windows OCR and copied to the clipboard. A notification shows the start of the text and the language used. Nothing is saved, and the image isn't opened in the editor.
 
 - **Automatic** (the default) reads the area once with each of your Windows languages that has OCR, and takes every line from the language that matches its script. So English and Arabic lines in the same area both come out right. Arabic is given in reading order (right to left).
 - To choose one language, use **Settings › General**. The list shows the OCR languages Windows has. To add one, go to Windows Settings › Time & language › Language, choose the language › Options › Optical character recognition.

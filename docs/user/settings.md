@@ -51,7 +51,7 @@ Click a box and press the keys. Each shows whether it works; a key another app o
 | Capture Text | The OCR language (Automatic reads English and Arabic together) |
 | Screen tools | The ruler's pixels per inch, how picked colours are copied |
 | Appearance | **Theme** (as Windows, light, dark); **Language** (as Windows, English, العربية), with a restart offered after a change |
-| Capture history | How many captures are kept |
+| Capture history | How many saved captures are kept; unsaved captures create no history files |
 | Updates | The version, automatic checks, **Check now**, the **channel** (as installed, stable, beta) and **What's new**. Going back from beta to stable waits for the next stable release |
 | Licence | Every feature is included in this version |
 | Privacy | **Send crash reports**: off until you agree ([Privacy](privacy.md)) |

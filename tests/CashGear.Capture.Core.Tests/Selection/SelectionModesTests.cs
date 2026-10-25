@@ -60,7 +60,7 @@ public sealed class SelectionModesTests
     [Fact]
     public void Arrows_nudge_and_resize_a_selection_and_are_left_to_the_overlay_before_one()
     {
-        var model = new RegionSelectionModel(Monitors, [], new PixelPoint(0, 0));
+        var model = new RegionSelectionModel(Monitors, [], new PixelPoint(0, 0), mode: SelectionMode.RoundedRectangle);
         model.KeyPressed(SelectionKey.Right, SelectionModifiers.None).Should().BeFalse();
 
         model.PointerPressed(new PixelPoint(10, 10));

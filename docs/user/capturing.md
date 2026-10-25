@@ -6,7 +6,7 @@ Every kind is in the tray menu (some under **More Captures**) and on the [captur
 
 | Capture | How |
 |---|---|
-| **Region** (`PrintScreen`) | Drag a rectangle, or click a window, a part of a window or a monitor; Enter captures, Esc cancels |
+| **Region** (`PrintScreen`) | Drag a rectangle and release to capture, or click a window, a part of a window or a monitor and press Enter; Esc cancels |
 | **Window** | Click a window: its own content, even where other windows cover it |
 | **Active window** (`Alt+PrintScreen`) | The window in front |
 | **Full screen** (`Ctrl+PrintScreen`) | Every monitor, as one image, one per monitor, or both (Settings › Capture) |

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using CashGear.Capture.App.About;
 using CashGear.Capture.App.Capture;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.History;
@@ -49,6 +50,7 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly IAppLifetime _lifetime;
     private readonly HotkeyRegistrar _hotkeys;
     private readonly SettingsWindowService _settingsWindow;
+    private readonly AboutWindowService _aboutWindow;
     private readonly EditorWindowService _editors;
     private readonly RecordingController _recording;
     private readonly IUiDispatcher _ui;
@@ -71,6 +73,7 @@ public sealed partial class TrayViewModel : ObservableObject
         IAppLifetime lifetime,
         HotkeyRegistrar hotkeys,
         SettingsWindowService settingsWindow,
+        AboutWindowService aboutWindow,
         EditorWindowService editors,
         RecordingController recording,
         IUiDispatcher ui,
@@ -104,6 +107,7 @@ public sealed partial class TrayViewModel : ObservableObject
         _lifetime = lifetime;
         _hotkeys = hotkeys;
         _settingsWindow = settingsWindow;
+        _aboutWindow = aboutWindow;
         _editors = editors;
         _recording = recording;
         _ui = ui;
@@ -242,6 +246,9 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [RelayCommand]
     private void OpenSettings() => _settingsWindow.Show();
+
+    [RelayCommand]
+    private void OpenAbout() => _aboutWindow.Show();
 
     /// <summary>A zip of the logs, the settings without secrets and facts about this PC, for a bug report.</summary>
     [RelayCommand]

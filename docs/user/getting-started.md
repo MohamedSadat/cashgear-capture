@@ -26,8 +26,8 @@ After installing, CashGear Capture starts and says where it is: in the notificat
 ## Your first capture
 
 Press **PrintScreen**. The screen freezes and dims:
-- **Drag** a rectangle, or **click** a window or a part of one.
-- Use **Enter** to capture and **Esc** to cancel. The arrow keys move the pointer by a pixel.
+- **Drag** a rectangle and release the mouse button to capture, or **click** a window or a part of one and press **Enter**.
+- Use **Esc** to cancel. The arrow keys move the pointer by a pixel.
 
 The capture opens in the [image editor](image-editor.md). Annotate it, then save (Ctrl+S) or copy it (Ctrl+C). What happens after a capture is up to you: see [Settings › Output](settings.md#output).
 
@@ -43,7 +43,7 @@ Other hotkeys:
 
 ## Your first recording
 
-Press **Shift+PrintScreen**. Drag the area to record, or click a window or a monitor, and press **Enter**.
+Press **Shift+PrintScreen**. Drag the area to record and release to start, or click a window or a monitor and press **Enter**.
 - A small toolbar at the top of the screen shows the time and has **Pause** and **Stop**. It is never in the video.
 - Stop (or the hotkey again) saves an MP4 to the capture folder.
 

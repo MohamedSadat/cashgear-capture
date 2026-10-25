@@ -34,14 +34,15 @@ public sealed class RegionOverlayAccessibilityTests
 
         model.PointerPressed(new PixelPoint(100, 100));
         model.PointerMoved(new PixelPoint(500, 400));
-        model.PointerReleased(new PixelPoint(500, 400));
         var selected = model.Selection;
         selected.Width.Should().BeGreaterThan(300);
         peer.GetName().Should().Be($"{selected.Width} × {selected.Height}");
         visual.AnnounceIfChanged().Should().BeTrue("a new size is announced");
 
-        model.KeyPressed(SelectionKey.Right, SelectionModifiers.Shift);
-        peer.GetName().Should().Be($"{selected.Width + 1} × {selected.Height}", "Shift+arrow made it a pixel wider");
+        model.PointerReleased(new PixelPoint(500, 400));
+        model.Phase.Should().Be(SelectionPhase.Confirmed);
+        model.KeyPressed(SelectionKey.Right, SelectionModifiers.Shift).Should().BeFalse();
+        peer.GetName().Should().Be($"{selected.Width} × {selected.Height}", "the confirmed capture keeps its size");
         return Task.CompletedTask;
     });
 

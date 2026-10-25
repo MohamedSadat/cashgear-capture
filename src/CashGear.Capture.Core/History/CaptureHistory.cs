@@ -47,7 +47,7 @@ public sealed record CaptureHistoryEntry(
     private static string Shorten(string text, int max) => text.Length <= max ? text : text[..(max - 1)] + "…";
 }
 
-/// <summary>The last captures (newest first), kept as copies so they can be reopened, copied or saved again.</summary>
+/// <summary>The last saved captures (newest first), kept as copies so they can be reopened, copied or saved again.</summary>
 public interface ICaptureHistory
 {
     /// <summary>Raised (on any thread) after the list changes.</summary>
@@ -61,8 +61,9 @@ public interface ICaptureHistory
     string ThumbnailPath(CaptureHistoryEntry entry);
 
     /// <summary>
-    /// Adds a capture (does nothing when history is off). <paramref name="savedPngPath"/>: a PNG it was just saved
-    /// as, which is copied instead of encoding the image again. Never throws for I/O problems; they are logged.
+    /// Adds a saved capture (does nothing when history is off or <paramref name="savedPath"/> is null).
+    /// <paramref name="savedPngPath"/>: a PNG it was just saved as, which is copied instead of encoding the image
+    /// again. Never throws for I/O problems; they are logged.
     /// </summary>
     Task<CaptureHistoryEntry?> AddAsync(CapturedImage image, string? savedPath, string? savedPngPath, CancellationToken ct = default);
 
@@ -164,7 +165,7 @@ public sealed partial class FileCaptureHistory : ICaptureHistory, IDisposable
     {
         ArgumentNullException.ThrowIfNull(image);
         var max = _settings.Current.History.MaxItems;
-        if (max == 0)
+        if (max == 0 || savedPath is null)
         {
             return null;
         }

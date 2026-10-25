@@ -2,7 +2,7 @@
 
 ## Starting and stopping
 
-Press **Shift+PrintScreen** (or tray › **Record Screen…**). Drag an area, or click a window or a monitor, and press **Enter**. The recording toolbar appears at the top of the screen, and it is never in the video:
+Press **Shift+PrintScreen** (or tray › **Record Screen…**). Drag an area and release to start, or click a window or a monitor and press **Enter**. The recording toolbar appears at the top of the screen, and it is never in the video:
 - the time;
 - **Pause**, **Stop**, the pen for drawing on the screen;
 - the sound meters, **Mute mic**, and the sound button (volumes, noise suppression).

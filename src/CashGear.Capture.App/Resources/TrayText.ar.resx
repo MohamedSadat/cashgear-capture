@@ -144,6 +144,9 @@
   <data name="Settings" xml:space="preserve">
     <value>الإعدادات… (_S)</value>
   </data>
+  <data name="About" xml:space="preserve">
+    <value>حول… (_A)</value>
+  </data>
   <data name="ExportDiagnostics" xml:space="preserve">
     <value>تصدير معلومات التشخيص… (_D)</value>
   </data>

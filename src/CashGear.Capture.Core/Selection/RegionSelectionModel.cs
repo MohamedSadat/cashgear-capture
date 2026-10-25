@@ -63,13 +63,14 @@ public sealed record RegionSelectionResult(PixelRect Bounds, WindowInfo? Window)
 /// type. The overlay windows feed it pointer/keyboard input and render from its state.
 /// <list type="bullet">
 /// <item>Hover highlights the topmost window under the cursor, or the monitor when there is none.</item>
-/// <item>A click (press + release within the drag threshold) selects the highlighted target; a drag selects the
-/// rectangle spanned by the press and release pixels, both inclusive.</item>
+/// <item>A click (press + release within the drag threshold) selects the highlighted target; a drag captures the
+/// rectangle spanned by the press and release pixels, both inclusive, on release.</item>
 /// <item>While selected: nudge / resize by keyboard, double-click inside or <see cref="Confirm"/> to finish.</item>
 /// </list>
 /// In <see cref="SelectionMode.WindowOnly"/> there is no dragging and no monitor fallback: clicking a highlighted
 /// window confirms it immediately. <see cref="SelectionMode.RoundedRectangle"/> works like
-/// <see cref="SelectionMode.RegionOrWindow"/> and rounds the corners of the result (the mouse wheel sets the radius).
+/// <see cref="SelectionMode.RegionOrWindow"/>, but waits for confirmation after a drag so the mouse wheel can set the
+/// corner radius.
 /// Not thread-safe; drive it from one thread.
 /// </summary>
 public sealed class RegionSelectionModel : ISelectionModel
@@ -216,6 +217,11 @@ public sealed class RegionSelectionModel : ISelectionModel
         {
             Selection = DragRect(_anchor, Cursor);
             Phase = SelectionPhase.Selected;
+            if (Mode == SelectionMode.RegionOrWindow)
+            {
+                Confirm();
+                return;
+            }
         }
         else if (Phase == SelectionPhase.Selected && Selection.Contains(Cursor))
         {

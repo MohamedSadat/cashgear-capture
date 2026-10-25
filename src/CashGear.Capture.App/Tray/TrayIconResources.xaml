@@ -90,6 +90,7 @@
         <MenuItem Header="{Binding UpdateText}" Command="{Binding RestartToUpdateCommand}"
                   Visibility="{Binding IsUpdateReady, Converter={StaticResource TrayVisible}}" />
         <MenuItem Header="{x:Static r:TrayText.Settings}" Command="{Binding OpenSettingsCommand}" />
+        <MenuItem Header="{x:Static r:TrayText.About}" Command="{Binding OpenAboutCommand}" />
         <MenuItem Header="{x:Static r:TrayText.ExportDiagnostics}" Command="{Binding ExportDiagnosticsCommand}" />
         <Separator />
         <MenuItem Header="{x:Static r:TrayText.Exit}" Command="{Binding ExitCommand}" />

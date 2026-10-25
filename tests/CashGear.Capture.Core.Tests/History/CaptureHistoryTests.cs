@@ -53,7 +53,7 @@ public sealed class CaptureHistoryTests : IDisposable
 
         using (var first = Image(800, 600, CaptureKind.Window, "Notepad", minute: 1))
         {
-            await history.AddAsync(first, savedPath: null, savedPngPath: null, TestContext.Current.CancellationToken);
+            await history.AddAsync(first, savedPath: @"C:\Pictures\Capture_window.jpg", savedPngPath: null, TestContext.Current.CancellationToken);
         }
 
         using (var second = Image(3200, 1082, CaptureKind.AllMonitors, minute: 2))
@@ -99,7 +99,7 @@ public sealed class CaptureHistoryTests : IDisposable
         for (var i = 0; i < 5; i++)
         {
             using var image = Image(10 + i, 10, minute: i);
-            await history.AddAsync(image, null, null, TestContext.Current.CancellationToken);
+            await history.AddAsync(image, Path.Combine(_paths.DefaultCaptureDirectory, $"Capture_{i}.jpg"), null, TestContext.Current.CancellationToken);
         }
 
         history.Entries.Select(e => e.Width).Should().Equal(14, 13, 12);
@@ -118,7 +118,24 @@ public sealed class CaptureHistoryTests : IDisposable
         using var history = NewHistory();
         using var image = Image(10, 10);
 
-        (await history.AddAsync(image, null, null, TestContext.Current.CancellationToken)).Should().BeNull();
+        (await history.AddAsync(image, @"C:\Pictures\Capture.png", null, TestContext.Current.CancellationToken)).Should().BeNull();
+        history.Entries.Should().BeEmpty();
+        Directory.Exists(_paths.HistoryDirectory).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task An_unsaved_capture_creates_no_history_image_thumbnail_or_index()
+    {
+        using var history = NewHistory();
+        using var image = Image(100, 50);
+        var changes = 0;
+        history.Changed += (_, _) => changes++;
+
+        var entry = await history.AddAsync(image, null, null, TestContext.Current.CancellationToken);
+
+        entry.Should().BeNull();
+        changes.Should().Be(0);
+        _output.Sizes.Should().BeEmpty();
         history.Entries.Should().BeEmpty();
         Directory.Exists(_paths.HistoryDirectory).Should().BeFalse();
     }
@@ -130,7 +147,7 @@ public sealed class CaptureHistoryTests : IDisposable
         for (var i = 0; i < 3; i++)
         {
             using var image = Image(10 + i, 10, minute: i);
-            await history.AddAsync(image, null, null, TestContext.Current.CancellationToken);
+            await history.AddAsync(image, Path.Combine(_paths.DefaultCaptureDirectory, $"Capture_{i}.jpg"), null, TestContext.Current.CancellationToken);
         }
 
         var middle = history.Entries[1];
@@ -152,7 +169,7 @@ public sealed class CaptureHistoryTests : IDisposable
             for (var i = 0; i < 2; i++)
             {
                 using var image = Image(10 + i, 10, minute: i);
-                await history.AddAsync(image, null, null, TestContext.Current.CancellationToken);
+                await history.AddAsync(image, Path.Combine(_paths.DefaultCaptureDirectory, $"Capture_{i}.jpg"), null, TestContext.Current.CancellationToken);
             }
 
             File.Delete(history.ImagePath(history.Entries[1])); // e.g. removed by hand

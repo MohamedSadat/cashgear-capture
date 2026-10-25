@@ -137,6 +137,9 @@
   <data name="Settings" xml:space="preserve">
     <value>_Settings…</value>
   </data>
+  <data name="About" xml:space="preserve">
+    <value>_About…</value>
+  </data>
   <data name="ExportDiagnostics" xml:space="preserve">
     <value>Export _Diagnostics…</value>
   </data>
