@@ -83,6 +83,7 @@ public sealed class SegmentationTests(ITestOutputHelper output)
     public void The_person_is_found_as_well_as_by_hand()
     {
         Assert.SkipWhen(ModelBudgetTests.ModelPath() is null, "tools\\get-inference-models.ps1 hasn't been run.");
+        using var turn = new CashGear.Capture.Tests.MachineTurn();
         using var segmenter = new PersonSegmenter(ModelBudgetTests.ModelPath()!);
         var size = segmenter.MaskSize;
         var mask = new byte[size * size];

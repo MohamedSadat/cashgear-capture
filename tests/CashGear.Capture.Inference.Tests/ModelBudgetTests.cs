@@ -14,6 +14,7 @@ public sealed class ModelBudgetTests(ITestOutputHelper output)
     /// <summary>The most pictures a second at 720p in a few short runs, through the graphics card.</summary>
     private double Rate()
     {
+        using var turn = new CashGear.Capture.Tests.MachineTurn();
         using var segmenter = new PersonSegmenter(ModelPath()!);
         const int width = 1280;
         const int height = 720;

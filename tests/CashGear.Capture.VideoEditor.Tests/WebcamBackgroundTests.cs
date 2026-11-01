@@ -175,6 +175,7 @@ public sealed class WebcamBackgroundTests(ITestOutputHelper output) : IDisposabl
     [Fact]
     public void A_matte_looks_the_same_on_the_graphics_card_and_the_processor()
     {
+        using var turn = new CashGear.Capture.Tests.MachineTurn();
         using var gl = OffscreenGl.TryCreate();
         Assert.SkipWhen(gl is null, "No OpenGL here.");
         foreach (var background in new[] { new WebcamBackground(BackgroundEffect.Remove), new WebcamBackground(BackgroundEffect.Blur, 16), new WebcamBackground(BackgroundEffect.Replace, Color: "#208040") })

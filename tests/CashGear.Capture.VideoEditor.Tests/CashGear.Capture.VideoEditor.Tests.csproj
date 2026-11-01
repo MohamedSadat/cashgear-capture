@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\MachineTurn.cs" Link="MachineTurn.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\StampedRecording.cs" Link="Media\StampedRecording.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\TestMedia.cs" Link="Media\TestMedia.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\GifProbe.cs" Link="Media\GifProbe.cs" />

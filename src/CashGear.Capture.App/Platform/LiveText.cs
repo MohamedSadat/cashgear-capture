@@ -22,6 +22,9 @@ public static class LiveText
     private static readonly DependencyPropertyDescriptor TextDescriptor =
         DependencyPropertyDescriptor.FromProperty(TextBlock.TextProperty, typeof(TextBlock));
 
+    /// <summary>The descriptor is shared, and what it keeps of what it watches isn't safe across threads with windows of their own.</summary>
+    private static readonly Lock DescriptorGate = new();
+
     public static bool GetIsLive(DependencyObject element) => (bool)element.GetValue(IsLiveProperty);
 
     public static void SetIsLive(DependencyObject element, bool value) => element.SetValue(IsLiveProperty, value);
@@ -45,7 +48,7 @@ public static class LiveText
         // Watched only while loaded: the descriptor holds what it watches.
         text.Loaded -= OnLoaded;
         text.Unloaded -= OnUnloaded;
-        TextDescriptor.RemoveValueChanged(text, OnTextChanged);
+        Unwatch(text);
         if (e.NewValue is true)
         {
             AutomationProperties.SetLiveSetting(text, AutomationLiveSetting.Polite);
@@ -53,18 +56,34 @@ public static class LiveText
             text.Unloaded += OnUnloaded;
             if (text.IsLoaded)
             {
-                TextDescriptor.AddValueChanged(text, OnTextChanged);
+                Watch(text);
             }
         }
     }
 
     private static void OnLoaded(object sender, RoutedEventArgs e)
     {
-        TextDescriptor.RemoveValueChanged(sender, OnTextChanged);
-        TextDescriptor.AddValueChanged(sender, OnTextChanged);
+        Unwatch(sender);
+        Watch(sender);
     }
 
-    private static void OnUnloaded(object sender, RoutedEventArgs e) => TextDescriptor.RemoveValueChanged(sender, OnTextChanged);
+    private static void OnUnloaded(object sender, RoutedEventArgs e) => Unwatch(sender);
+
+    private static void Watch(object text)
+    {
+        lock (DescriptorGate)
+        {
+            TextDescriptor.AddValueChanged(text, OnTextChanged);
+        }
+    }
+
+    private static void Unwatch(object text)
+    {
+        lock (DescriptorGate)
+        {
+            TextDescriptor.RemoveValueChanged(text, OnTextChanged);
+        }
+    }
 
     private static void OnTextChanged(object? sender, EventArgs e)
     {

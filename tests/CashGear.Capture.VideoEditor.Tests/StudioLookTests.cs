@@ -334,6 +334,7 @@ public sealed class StudioLookTests(ITestOutputHelper output) : IDisposable
     [Fact]
     public void A_preview_on_the_graphics_card_draws_what_the_export_draws()
     {
+        using var turn = new CashGear.Capture.Tests.MachineTurn();
         using var gl = OffscreenGl.TryCreate();
         Assert.SkipWhen(gl is null, "No OpenGL here.");
         foreach (var (name, project, time) in GoldenProjects())

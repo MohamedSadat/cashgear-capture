@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="..\MachineTurn.cs" Link="MachineTurn.cs" />
   </ItemGroup>
 
 </Project>

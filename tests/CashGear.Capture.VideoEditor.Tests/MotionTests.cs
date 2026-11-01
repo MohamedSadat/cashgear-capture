@@ -180,6 +180,7 @@ public sealed class MotionTests(ITestOutputHelper output) : IDisposable
     [Fact]
     public void Zooms_with_motion_blur_at_60_fps_show_no_stepping()
     {
+        using var turn = new CashGear.Capture.Tests.MachineTurn();
         // A look, a zoom in, a pan to the next, a zoom out, a frame at a time: the square's middle stays where the
         // camera puts it, and its movement from frame to frame changes as smoothly as the camera's does.
         var look = Looks.Apply(Project(), Looks.Find(Looks.DarkId)!);
@@ -248,6 +249,7 @@ public sealed class MotionTests(ITestOutputHelper output) : IDisposable
     [Fact]
     public void Motion_blur_looks_the_same_on_the_graphics_card_and_the_processor()
     {
+        using var turn = new CashGear.Capture.Tests.MachineTurn();
         using var gl = OffscreenGl.TryCreate();
         Assert.SkipWhen(gl is null, "No OpenGL here.");
         var look = Looks.Apply(Project(fps: 30), Looks.Find(Looks.SoftId)!);
@@ -413,6 +415,7 @@ public sealed class MotionBudgetTests(ITestOutputHelper output)
     [Fact]
     public void A_1080p30_project_with_a_look_and_motion_blur_previews_at_full_rate()
     {
+        using var turn = new CashGear.Capture.Tests.MachineTurn();
         using var gl = OffscreenGl.TryCreate();
         Assert.SkipWhen(gl is null, "No OpenGL here.");
         var asset = new MediaAsset("rec", @"C:\nowhere\Rec.mp4", 10, [new AssetStream(0, StreamKind.Video, null, 0, 10, 1920, 1080, 30)]);

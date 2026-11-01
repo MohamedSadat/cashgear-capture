@@ -75,6 +75,7 @@ public sealed class PreviewAcceptanceTests : IDisposable
     {
         TestMedia.Require();
         Assert.SkipWhen(VideoStreamReader.HardwareProblem is not null, $"No hardware video decoding here: {VideoStreamReader.HardwareProblem}");
+        using var turn = new CashGear.Capture.Tests.MachineTurn();
         using var gl = OffscreenGl.TryCreate();
         Assert.SkipWhen(gl is null, "No OpenGL here.");
         var file = _media.Stamped("hd-look.mp4", 10, new VideoFormat(1920, 1080, 30));
