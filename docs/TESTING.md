@@ -48,6 +48,19 @@ The video editor's tests write their own recordings (`StampedRecording`, with th
 
 The transcription tests use the Whisper models in `tools\whisper` and skip without them; download them once with `tools\get-whisper-models.ps1` (about 250 MB, checksum-verified). Their speech is made by Windows' own English voices in memory (nothing is played), and one test runs on the graphics card (Vulkan) when it can. The Arabic caption test reads its export back with Windows OCR and needs the Arabic OCR language.
 
+The webcam background tests use the person finder in `tools\inference` and skip without it; download it once with `tools\get-inference-models.ps1` (462 KB, checksum-verified). One test runs on the graphics card (DirectML) and fails if it falls back to the processor. The 30-pictures-a-second budget is timed on its own, since other test assemblies compete for the card:
+
+```powershell
+dotnet test --project tests/CashGear.Capture.Inference.Tests --filter-method "*keeps_up*" --explicit only --output Detailed
+```
+
+Comparing the preview with the export uses an OpenGL context in a hidden window (`OffscreenGl`), so nothing appears on the screen; those tests skip where there is no OpenGL. Tests that work the graphics card or every core flat out take the desktop tests' lock (`MachineTurn`), because the recording tests in other assemblies run in real time and drop pictures beside them. What chose the method of motion blur, and what a look adds to an export, print their numbers when asked for:
+
+```powershell
+dotnet test --project tests/CashGear.Capture.VideoEditor.Tests --filter-method "*Motion_blur_methods_measured*" --explicit only --output Detailed
+dotnet test --project tests/CashGear.Capture.VideoEditor.Tests --filter-method "*Export_times_of_a_look_measured*" --explicit only --output Detailed
+```
+
 The noise-suppression tests use the real RNNoise from `tools\rnnoise` and skip without it. Build it once with `tools\get-rnnoise.ps1`, which needs Visual Studio's C++ compiler ("Desktop development with C++").
 
 The other recording tests with sound use a generated tone (no sound is played) or real system audio with whatever is playing.
@@ -797,3 +810,85 @@ Measured by `tools\Bench` on the reference PC with the final build (Release, sel
 - **High contrast** (Settings › Accessibility › Contrast themes, or left Alt+left Shift+PrintScreen): with the app's windows open, switch it on and off. Separators, error text, the recording dot, the timeline, the level meters and the overlays should take the theme's colours at once.
 - **The toolbars from the keyboard:** Ctrl+Alt+Shift+T, Tab to Region, Enter. The region overlay should take the keyboard; Esc should give it back to the window that had it.
 - **Arabic:** look at the screenshots in `artifacts\arabic-ui`, and use the real windows with an Arabic keyboard. Type Arabic into the editor's text and into captions. Use file names with Arabic in History and on the timeline.
+
+## Phase 20 results (2026-11-01)
+
+The reference PC of Phase 18. The desktop tests had the user's go-ahead for this phase. **How it was tested:**
+- **Old projects:** `tests\CashGear.Capture.VideoEditor.Tests\Fixtures\v1.1.1` was written once by the 1.1.1 code, before this phase changed anything: a project with every kind of item 1.1.1 knew and the 16 frames 1.1.1 drew after opening it. Its pictures come from `PatternFrames`, made from the stream and the time alone.
+- **Preview against export:** the compositor draws each frame twice, on the GTX 1650 through OpenGL (`OffscreenGl`, a hidden window, as the preview's `SKGLElement` has) and in memory.
+- **Masks:** four public-domain NASA portraits cut to a webcam's 640 × 480, each moved over five frames, against outlines traced by hand over a grid. The first trace of the curly-haired portrait cut across hair the model had right (IoU 0.89); it was traced again more closely and checked by eye before the numbers below.
+
+### Acceptance
+
+| Item | Automated (result) | By hand |
+|---|---|---|
+| A 1.1.1 project draws the same pixels as 1.1.1 did | `GoldenFrameTests`: pass. All 16 frames (14 at the canvas's size, 2 at half, as an export scales them) identical, byte for byte, after opening `Project.cgcap` through the version 1 → 2 migration | — |
+| The default look matches between preview and export | `StudioLookTests.A_preview_on_the_graphics_card…`: pass, under 1 level on average in every case. None 0.000; Soft 0.287; Gradient 0.282; Dark 0.299; browser 0.235, laptop 0.279, monitor 0.248, phone 0.279; blurred screen 0.237; in a zoom 0.123; zooming in 0.236 | look at a real export next to the preview |
+| Zooms with motion blur at 60 fps show no visible stepping | `MotionTests.Zooms_with_motion_blur_at_60_fps…`: pass. A look, a zoom in, a pan and a spring zoom out, a frame at a time for 400 frames (92 blurred): the square's middle within 0.227 px of the camera's place at worst, its change of speed within 0.463 px/frame² of the camera's. Also on the graphics card against the processor: 0.118 to 0.195 levels | **pending:** the eye, on a real recording at 60 fps |
+| A 1080p30 project with a look and motion blur previews at full rate | `PreviewAcceptanceTests.Acceptance_a_look_and_motion_blur…`: pass. A 10 s 1080p30 recording decoded on the graphics card with the Soft look and three zooms, drawn 60 times a second on the GTX 1650 into 1280 × 720 (111 of 600 draws blurred): **300 of 300 pictures shown, no draw waited for one, 8.7 ms a draw on average, 12.8 ms at the 95th percentile, 20.3 ms at most** (the budget is 33.3 ms). Drawing alone while it zooms, pictures ready (`MotionBudgetTests`): 4.5 ms on average | **pending:** a real 1080p recording played in the installed app, with the window's own WPF load |
+| Webcam background removal: IoU ≥ 0.9 on 20 frames | `SegmentationTests.The_person_is_found…`: pass. **Mean 0.929, lowest 0.906, every one of the 20 frames above 0.9**, on the graphics card, through the masks' smoothing. They are formal portraits, not a webcam in a room | **pending:** a real camera clip (no camera on this PC) |
+| ≥ 30 fps at 720p through DirectML on the GTX 1650 | `ModelBudgetTests` (timed on its own): pass. **65 pictures a second in a Debug build, 119 in Release**, resizing included. A program published as `tools\package.ps1` publishes the app (self-contained, single file) loads DirectML too | — |
+| A 9:16 export of a 16:9 recording keeps the pointer in the picture | `LayoutTests`: pass. 1800 frames of big arcs and sweeps of over 1000 px/s: the pointer in the picture on every frame, except 0.3 s where the test's path itself jumps, which is reported. A jump across the screen is reported, from 0.3 s before it (the view looks ahead) until the view catches up. A real 9:16 export (1080 × 1920) says where it couldn't | **pending:** a real recording, by eye |
+
+### Motion blur: the method, by measured cost
+
+A 1080p frame of a zoom in motion with the Soft look, pictures made beforehand (`Motion_blur_methods_measured`). **The shader was chosen:** cheaper on both, and the same code for the preview and the export.
+
+| Samples | Shader, processor | Sub-frames, processor | Shader, graphics card | Sub-frames, graphics card |
+|---|---|---|---|---|
+| 8 | 133 ms | 470 ms | 7.2 ms | 37.2 ms |
+| 16 | 223 ms | 635 ms | 5.4 ms | 70.7 ms |
+| 32 | 389 ms | 1002 ms | 11.5 ms | 167.0 ms |
+
+Before it was drawn in strips side by side, the shader took 1.7 to 5.8 s a frame on the processor.
+
+### Export time
+
+| Project | Before (v1.1.1) | After |
+|---|---|---|
+| **The reference project:** three cuts out of a 20-minute recording, 320 × 180, 30,885 frames, nothing of this phase in it (`ExportAcceptanceTests`) | 67 s | 68 s |
+
+What this phase's features add, on 10 s of 1080p30 with the software encoder, in a Debug build (`Export_times_of_a_look_measured`):
+
+| 300 frames | Time | A frame |
+|---|---|---|
+| As recorded | 8.6 s | 28.8 ms |
+| With the Soft look | 13.9 s | 46.3 ms |
+| With the look and two zooms with motion blur | 24.9 s | 82.8 ms |
+
+Where a look's time goes, drawing only, on the processor at 1080p (`Motion_blur_methods_measured`):
+
+| A frame | Drawing |
+|---|---|
+| As recorded (the picture copied at its own size) | 2.0 ms |
+| The picture scaled to its place (padding) | 9.5 ms |
+| With rounded corners | 10.1 ms |
+| With a shadow, kept between frames | 11.5 ms |
+| With a shadow, worked out for the frame | 399 ms |
+| The whole Soft look | 13.1 ms |
+
+So the shadow and the background are kept between frames on the processor, and worked out again only when the camera moves them (on the graphics card they cost a few ms and aren't kept).
+
+### Other checks
+
+| Check | Result |
+|---|---|
+| Projects (`StudioLookTests`) | pass: a version 1 file with comments migrated; everything new saved and read back as the same JSON; a project without a background reads as black |
+| Backgrounds (`StudioLookTests`) | pass: gradients along their angle and from the middle, a picture covering the canvas without changing its shape, a missing picture falling back to the colour, the screen blurred, parallax moving a background a little with the middle in place |
+| Placement (`StudioLookTests`) | pass: padding, corners, a shadow falling below the picture and fading out (within 2.5 levels of Skia's own blur of the same shape), an inner line inside the edge, each device frame on the canvas |
+| Zooms and the frame (`StudioLookTests`) | pass: the framed screen grows, the background stays |
+| Looks (`StudioLookTests`, `StudioLookEditorTests`) | pass: in proportion on any canvas, taken off again, recognised, saved in `presets.json` and read back, deleted; the look for new recordings |
+| Motion (`MotionTests`) | pass: no blur at a standstill, byte for byte; the blur keeps the picture's place and brightness; more samples for faster movement, up to what is allowed; 8 samples within a level of 32; the spring's overshoot (2–7%), no jump, none on the way out, never past the picture's edges |
+| The pointer (`PointerTests`, `StudioLookEditorTests`) | pass: **Windows' own arrow, hand and I-beam, read as a recording reads them, are recognised**; coloured pointers aren't; a shape at 3× has under half the blurred pixels of the picture; drawn where the picture was; shrinks to 82% at a press; grows with a zoom or keeps its size; off by default |
+| Layouts (`LayoutTests`, `StudioLookEditorTests`) | pass: no layout and a corner bubble draw the same bytes; side by side, stacked on a tall canvas, camera only, screen only; the change is gradual and the same in any order of frames; cut, moved and saved like any item; a zoom stays in the screen's part |
+| Webcam background (`WebcamBackgroundTests`, `SegmentationTests`, `StudioLookEditorTests`) | pass: removed, replaced with a colour or a picture, blurred with the person sharp; 0.002 to 0.014 levels between the graphics card and the processor; mask files read by time; made once and kept; cancelled, none left, and made when asked again; an export makes what it needs; a damaged model refused and nothing kept; flicker settling and movement followed |
+| Canvases (`LayoutTests`, `StudioLookEditorTests`) | pass: 16:9, 9:16, 1:1, 4:5 from the shorter side, even; annotations keep their place in proportion; a webcam stacks, and its layout goes when the canvas goes back; fit leaves the background and fill covers it; zooms on top of a covering view; the preview decodes enough, and again when the canvas changes |
+| Export presets (`LayoutTests`, `StudioLookEditorTests`) | pass: sizes; 1080 × 1920 from a 640 × 360 recording; closed under a Pro split with the rest of `StudioLook` and `WebcamBackground`, open in this version |
+| Live text across threads (`LiveTextThreadTests`) | pass: eight threads with windows of their own; without the lock it failed in 0.3 s with the error that crashed a full run |
+| The whole suite | without the desktop (`CASHGEAR_SKIP_INTERACTIVE=1`): 1738 tests, 1596 pass, 142 skipped, 0 failed (2 min 59 s). With the desktop (the user's go-ahead): 1719 pass, 19 skipped, 0 failed (5 min 43 s). The skips: 6 need RNNoise, 3 need the Whisper models (not on this PC during this phase), 10 run only when asked for. **Six full desktop runs:** the first two each had one real-time recording test fail, a different one each time, beside this phase's GPU tests; with `MachineTurn` the next four had none of those. The fourth of the six crashed in `LiveText` (a Phase 19 bug); with its fix, the last two are clean |
+
+### Pending: by hand
+- **A real webcam** (none on this PC): a recording with a webcam in a real room; each background (hair, a chair behind the person, movement); each layout; the first download of the model and the status line.
+- **The new features in the installed app:** a real recording opening with the Soft look; zooms with motion blur and the spring at 60 fps, by eye; a sharp pointer in a zoom; a look with a picture; 9:16, 1:1 and 4:5 exports in a player and on a phone; the panel in Arabic with an Arabic keyboard; a saved look after a restart.
+- **Other graphics cards:** the SkSL looks on AMD and Intel in OpenGL; DirectML on them, and the fallback to the processor where Direct3D 12 is missing.
+- **Narrator and real high contrast** on the look panel.

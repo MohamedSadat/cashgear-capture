@@ -66,8 +66,8 @@ Change them in Settings › Hotkeys. The ones with "—" have no key until you s
 | `S` | Split at the playhead |
 | `I` / `O` | Mark in / out |
 | `Delete` / `Shift+Delete` | Delete (the range or the clip) / ripple delete |
-| `Esc` | Clear the selection |
-| `Tab` / `Shift+Tab` | Select the next / previous clip (`Ctrl+Tab` leaves the timeline) |
+| `Esc` | Clear the selection (the panel then shows the look and the canvas) |
+| `Tab` / `Shift+Tab` | Select the next / previous clip (`Ctrl+Tab` leaves the timeline, and goes on to the panel) |
 | `↑` / `↓` | Move the selected clip to the track above / below |
 | `Alt+←` / `Alt+→` (`Shift`: a second) | Move the selected clip a frame |
 | `Ctrl+[` / `Ctrl+]` | Trim the selected clip's start / end to the playhead |

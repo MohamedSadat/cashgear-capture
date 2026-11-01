@@ -7,7 +7,7 @@ Tray › **Video Editor** › **Open a Recording or Project…**, or **Edit the 
 - **The preview:** drag pictures, annotations and zooms on it. The arrows move the selected one (Shift: 10 px).
 - **The transport:** to the start, a frame back, play or pause (Space), a frame on, to the end.
 - **The timeline:** a header per track (mute, solo, shown, lock, volume) and the clips. Click or drag the ruler to move the playhead.
-- **The settings panel** for the selected item.
+- **The settings panel** for the selected item; with nothing selected (`Esc`), the project's look and canvas.
 
 ## Editing
 
@@ -31,8 +31,33 @@ Tray › **Video Editor** › **Open a Recording or Project…**, or **Edit the 
   - Insert › **Captions from Speech…** listens with Whisper on this PC, in English or Arabic, and nothing is sent anywhere;
   - or type them, or import SRT/WebVTT files.
 
+## The look
+
+A recording looks finished before you edit it: the screen sits on a background with space round it, rounded corners and a shadow. With nothing selected, the panel on the right sets all of it.
+
+- **Look:** None, Soft, Gradient, Dark, or one you saved under **Saved looks**. New recordings open with Soft; View › **Use This Look for New Recordings** changes that (None keeps recordings as they were recorded).
+- **Background:** one colour, a gradient across or from the middle, a picture, or the screen itself blurred. **Moves with zooms** lets it move a little in a zoom.
+- **The screen:** the space around it, corners, a shadow (how strong, how soft, how far it drops, its colour), an inner line, and a **device** drawn round it (a browser window, a laptop, a monitor, a phone).
+
+A selected picture has its own corners and shadow in its panel.
+
+## Zooms and the pointer
+
+A zoom's panel sets its **movement**, smooth or a spring that goes a little past its place and settles, and its **motion blur** (on for new zooms; nothing blurs while the camera stands still).
+
+When the app draws the pointer (recordings made with "Keep the video clean"), its panel can **draw it as a sharp shape** (the standard arrow, hand and I-beam; a custom pointer stays as recorded), **shrink it at a click**, and **keep its size in a zoom**. The pointer and click rings stay sharp while the pictures blur.
+
+## The webcam
+
+- **Layouts** (Insert › Layout): corner bubble, side by side (one above the other on a tall canvas), camera only, screen only. A layout covers its time on a layout track; the change takes 0.4 s, or what its panel says. While a layout places the pictures, dragging them doesn't move them.
+- **Behind the person** (select a webcam clip): blurred, replaced with a colour or a picture, or removed, so the camera sits on what is below it. The person is found on this PC, once for each recording, which the status line shows; until then the camera is shown as it is. The small model is downloaded the first time, and no pictures leave the PC.
+
+## Other shapes
+
+The panel's **Canvas** makes the video 16:9, 9:16 (Shorts, Reels, TikTok), 1:1 or 4:5. **Screen on the canvas** then says how the screen fills it: all of it on the background, filling it from the middle, or filling it and following the pointer. A webcam goes above or below the screen. The panel says at what times the pointer moves too fast to stay in the picture, and without the recording's metadata the picture stays on its middle.
+
 ## Export
 
 `Ctrl+E`:
-- **Formats:** MP4 (H.264 or HEVC), WebM (VP9 or AV1), an animated GIF, or just the sound as M4A or MP3.
+- **Formats:** MP4 (H.264 or HEVC), MP4 for 9:16, 1:1 or 4:5, WebM (VP9 or AV1), an animated GIF, or just the sound as M4A or MP3. A 9:16, 1:1 or 4:5 export of a project of another shape follows the pointer, whatever its canvas is, and says when it couldn't.
 - **Options:** four qualities, the marked range only, and captions burned in or saved beside it.

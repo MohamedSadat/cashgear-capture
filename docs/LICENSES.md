@@ -29,6 +29,8 @@ No GPL or AGPL component ships.
 | FFmpeg (n9.0.2, LGPL build) | LGPL v3 | Encoding, decoding and writing recordings and exports (see below) |
 | RNNoise (0.2) | BSD 3-Clause | Microphone noise suppression (see below) |
 | Whisper.net, whisper.cpp, ggml (1.9.1) | MIT | Captions from speech (see below); the models are downloaded, not shipped |
+| ONNX Runtime with DirectML (1.24.4) | MIT | The webcam's background (see below) |
+| DirectML (Microsoft.AI.DirectML 1.15.4) | Microsoft Software License Terms, which allow distributing it in applications | Running the model on the graphics card (see below) |
 | DocumentFormat.OpenXml (3.5.1) | MIT | Word and PowerPoint destinations |
 | FluentFTP (55.0.0) | MIT | FTP and FTPS uploads |
 | SSH.NET (2026.0.0) | MIT | SFTP uploads |
@@ -99,6 +101,19 @@ Get advice before selling the app in markets where this matters (Phase 19).
 | Build | x64, static C runtime (`/MT`, no Visual C++ redistributable needed), `/O2`; SSE2 everywhere, with SSE4.1 and AVX2 (+FMA) code chosen at run time by RNNoise's own CPU detection. |
 | What ships | `rnnoise\rnnoise.dll` and `rnnoise\COPYING`. Without them the app works and Settings doesn't offer noise suppression. |
 | Bindings | `CashGear.Capture.Interop.Native.Rnnoise` (`LibraryImport`), loaded only from `rnnoise\` next to the app. |
+
+## The person finder (the webcam's background)
+
+The person in a webcam's pictures is found with Google's MediaPipe Selfie Segmentation model run by ONNX Runtime.
+
+| | |
+|---|---|
+| Model | Not shipped: downloaded on first use from a fixed commit of <https://huggingface.co/onnx-community/mediapipe_selfie_segmentation> (`be49485c8e027524be38591817fc5cd31bd9d00e`, `onnx/model.onnx`, 462 KB), checked against its SHA-256 `3241ac4ad8aa35bdaf33946776db29f7c283a413aa0b0dacb9483594b4531aad`. `tools\get-inference-models.ps1` downloads the same file for the tests. |
+| Model's licence | **Apache 2.0**, for the weights themselves: Google's model card says "Licensed under Apache License, Version 2.0" (<https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MediaPipe%20Selfie%20Segmentation.pdf>, read on 2026-11-01), and the ONNX conversion is published under Apache 2.0. Commercial use is allowed. |
+| Packages | Microsoft.ML.OnnxRuntime.DirectML **1.24.4** and Microsoft.ML.OnnxRuntime.Managed (MIT); Microsoft.AI.DirectML **1.15.4**: `DirectML.dll` under the Microsoft Software License Terms in the package's `LICENSE.txt`, whose section 1 allows copying and distributing it in applications for Windows; its notices must stay. |
+| What ships | `onnxruntime.dll` (16.5 MB) and `DirectML.dll` (17.7 MB) beside the app, and the notices in `THIRD-PARTY-NOTICES.txt`. |
+| Privacy | Official Windows builds of ONNX Runtime send trace events through Windows' own telemetry unless told not to (the package's `Privacy.md`). The app calls `DisableTelemetryEvents` before it starts a model. |
+| Test pictures | Four official NASA portraits (works of the United States government: public domain) in `tests\CashGear.Capture.Inference.Tests\Fixtures\people`, not shipped. |
 
 ## Whisper (speech to text for captions)
 

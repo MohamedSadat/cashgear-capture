@@ -1838,3 +1838,82 @@ CashGear Capture can ship. The packages leave out debug symbols, and every file 
   - Digits follow the regional format: Arabic-Indic for ar-SA. Arabic-Indic digits, and dimensions written right to left, may surprise users who expect Western digits.
   - Only the user guide's start, its index and the keyboard shortcuts are in Arabic; the other pages link to the English ones.
 - **Bigger downloads:** Setup.exe is 213 MB, against 119 MB for 1.0.1. FFmpeg's libraries, Whisper's runtimes (Vulkan too) and ReadyToRun account for the difference.
+
+## Phase 20 — Studio Look (2026-11-01)
+
+A recording now looks finished before any editing. The screen sits on a background with space around it, rounded corners and a shadow. Zooms move with motion blur, or on a spring. The pointer stays sharp in a zoom and shrinks at a click. The webcam has layouts, and its background can be blurred, replaced or removed, on this PC. Vertical and square videos follow the pointer. Old projects open and draw exactly what they drew.
+
+### Added
+- **Backgrounds** (`ProjectCanvas.Background`, now a record): a colour, a gradient across or from the middle, a picture (one of the project's assets, so it is located and saved with it like any media), or the screen itself blurred. A background can move a little with a zoom (parallax).
+- **The screen's frame** (`Placement`): a corner radius, a shadow (offset, blur, colour, strength), an inner line, and generic device frames drawn in code (a browser window, a laptop, a monitor, a phone: plain shapes in greys, no real product's). Padding is `Placement.Size` below 1, as before.
+- **Looks:** None, Soft, Gradient and Dark built in; others saved by name in `presets.json`, and imported and exported with the settings. Sizes are for a 1080-pixel-high canvas, so a look fits any canvas. A recording opens with the Soft look until View › **Use This Look for New Recordings** says otherwise.
+- **The panel:** with nothing selected, the panel on the right shows the look and the canvas (View › Look and Canvas).
+- **Motion:**
+  - motion blur per zoom (`ZoomItem.MotionBlur`, on for new zooms), none while the camera stands still; the export takes up to 32 samples, the preview 16 on the graphics card and 4 in memory;
+  - spring easing per zoom (`ZoomItem.Easing`): a few percent past its place on the way in, staying inside the picture, and closing in without passing on the way out;
+  - the standard arrow, hand and I-beam drawn as shapes (`PointerShapes`), recognised from the recorded picture and drawn where it was; a press animation; a size in a zoom that can stay constant. New pointer effects have the shapes and the press on; a coloured or custom pointer stays as recorded.
+- **Layouts** (`LayoutItem` on a new `TrackKind.Layout`, Insert › Layout): corner bubble, side by side (stacked on a canvas that isn't wide), camera only, screen only, animating over 0.4 s by default. A zoom in a side-by-side layout is shown inside the screen's part.
+- **The webcam's background** (`Clip.Background`): blurred, replaced with a colour or a picture, or removed.
+  - **New project `CashGear.Capture.Inference`:** `InferenceModelStore` (pinned address, SHA-256, `.partial`), `PersonSegmenter` (ONNX Runtime on DirectML, falling back to the processor), `MaskSmoother` (small changes settle, movement is followed at once).
+  - `WebcamMasks` in the video editor runs it once per stream and keeps a mask file with the thumbnails and waveforms; an export makes the masks it needs.
+- **Formats:** 16:9, 9:16, 1:1 and 4:5 canvases (`CanvasEdits`), with the screen fitted, filling from the middle, or filling and following the pointer (`ScreenFraming`). Following the pointer looks ahead by as long as its springs lag. A webcam goes into a stacked layout, and annotations keep their place in proportion. Export presets for 9:16, 1:1 and 4:5 do the same to a project of another shape, and the export says when the pointer moved too fast to follow.
+- **Pro features:** `ProFeature.StudioLook` (saved looks, device frames, motion blur, auto-reframe) and `ProFeature.WebcamBackground`, behind `IFeatureGate`. Everything stays free in this version.
+- **Project version 2**, with `ProjectJson.Migrate`: version 1's `background` colour becomes a record; everything else new has defaults that draw what 1.1.1 drew.
+- **Inside:** `StudioShaders` (SkSL: the shadow, the motion blur, the matte), `DeviceFrames`, `LayoutEngine`, `Looks`, `SavedLook` and `PresetLibrary.Looks`, `AppState`'s `DefaultLook`, the `IWebcamMasks` of the compositor; `tools\get-inference-models.ps1`; tests: a new `CashGear.Capture.Inference.Tests`, `GoldenFrameTests` and its fixture, `PatternFrames`, `OffscreenGl`, `StudioLookTests`, `MotionTests`, `PointerTests`, `LayoutTests`, `WebcamBackgroundTests`, `StudioLookEditorTests`.
+
+### Deviations from the spec
+- **New recordings get the Soft look by default.** The phase's aim is a recording that looks finished before editing, so exports from new recordings look different from 1.1.1's unless View › Use This Look says None. Saved projects are untouched.
+- **The default look is set in the View menu**, one of the two places the plan names; Settings has nothing about it.
+- **The look and canvas are in the editor's panel**, not a window of their own, on the same templates as every other setting, so they are reachable by keyboard and named for screen readers, right to left and in high contrast as those are.
+- **The motion blur is a directional shader, chosen by measuring** it against sub-frames (TESTING.md). On the processor it is drawn in strips side by side, one per core, so it is the same SkSL in the preview and the export.
+- **The pointer and click rings aren't motion-blurred:** they stay sharp over blurred pictures.
+- **Filling a canvas is the camera's doing, not a larger placement:** a zoom's scale on such a canvas is from what it shows. A look's padding doesn't show there.
+- **The IoU test uses four public-domain NASA portraits moved over 20 frames**, with outlines traced by hand and checked by eye, since there is no camera here and no webcam clip with known masks. They are formal portraits; a real camera is by hand.
+- **The 30-pictures-a-second budget is timed when asked for**, on its own: under the whole parallel suite it measured the load (22 to 30). Every run checks that it is on the graphics card.
+- **Windows Studio Effects isn't used:** it applies while recording, which is Phase 24; the editor works on recorded pictures.
+
+### Fixed during development
+- **DirectML silently wasn't used:** its package only copies `DirectML.dll` for builds that name a platform, and ours are AnyCPU, so the model ran on the processor and the budget test passed anyway. The DLL is copied by the project now, and the test fails unless it is on the graphics card. A real single-file publish loads it.
+- **ONNX Runtime's telemetry was on by default** in its official Windows builds. It is turned off before a model starts.
+- **Motion blur took 1.7 to 5.8 s a frame on the processor:** a pixel reading a picture many times is slow one at a time. Drawn in strips side by side: 133 to 389 ms.
+- **A shadow took about 390 ms a frame on the processor** when worked out for each frame of an export. It and the background are kept between frames there now: a whole look's drawing is 13 ms.
+- **Auto-reframe lost the pointer in sweeps of 1200 px/s:** two springs in a row lag by 4/ω, not the 2/ω first allowed for. Its look-ahead is that long now.
+- **Windows' real I-beam wasn't recognised** (its hotspot is off centre, and it is black edged in white); the test on Windows' own pointers found it. Shapes are now placed by the recorded picture's own offset.
+- **An inner line on a square-cornered picture spilled outside it.**
+- **A saved look couldn't be deleted after picking it:** choosing it remade the panel without the selection.
+- **The preview stayed blurry after changing the canvas:** a clip's decoder kept its old size.
+- **Making masks after a cancel gave back the cancelled work.**
+- **Choosing a new picture for the webcam's background** was two undo steps; it is one.
+- **The test process could crash (a bug since Phase 19):** `LiveText` shares one WPF property descriptor, whose list of what it watches isn't safe across threads, and the tests open windows on several threads at once. The first desktop runs of this phase hit it. The app has one UI thread, so users couldn't. It takes a lock now, with a test that failed in 0.3 s without it.
+- **This phase's own tests made recordings drop pictures:** the real-time recording tests failed, a different one each time, when DirectML, OpenGL and all-core tests ran beside them in other assemblies (two full runs of two). Those tests now take the desktop tests' lock (`MachineTurn`), and the three full runs since have none of those failures.
+
+### Tested
+- **Automated tests:** without the desktop (`CASHGEAR_SKIP_INTERACTIVE=1`) 1738 tests: 1596 pass, 142 skipped, 0 failed (2 min 59 s). With the desktop (the user's go-ahead): 1719 pass, 19 skipped, 0 failed (5 min 43 s), the last three full runs clean of recording failures and the last two clean altogether. The skips: 6 need RNNoise, 3 need the Whisper models (not on this PC during this phase; Transcription wasn't touched), and 10 run only when asked for (5 of them this phase's measurements and pictures to look at). Phase 19 had 1627.
+- **Acceptance:**
+  - **A 1.1.1 project draws the same pixels:** 16 golden frames written by the 1.1.1 code before anything changed, identical byte for byte through the migration.
+  - **Preview = export:** on the GTX 1650 through OpenGL against memory, under 0.3 levels on average for every look, device frame and zoom, 0.2 for motion blur, 0.014 for the webcam's matte.
+  - **No stepping at 60 fps:** 400 frames of a look, a zoom, a pan and a spring: within 0.227 px of the camera's place, its change of speed within 0.463 px/frame² of the camera's.
+  - **Full rate:** a real 1080p30 recording decoded on the graphics card, with a look and three zooms, drawn 60 times a second: 300 of 300 pictures, no draw waited, 8.7 ms a draw on average, 20.3 ms at most.
+  - **Webcam background:** mean IoU 0.929, lowest 0.906, on 20 frames against outlines traced by hand (stand-in portraits); 65 pictures a second at 720p through DirectML in a Debug build, 119 in Release.
+  - **9:16:** the pointer in the picture on all of 1800 frames, except where the test's path jumps, which is reported; a real 1080 × 1920 export says where it couldn't follow.
+- **Export time of the reference project:** 67 s on the v1.1.1 code, 68 s now. A look adds about 17 ms a frame at 1080p.
+- **Build and publish:** `dotnet build --no-incremental` without warnings. A program published as `tools\package.ps1` publishes the app (self-contained, single file) loads ONNX Runtime and DirectML from beside itself and runs on the graphics card. The installer itself wasn't built.
+- **The desktop tests** ran with this phase's panel in the real window, in Arabic and right to left (`ArabicUiTests`, `VideoEditorWindowTests`): pass.
+- **Not run** (pending in TESTING.md): a real webcam, the features by hand in the installed app, other graphics cards, Narrator and a real high-contrast switch on the panel.
+
+### Known limitations
+- **Zooms and layouts:**
+  - Where the screen covers a canvas of another shape, a zoom's frame can't be dragged on the preview (there is no whole picture to show it on): its panel sets it.
+  - While a layout places a picture, dragging it changes its own placement, which shows only outside the layout.
+  - A zoom's scale can't be less than 1.25× what it shows.
+- **The pointer:** drawn as a shape only when the app draws the pointer ("Keep the video clean"); in other recordings it is in the pictures. Click rings and the pointer are cut off square at the picture's rounded corners.
+- **Looks:** one look for all the screen clips in the panel (each clip has its own corners and shadow when selected). A saved look with a picture needs that file. Device frames are plain shapes.
+- **The webcam's background:**
+  - The model is a small one: one person, near the camera. Fine hair and things held in the hand can be lost; the masks are 256 × 256 and the picture is squeezed square for it.
+  - Until the masks are made, the camera shows as it is. The status line shows the progress, and closing the window cancels it.
+  - Masks are made for the whole stream, even for a short clip of it, and stay in `%LocalAppData%\CashGear\Capture\VideoEditor\` until deleted by hand.
+  - In the editor only: live during a recording is Phase 24.
+- **Reframing:** a fast pointer leaves the picture, and the view starts moving about 0.3 s before the pointer does. Without metadata the picture stays on its middle. The panel's list of times shows the first six.
+- **Export:** at 1080p a look adds about 17 ms a frame, most of it scaling the picture to its place. On the processor each frame the camera moves also works its shadow out again (about 390 ms when all of it is in view) and blurs (130 to 390 ms), so zooms take longer to export than to play.
+- **Downloads:** ONNX Runtime and DirectML add 34 MB to the app.
+- **A caption track's "no box" isn't kept (since Phase 17):** a style without a box is saved without the field, and reads back with the default box. Left as it is here: 1.1.1's projects must keep drawing what they drew.

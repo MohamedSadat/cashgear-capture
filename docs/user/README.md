@@ -8,7 +8,7 @@ CashGear Capture takes screenshots, records the screen with sound, and edits bot
 | [Capturing](capturing.md) | Every kind of capture, the capture toolbar, delays, repeat, the screen tools, Capture Text, history |
 | [Recording](recording.md) | Screen recordings, sound, overlays (clicks, keys, webcam, drawing), interrupted recordings |
 | [The image editor](image-editor.md) | Annotations, effects, watermarks, Batch Process, Combine Images, Images to PDF |
-| [The video editor](video-editor.md) | Cutting, music, annotations, speed, zooms, captions, export |
+| [The video editor](video-editor.md) | Cutting, music, annotations, speed, zooms, captions, looks, layouts, the webcam's background, vertical video, export |
 | [Settings](settings.md) | Every tab, language, import/export/reset, update channels |
 | [Privacy](privacy.md) | What the app keeps and where, crash reports, diagnostics |
 | [Keyboard shortcuts](keyboard-shortcuts.md) | Hotkeys and every window's keys |

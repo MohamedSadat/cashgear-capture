@@ -25,6 +25,13 @@ Whisper.net 1.9.1 (Whisper.net, Whisper.net.Runtime, Whisper.net.Runtime.Vulkan)
   https://github.com/ggml-org/whisper.cpp. The Whisper models (OpenAI, MIT License, https://github.com/openai/whisper)
   are downloaded when first used, not shipped.
 
+ONNX Runtime 1.24.4 (Microsoft.ML.OnnxRuntime.DirectML, Microsoft.ML.OnnxRuntime.Managed; onnxruntime.dll) - MIT License - https://github.com/microsoft/onnxruntime
+  Finding the person in a webcam's pictures. Copyright Microsoft Corporation. Its telemetry is turned off.
+DirectML 1.15.4 (Microsoft.AI.DirectML; DirectML.dll) - Microsoft Software License Terms: Microsoft DirectX Machine Learning - https://www.nuget.org/packages/Microsoft.AI.DirectML
+  Copyright Microsoft Corporation. Distributed in this application as those terms allow.
+MediaPipe Selfie Segmentation (Google) - Apache License 2.0 - https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MediaPipe%20Selfie%20Segmentation.pdf
+  The model is downloaded when first used, not shipped (as ONNX from https://huggingface.co/onnx-community/mediapipe_selfie_segmentation).
+
 .NET runtime and Windows Presentation Foundation (WPF), including System.Security.Cryptography.ProtectedData and System.IO.Packaging - MIT License - https://github.com/dotnet/runtime, https://github.com/dotnet/wpf
 C#/WinRT projection (WinRT.Runtime) - MIT License - https://github.com/microsoft/CsWinRT
 Microsoft.Extensions.Hosting, DependencyInjection, Logging - MIT License - https://github.com/dotnet/runtime
