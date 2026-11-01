@@ -34,6 +34,9 @@ public sealed class PersonSegmenter : IPersonSegmenter
     private readonly DenseTensor<float> _input = new([1, 3, Size, Size]);
     private readonly string _inputName;
     private readonly string _outputName;
+    private (int Width, int Height, int RowBytes) _samplesFor;
+    private int[] _columns = [];
+    private int[] _rows = [];
 
     /// <param name="preferGpu">Try the graphics card first (false: the processor).</param>
     /// <exception cref="InvalidOperationException">The model can't be loaded.</exception>
@@ -71,26 +74,34 @@ public sealed class PersonSegmenter : IPersonSegmenter
         _run.Dispose();
     }
 
-    /// <summary>The picture stretched to the model's square (averaging when it shrinks), as planar RGB from 0 to 1.</summary>
+    /// <summary>
+    /// The picture stretched to the model's square (averaging when it shrinks), as planar RGB from 0 to 1. Where each
+    /// sample falls is worked out once per picture size: this runs for every picture of a stream.
+    /// </summary>
     private void FillInput(ReadOnlySpan<byte> bgra, int width, int height, int rowBytes)
     {
+        if (_samplesFor != (width, height, rowBytes))
+        {
+            PlaceSamples(width, height, rowBytes);
+        }
+
         var plane = _input.Buffer.Span;
-        var stepX = (double)width / Size;
-        var stepY = (double)height / Size;
-        var samplesX = Math.Clamp((int)Math.Round(stepX), 1, 4);
-        var samplesY = Math.Clamp((int)Math.Round(stepY), 1, 4);
-        var scale = 1f / (255f * samplesX * samplesY);
+        var (columns, rows) = (_columns, _rows);
+        var (acrossEach, downEach) = (columns.Length / Size, rows.Length / Size);
+        var scale = 1f / (255f * acrossEach * downEach);
         for (var y = 0; y < Size; y++)
         {
+            var rowsFrom = y * downEach;
             for (var x = 0; x < Size; x++)
             {
+                var columnsFrom = x * acrossEach;
                 int blue = 0, green = 0, red = 0;
-                for (var sy = 0; sy < samplesY; sy++)
+                for (var sy = 0; sy < downEach; sy++)
                 {
-                    var row = Math.Min(height - 1, (int)((y + ((sy + 0.5) / samplesY)) * stepY)) * rowBytes;
-                    for (var sx = 0; sx < samplesX; sx++)
+                    var row = rows[rowsFrom + sy];
+                    for (var sx = 0; sx < acrossEach; sx++)
                     {
-                        var at = row + (Math.Min(width - 1, (int)((x + ((sx + 0.5) / samplesX)) * stepX)) * 4);
+                        var at = row + columns[columnsFrom + sx];
                         blue += bgra[at];
                         green += bgra[at + 1];
                         red += bgra[at + 2];
@@ -105,15 +116,42 @@ public sealed class PersonSegmenter : IPersonSegmenter
         }
     }
 
+    private void PlaceSamples(int width, int height, int rowBytes)
+    {
+        var (stepX, stepY) = ((double)width / Size, (double)height / Size);
+        var acrossEach = Math.Clamp((int)Math.Round(stepX), 1, 4);
+        var downEach = Math.Clamp((int)Math.Round(stepY), 1, 4);
+        _columns = new int[Size * acrossEach];
+        _rows = new int[Size * downEach];
+        for (var i = 0; i < Size; i++)
+        {
+            for (var s = 0; s < acrossEach; s++)
+            {
+                _columns[(i * acrossEach) + s] = Math.Min(width - 1, (int)((i + ((s + 0.5) / acrossEach)) * stepX)) * 4;
+            }
+
+            for (var s = 0; s < downEach; s++)
+            {
+                _rows[(i * downEach) + s] = Math.Min(height - 1, (int)((i + ((s + 0.5) / downEach)) * stepY)) * rowBytes;
+            }
+        }
+
+        _samplesFor = (width, height, rowBytes);
+    }
+
     private static (InferenceSession Session, bool Gpu, string? Problem) Open(string modelPath, bool preferGpu)
     {
+        // Official Windows builds of ONNX Runtime send trace events through Windows' own telemetry unless told not to:
+        // nothing leaves the PC because of a video being edited.
+        OrtEnv.Instance().DisableTelemetryEvents();
+
         Exception? gpuFailure = null;
         if (preferGpu)
         {
             try
             {
                 // DirectML doesn't take memory patterns or running parts of the model side by side.
-                using var options = new SessionOptions { EnableMemoryPattern = false, ExecutionMode = ExecutionMode.ORT_SEQUENTIAL };
+                using var options = new SessionOptions { EnableMemoryPattern = false, ExecutionMode = ExecutionMode.ORT_SEQUENTIAL, LogSeverityLevel = OrtLoggingLevel.ORT_LOGGING_LEVEL_ERROR };
                 options.AppendExecutionProvider_DML(0);
                 return (new InferenceSession(modelPath, options), true, null);
             }

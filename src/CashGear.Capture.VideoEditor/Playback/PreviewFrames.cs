@@ -20,7 +20,7 @@ public sealed class PreviewFrames : IFrameProvider, IDisposable
     private const double Behind = 1.0;
 
     private readonly Lock _gate = new();
-    private readonly Dictionary<string, (FrameSource Source, string Path, int Stream)> _sources = [];
+    private readonly Dictionary<string, (FrameSource Source, string Path, int Stream, (int Width, int Height) Size)> _sources = [];
     private readonly ILoggerFactory _loggers;
     private readonly VideoDecoding _decoding;
 
@@ -128,7 +128,9 @@ public sealed class PreviewFrames : IFrameProvider, IDisposable
     {
         lock (_gate)
         {
-            if (_sources.TryGetValue(clip.Id, out var existing) && existing.Path == asset.Path && existing.Stream == clip.Stream)
+            // Asked with a canvas, a source of another size is made again: the canvas changed shape or framing.
+            var size = canvas is null ? (0, 0) : DecodeSize(asset.Stream(clip.Stream), canvas);
+            if (_sources.TryGetValue(clip.Id, out var existing) && existing.Path == asset.Path && existing.Stream == clip.Stream && (canvas is null || existing.Size == size))
             {
                 return existing.Source;
             }
@@ -142,7 +144,7 @@ public sealed class PreviewFrames : IFrameProvider, IDisposable
             var (width, height) = DecodeSize(asset.Stream(clip.Stream), canvas);
             var source = new FrameSource(asset.Path, clip.Stream, _decoding, width, height, _loggers.CreateLogger<FrameSource>());
             source.FrameReady += OnFrameReady;
-            _sources[clip.Id] = (source, asset.Path, clip.Stream);
+            _sources[clip.Id] = (source, asset.Path, clip.Stream, (width, height));
             return source;
         }
     }

@@ -349,6 +349,15 @@ public sealed class MotionTests(ITestOutputHelper output) : IDisposable
         output.WriteLine($"look only, processor: {Timed(() => { plain.Render(memory.Canvas, project, 1.3); memory.Flush(); }):0.0} ms");
         var none = ProjectFactory.AddRecording(VideoProject.Empty(new ProjectCanvas(1920, size, 30)), Asset(10, 1920, size, 30), 0);
         output.WriteLine($"no look, processor: {Timed(() => { plain.Render(memory.Canvas, none, 1.3); memory.Flush(); }):0.0} ms");
+
+        // Each part of a look on its own, on the processor: the picture scaled to its place, then its corners, then the rest.
+        var scaled = Looks.WithScreenPlacement(none, s => s with { Size = 0.88 });
+        output.WriteLine($"picture scaled only, processor: {Timed(() => { plain.Render(memory.Canvas, scaled, 1.3); memory.Flush(); }):0.0} ms");
+        var rounded = Looks.WithScreenPlacement(none, s => s with { Size = 0.88, CornerRadius = 20 });
+        output.WriteLine($"scaled with corners, processor: {Timed(() => { plain.Render(memory.Canvas, rounded, 1.3); memory.Flush(); }):0.0} ms");
+        var shadow = Looks.WithScreenPlacement(none, s => s with { Size = 0.88, CornerRadius = 20, Shadow = new PlacementShadow(0, 18, 36, "#101828", 0.35) });
+        output.WriteLine($"with a shadow, kept between frames, processor: {Timed(() => { plain.Render(memory.Canvas, shadow, 1.3); memory.Flush(); }):0.0} ms");
+        output.WriteLine($"with a shadow, worked out each frame, processor: {Timed(() => { new FrameCompositor(frames).Render(memory.Canvas, shadow, 1.3); memory.Flush(); }):0.0} ms");
     }
 }
 
@@ -374,6 +383,29 @@ internal sealed class MadeBeforehand : IFrameProvider
 [Collection(nameof(PreviewAcceptance))]
 public sealed class MotionBudgetTests(ITestOutputHelper output)
 {
+    /// <summary>
+    /// What a look and motion blur add to an export (docs\TESTING.md): 10 s at 1080p30 with the software encoder, as
+    /// recorded, then with a look, then with a look and two zooms. Not a test: it prints its numbers.
+    /// </summary>
+    [Fact(Explicit = true)]
+    public async Task Export_times_of_a_look_measured()
+    {
+        Media.Tests.TestMedia.Require();
+        using var media = new TestMediaFiles("cashgear-export-cost-");
+        var video = media.Stamped("Rec.mp4", 10, new Core.Recording.VideoFormat(1920, 1080, 30));
+        var plain = ProjectFactory.FromRecording(ProjectFactory.ReadAsset(video));
+        var look = Looks.Apply(plain, Looks.Find(Looks.SoftId)!);
+        ZoomItem Zoom(string id, double start) => new() { Id = id, Start = start, Length = 3, Scale = 2, Focus = ZoomFocus.Fixed, MotionBlur = ZoomItem.DefaultMotionBlur };
+        var zooms = AutoZoom.AddZoom(AutoZoom.AddZoom(look, Zoom("a", 1)), Zoom("b", 5));
+        var exporter = new Export.ProjectExporter(new SoftwareEncoders(), Microsoft.Extensions.Logging.Abstractions.NullLogger<Export.ProjectExporter>.Instance);
+        foreach (var (name, project) in new[] { ("as recorded", plain), ("with a look", look), ("with a look and two zooms", zooms) })
+        {
+            var path = Path.Combine(media.Root, name.Replace(' ', '-') + ".mp4");
+            var result = await exporter.ExportAsync(new Export.ExportRequest(project, Export.ExportPresets.Mp4H264Project, Core.Recording.QualityPreset.High, path), ct: TestContext.Current.CancellationToken);
+            output.WriteLine($"{name}: {result.Elapsed.TotalSeconds:0.0} s for {result.Frames} frames, {result.Elapsed.TotalMilliseconds / result.Frames:0.0} ms a frame");
+        }
+    }
+
     /// <summary>
     /// A 1080p30 project with a look and motion blur previews at full rate: frames drawn on the graphics card (through
     /// the hidden context) at the preview's size, a picture uploaded each time, within a frame's time while it zooms.

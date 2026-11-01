@@ -550,7 +550,11 @@ public sealed class FrameCompositor
         using (var paint = new SKPaint { Color = SKColors.White.WithAlpha(alpha) })
         {
             canvas.Save();
-            if (placement.Shape != PlacementShape.Rectangle || radius > 0 || placement.InsetBorderWidth > 0)
+
+            // A look's corners are drawn as a rounded rectangle filled with the picture: on the processor a soft-edged
+            // clip costs more than the rest of the frame. Only what 1.1.1 knew (a rounded shape, a circle) clips, as it did.
+            var rounded = box is not null || placement.CornerRadius > 0 || placement.Frame != DeviceFrame.None;
+            if (!rounded && placement.Shape != PlacementShape.Rectangle)
             {
                 canvas.ClipPath(outline, SKClipOperation.Intersect, antialias: true);
             }
@@ -564,23 +568,32 @@ public sealed class FrameCompositor
             {
                 using (mask)
                 {
-                    DrawMatted(canvas, project, background, image, mask, source, target, frame.Width, frame.Height, paint);
+                    DrawMatted(canvas, project, background, image, mask, source, target, frame.Width, frame.Height, paint, radius);
                 }
+            }
+            else if (rounded && radius > 0)
+            {
+                using var picture = image.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, Mapping(source, target));
+                paint.Shader = picture;
+                paint.IsAntialias = true;
+                canvas.DrawRoundRect(target, radius, radius, paint);
+                paint.Shader = null;
             }
             else
             {
                 canvas.DrawImage(image, source, target, Sampling, paint);
             }
 
-            if (placement.InsetBorderWidth > 0 && placement.InsetBorder is { } inset)
-            {
-                // Twice as wide along the outline, the outer half cut off by the picture's own clip.
-                var color = Color(inset, SKColors.White);
-                using var line = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = (float)placement.InsetBorderWidth * 2, Color = color.WithAlpha((byte)Math.Round(color.Alpha * (alpha / 255f))) };
-                canvas.DrawPath(outline, line);
-            }
-
             canvas.Restore();
+        }
+
+        if (placement.InsetBorderWidth > 0 && placement.InsetBorder is { } inset)
+        {
+            // A line just inside the edge: its own outline, half its width in, with corners to match.
+            var color = Color(inset, SKColors.White);
+            var thickness = (float)placement.InsetBorderWidth;
+            using var line = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = thickness, Color = color.WithAlpha((byte)Math.Round(color.Alpha * (alpha / 255f))) };
+            canvas.DrawRoundRect(SKRect.Inflate(target, -thickness / 2, -thickness / 2), Math.Max(0, radius - (thickness / 2)), Math.Max(0, radius - (thickness / 2)), line);
         }
 
         if (placement.BorderWidth > 0 && placement.Border is not null)
@@ -645,7 +658,7 @@ public sealed class FrameCompositor
     }
 
     /// <summary>A webcam's picture with what is behind the person blurred, replaced or taken out, by the person's mask.</summary>
-    private void DrawMatted(SKCanvas canvas, VideoProject project, WebcamBackground background, SKImage image, SKImage mask, SKRect source, SKRect target, int frameWidth, int frameHeight, SKPaint paint)
+    private void DrawMatted(SKCanvas canvas, VideoProject project, WebcamBackground background, SKImage image, SKImage mask, SKRect source, SKRect target, int frameWidth, int frameHeight, SKPaint paint, float radius)
     {
         var toTarget = Mapping(source, target);
         using var picture = image.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, toTarget);
@@ -654,7 +667,8 @@ public sealed class FrameCompositor
         using var back = BackOf(project, background, image, source, target);
         using var matte = StudioShaders.Matte(picture, masked, back);
         paint.Shader = matte;
-        canvas.DrawRect(target, paint);
+        paint.IsAntialias = true;
+        canvas.DrawRoundRect(target, radius, radius, paint);
         paint.Shader = null;
     }
 

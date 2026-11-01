@@ -1,3 +1,4 @@
+using CashGear.Capture.VideoEditor.Editing;
 using System.Diagnostics;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Media;
@@ -64,6 +65,80 @@ public sealed class PreviewAcceptanceTests : IDisposable
     private readonly TestMediaFiles _media = new("cashgear-preview-acceptance-");
 
     public void Dispose() => _media.Dispose();
+
+    /// <summary>
+    /// Phase 20 acceptance: a 1080p30 project with a look and motion blur previews at full rate. As the test below, with
+    /// real decoding, on the graphics card through the hidden OpenGL context, the zooms moving for much of the time.
+    /// </summary>
+    [Fact]
+    public void Acceptance_a_look_and_motion_blur_preview_at_full_rate_on_the_graphics_card()
+    {
+        TestMedia.Require();
+        Assert.SkipWhen(VideoStreamReader.HardwareProblem is not null, $"No hardware video decoding here: {VideoStreamReader.HardwareProblem}");
+        using var gl = OffscreenGl.TryCreate();
+        Assert.SkipWhen(gl is null, "No OpenGL here.");
+        var file = _media.Stamped("hd-look.mp4", 10, new VideoFormat(1920, 1080, 30));
+        var project = Looks.Apply(ProjectFactory.FromRecording(ProjectFactory.ReadAsset(file)), Looks.Find(Looks.SoftId)!);
+        foreach (var (id, start) in new[] { ("a", 0.5), ("b", 3.5), ("c", 6.5) })
+        {
+            project = AutoZoom.AddZoom(project, new ZoomItem { Id = id, Start = start, Length = 3, Scale = 2, Focus = ZoomFocus.Fixed, MotionBlur = ZoomItem.DefaultMotionBlur, EaseIn = 1, EaseOut = 1 });
+        }
+
+        using var frames = new PreviewFrames(NullLoggerFactory.Instance, VideoDecoding.Hardware);
+        var stamps = new StampingFrames(frames);
+        var compositor = new FrameCompositor(stamps);
+        using var surface = gl!.Surface(1280, 720);
+        void Draw(double time, ref int missing)
+        {
+            var canvas = surface.Canvas;
+            canvas.Save();
+            canvas.Scale(1280f / 1920, 720f / 1080);
+            missing += compositor.Render(canvas, project, time).Missing;
+            canvas.Restore();
+            surface.Flush();
+            gl.Context.Submit(synchronous: true);
+        }
+
+        var ignored = 0;
+        frames.Update(project, 0, playing: false);
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        do
+        {
+            ignored = 0;
+            Draw(0, ref ignored);
+            Thread.Sleep(5);
+        }
+        while (ignored > 0 && DateTime.UtcNow < deadline);
+
+        stamps.Shown.Clear();
+        var moving = 0;
+        var draws = new List<double>();
+        var waited = 0;
+        var tick = Stopwatch.StartNew();
+        var next = TimeSpan.Zero;
+        while (tick.Elapsed.TotalSeconds < 10)
+        {
+            var time = tick.Elapsed.TotalSeconds;
+            frames.Update(project, time, playing: true);
+            var started = tick.Elapsed;
+            Draw(time, ref waited);
+            draws.Add((tick.Elapsed - started).TotalMilliseconds);
+            moving += compositor.Camera.Motion(project, time, 16) is null ? 0 : 1;
+            next += TimeSpan.FromSeconds(1 / 60.0);
+            var wait = next - tick.Elapsed;
+            if (wait > TimeSpan.Zero)
+            {
+                Thread.Sleep(wait);
+            }
+        }
+
+        var shown = stamps.Shown.Distinct().Count();
+        var sorted = draws.Order().ToList();
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"1080p with a look and motion blur on the graphics card: {shown} of 300 pictures shown, {waited} draws waited for a picture, {moving} of {draws.Count} draws blurred, {sorted.Average():0.0} ms a draw on average, {sorted[(int)(sorted.Count * 0.95)]:0.0} ms at the 95th percentile, {sorted[^1]:0.0} ms at most");
+        moving.Should().BeGreaterThan(100, "the camera has to be moving for this to mean anything");
+        shown.Should().BeGreaterThanOrEqualTo(297, "at least 99% of the pictures are shown at 30 fps");
+    }
 
     /// <summary>
     /// Phase 16 acceptance: the preview plays 1080p at full frame rate with hardware decoding. A 10 s 1080p30
