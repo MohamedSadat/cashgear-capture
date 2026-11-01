@@ -15,6 +15,11 @@
     <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\*" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
+  <!-- A project saved by 1.1.1 and the frames it drew then: what every later version must still draw. -->
+  <ItemGroup>
+    <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\CashGear.Capture.Media.Tests\StampedRecording.cs" Link="Media\StampedRecording.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\TestMedia.cs" Link="Media\TestMedia.cs" />
