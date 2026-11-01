@@ -131,6 +131,12 @@
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertZoomMenu}" Command="{Binding InsertZoomCommand}" ToolTip="{x:Static r:VideoEditorText.InsertZoomTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.AutoZoomMenu}" Command="{Binding MakeAutoZoomsCommand}" ToolTip="{x:Static r:VideoEditorText.AutoZoomTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.LayoutMenu}" ToolTip="{x:Static r:VideoEditorText.LayoutMenuTip}">
+          <MenuItem Header="{x:Static r:VideoEditorText.LayoutBubbleMenu}" Command="{Binding InsertBubbleLayoutCommand}" />
+          <MenuItem Header="{x:Static r:VideoEditorText.LayoutSideMenu}" Command="{Binding InsertSideBySideLayoutCommand}" />
+          <MenuItem Header="{x:Static r:VideoEditorText.LayoutCameraMenu}" Command="{Binding InsertCameraLayoutCommand}" />
+          <MenuItem Header="{x:Static r:VideoEditorText.LayoutScreenMenu}" Command="{Binding InsertScreenLayoutCommand}" />
+        </MenuItem>
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertCaptionMenu}" Command="{Binding InsertCaptionCommand}" ToolTip="{x:Static r:VideoEditorText.InsertCaptionTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.TranscribeMenu}" Command="{Binding TranscribeCommand}" ToolTip="{x:Static r:VideoEditorText.TranscribeMenuTip}" />
@@ -139,12 +145,17 @@
         <MenuItem Header="{x:Static r:VideoEditorText.ZoomInMenu}" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
         <MenuItem Header="{x:Static r:VideoEditorText.ZoomOutMenu}" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />
         <MenuItem Header="{x:Static r:VideoEditorText.FitTimelineMenu}" Command="{Binding ZoomFitCommand}" InputGestureText="Ctrl+0" />
+        <Separator />
+        <MenuItem Header="{x:Static r:VideoEditorText.LookAndCanvasMenu}" Command="{Binding ShowLookCommand}" ToolTip="{x:Static r:VideoEditorText.LookAndCanvasTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.UseLookMenu}" Command="{Binding UseLookForRecordingsCommand}" ToolTip="{x:Static r:VideoEditorText.UseLookTip}" />
       </MenuItem>
     </Menu>
 
     <Border DockPanel.Dock="Bottom" Padding="10,4" BorderThickness="0,1,0,0" BorderBrush="{p:Chrome Separator}">
       <DockPanel>
         <TextBlock DockPanel.Dock="Right" Text="{Binding Status}" Opacity="0.75" />
+        <!-- Read out as it changes: the person being found in the webcam's pictures. -->
+        <TextBlock DockPanel.Dock="Right" Text="{Binding WorkText}" Margin="0,0,16,0" AutomationProperties.LiveSetting="Polite" />
         <!-- Read out when it changes: what Tab selected, where a key moved it. -->
         <TextBlock x:Name="SelectionLine" Text="{Binding SelectionText, NotifyOnTargetUpdated=True}" TextTrimming="CharacterEllipsis"
                    AutomationProperties.LiveSetting="Polite" Binding.TargetUpdated="OnLiveTextUpdated" />
@@ -169,6 +180,21 @@
             </TextBlock.Style>
           </TextBlock>
           <ItemsControl ItemsSource="{Binding Properties}" Focusable="False" />
+
+          <!-- With nothing selected: the project's look and canvas. -->
+          <StackPanel>
+            <StackPanel.Style>
+              <Style TargetType="StackPanel">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding HasProperties}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </StackPanel.Style>
+            <TextBlock Text="{x:Static r:VideoEditorText.LookPanelTitle}" FontWeight="SemiBold" FontSize="14" Margin="0,12,0,4" />
+            <ItemsControl ItemsSource="{Binding LookProperties}" Focusable="False" />
+          </StackPanel>
         </StackPanel>
       </ScrollViewer>
     </Border>

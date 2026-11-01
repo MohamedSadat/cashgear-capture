@@ -1395,4 +1395,372 @@
     <value>Captions progress</value>
     <comment>screen reader name of the Captions from Speech window's progress bar</comment>
   </data>
+  <data name="LookAndCanvasMenu" xml:space="preserve">
+    <value>_Look and Canvas</value>
+    <comment>View menu</comment>
+  </data>
+  <data name="LookAndCanvasTip" xml:space="preserve">
+    <value>Shows the look and the canvas in the panel on the right.</value>
+    <comment>tooltip</comment>
+  </data>
+  <data name="UseLookMenu" xml:space="preserve">
+    <value>Use This Look for New _Recordings</value>
+    <comment>View menu</comment>
+  </data>
+  <data name="UseLookTip" xml:space="preserve">
+    <value>Recordings opened from now on start with the look this project has.</value>
+    <comment>tooltip</comment>
+  </data>
+  <data name="LayoutMenu" xml:space="preserve">
+    <value>_Layout</value>
+    <comment>Insert menu</comment>
+  </data>
+  <data name="LayoutMenuTip" xml:space="preserve">
+    <value>How the screen and the webcam share the picture from the playhead on.</value>
+    <comment>tooltip</comment>
+  </data>
+  <data name="LayoutBubbleMenu" xml:space="preserve">
+    <value>_Corner Bubble</value>
+    <comment>Insert › Layout</comment>
+  </data>
+  <data name="LayoutSideMenu" xml:space="preserve">
+    <value>_Side by Side</value>
+    <comment>Insert › Layout</comment>
+  </data>
+  <data name="LayoutCameraMenu" xml:space="preserve">
+    <value>C_amera Only</value>
+    <comment>Insert › Layout</comment>
+  </data>
+  <data name="LayoutScreenMenu" xml:space="preserve">
+    <value>Sc_reen Only</value>
+    <comment>Insert › Layout</comment>
+  </data>
+  <data name="LookPanelTitle" xml:space="preserve">
+    <value>Look and canvas</value>
+    <comment>the panel's title when nothing is selected</comment>
+  </data>
+  <data name="LookLabel" xml:space="preserve">
+    <value>Look</value>
+    <comment>panel: a named set of background and frame</comment>
+  </data>
+  <data name="LookCustom" xml:space="preserve">
+    <value>Your own</value>
+    <comment>the look when it was changed from every named one</comment>
+  </data>
+  <data name="SavedLooks" xml:space="preserve">
+    <value>Saved looks</value>
+    <comment>panel</comment>
+  </data>
+  <data name="SaveLookTitle" xml:space="preserve">
+    <value>Save This Look</value>
+    <comment>dialog title</comment>
+  </data>
+  <data name="MyLook" xml:space="preserve">
+    <value>My look</value>
+    <comment>suggested name</comment>
+  </data>
+  <data name="NewRecordingsLook" xml:space="preserve">
+    <value>New recordings open with: {0}</value>
+    <comment>{0}: a look's name</comment>
+  </data>
+  <data name="BackgroundOneColour" xml:space="preserve">
+    <value>One colour</value>
+    <comment>kind of background</comment>
+  </data>
+  <data name="BackgroundAcross" xml:space="preserve">
+    <value>Gradient across</value>
+    <comment>kind of background</comment>
+  </data>
+  <data name="BackgroundFromMiddle" xml:space="preserve">
+    <value>Gradient from the middle</value>
+    <comment>kind of background</comment>
+  </data>
+  <data name="BackgroundPictureFile" xml:space="preserve">
+    <value>A picture</value>
+    <comment>kind of background</comment>
+  </data>
+  <data name="BackgroundBlurredScreen" xml:space="preserve">
+    <value>The screen, blurred</value>
+    <comment>kind of background</comment>
+  </data>
+  <data name="SecondColour" xml:space="preserve">
+    <value>Second colour</value>
+    <comment>panel</comment>
+  </data>
+  <data name="GradientDirection" xml:space="preserve">
+    <value>Direction</value>
+    <comment>panel: a gradient's angle</comment>
+  </data>
+  <data name="PictureLabel" xml:space="preserve">
+    <value>Picture</value>
+    <comment>panel</comment>
+  </data>
+  <data name="Parallax" xml:space="preserve">
+    <value>Moves with zooms</value>
+    <comment>panel: the background moves a little in a zoom</comment>
+  </data>
+  <data name="Padding" xml:space="preserve">
+    <value>Space around</value>
+    <comment>panel: padding round the screen</comment>
+  </data>
+  <data name="Corners" xml:space="preserve">
+    <value>Corners</value>
+    <comment>panel: radius</comment>
+  </data>
+  <data name="ShadowStrength" xml:space="preserve">
+    <value>Shadow</value>
+    <comment>panel</comment>
+  </data>
+  <data name="ShadowSoftness" xml:space="preserve">
+    <value>Shadow softness</value>
+    <comment>panel</comment>
+  </data>
+  <data name="ShadowDrop" xml:space="preserve">
+    <value>Shadow drop</value>
+    <comment>panel: how far it falls below</comment>
+  </data>
+  <data name="ShadowColour" xml:space="preserve">
+    <value>Shadow colour</value>
+    <comment>panel</comment>
+  </data>
+  <data name="InnerLine" xml:space="preserve">
+    <value>Inner line</value>
+    <comment>panel: a line just inside the picture's edge</comment>
+  </data>
+  <data name="InnerLineColour" xml:space="preserve">
+    <value>Inner line colour</value>
+    <comment>panel</comment>
+  </data>
+  <data name="DeviceLabel" xml:space="preserve">
+    <value>Device</value>
+    <comment>panel: a device drawn round the screen</comment>
+  </data>
+  <data name="DeviceNone" xml:space="preserve">
+    <value>None</value>
+    <comment>device frame</comment>
+  </data>
+  <data name="DeviceBrowser" xml:space="preserve">
+    <value>Browser window</value>
+    <comment>device frame</comment>
+  </data>
+  <data name="DeviceLaptop" xml:space="preserve">
+    <value>Laptop</value>
+    <comment>device frame</comment>
+  </data>
+  <data name="DeviceMonitor" xml:space="preserve">
+    <value>Monitor</value>
+    <comment>device frame</comment>
+  </data>
+  <data name="DevicePhone" xml:space="preserve">
+    <value>Phone</value>
+    <comment>device frame</comment>
+  </data>
+  <data name="CanvasShapeLabel" xml:space="preserve">
+    <value>Canvas</value>
+    <comment>panel: the video's shape</comment>
+  </data>
+  <data name="ShapeWide" xml:space="preserve">
+    <value>16:9, wide</value>
+    <comment>canvas shape</comment>
+  </data>
+  <data name="ShapeVertical" xml:space="preserve">
+    <value>9:16, Shorts, Reels, TikTok</value>
+    <comment>canvas shape</comment>
+  </data>
+  <data name="ShapeSquare" xml:space="preserve">
+    <value>1:1, square</value>
+    <comment>canvas shape</comment>
+  </data>
+  <data name="ShapePortrait" xml:space="preserve">
+    <value>4:5, portrait</value>
+    <comment>canvas shape</comment>
+  </data>
+  <data name="ShapeOther" xml:space="preserve">
+    <value>{0} × {1}</value>
+    <comment>a canvas of no usual shape: width × height</comment>
+  </data>
+  <data name="FramingLabel" xml:space="preserve">
+    <value>Screen on the canvas</value>
+    <comment>panel</comment>
+  </data>
+  <data name="FramingFit" xml:space="preserve">
+    <value>Fit all of it</value>
+    <comment>framing</comment>
+  </data>
+  <data name="FramingFill" xml:space="preserve">
+    <value>Fill, from the middle</value>
+    <comment>framing</comment>
+  </data>
+  <data name="FramingFollow" xml:space="preserve">
+    <value>Fill, following the pointer</value>
+    <comment>framing</comment>
+  </data>
+  <data name="ReframeNoMetadata" xml:space="preserve">
+    <value>No recording here has a metadata file, so the picture stays on its middle.</value>
+    <comment>panel note</comment>
+  </data>
+  <data name="ReframeAllInView" xml:space="preserve">
+    <value>The pointer stays in the picture all along.</value>
+    <comment>panel note</comment>
+  </data>
+  <data name="ReframeOutOfView" xml:space="preserve">
+    <value>The pointer moves too fast to follow at: {0}.</value>
+    <comment>panel note; {0}: a list of times</comment>
+  </data>
+  <data name="ExportPointerOutOfView" xml:space="preserve">
+    <value> The pointer moved too fast to follow at: {0}.</value>
+    <comment>after an export; {0}: a list of times</comment>
+  </data>
+  <data name="SpringEasing" xml:space="preserve">
+    <value>Spring</value>
+    <comment>a zoom's movement</comment>
+  </data>
+  <data name="ZoomMovement" xml:space="preserve">
+    <value>Movement</value>
+    <comment>panel: how a zoom moves</comment>
+  </data>
+  <data name="MotionBlur" xml:space="preserve">
+    <value>Motion blur</value>
+    <comment>panel</comment>
+  </data>
+  <data name="SharpPointer" xml:space="preserve">
+    <value>Draw it as a sharp shape</value>
+    <comment>panel: the pointer</comment>
+  </data>
+  <data name="PressAnimation" xml:space="preserve">
+    <value>Shrink it at a click</value>
+    <comment>panel: the pointer</comment>
+  </data>
+  <data name="KeepPointerSize" xml:space="preserve">
+    <value>Keep its size in a zoom</value>
+    <comment>panel: the pointer</comment>
+  </data>
+  <data name="LayoutTitle" xml:space="preserve">
+    <value>Layout</value>
+    <comment>the panel's title for a layout</comment>
+  </data>
+  <data name="KindLayout" xml:space="preserve">
+    <value>Layout</value>
+    <comment>a track's kind</comment>
+  </data>
+  <data name="LayoutChangeOver" xml:space="preserve">
+    <value>Change over</value>
+    <comment>panel: how long the switch takes</comment>
+  </data>
+  <data name="LayoutNeedsWebcam" xml:space="preserve">
+    <value>This project has no webcam to lay out beside the screen.</value>
+    <comment>message</comment>
+  </data>
+  <data name="WebcamBackdrop" xml:space="preserve">
+    <value>Behind the person</value>
+    <comment>panel: the webcam's background</comment>
+  </data>
+  <data name="BackdropKeep" xml:space="preserve">
+    <value>As it is</value>
+    <comment>webcam background</comment>
+  </data>
+  <data name="BackdropBlur" xml:space="preserve">
+    <value>Blurred</value>
+    <comment>webcam background</comment>
+  </data>
+  <data name="BackdropReplace" xml:space="preserve">
+    <value>Replaced</value>
+    <comment>webcam background</comment>
+  </data>
+  <data name="BackdropRemove" xml:space="preserve">
+    <value>Removed</value>
+    <comment>webcam background</comment>
+  </data>
+  <data name="BackdropNote" xml:space="preserve">
+    <value>The person is found on this PC, once per recording. The small model is downloaded the first time.</value>
+    <comment>panel note</comment>
+  </data>
+  <data name="FindingPerson" xml:space="preserve">
+    <value>Finding the person in the webcam: {0:P0}</value>
+    <comment>status line</comment>
+  </data>
+  <data name="MasksFailed" xml:space="preserve">
+    <value>The webcam's background can't be changed: {0}</value>
+    <comment>{0}: what went wrong</comment>
+  </data>
+  <data name="PickPictureTitle" xml:space="preserve">
+    <value>Choose a Picture</value>
+    <comment>dialog title</comment>
+  </data>
+  <data name="PicturesFilter" xml:space="preserve">
+    <value>Pictures|*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.gif|All files|*.*</value>
+    <comment>file dialog filter</comment>
+  </data>
+  <data name="UndoLook" xml:space="preserve">
+    <value>Look</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCanvasBackground" xml:space="preserve">
+    <value>Background</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoScreenLook" xml:space="preserve">
+    <value>Screen's look</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCanvasShape" xml:space="preserve">
+    <value>Canvas</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoFraming" xml:space="preserve">
+    <value>Screen on the canvas</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoAddLayout" xml:space="preserve">
+    <value>Add a layout</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoLayout" xml:space="preserve">
+    <value>Layout</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoLayoutTime" xml:space="preserve">
+    <value>Layout's change over</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoCorners" xml:space="preserve">
+    <value>Corners</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoShadow" xml:space="preserve">
+    <value>Shadow</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoDevice" xml:space="preserve">
+    <value>Device</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoInnerLine" xml:space="preserve">
+    <value>Inner line</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoWebcamBackdrop" xml:space="preserve">
+    <value>Behind the person</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoZoomMovement" xml:space="preserve">
+    <value>Zoom's movement</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoMotionBlur" xml:space="preserve">
+    <value>Motion blur</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoSharpPointer" xml:space="preserve">
+    <value>Sharp pointer</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoPressAnimation" xml:space="preserve">
+    <value>Pointer at a click</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoKeepPointerSize" xml:space="preserve">
+    <value>Pointer's size in a zoom</value>
+    <comment>undo step</comment>
+  </data>
 </root>

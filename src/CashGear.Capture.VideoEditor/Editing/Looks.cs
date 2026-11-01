@@ -163,6 +163,17 @@ public static class Looks
         return project.Tracks.Where(t => t.Kind == TrackKind.Video).SelectMany(t => t.Clips).Select(c => c.Placement ?? Placement.Fit).FirstOrDefault();
     }
 
+    /// <summary>The project with every screen clip's placement changed.</summary>
+    public static VideoProject WithScreenPlacement(VideoProject project, Func<Placement, Placement> change)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(change);
+        return project with
+        {
+            Tracks = [.. project.Tracks.Select(t => t.Kind == TrackKind.Video ? t with { Items = [.. t.Items.Select(i => i is Clip c ? c with { Placement = change(c.Placement ?? Placement.Fit) } : i)] } : t)],
+        };
+    }
+
     /// <summary>A picture file as an asset of a project (not a recording: it has no streams).</summary>
     public static MediaAsset PictureAsset(string path) => new(Ids.New(), Path.GetFullPath(path), 0, []);
 

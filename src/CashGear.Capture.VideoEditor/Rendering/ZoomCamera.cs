@@ -75,8 +75,11 @@ public sealed class ZoomCamera
     /// <summary>Auto-reframe's spring is stiffer than a zoom's: a smaller view must keep up with the pointer.</summary>
     public const double ReframeStiffness = 14;
 
-    /// <summary>Auto-reframe starts moving this long (seconds) before the pointer does, since it knows where it goes.</summary>
-    public const double ReframeLookAhead = 0.15;
+    /// <summary>
+    /// Auto-reframe reads the pointer this long (seconds) ahead, since it knows where it goes: as long as two critically
+    /// damped springs in a row lag behind something moving steadily (2/ω each), so at a steady speed the lag cancels out.
+    /// </summary>
+    public const double ReframeLookAhead = 4 / ReframeStiffness;
 
     /// <summary>A view moving less than this (canvas pixels) while the shutter is open isn't blurred at all.</summary>
     public const double LeastBlurredMovement = 0.5;

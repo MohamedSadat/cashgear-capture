@@ -165,7 +165,8 @@ public sealed class MaskFile : IDisposable
 public sealed partial class WebcamMasks(string folder, Func<CancellationToken, Task<IPersonSegmenter>> segmenter, ILogger<WebcamMasks> logger, VideoDecoding decoding = VideoDecoding.Hardware) : IWebcamMasks, IDisposable
 {
     private readonly ConcurrentDictionary<string, Lazy<MaskFile?>> _open = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, Task> _making = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Task> _making = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Lock _gate = new();
     private readonly SemaphoreSlim _oneAtATime = new(1, 1);
 
     /// <summary>Raised on a worker thread when a stream's masks are ready.</summary>
@@ -191,7 +192,29 @@ public sealed partial class WebcamMasks(string folder, Func<CancellationToken, T
             return Task.CompletedTask;
         }
 
-        return _making.GetOrAdd(path, _ => Task.Run(() => MakeAsync(asset, stream, path, progress, ct), ct));
+        lock (_gate)
+        {
+            if (_making.TryGetValue(path, out var running))
+            {
+                return running;
+            }
+
+            // Gone from the list once it is over, however it ends, so asking again after a cancel starts again.
+            var task = Task.Run(() => MakeAsync(asset, stream, path, progress, ct), ct);
+            _making[path] = task;
+            _ = task.ContinueWith(
+                _ =>
+                {
+                    lock (_gate)
+                    {
+                        _making.Remove(path);
+                    }
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
+            return task;
+        }
     }
 
     public SKImage? Mask(MediaAsset asset, int stream, double sourceTime)
@@ -281,7 +304,6 @@ public sealed partial class WebcamMasks(string folder, Func<CancellationToken, T
         }
         finally
         {
-            _making.TryRemove(path, out _);
             _oneAtATime.Release();
             if (File.Exists(partial))
             {

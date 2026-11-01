@@ -170,7 +170,7 @@ public static class ProjectFactory
         if (metadata is { OverlaysInVideo: false })
         {
             var effects = new List<TimelineItem>();
-            EffectItem Effect(EffectKind kind) => new() { Id = Ids.New(), Kind = kind, Start = Times.Round(at), Length = Times.Round(asset.Duration) };
+            EffectItem Effect(EffectKind kind) => new() { Id = Ids.New(), Kind = kind, Start = Times.Round(at), Length = Times.Round(asset.Duration), SharpPointer = kind == EffectKind.Pointer, PressAnimation = kind == EffectKind.Pointer };
             if (metadata.Clicks.Count > 0)
             {
                 effects.Add(Effect(EffectKind.Clicks));

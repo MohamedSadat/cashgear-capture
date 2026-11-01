@@ -4,6 +4,8 @@ using System.IO;
 using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Licensing;
+using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Model;
 using EffectKind = CashGear.Capture.VideoEditor.Model.EffectKind;
 using CashGear.Capture.VideoEditor.Rendering;
@@ -70,16 +72,23 @@ public static class ItemProperties
             EffectItem => VideoEditorText.PointerEffects,
             ZoomItem => VideoEditorText.ZoomTitle,
             CaptionItem => VideoEditorText.CaptionTitle,
+            LayoutItem => VideoEditorText.LayoutTitle,
             _ => VideoEditorText.ItemTitle,
         };
     }
 
-    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null, ClipActions? actions = null, CaptionActions? captions = null)
+    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null, ClipActions? actions = null, CaptionActions? captions = null, IFeatureGate? features = null, Func<string?>? pickPicture = null, Action<MediaAsset, string, string>? addAsset = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(item);
         ArgumentNullException.ThrowIfNull(current);
         ArgumentNullException.ThrowIfNull(apply);
+        var gate = features ?? FeatureGate.Open;
+        if (item is LayoutItem layout)
+        {
+            return ForLayout(layout, current, apply);
+        }
+
         if (item is AnnotationItem annotation)
         {
             return ForAnnotation(annotation, current, apply, keyframes);
@@ -92,7 +101,7 @@ public static class ItemProperties
 
         if (item is ZoomItem zoom)
         {
-            return ForZoom(project, zoom, current, apply);
+            return ForZoom(project, zoom, current, apply, gate);
         }
 
         if (item is CaptionItem caption)
@@ -209,6 +218,295 @@ public static class ItemProperties
             Change(mirror, "mirror", VideoEditorText.UndoMirror, c => c with { Placement = (c.Placement ?? Placement.Fit) with { Mirror = mirror.Value } });
             var opacity = new NumberParameter(VideoEditorText.Opacity, 0, 100, placement.Opacity * 100, 1, " %");
             Change(opacity, "opacity", VideoEditorText.UndoOpacity, c => c with { Placement = (c.Placement ?? Placement.Fit) with { Opacity = Fraction(opacity) } });
+            var corners = new NumberParameter(VideoEditorText.Corners, 0, 200, placement.CornerRadius, 1, " px");
+            Change(corners, "corners", VideoEditorText.UndoCorners, c => c with { Placement = (c.Placement ?? Placement.Fit) with { CornerRadius = corners.Value } });
+            var shadow = new NumberParameter(VideoEditorText.ShadowStrength, 0, 100, (placement.Shadow?.Opacity ?? 0) * 100, 1, " %");
+            Change(shadow, "shadow", VideoEditorText.UndoShadow, c => c with { Placement = WithShadow(c.Placement ?? Placement.Fit, project.Canvas, Fraction(shadow)) });
+            if (found.Track.Kind == TrackKind.Webcam && gate.IsEnabled(ProFeature.WebcamBackground))
+            {
+                AddBackdrop(clip, list, current, apply, pickPicture, addAsset);
+            }
+        }
+
+        return list;
+    }
+
+    /// <summary>A placement with a shadow of this strength: a soft one in proportion to the canvas when it had none, none at 0.</summary>
+    private static Placement WithShadow(Placement placement, ProjectCanvas canvas, double strength)
+    {
+        if (strength <= 0)
+        {
+            return placement with { Shadow = null };
+        }
+
+        var scale = canvas.Height / 1080.0;
+        return placement with { Shadow = (placement.Shadow ?? new PlacementShadow(0, Math.Round(16 * scale, 2), Math.Round(24 * scale, 2))) with { Opacity = strength } };
+    }
+
+    /// <summary>A webcam clip's background: what is done with what is behind the person.</summary>
+    private static void AddBackdrop(Clip clip, List<EditParameter> list, Func<VideoProject> current, Apply apply, Func<string?>? pickPicture, Action<MediaAsset, string, string>? addAsset)
+    {
+        var backdrop = clip.Background ?? new WebcamBackground();
+        void Change<T>(T parameter, [Localizable(false)] string key, Func<WebcamBackground, WebcamBackground> update)
+            where T : EditParameter
+        {
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is "Value" or "Selected" && current().Find(clip.Id)?.Item is Clip now)
+                {
+                    apply(now with { Background = update(now.Background ?? new WebcamBackground()) }, VideoEditorText.UndoWebcamBackdrop, $"property {clip.Id} {key}");
+                }
+            };
+            list.Add(parameter);
+        }
+
+        var effect = new ChoiceParameter(VideoEditorText.WebcamBackdrop, [new(BackgroundEffect.None, VideoEditorText.BackdropKeep), new(BackgroundEffect.Blur, VideoEditorText.BackdropBlur), new(BackgroundEffect.Replace, VideoEditorText.BackdropReplace), new(BackgroundEffect.Remove, VideoEditorText.BackdropRemove)], backdrop.Effect);
+        var strength = new NumberParameter(VideoEditorText.Blur, 2, 60, backdrop.Strength, 1, " px") { IsVisible = backdrop.Effect == BackgroundEffect.Blur };
+        var color = new ColorParameter(VideoEditorText.Colour, FrameCompositor.Color(backdrop.Color, SKColors.Black)) { IsVisible = backdrop.Effect == BackgroundEffect.Replace };
+        var picture = new FileParameter(VideoEditorText.PictureLabel, backdrop.PictureAssetId is { } id ? current().Asset(id)?.Path : null, pickPicture ?? (() => null)) { IsVisible = backdrop.Effect == BackgroundEffect.Replace };
+        effect.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Selected")
+            {
+                var chosen = effect.As<BackgroundEffect>();
+                strength.IsVisible = chosen == BackgroundEffect.Blur;
+                color.IsVisible = chosen == BackgroundEffect.Replace;
+                picture.IsVisible = chosen == BackgroundEffect.Replace;
+            }
+        };
+        Change(effect, "backdrop", b => b with { Effect = effect.As<BackgroundEffect>() });
+        Change(strength, "backdrop blur", b => b with { Strength = strength.Value });
+        Change(color, "backdrop colour", b => b with { Color = Hex(color.Value.Value), PictureAssetId = null });
+        picture.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Path" && picture.Path is { } path && current() is var project)
+            {
+                // The picture joins the project's media and the clip uses it, as one undo step.
+                var asset = project.Assets.FirstOrDefault(a => string.Equals(a.Path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase)) ?? Looks.PictureAsset(path);
+                var mergeKey = $"property {clip.Id} picture {asset.Id}";
+                addAsset?.Invoke(asset, VideoEditorText.UndoWebcamBackdrop, mergeKey);
+                if (current().Find(clip.Id)?.Item is Clip latest)
+                {
+                    apply(latest with { Background = (latest.Background ?? new WebcamBackground()) with { PictureAssetId = asset.Id } }, VideoEditorText.UndoWebcamBackdrop, mergeKey);
+                }
+            }
+        };
+        list.Add(picture);
+        list.Add(new NoteParameter(VideoEditorText.BackdropNote));
+    }
+
+    /// <summary>A layout's kind and how long the change into it takes.</summary>
+    private static IReadOnlyList<EditParameter> ForLayout(LayoutItem layout, Func<VideoProject> current, Apply apply)
+    {
+        var list = new List<EditParameter>();
+        void Change<T>(T parameter, [Localizable(false)] string key, string name, Func<LayoutItem, LayoutItem> update)
+            where T : EditParameter
+        {
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is "Value" or "Selected" && current().Find(layout.Id)?.Item is LayoutItem now)
+                {
+                    apply(update(now), name, $"property {layout.Id} {key}");
+                }
+            };
+            list.Add(parameter);
+        }
+
+        var kind = new ChoiceParameter(VideoEditorText.LayoutTitle, [.. Enum.GetValues<LayoutKind>().Select(k => new Choice(k, CashGear.Capture.VideoEditor.Timeline.TimelineRenderer.LayoutLabel(k)))], layout.Kind);
+        Change(kind, "layout", VideoEditorText.UndoLayout, l => l with { Kind = kind.As<LayoutKind>(), Auto = false });
+        var time = new NumberParameter(VideoEditorText.LayoutChangeOver, 0, 3, layout.Transition, 0.1, VideoEditorText.SecondsUnit);
+        Change(time, "layout time", VideoEditorText.UndoLayoutTime, l => l with { Transition = Math.Round(time.Value, 2), Auto = false });
+        return list;
+    }
+
+    /// <summary>What the look panel asks of the window.</summary>
+    /// <param name="Looks">The looks to choose from.</param>
+    /// <param name="SavedNames">The looks saved by name.</param>
+    /// <param name="ChangeInPlace">A change that keeps the panel: (undo step's name, merge key, change).</param>
+    /// <param name="ChangeAndRemake">A change after which the panel is made again.</param>
+    public sealed record LookActions(
+        IReadOnlyList<StudioLook> Looks,
+        IReadOnlyList<string> SavedNames,
+        Action<string> ApplyLook,
+        Func<Task> SaveLook,
+        Func<string, Task> DeleteLook,
+        System.Windows.Input.ICommand UseForRecordings,
+        string NewRecordingsLook,
+        Action<string, string, Func<VideoProject, VideoProject>> ChangeInPlace,
+        Action<string, string, Func<VideoProject, VideoProject>> ChangeAndRemake,
+        Func<string?> PickPicture,
+        Func<string> ReframeNote);
+
+    /// <summary>The project's look and canvas, for the panel when nothing is selected.</summary>
+    public static IReadOnlyList<EditParameter> ForProject(VideoProject project, Func<VideoProject> current, LookActions actions, IFeatureGate? features = null)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(actions);
+        var gate = features ?? FeatureGate.Open;
+        var pro = gate.IsEnabled(ProFeature.StudioLook);
+        var list = new List<EditParameter>();
+        const string custom = "";
+        var shown = Looks.Current(project, actions.Looks);
+        var choices = new List<Choice>(actions.Looks.Select(l => new Choice(l.Id, l.Name)));
+        if (shown is null)
+        {
+            choices.Add(new Choice(custom, VideoEditorText.LookCustom));
+        }
+
+        var look = new ChoiceParameter(VideoEditorText.LookLabel, choices, shown?.Id ?? custom);
+        look.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Selected" && look.As<string>() is { Length: > 0 } id)
+            {
+                actions.ApplyLook(id);
+            }
+        };
+        list.Add(look);
+        if (pro)
+        {
+            var saved = new PresetsParameter(VideoEditorText.SavedLooks, actions.ApplyLook, actions.SaveLook, actions.DeleteLook);
+            saved.Refresh(actions.SavedNames, shown?.Name);
+            list.Add(saved);
+        }
+
+        list.Add(new ActionParameter(VideoEditorText.NewRecordingsLook(actions.NewRecordingsLook), new CommunityToolkit.Mvvm.Input.RelayCommand(() => actions.UseForRecordings.Execute(null))));
+
+        // The background.
+        void InPlace(string name, [Localizable(false)] string key, Func<VideoProject, VideoProject> change) => actions.ChangeInPlace(name, key, change);
+        void Remake(string name, [Localizable(false)] string key, Func<VideoProject, VideoProject> change) => actions.ChangeAndRemake(name, key, change);
+        var background = project.Canvas.Background;
+        void Background([Localizable(false)] string key, Func<CanvasBackground, CanvasBackground> change) =>
+            InPlace(VideoEditorText.UndoCanvasBackground, key, p => p with { Canvas = p.Canvas with { Background = change(p.Canvas.Background) } });
+        void Watch(EditParameter parameter, Action changed)
+        {
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is "Value" or "Selected")
+                {
+                    changed();
+                }
+            };
+            list.Add(parameter);
+        }
+
+        var gradient = background.Kind is BackgroundKind.LinearGradient or BackgroundKind.RadialGradient;
+        var kind = new ChoiceParameter(VideoEditorText.Background,
+        [
+            new(BackgroundKind.Color, VideoEditorText.BackgroundOneColour), new(BackgroundKind.LinearGradient, VideoEditorText.BackgroundAcross), new(BackgroundKind.RadialGradient, VideoEditorText.BackgroundFromMiddle),
+            new(BackgroundKind.Picture, VideoEditorText.BackgroundPictureFile), new(BackgroundKind.BlurredScreen, VideoEditorText.BackgroundBlurredScreen),
+        ], background.Kind);
+        var first = new ColorParameter(VideoEditorText.Colour, FrameCompositor.Color(background.Color, SKColors.Black)) { IsVisible = background.Kind is BackgroundKind.Color || gradient };
+        var second = new ColorParameter(VideoEditorText.SecondColour, FrameCompositor.Color(background.Color2, FrameCompositor.Color(background.Color, SKColors.Black))) { IsVisible = gradient };
+        var angle = new NumberParameter(VideoEditorText.GradientDirection, 0, 360, background.Angle, 5, "°") { IsVisible = background.Kind == BackgroundKind.LinearGradient };
+        var picture = new FileParameter(VideoEditorText.PictureLabel, background.PictureAssetId is { } id ? project.Asset(id)?.Path : null, actions.PickPicture) { IsVisible = background.Kind == BackgroundKind.Picture };
+        var blur = new NumberParameter(VideoEditorText.Blur, 4, 200, background.Blur, 2, " px") { IsVisible = background.Kind == BackgroundKind.BlurredScreen };
+        var parallax = new NumberParameter(VideoEditorText.Parallax, 0, 100, background.Parallax * 100, 5, " %") { IsVisible = background.Kind != BackgroundKind.Color };
+        kind.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Selected")
+            {
+                Remake(VideoEditorText.UndoCanvasBackground, "background kind", p => p with { Canvas = p.Canvas with { Background = p.Canvas.Background with { Kind = kind.As<BackgroundKind>() } } });
+            }
+        };
+        list.Add(kind);
+        Watch(first, () => Background("background colour", b => b with { Color = Hex(first.Value.Value) }));
+        Watch(second, () => Background("background second colour", b => b with { Color2 = Hex(second.Value.Value) }));
+        Watch(angle, () => Background("background angle", b => b with { Angle = angle.Value }));
+        picture.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Path" && picture.Path is { } path)
+            {
+                var asset = current().Assets.FirstOrDefault(a => string.Equals(a.Path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase)) ?? Looks.PictureAsset(path);
+                InPlace(VideoEditorText.UndoCanvasBackground, $"background picture {asset.Id}", p => p.WithAsset(asset) with { Canvas = p.Canvas with { Background = p.Canvas.Background with { PictureAssetId = asset.Id } } });
+            }
+        };
+        list.Add(picture);
+        Watch(blur, () => Background("background blur", b => b with { Blur = blur.Value }));
+        Watch(parallax, () => Background("background parallax", b => b with { Parallax = parallax.Value / 100 }));
+
+        // How the screen sits on it, for every screen clip.
+        var placement = Looks.ScreenPlacement(project) ?? Placement.Fit;
+        void Screen([Localizable(false)] string key, Func<Placement, Placement> change) =>
+            InPlace(VideoEditorText.UndoScreenLook, key, p => Looks.WithScreenPlacement(p, change));
+        var scale = project.Canvas.Height / 1080.0;
+        var padding = new NumberParameter(VideoEditorText.Padding, 0, 30, (1 - placement.Size) / 2 * 100, 0.5, " %");
+        Watch(padding, () => Screen("screen padding", s => s with { Size = Math.Round(1 - (2 * padding.Value / 100), 4) }));
+        var corners = new NumberParameter(VideoEditorText.Corners, 0, 200, placement.CornerRadius, 1, " px");
+        Watch(corners, () => Screen("screen corners", s => s with { CornerRadius = corners.Value }));
+        var strength = new NumberParameter(VideoEditorText.ShadowStrength, 0, 100, (placement.Shadow?.Opacity ?? 0) * 100, 1, " %");
+        Watch(strength, () => Screen("screen shadow", s => WithShadow(s, project.Canvas, strength.Value / 100)));
+        var soft = new NumberParameter(VideoEditorText.ShadowSoftness, 1, 200, placement.Shadow?.Blur ?? 24 * scale, 1, " px");
+        Watch(soft, () => Screen("screen shadow softness", s => s.Shadow is { } shadow ? s with { Shadow = shadow with { Blur = soft.Value } } : s));
+        var drop = new NumberParameter(VideoEditorText.ShadowDrop, 0, 200, placement.Shadow?.OffsetY ?? 16 * scale, 1, " px");
+        Watch(drop, () => Screen("screen shadow drop", s => s.Shadow is { } shadow ? s with { Shadow = shadow with { OffsetY = drop.Value } } : s));
+        var shade = new ColorParameter(VideoEditorText.ShadowColour, FrameCompositor.Color(placement.Shadow?.Color, SKColors.Black));
+        Watch(shade, () => Screen("screen shadow colour", s => s.Shadow is { } shadow ? s with { Shadow = shadow with { Color = Hex(shade.Value.Value) } } : s));
+        var line = new NumberParameter(VideoEditorText.InnerLine, 0, 12, placement.InsetBorderWidth, 0.5, " px");
+        Watch(line, () => Screen("screen line", s => s with { InsetBorderWidth = line.Value, InsetBorder = s.InsetBorder ?? "#30FFFFFF" }));
+        var lineColor = new ColorParameter(VideoEditorText.InnerLineColour, FrameCompositor.Color(placement.InsetBorder, SKColors.White));
+        Watch(lineColor, () => Screen("screen line colour", s => s with { InsetBorder = HexWithAlpha(lineColor.Value.Value, 0x60) }));
+        if (pro)
+        {
+            var device = new ChoiceParameter(VideoEditorText.DeviceLabel,
+            [
+                new(DeviceFrame.None, VideoEditorText.DeviceNone), new(DeviceFrame.Browser, VideoEditorText.DeviceBrowser), new(DeviceFrame.Laptop, VideoEditorText.DeviceLaptop),
+                new(DeviceFrame.Monitor, VideoEditorText.DeviceMonitor), new(DeviceFrame.Phone, VideoEditorText.DevicePhone),
+            ], placement.Frame);
+            device.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Selected")
+                {
+                    InPlace(VideoEditorText.UndoDevice, "screen device", p => Looks.WithScreenPlacement(p, s => s with { Frame = device.As<DeviceFrame>() }));
+                }
+            };
+            list.Add(device);
+        }
+
+        // The canvas.
+        var canvas = project.Canvas;
+        var known = CanvasEdits.ShapeOf(canvas);
+        var shapes = new List<Choice>
+        {
+            new(CanvasShape.Wide, VideoEditorText.ShapeWide), new(CanvasShape.Vertical, VideoEditorText.ShapeVertical), new(CanvasShape.Square, VideoEditorText.ShapeSquare), new(CanvasShape.Portrait, VideoEditorText.ShapePortrait),
+        };
+        if (known is null)
+        {
+            shapes.Add(new Choice(string.Empty, VideoEditorText.ShapeOther(canvas.Width, canvas.Height)));
+        }
+
+        var shape = new ChoiceParameter(VideoEditorText.CanvasShapeLabel, shapes, known is { } value ? value : string.Empty);
+        shape.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Selected" && shape.Selected.Value is CanvasShape chosen)
+            {
+                Remake(VideoEditorText.UndoCanvasShape, "canvas shape", p =>
+                {
+                    var (width, height) = CanvasEdits.SizeOf(chosen, Math.Min(p.Canvas.Width, p.Canvas.Height));
+                    var framing = chosen == CanvasShape.Wide ? ScreenFraming.Fit : pro ? ScreenFraming.FollowPointer : ScreenFraming.Fit;
+                    return CanvasEdits.Change(p, width, height, framing);
+                });
+            }
+        };
+        list.Add(shape);
+        var framings = new List<Choice> { new(ScreenFraming.Fit, VideoEditorText.FramingFit), new(ScreenFraming.Fill, VideoEditorText.FramingFill) };
+        if (pro)
+        {
+            framings.Add(new Choice(ScreenFraming.FollowPointer, VideoEditorText.FramingFollow));
+        }
+
+        var framing = new ChoiceParameter(VideoEditorText.FramingLabel, framings, canvas.Framing);
+        framing.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Selected")
+            {
+                Remake(VideoEditorText.UndoFraming, "canvas framing", p => CanvasEdits.Change(p, p.Canvas.Width, p.Canvas.Height, framing.As<ScreenFraming>()));
+            }
+        };
+        list.Add(framing);
+        if (canvas.Framing == ScreenFraming.FollowPointer)
+        {
+            list.Add(new NoteParameter(actions.ReframeNote()));
         }
 
         return list;
@@ -385,6 +683,12 @@ public static class ItemProperties
                     Change(scale, "pointer size", VideoEditorText.UndoPointerSize, e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { Scale = scale.Value / 100 } });
                     var smoothing = new NumberParameter(VideoEditorText.SmoothMovement, 0, 100, effect.Smoothing * 100, 5, " %");
                     Change(smoothing, "smoothing", VideoEditorText.UndoSmoothing, e => e with { Smoothing = smoothing.Value / 100 });
+                    var sharp = new SwitchParameter(VideoEditorText.SharpPointer, effect.SharpPointer);
+                    Change(sharp, "sharp pointer", VideoEditorText.UndoSharpPointer, e => e with { SharpPointer = sharp.Value });
+                    var press = new SwitchParameter(VideoEditorText.PressAnimation, effect.PressAnimation);
+                    Change(press, "press animation", VideoEditorText.UndoPressAnimation, e => e with { PressAnimation = press.Value });
+                    var keep = new SwitchParameter(VideoEditorText.KeepPointerSize, effect.ConstantPointerSize);
+                    Change(keep, "keep pointer size", VideoEditorText.UndoKeepPointerSize, e => e with { ConstantPointerSize = keep.Value });
                     var idle = new SwitchParameter(VideoEditorText.HideWhenStill, pointer.HideWhenIdle);
                     Change(idle, "hide when idle", VideoEditorText.UndoHideWhenIdle, e => e with { Pointer = (e.Pointer ?? new PointerOverlaySettings()) with { HideWhenIdle = idle.Value } });
                     var after = new NumberParameter(VideoEditorText.After, 0.5, 10, pointer.IdleSeconds, 0.5, VideoEditorText.SecondsUnit);
@@ -453,7 +757,7 @@ public static class ItemProperties
     }
 
     /// <summary>A zoom's settings; changing one makes it the user's own (Auto-Zoom no longer replaces it).</summary>
-    private static IReadOnlyList<EditParameter> ForZoom(VideoProject project, ZoomItem zoom, Func<VideoProject> current, Apply apply)
+    private static IReadOnlyList<EditParameter> ForZoom(VideoProject project, ZoomItem zoom, Func<VideoProject> current, Apply apply, IFeatureGate gate)
     {
         var list = new List<EditParameter>();
         void Change<T>(T parameter, [Localizable(false)] string key, string name, Func<ZoomItem, ZoomItem> update)
@@ -494,6 +798,14 @@ public static class ItemProperties
         Change(easeIn, "zoom in time", VideoEditorText.UndoZoomInTime, z => z with { EaseIn = Math.Round(easeIn.Value, 2) });
         var easeOut = new NumberParameter(VideoEditorText.ZoomOutOver, 0, 3, zoom.EaseOut, 0.1, VideoEditorText.SecondsUnit);
         Change(easeOut, "zoom out time", VideoEditorText.UndoZoomOutTime, z => z with { EaseOut = Math.Round(easeOut.Value, 2) });
+        var movement = new ChoiceParameter(VideoEditorText.ZoomMovement, [new(ZoomEasing.Smooth, VideoEditorText.Smooth), new(ZoomEasing.Spring, VideoEditorText.SpringEasing)], zoom.Easing);
+        Change(movement, "zoom movement", VideoEditorText.UndoZoomMovement, z => z with { Easing = movement.As<ZoomEasing>() });
+        if (gate.IsEnabled(ProFeature.StudioLook))
+        {
+            var blur = new NumberParameter(VideoEditorText.MotionBlur, 0, 100, zoom.MotionBlur * 100, 5, " %");
+            Change(blur, "motion blur", VideoEditorText.UndoMotionBlur, z => z with { MotionBlur = blur.Value / 100 });
+        }
+
         list.Add(new NoteParameter(VideoEditorText.ZoomNote));
         return list;
     }

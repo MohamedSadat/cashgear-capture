@@ -122,6 +122,7 @@ internal sealed partial class PreviewHost : Border
         if (_viewModel is not null)
         {
             _viewModel.PreviewBackend = UsesGpu ? VideoEditorText.PreviewOnGpu : VideoEditorText.PreviewInMemory;
+            _viewModel.Compositor.MotionSamples = UsesGpu ? VideoEditorViewModel.GpuMotionSamples : VideoEditorViewModel.MemoryMotionSamples;
         }
 
         Invalidate();

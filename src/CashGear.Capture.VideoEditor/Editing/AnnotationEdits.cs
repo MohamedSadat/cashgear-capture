@@ -60,7 +60,7 @@ public static class AnnotationEdits
     public static (VideoProject Project, string Id) AddEffect(VideoProject project, EffectKind kind, double at, double length)
     {
         ArgumentNullException.ThrowIfNull(project);
-        var item = new EffectItem { Id = Ids.New(), Kind = kind, Start = Times.Round(Math.Max(0, at)), Length = Times.Round(Math.Max(TimelineEdits.ShortestItem, length)) };
+        var item = new EffectItem { Id = Ids.New(), Kind = kind, Start = Times.Round(Math.Max(0, at)), Length = Times.Round(Math.Max(TimelineEdits.ShortestItem, length)), SharpPointer = kind == EffectKind.Pointer, PressAnimation = kind == EffectKind.Pointer };
         var free = project.Tracks.FirstOrDefault(t => t.Kind == TrackKind.Effect && !t.Locked && !t.Items.Any(i => i.Overlaps(item.Start, item.End)));
         if (free is not null)
         {

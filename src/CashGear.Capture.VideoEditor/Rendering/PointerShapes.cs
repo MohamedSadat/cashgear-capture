@@ -11,9 +11,11 @@ internal enum PointerKind
     IBeam,
 }
 
-/// <summary>A recorded pointer shape recognised as a standard one: how large it was and whether it was dark.</summary>
+/// <summary>A recorded pointer shape recognised as a standard one: how large it was, where it was, and whether it was dark.</summary>
 /// <param name="UnitScale">How many of the recording's pixels a unit of the drawn shape is.</param>
-internal sealed record VectorPointer(PointerKind Kind, float UnitScale, bool Dark);
+/// <param name="OffsetX">Where the recorded picture's solid part starts from its hotspot, in the recording's pixels.</param>
+/// <param name="OffsetY">The same, down.</param>
+internal sealed record VectorPointer(PointerKind Kind, float UnitScale, bool Dark, float OffsetX, float OffsetY);
 
 /// <summary>
 /// The standard arrow, hand and I-beam as shapes, drawn instead of the scaled picture Windows gave, so they stay sharp
@@ -88,19 +90,23 @@ internal static class PointerShapes
         var hotY = (cursor.HotspotY - top) / height;
         var filled = count / (width * height);
         var dark = light / count < 128;
-        if (aspect < 0.62f && hotX is > 0.25f and < 0.75f && hotY is > 0.3f and < 0.7f && filled < 0.75f)
+        var (offsetX, offsetY) = ((float)(left - cursor.HotspotX), (float)(top - cursor.HotspotY));
+
+        // Windows' I-beam isn't centred on its hotspot; the arrow and hand have theirs at their tips. A recorded I-beam
+        // is black with a white edge whatever the share of each (the screen inverted under it is drawn that way).
+        if (aspect < 0.62f && hotX is > 0.1f and < 0.9f && hotY is > 0.3f and < 0.7f && filled < 0.75f)
         {
-            return new VectorPointer(PointerKind.IBeam, height / 17f, dark);
+            return new VectorPointer(PointerKind.IBeam, height / 17.7f, true, offsetX, offsetY);
         }
 
         if (hotX < 0.15f && hotY < 0.12f && aspect is > 0.42f and < 0.8f && filled is > 0.3f and < 0.75f)
         {
-            return new VectorPointer(PointerKind.Arrow, height / 18.3f, dark);
+            return new VectorPointer(PointerKind.Arrow, height / 19.4f, dark, offsetX, offsetY);
         }
 
         if (hotY < 0.15f && hotX is > 0.2f and < 0.6f && aspect is > 0.55f and < 1f && filled > 0.4f)
         {
-            return new VectorPointer(PointerKind.Hand, height / 20.6f, dark);
+            return new VectorPointer(PointerKind.Hand, height / 21.7f, dark, offsetX, offsetY);
         }
 
         return null;
@@ -109,21 +115,27 @@ internal static class PointerShapes
     /// <summary>The pointer with its hotspot at (<paramref name="x"/>, <paramref name="y"/>), <paramref name="scale"/> times its recorded size.</summary>
     public static void Draw(SKCanvas canvas, VectorPointer pointer, float x, float y, float scale, float opacity)
     {
-        var (path, hotX, hotY) = pointer.Kind switch
+        var path = pointer.Kind switch
         {
-            PointerKind.Hand => (Hand, 5.6f, 0f),
-            PointerKind.IBeam => (IBeam, 4.5f, 8.5f),
-            _ => (Arrow, 0f, 0f),
+            PointerKind.Hand => Hand,
+            PointerKind.IBeam => IBeam,
+            _ => Arrow,
         };
         var alpha = (byte)Math.Round(Math.Clamp(opacity, 0, 1) * 255);
+        var line = pointer.Kind == PointerKind.IBeam ? 0.7f : 1.1f;
+        var bounds = path.Bounds;
         canvas.Save();
         canvas.Translate(x, y);
-        canvas.Scale(scale * pointer.UnitScale);
-        canvas.Translate(-hotX, -hotY);
+        canvas.Scale(scale);
+
+        // Where the recorded picture was round its hotspot, so the shape is where the pointer was seen.
+        canvas.Translate(pointer.OffsetX, pointer.OffsetY);
+        canvas.Scale(pointer.UnitScale);
+        canvas.Translate((line / 2) - bounds.Left, (line / 2) - bounds.Top);
 
         // A thin line of the other colour keeps it visible on anything.
-        using var line = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = pointer.Kind == PointerKind.IBeam ? 0.7f : 1.1f, StrokeJoin = SKStrokeJoin.Round, Color = (pointer.Dark ? SKColors.White : SKColors.Black).WithAlpha(alpha) };
-        canvas.DrawPath(path, line);
+        using var outline = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = line, StrokeJoin = SKStrokeJoin.Round, Color = (pointer.Dark ? SKColors.White : SKColors.Black).WithAlpha(alpha) };
+        canvas.DrawPath(path, outline);
         using var fill = new SKPaint { IsAntialias = true, Color = (pointer.Dark ? SKColors.Black : SKColors.White).WithAlpha(alpha) };
         canvas.DrawPath(path, fill);
         canvas.Restore();

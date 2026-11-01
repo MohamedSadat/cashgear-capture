@@ -4,6 +4,7 @@ using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Editor.Presets;
 using CashGear.Capture.Licensing;
 using CashGear.Capture.Media;
 using CashGear.Capture.Transcription;
@@ -42,6 +43,9 @@ public interface IVideoEditorDialogs
 
     /// <summary>Asks where to save a file (null: cancelled).</summary>
     string? AskSavePath(string title, string filter, string fileName, string? folder);
+
+    /// <summary>Asks for a name (null: cancelled).</summary>
+    string? AskName(string title, string suggested);
 }
 
 /// <summary>What every video editor window shares.</summary>
@@ -57,7 +61,9 @@ public sealed record VideoEditorServices(
     VideoDecoding Decoding = VideoDecoding.Hardware,
     ITranscriber? Transcriber = null,
     WhisperModelStore? Models = null,
-    IFeatureGate? Features = null)
+    IFeatureGate? Features = null,
+    IPresetStore? Presets = null,
+    WebcamMasks? Masks = null)
 {
     /// <summary>Which Pro features may be used (all of them in this version).</summary>
     public IFeatureGate Gate => Features ?? FeatureGate.Open;
@@ -103,6 +109,7 @@ public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Tra
         TrackKind.Audio => VideoEditorText.KindSound,
         TrackKind.Annotation => VideoEditorText.KindAnnotations,
         TrackKind.Caption => VideoEditorText.KindCaptions,
+        TrackKind.Layout => VideoEditorText.KindLayout,
         _ => VideoEditorText.KindEffects,
     };
 
@@ -131,6 +138,25 @@ public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Tra
     }
 }
 
+/// <summary>The look a recording starts with when it opens in the editor.</summary>
+internal static class NewRecordingLook
+{
+    /// <summary>The look's id or name: what was chosen, else the usual one.</summary>
+    public static string IdOf(VideoEditorServices services) => services.State.Current.VideoEditor?.DefaultLook ?? Looks.DefaultId;
+
+    public static VideoProject Apply(VideoProject project, VideoEditorServices services)
+    {
+        var look = Looks.Find(IdOf(services), services.Presets?.Current.SavedLooks);
+        if (look is null || look.Id == Looks.NoneId)
+        {
+            return project;
+        }
+
+        // A saved look is part of Pro; the built-in ones aren't.
+        return services.Gate.IsEnabled(ProFeature.StudioLook) || Looks.BuiltIn.Any(l => l.Id == look.Id) ? Looks.Apply(project, look) : project;
+    }
+}
+
 /// <summary>
 /// One video editor window's state: the project with its undo history, the timeline, playback and the preview.
 /// The preview's render loop calls <see cref="Tick"/> and <see cref="RenderPreview"/>; edits go through
@@ -148,6 +174,14 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     private volatile bool _waitingForPictures;
     private PreviewDrag? _drag;
     private int _drags;
+    private (ProjectCanvas Canvas, Placement? Screen)? _lookShown;
+    private readonly CancellationTokenSource _closing = new();
+    private readonly HashSet<string> _masksAsked = [];
+
+    /// <summary>Motion blur's samples in a preview on the graphics card, and in one drawn in memory, where they cost far more.</summary>
+    public const int GpuMotionSamples = 16;
+
+    public const int MemoryMotionSamples = 4;
 
     public VideoEditorViewModel(VideoProject project, string? projectPath, VideoEditorServices services, IVideoEditorDialogs dialogs)
     {
@@ -161,7 +195,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         View = new TimelineView();
         Timeline = new TimelineSession(History, View);
         Frames = new PreviewFrames(services.Loggers, services.Decoding);
-        Compositor = new FrameCompositor(Frames);
+        Compositor = new FrameCompositor(Frames) { Masks = services.Masks };
         Engine = new PlaybackEngine(() => History.Project, services.AudioOutput, _logger);
         History.Changed += (_, _) => OnProjectChanged();
         Timeline.Changed += (_, _) => OnTimelineChanged();
@@ -177,6 +211,8 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         services.Previews.Changed += OnPreviewsChanged;
         Engine.Ended += (_, _) => OnPropertyChanged(nameof(IsPlaying));
         RebuildTracks();
+        RefreshLook();
+        MakeMasks();
     }
 
     /// <summary>The preview should be drawn again (raised on any thread).</summary>
@@ -205,6 +241,13 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
     /// <summary>The selected item's settings (the properties panel).</summary>
     public ObservableCollection<EditParameter> Properties { get; } = [];
+
+    /// <summary>The project's look and canvas: the properties panel when nothing is selected.</summary>
+    public ObservableCollection<EditParameter> LookProperties { get; } = [];
+
+    /// <summary>What is being worked out behind the scenes, in words (empty when nothing is).</summary>
+    [ObservableProperty]
+    private string _workText = "";
 
     [ObservableProperty]
     private string _propertiesTitle = "";
@@ -426,7 +469,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         {
             if (selected is Clip clip && Project.Find(clip.Id)?.Track is { HasPictures: true })
             {
-                DrawSelection(canvas, PlacementEdits.Area(Project, clip), scale, corner: true, SelectionColor);
+                DrawSelection(canvas, PlacementEdits.Area(Project, clip, Timeline.Playhead), scale, corner: true, SelectionColor);
             }
             else if (selected is AnnotationItem annotation)
             {
@@ -460,7 +503,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
 
         Timeline.Select(item.Id);
-        var area = item is Clip clip ? PlacementEdits.Area(Project, clip) : default;
+        var area = item is Clip clip ? PlacementEdits.Area(Project, clip, Timeline.Playhead) : default;
         _drag = new PreviewDrag(Project, item, ToCanvas(x, y), area, hit.Grip, ++_drags);
         PreviewInvalidated?.Invoke(this, EventArgs.Empty);
     }
@@ -551,6 +594,8 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
 
         _disposed = true;
+        _closing.Cancel();
+        _closing.Dispose();
         _services.Previews.Changed -= OnPreviewsChanged;
         Engine.Dispose();
         Frames.Dispose();
@@ -996,6 +1041,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (Timeline.Playhead, ZoomItem.DefaultLength);
         var follow = Project.Assets.Any(a => Compositor.Overlays.Metadata(a) is not null);
         var (project, id) = AnnotationEdits.AddZoom(Project, from, length, follow);
+        if (_services.Gate.IsEnabled(ProFeature.StudioLook))
+        {
+            project = project.WithItem((ZoomItem)project.Find(id)!.Value.Item with { MotionBlur = ZoomItem.DefaultMotionBlur });
+        }
+
         History.Apply(VideoEditorText.UndoAddZoom, project);
         Timeline.SetRange(null);
         Timeline.Select(id);
@@ -1023,7 +1073,8 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     public int AutoZoomFromInput()
     {
         StopPlaying();
-        var (project, count) = CashGear.Capture.VideoEditor.Editing.AutoZoom.Apply(Project, Compositor.Overlays);
+        var options = new AutoZoomOptions(MotionBlur: _services.Gate.IsEnabled(ProFeature.StudioLook) ? ZoomItem.DefaultMotionBlur : 0);
+        var (project, count) = CashGear.Capture.VideoEditor.Editing.AutoZoom.Apply(Project, Compositor.Overlays, options);
         if (count == 0 && !MadeByAutoZoom(Project))
         {
             _dialogs.ShowError(Project.Assets.Any(a => Compositor.Overlays.Metadata(a) is not null)
@@ -1080,6 +1131,220 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         if (Timeline.Selected is AnnotationItem item)
         {
             History.Apply(VideoEditorText.UndoRemoveKeyframe, Project.WithItem(item.WithoutKeyframeAt(Timeline.Playhead, Project.Canvas.Fps)));
+        }
+    }
+
+    [RelayCommand]
+    private void InsertBubbleLayout() => AddLayout(LayoutKind.CornerBubble);
+
+    [RelayCommand]
+    private void InsertSideBySideLayout() => AddLayout(LayoutKind.SideBySide);
+
+    [RelayCommand]
+    private void InsertCameraLayout() => AddLayout(LayoutKind.CameraOnly);
+
+    [RelayCommand]
+    private void InsertScreenLayout() => AddLayout(LayoutKind.ScreenOnly);
+
+    /// <summary>A layout over the marked range (else from the playhead for 5 s), selected so the panel shows it; null when there is no webcam.</summary>
+    public string? AddLayout(LayoutKind kind)
+    {
+        StopPlaying();
+        if (!Project.Tracks.Any(t => t.Kind == TrackKind.Webcam && t.Clips.Any()))
+        {
+            _dialogs.ShowError(VideoEditorText.LayoutNeedsWebcam);
+            return null;
+        }
+
+        var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (Timeline.Playhead, LayoutItem.DefaultLength);
+        var (project, id) = CanvasEdits.AddLayout(Project, kind, from, length);
+        History.Apply(VideoEditorText.UndoAddLayout, project);
+        Timeline.SetRange(null);
+        Timeline.Select(id);
+        return id;
+    }
+
+    /// <summary>View › Look and Canvas: nothing selected, so the panel shows them.</summary>
+    [RelayCommand]
+    private void ShowLook()
+    {
+        StopPlaying();
+        Timeline.Select(null);
+    }
+
+    /// <summary>View › Use This Look for New Recordings: remembers the project's look, by name when it has one.</summary>
+    [RelayCommand]
+    private async Task UseLookForRecordingsAsync()
+    {
+        var look = Looks.Current(Project, AvailableLooks());
+        if (look is null)
+        {
+            look = await SaveLookAsync();
+            if (look is null)
+            {
+                return;
+            }
+        }
+
+        await _services.State.UpdateAsync(s => s with { VideoEditor = (s.VideoEditor ?? new VideoEditorState()) with { DefaultLook = look.Id } });
+        _lookShown = null;
+        RefreshLook();
+    }
+
+    /// <summary>The built-in looks, and the saved ones when they may be used.</summary>
+    private List<StudioLook> AvailableLooks()
+    {
+        var looks = Looks.BuiltIn.ToList();
+        if (_services.Presets is { } presets && _services.Gate.IsEnabled(ProFeature.StudioLook))
+        {
+            looks.AddRange(presets.Current.SavedLooks.Select(Looks.FromSaved));
+        }
+
+        return looks;
+    }
+
+    private void ApplyLook(string id)
+    {
+        if (AvailableLooks().FirstOrDefault(l => l.Id == id) is not { } look)
+        {
+            return;
+        }
+
+        StopPlaying();
+        _lookShown = null;
+        History.Apply(VideoEditorText.UndoLook, Looks.Apply(Project, look));
+    }
+
+    /// <summary>Saves the project's look under a name the user gives; null when they don't, or when it isn't allowed.</summary>
+    private async Task<StudioLook?> SaveLookAsync()
+    {
+        if (_services.Presets is not { } presets || !Allowed(ProFeature.StudioLook) || _dialogs.AskName(VideoEditorText.SaveLookTitle, VideoEditorText.MyLook) is not { Length: > 0 } name)
+        {
+            return null;
+        }
+
+        var saved = Looks.Capture(Project, name);
+        await presets.UpdateAsync(library => library.WithLook(saved));
+        _lookShown = null;
+        RefreshLook();
+        return Looks.FromSaved(saved);
+    }
+
+    private async Task DeleteLookAsync(string name)
+    {
+        if (_services.Presets is { } presets)
+        {
+            await presets.UpdateAsync(library => library.WithoutLook(name));
+            _lookShown = null;
+            RefreshLook();
+        }
+    }
+
+    /// <summary>A change from the look panel: one undo step, merged by its key; the panel stays while its own slider moves.</summary>
+    private void ChangeLook(string name, string key, Func<VideoProject, VideoProject> change)
+    {
+        var changed = change(Project);
+        _lookShown = (changed.Canvas, Looks.ScreenPlacement(changed));
+        History.Apply(name, changed, $"look {key}");
+    }
+
+    /// <summary>A change that shows or hides settings of the panel: it is made again afterwards.</summary>
+    private void ChangeLookAndPanel(string name, string key, Func<VideoProject, VideoProject> change)
+    {
+        _lookShown = null;
+        History.Apply(name, change(Project), $"look {key}");
+    }
+
+    /// <summary>A picture file chosen for the project, among its assets; null when none was chosen.</summary>
+    private string? PickPicture() => _dialogs.PickMedia(VideoEditorText.PickPictureTitle, VideoEditorText.PicturesFilter, Folder());
+
+    /// <summary>The look panel, made again when the look was changed by something other than the panel itself (undo).</summary>
+    private void RefreshLook()
+    {
+        var now = (Project.Canvas, Looks.ScreenPlacement(Project));
+        if (_lookShown == now)
+        {
+            return;
+        }
+
+        _lookShown = now;
+        LookProperties.Clear();
+        var actions = new ItemProperties.LookActions(
+            AvailableLooks(),
+            _services.Presets?.Current.SavedLooks.Select(l => l.Name).ToList() ?? [],
+            ApplyLook,
+            () => SaveLookAsync(),
+            DeleteLookAsync,
+            UseLookForRecordingsCommand,
+            Looks.Find(NewRecordingLook.IdOf(_services), _services.Presets?.Current.SavedLooks)?.Name ?? "",
+            ChangeLook,
+            ChangeLookAndPanel,
+            PickPicture,
+            ReframeNote);
+        foreach (var parameter in ItemProperties.ForProject(Project, () => Project, actions, _services.Gate))
+        {
+            LookProperties.Add(parameter);
+        }
+    }
+
+    /// <summary>What auto-reframe says about the pointer: when it can't follow it, or that it has nothing to follow.</summary>
+    private string ReframeNote()
+    {
+        if (!Project.Assets.Any(a => Compositor.Overlays.Metadata(a) is not null))
+        {
+            return VideoEditorText.ReframeNoMetadata;
+        }
+
+        var missed = Compositor.Camera.PointerOutOfView(Project);
+        return missed.Count == 0 ? VideoEditorText.ReframeAllInView : VideoEditorText.ReframeOutOfView(string.Join(", ", missed.Take(6).Select(m => Format(m.From))));
+    }
+
+    /// <summary>Starts working out the masks that webcam clips in the project need and don't have yet.</summary>
+    private void MakeMasks()
+    {
+        if (_services.Masks is not { } masks)
+        {
+            return;
+        }
+
+        foreach (var clip in Project.Tracks.Where(t => t.HasPictures && !t.Hidden).SelectMany(t => t.Clips).Where(c => c.Background is { Effect: not BackgroundEffect.None }))
+        {
+            if (Project.Asset(clip.AssetId) is { } asset && !masks.IsReady(asset, clip.Stream) && _masksAsked.Add($"{asset.Path}|{clip.Stream}"))
+            {
+                _ = MakeMasksAsync(masks, asset, clip.Stream);
+            }
+        }
+    }
+
+    private async Task MakeMasksAsync(WebcamMasks masks, MediaAsset asset, int stream)
+    {
+        var progress = new Progress<double>(done => WorkText = VideoEditorText.FindingPerson(done));
+        WorkText = VideoEditorText.FindingPerson(0);
+        try
+        {
+            await masks.EnsureAsync(asset, stream, progress, _closing.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception e) when (e is System.Net.Http.HttpRequestException or InvalidDataException or InvalidOperationException or FfmpegException or IOException or UnauthorizedAccessException)
+        {
+            LogMasksFailed(e, asset.Name);
+            _masksAsked.Remove($"{asset.Path}|{stream}");
+            _dialogs.ShowError(VideoEditorText.MasksFailed(e.Message));
+        }
+        finally
+        {
+            if (!_disposed)
+            {
+                WorkText = "";
+            }
+        }
+
+        if (!_disposed)
+        {
+            PreviewInvalidated?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -1209,6 +1474,9 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
         RebuildTracks();
         RefreshProperties();
+        RefreshLook();
+        MakeMasks();
+        OnPropertyChanged(nameof(Status));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(TimeText));
@@ -1280,7 +1548,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         {
             var actions = new ItemProperties.ClipActions(SetSpeed, SetFreezeLength, CrossfadeFrom, RemoveCrossfadeFrom);
             var captions = new ItemProperties.CaptionActions(SplitCaption, MergeCaption, ChangeCaptionStyle);
-            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions, captions))
+            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions, captions, _services.Gate, PickPicture, (asset, name, key) => History.Apply(name, Project.WithAsset(asset), key)))
             {
                 Properties.Add(parameter);
             }
@@ -1311,11 +1579,17 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         _ => VideoEditorText.UndoAddText,
     };
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The webcam masks of {Name} couldn't be worked out")]
+    private partial void LogMasksFailed(Exception e, string name);
+
     private static bool MadeByAutoZoom(VideoProject project) => project.Tracks.Any(t => t.Items.Any(i => i is ZoomItem { Auto: true }));
 
-    /// <summary>The selected zoom when it is under the playhead and nothing plays: the preview then shows its frame over the whole picture.</summary>
+    /// <summary>
+    /// The selected zoom when it is under the playhead and nothing plays: the preview then shows its frame over the
+    /// whole picture. Not where the screen covers a canvas of another shape: there is no whole picture to show it on.
+    /// </summary>
     private ZoomItem? SelectedZoom() =>
-        !Engine.IsPlaying && Timeline.Selected is ZoomItem zoom && zoom.Covers(Timeline.Playhead) ? zoom : null;
+        !Engine.IsPlaying && Project.Canvas.Framing == ScreenFraming.Fit && Timeline.Selected is ZoomItem zoom && zoom.Covers(Timeline.Playhead) ? zoom : null;
 
     /// <summary>The canvas area a zoom shows at the playhead, fully zoomed in.</summary>
     private SKRect ZoomFrame(ZoomItem zoom)

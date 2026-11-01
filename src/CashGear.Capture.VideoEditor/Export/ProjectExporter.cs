@@ -355,7 +355,18 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
 
             try
             {
-                await masks.EnsureAsync(asset, stream, null, ct).ConfigureAwait(false);
+                for (var made = false; !made;)
+                {
+                    try
+                    {
+                        await masks.EnsureAsync(asset, stream, null, ct).ConfigureAwait(false);
+                        made = true;
+                    }
+                    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                    {
+                        // Work a window that has closed had started, and this export joined: it does it itself now.
+                    }
+                }
             }
             catch (Exception e) when (e is HttpRequestException or InvalidDataException or InvalidOperationException or FfmpegException or IOException)
             {

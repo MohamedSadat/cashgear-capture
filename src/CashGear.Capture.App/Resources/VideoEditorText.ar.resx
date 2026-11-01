@@ -1206,4 +1206,280 @@
   <data name="TranscribeProgressName" xml:space="preserve">
     <value>تقدم إنشاء التسميات التوضيحية</value>
   </data>
+  <data name="LookAndCanvasMenu" xml:space="preserve">
+    <value>ال_مظهر واللوحة</value>
+  </data>
+  <data name="LookAndCanvasTip" xml:space="preserve">
+    <value>يعرض المظهر واللوحة في اللوحة الجانبية.</value>
+  </data>
+  <data name="UseLookMenu" xml:space="preserve">
+    <value>استخدام هذا المظهر للت_سجيلات الجديدة</value>
+  </data>
+  <data name="UseLookTip" xml:space="preserve">
+    <value>تبدأ التسجيلات التي تُفتح من الآن فصاعدًا بمظهر هذا المشروع.</value>
+  </data>
+  <data name="LayoutMenu" xml:space="preserve">
+    <value>ال_تخطيط</value>
+  </data>
+  <data name="LayoutMenuTip" xml:space="preserve">
+    <value>كيف تتشارك الشاشة وكاميرا الويب الصورة من موضع التشغيل فصاعدًا.</value>
+  </data>
+  <data name="LayoutBubbleMenu" xml:space="preserve">
+    <value>_فقاعة في الزاوية</value>
+  </data>
+  <data name="LayoutSideMenu" xml:space="preserve">
+    <value>_جنبًا إلى جنب</value>
+  </data>
+  <data name="LayoutCameraMenu" xml:space="preserve">
+    <value>ال_كاميرا فقط</value>
+  </data>
+  <data name="LayoutScreenMenu" xml:space="preserve">
+    <value>ال_شاشة فقط</value>
+  </data>
+  <data name="LookPanelTitle" xml:space="preserve">
+    <value>المظهر واللوحة</value>
+  </data>
+  <data name="LookLabel" xml:space="preserve">
+    <value>المظهر</value>
+  </data>
+  <data name="LookCustom" xml:space="preserve">
+    <value>مظهرك الخاص</value>
+  </data>
+  <data name="SavedLooks" xml:space="preserve">
+    <value>المظاهر المحفوظة</value>
+  </data>
+  <data name="SaveLookTitle" xml:space="preserve">
+    <value>حفظ هذا المظهر</value>
+  </data>
+  <data name="MyLook" xml:space="preserve">
+    <value>مظهري</value>
+  </data>
+  <data name="NewRecordingsLook" xml:space="preserve">
+    <value>تُفتح التسجيلات الجديدة بمظهر: {0}</value>
+  </data>
+  <data name="BackgroundOneColour" xml:space="preserve">
+    <value>لون واحد</value>
+  </data>
+  <data name="BackgroundAcross" xml:space="preserve">
+    <value>تدرج عبر الصورة</value>
+  </data>
+  <data name="BackgroundFromMiddle" xml:space="preserve">
+    <value>تدرج من الوسط</value>
+  </data>
+  <data name="BackgroundPictureFile" xml:space="preserve">
+    <value>صورة</value>
+  </data>
+  <data name="BackgroundBlurredScreen" xml:space="preserve">
+    <value>الشاشة مموهة</value>
+  </data>
+  <data name="SecondColour" xml:space="preserve">
+    <value>اللون الثاني</value>
+  </data>
+  <data name="GradientDirection" xml:space="preserve">
+    <value>الاتجاه</value>
+  </data>
+  <data name="PictureLabel" xml:space="preserve">
+    <value>الصورة</value>
+  </data>
+  <data name="Parallax" xml:space="preserve">
+    <value>يتحرك مع التكبير</value>
+  </data>
+  <data name="Padding" xml:space="preserve">
+    <value>المساحة المحيطة</value>
+  </data>
+  <data name="Corners" xml:space="preserve">
+    <value>الزوايا</value>
+  </data>
+  <data name="ShadowStrength" xml:space="preserve">
+    <value>الظل</value>
+  </data>
+  <data name="ShadowSoftness" xml:space="preserve">
+    <value>نعومة الظل</value>
+  </data>
+  <data name="ShadowDrop" xml:space="preserve">
+    <value>انخفاض الظل</value>
+  </data>
+  <data name="ShadowColour" xml:space="preserve">
+    <value>لون الظل</value>
+  </data>
+  <data name="InnerLine" xml:space="preserve">
+    <value>الخط الداخلي</value>
+  </data>
+  <data name="InnerLineColour" xml:space="preserve">
+    <value>لون الخط الداخلي</value>
+  </data>
+  <data name="DeviceLabel" xml:space="preserve">
+    <value>الجهاز</value>
+  </data>
+  <data name="DeviceNone" xml:space="preserve">
+    <value>بلا جهاز</value>
+  </data>
+  <data name="DeviceBrowser" xml:space="preserve">
+    <value>نافذة متصفح</value>
+  </data>
+  <data name="DeviceLaptop" xml:space="preserve">
+    <value>حاسوب محمول</value>
+  </data>
+  <data name="DeviceMonitor" xml:space="preserve">
+    <value>شاشة عرض</value>
+  </data>
+  <data name="DevicePhone" xml:space="preserve">
+    <value>هاتف</value>
+  </data>
+  <data name="CanvasShapeLabel" xml:space="preserve">
+    <value>اللوحة</value>
+  </data>
+  <data name="ShapeWide" xml:space="preserve">
+    <value>16:9، عريض</value>
+  </data>
+  <data name="ShapeVertical" xml:space="preserve">
+    <value>9:16، Shorts وReels وTikTok</value>
+  </data>
+  <data name="ShapeSquare" xml:space="preserve">
+    <value>1:1، مربع</value>
+  </data>
+  <data name="ShapePortrait" xml:space="preserve">
+    <value>4:5، عمودي</value>
+  </data>
+  <data name="ShapeOther" xml:space="preserve">
+    <value>{0} × {1}</value>
+  </data>
+  <data name="FramingLabel" xml:space="preserve">
+    <value>الشاشة على اللوحة</value>
+  </data>
+  <data name="FramingFit" xml:space="preserve">
+    <value>ملاءمتها كلها</value>
+  </data>
+  <data name="FramingFill" xml:space="preserve">
+    <value>ملء اللوحة من الوسط</value>
+  </data>
+  <data name="FramingFollow" xml:space="preserve">
+    <value>ملء اللوحة مع تتبع المؤشر</value>
+  </data>
+  <data name="ReframeNoMetadata" xml:space="preserve">
+    <value>لا يوجد هنا تسجيل له ملف بيانات وصفية، لذا تبقى الصورة على وسطها.</value>
+  </data>
+  <data name="ReframeAllInView" xml:space="preserve">
+    <value>يبقى المؤشر داخل الصورة طوال الوقت.</value>
+  </data>
+  <data name="ReframeOutOfView" xml:space="preserve">
+    <value>يتحرك المؤشر أسرع من أن يُتتبَّع عند: {0}.</value>
+  </data>
+  <data name="ExportPointerOutOfView" xml:space="preserve">
+    <value> تحرك المؤشر أسرع من أن يُتتبَّع عند: {0}.</value>
+  </data>
+  <data name="SpringEasing" xml:space="preserve">
+    <value>زنبركية</value>
+  </data>
+  <data name="ZoomMovement" xml:space="preserve">
+    <value>الحركة</value>
+  </data>
+  <data name="MotionBlur" xml:space="preserve">
+    <value>ضبابية الحركة</value>
+  </data>
+  <data name="SharpPointer" xml:space="preserve">
+    <value>رسمه كشكل حاد</value>
+  </data>
+  <data name="PressAnimation" xml:space="preserve">
+    <value>تصغيره عند النقر</value>
+  </data>
+  <data name="KeepPointerSize" xml:space="preserve">
+    <value>الحفاظ على حجمه عند التكبير</value>
+  </data>
+  <data name="LayoutTitle" xml:space="preserve">
+    <value>التخطيط</value>
+  </data>
+  <data name="KindLayout" xml:space="preserve">
+    <value>تخطيط</value>
+  </data>
+  <data name="LayoutChangeOver" xml:space="preserve">
+    <value>مدة الانتقال</value>
+  </data>
+  <data name="LayoutNeedsWebcam" xml:space="preserve">
+    <value>لا توجد في هذا المشروع كاميرا ويب لترتيبها بجانب الشاشة.</value>
+  </data>
+  <data name="WebcamBackdrop" xml:space="preserve">
+    <value>خلف الشخص</value>
+  </data>
+  <data name="BackdropKeep" xml:space="preserve">
+    <value>كما هو</value>
+  </data>
+  <data name="BackdropBlur" xml:space="preserve">
+    <value>مموه</value>
+  </data>
+  <data name="BackdropReplace" xml:space="preserve">
+    <value>مستبدل</value>
+  </data>
+  <data name="BackdropRemove" xml:space="preserve">
+    <value>مُزال</value>
+  </data>
+  <data name="BackdropNote" xml:space="preserve">
+    <value>يُحدَّد الشخص على هذا الحاسوب، مرة واحدة لكل تسجيل. ويُنزَّل النموذج الصغير في المرة الأولى.</value>
+  </data>
+  <data name="FindingPerson" xml:space="preserve">
+    <value>جارٍ تحديد الشخص في كاميرا الويب: {0:P0}</value>
+  </data>
+  <data name="MasksFailed" xml:space="preserve">
+    <value>تعذر تغيير خلفية كاميرا الويب: {0}</value>
+  </data>
+  <data name="PickPictureTitle" xml:space="preserve">
+    <value>اختيار صورة</value>
+  </data>
+  <data name="PicturesFilter" xml:space="preserve">
+    <value>الصور|*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.gif|كل الملفات|*.*</value>
+  </data>
+  <data name="UndoLook" xml:space="preserve">
+    <value>المظهر</value>
+  </data>
+  <data name="UndoCanvasBackground" xml:space="preserve">
+    <value>الخلفية</value>
+  </data>
+  <data name="UndoScreenLook" xml:space="preserve">
+    <value>مظهر الشاشة</value>
+  </data>
+  <data name="UndoCanvasShape" xml:space="preserve">
+    <value>اللوحة</value>
+  </data>
+  <data name="UndoFraming" xml:space="preserve">
+    <value>الشاشة على اللوحة</value>
+  </data>
+  <data name="UndoAddLayout" xml:space="preserve">
+    <value>إضافة تخطيط</value>
+  </data>
+  <data name="UndoLayout" xml:space="preserve">
+    <value>التخطيط</value>
+  </data>
+  <data name="UndoLayoutTime" xml:space="preserve">
+    <value>مدة انتقال التخطيط</value>
+  </data>
+  <data name="UndoCorners" xml:space="preserve">
+    <value>الزوايا</value>
+  </data>
+  <data name="UndoShadow" xml:space="preserve">
+    <value>الظل</value>
+  </data>
+  <data name="UndoDevice" xml:space="preserve">
+    <value>الجهاز</value>
+  </data>
+  <data name="UndoInnerLine" xml:space="preserve">
+    <value>الخط الداخلي</value>
+  </data>
+  <data name="UndoWebcamBackdrop" xml:space="preserve">
+    <value>خلف الشخص</value>
+  </data>
+  <data name="UndoZoomMovement" xml:space="preserve">
+    <value>حركة التكبير</value>
+  </data>
+  <data name="UndoMotionBlur" xml:space="preserve">
+    <value>ضبابية الحركة</value>
+  </data>
+  <data name="UndoSharpPointer" xml:space="preserve">
+    <value>المؤشر الحاد</value>
+  </data>
+  <data name="UndoPressAnimation" xml:space="preserve">
+    <value>المؤشر عند النقر</value>
+  </data>
+  <data name="UndoKeepPointerSize" xml:space="preserve">
+    <value>حجم المؤشر عند التكبير</value>
+  </data>
 </root>

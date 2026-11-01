@@ -59,7 +59,8 @@ public sealed partial class ExportViewModel : ObservableObject
 
     public ExportViewModel(VideoProject project, string name, string folder, ProjectExporter exporter, ISettingsService settings, IAppStateStore state, IShell shell, ILogger logger, TimeRange? range = null, IFeatureGate? features = null)
     {
-        Presets = (features ?? FeatureGate.Open).IsEnabled(ProFeature.GifExport) ? ExportPresets.All : [.. ExportPresets.All.Where(p => !p.IsGif)];
+        var gate = features ?? FeatureGate.Open;
+        Presets = [.. ExportPresets.All.Where(p => (!p.IsGif || gate.IsEnabled(ProFeature.GifExport)) && (!p.HasCanvas || gate.IsEnabled(ProFeature.StudioLook)))];
         _project = project;
         _range = range;
         _exporter = exporter;
@@ -314,6 +315,11 @@ public sealed partial class ExportViewModel : ObservableObject
                 var (w, _) = made.Size(_project.Canvas.Width, _project.Canvas.Height);
                 captions += VideoEditorText.GifMadeSmaller(w, made.Fps, made.Colors);
             }
+            if (result.PointerOutOfView is { Count: > 0 } missed)
+            {
+                captions += VideoEditorText.ExportPointerOutOfView(string.Join(", ", missed.Select(m => TimeText(TimeSpan.FromSeconds(m.From)))));
+            }
+
             var encoder = result.Encoder is { } used ? $" ({used})" : "";
             ProgressText = VideoEditorText.ExportDone(TimeText(result.Elapsed), System.IO.Path.GetFileName(result.Path), CommonText.Megabytes(result.Bytes / 1024.0 / 1024.0), encoder, captions);
             Result = result.Path;

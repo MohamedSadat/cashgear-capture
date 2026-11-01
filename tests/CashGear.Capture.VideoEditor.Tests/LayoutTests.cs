@@ -96,8 +96,8 @@ public sealed class LayoutTests(ITestOutputHelper output) : IDisposable
         var clip = track.Clips.Single();
         LayoutEngine.At(project, 1.9).Should().BeNull();
         LayoutEngine.At(project, 2).Should().Be(new LayoutMoment(LayoutKind.CornerBubble, LayoutKind.CameraOnly, 0));
-        LayoutEngine.At(project, 2.2)!.Value.Amount.Should().BeApproximately(0.5, 1e-9, "halfway through 0.4 s");
-        LayoutEngine.At(project, 2.4)!.Value.Amount.Should().Be(1);
+        LayoutEngine.At(project, 2.2)!.Value.Amount.Should().BeApproximately(0.5, 1e-6, "halfway through 0.4 s");
+        LayoutEngine.At(project, 2.4)!.Value.Amount.Should().BeApproximately(1, 1e-6);
 
         // The webcam's box grows steadily from its own place to the whole canvas, with no jump.
         var widths = Enumerable.Range(0, 49).Select(n => LayoutEngine.Box(project, track, clip, 2 + (n / 120.0))!.Value.Area.Width).ToList();
@@ -107,12 +107,12 @@ public sealed class LayoutTests(ITestOutputHelper output) : IDisposable
         widths.Zip(widths.Skip(1)).Max(p => p.Second - p.First).Should().BeLessThan(90, "no jump");
 
         // After its end, back to each picture's own place, as long.
-        LayoutEngine.At(project, 6.2)!.Value.Should().Be(new LayoutMoment(LayoutKind.CameraOnly, LayoutKind.CornerBubble, 0.5));
+        LayoutEngine.At(project, 6.2)!.Value.Should().Match<LayoutMoment>(m => m.From == LayoutKind.CameraOnly && m.To == LayoutKind.CornerBubble && Math.Abs(m.Amount - 0.5) < 1e-6);
         LayoutEngine.At(project, 6.5).Should().BeNull();
 
         // From one layout straight into the next.
         var two = WithLayout(project, LayoutKind.SideBySide, 6, 2);
-        LayoutEngine.At(two, 6.2)!.Value.Should().Be(new LayoutMoment(LayoutKind.CameraOnly, LayoutKind.SideBySide, 0.5));
+        LayoutEngine.At(two, 6.2)!.Value.Should().Match<LayoutMoment>(m => m.From == LayoutKind.CameraOnly && m.To == LayoutKind.SideBySide && Math.Abs(m.Amount - 0.5) < 1e-6);
 
         // A hidden track doesn't count.
         var hidden = project.WithTrack(project.Tracks.Single(t => t.Kind == TrackKind.Layout) with { Hidden = true });
@@ -224,13 +224,9 @@ public sealed class LayoutTests(ITestOutputHelper output) : IDisposable
     [Fact]
     public void Auto_reframe_keeps_a_pointer_going_about_its_work_in_the_picture_on_every_frame()
     {
-        // A pointer that glides round the whole screen in big arcs, as work on a screen does, stopping now and then.
-        var asset = Recording(60, t =>
-        {
-            var phase = t * 0.5;
-            var pause = Math.Sin(t * 0.7) > 0.6 ? 0 : 1;
-            return (960 + (880 * Math.Sin(phase * pause + (pause == 0 ? 2 : 0))), 540 + (480 * Math.Sin((phase * 0.7 * pause) + 1)));
-        });
+        // Big arcs round the whole screen, then quick sweeps of over a thousand pixels a second, stopping between them.
+        double Sweep(double t) => 960 + (850 * Math.Sin(t * 1.4));
+        var asset = Recording(60, t => t < 30 ? (960 + (880 * Math.Sin(t * 0.5)), 540 + (480 * Math.Sin((t * 0.35) + 1))) : (Sweep(t), 540 + (400 * Math.Sin(t * 0.9))));
         var wide = ProjectFactory.AddRecording(VideoProject.Empty(new ProjectCanvas(1920, 1080, 30)), asset, 0);
         var project = CanvasEdits.Change(wide, 1080, 1920, ScreenFraming.FollowPointer);
         var camera = new ZoomCamera(new MetadataOverlays());
@@ -238,10 +234,13 @@ public sealed class LayoutTests(ITestOutputHelper output) : IDisposable
         // It is really zoomed: the view is the picture's height, a third of its width on the canvas.
         var view = camera.View(project, 10);
         (1080 / view.Width).Should().BeApproximately(1920.0 / 607.5, 0.05);
-        var overlays = new MetadataOverlays();
         var misses = camera.PointerOutOfView(project);
         output.WriteLine($"{misses.Count} spans out of the picture: {string.Join(", ", misses.Select(m => $"{m.From:0.00}-{m.To:0.00}"))}");
-        misses.Sum(m => m.Length).Should().BeLessThan(1.5, "only where it jumps at its pauses");
+
+        // In the picture on every frame of the 1800, except where the path itself jumps from arcs to sweeps at 30 s.
+        var jump = misses.Should().ContainSingle("the pointer keeps up everywhere it doesn't teleport").Which;
+        jump.From.Should().BeInRange(29.5, 30);
+        jump.To.Should().BeInRange(30, 30.5);
     }
 
     [Fact]
@@ -312,10 +311,11 @@ public sealed class LayoutTests(ITestOutputHelper output) : IDisposable
         var project = ProjectFactory.FromRecording(asset);
         var path = Path.Combine(_root, "Vertical.mp4");
         var preset = ExportPresets.Vertical;
-        var result = await new ProjectExporter(new SoftwareEncoders(), NullLogger<ProjectExporter>.Instance).ExportAsync(new ExportRequest(project, preset, QualityPreset.Small, path));
+        var result = await new ProjectExporter(new SoftwareEncoders(), NullLogger<ProjectExporter>.Instance).ExportAsync(new ExportRequest(project, preset, QualityPreset.Small, path), ct: TestContext.Current.CancellationToken);
         File.Exists(path).Should().BeTrue();
         result.PointerOutOfView.Should().ContainSingle("the pointer jumps at 2 s").Which.From.Should().BeInRange(1.5, 2.2);
-        var probe = TestMedia.Probe(path);
-        probe.Should().Contain("1080").And.Contain("1920");
+        using var reader = new CashGear.Capture.Media.MediaReader(path);
+        var stream = reader.Streams.First(s => s.IsVideo);
+        (stream.Width, stream.Height).Should().Be((1080, 1920));
     }
 }

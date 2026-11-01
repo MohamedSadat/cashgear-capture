@@ -11,6 +11,7 @@ namespace CashGear.Capture.VideoEditor.Editing;
 /// <param name="Lead">A zoom starts this long before its first click or key.</param>
 /// <param name="Tail">And ends this long after its last.</param>
 /// <param name="MinLength">The shortest zoom.</param>
+/// <param name="MotionBlur">Its zooms' motion blur.</param>
 public sealed record AutoZoomOptions(
     double MaxScale = ZoomItem.DefaultScale,
     double MinScale = ZoomItem.SmallestScale,
@@ -18,7 +19,8 @@ public sealed record AutoZoomOptions(
     double Lead = 0.8,
     double Tail = 1.5,
     double MinLength = 2,
-    double Ease = ZoomItem.DefaultEase);
+    double Ease = ZoomItem.DefaultEase,
+    double MotionBlur = ZoomItem.DefaultMotionBlur);
 
 /// <summary>A click or a key on the timeline, where it happened on the canvas.</summary>
 public sealed record InputEvent(double Time, double X, double Y, bool Typing);
@@ -152,6 +154,7 @@ public static class AutoZoom
                 CenterY = Math.Round((top + bottom) / 2 / canvas.Height, 4),
                 EaseIn = options.Ease,
                 EaseOut = options.Ease,
+                MotionBlur = options.MotionBlur,
                 Auto = true,
             });
         }

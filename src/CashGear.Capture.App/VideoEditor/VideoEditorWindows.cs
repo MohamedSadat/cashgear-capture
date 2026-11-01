@@ -6,10 +6,12 @@ using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Tray;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Editor.Presets;
 using CashGear.Capture.Licensing;
 using CashGear.Capture.Media;
 using CashGear.Capture.Outputs;
 using CashGear.Capture.Transcription;
+using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Export;
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.VideoEditor.Playback;
@@ -58,7 +60,9 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         ILoggerFactory loggers,
         ITranscriber transcriber,
         WhisperModelStore models,
-        IFeatureGate? features = null)
+        IFeatureGate? features = null,
+        IPresetStore? presets = null,
+        WebcamMasks? masks = null)
     {
         _ui = ui;
         _settings = settings;
@@ -68,7 +72,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         _notifier = notifier;
         _loggers = loggers;
         _logger = loggers.CreateLogger<VideoEditorWindows>();
-        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models, Features: features);
+        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models, Features: features, Presets: presets, Masks: masks);
     }
 
     public int OpenCount => _windows.Count;
@@ -106,7 +110,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
             else
             {
                 var asset = await Task.Run(() => ProjectFactory.ReadAsset(path), ct).ConfigureAwait(false);
-                var project = ProjectFactory.FromRecording(asset);
+                var project = NewRecordingLook.Apply(ProjectFactory.FromRecording(asset), _services);
                 if (project.Duration <= 0)
                 {
                     _notifier.Notify(VideoEditorText.VideoEditor, VideoEditorText.NothingToEdit(Path.GetFileName(path)), NotificationKind.Warning);
@@ -216,6 +220,9 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
             };
             return dialog.ShowDialog(owner()) == true ? dialog.FileName : null;
         }
+
+        public string? AskName(string title, string suggested) =>
+            new WpfEditorDialogs(owner(), theme).AskName(title, suggested);
 
         public string? PickMedia(string title, string filter, string? folder)
         {

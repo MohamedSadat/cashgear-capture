@@ -119,6 +119,7 @@ public sealed class PointerTests : IDisposable
         return count;
     }
 
+    /// <summary>How tall the pointer is: the rows where anything differs from the grey picture under it.</summary>
     private static int Height(SKBitmap bitmap)
     {
         int top = int.MaxValue, bottom = -1;
@@ -126,7 +127,7 @@ public sealed class PointerTests : IDisposable
         {
             for (var x = 0; x < bitmap.Width; x++)
             {
-                if (bitmap.GetPixel(x, y).Red > 200)
+                if (Math.Abs(bitmap.GetPixel(x, y).Red - 0x40) > 32)
                 {
                     top = Math.Min(top, y);
                     bottom = Math.Max(bottom, y);
@@ -145,6 +146,34 @@ public sealed class PointerTests : IDisposable
         using var shape = Draw(Project(Pointer(sharp: true, scale: 3)), 2);
         Height(shape).Should().BeInRange(Height(picture) - 6, Height(picture) + 6, "the same size");
         Soft(shape).Should().BeLessThan(Soft(picture) / 2, "with half the blurred pixels or fewer at its edges");
+    }
+
+    [Fact]
+    public void A_shape_is_drawn_where_the_recorded_picture_was()
+    {
+        // The same pointer as a picture and as a shape: where each starts on the canvas, from the hotspot at (100, 60).
+        static (int X, int Y) TopLeft(SKBitmap bitmap)
+        {
+            var (left, top) = (int.MaxValue, int.MaxValue);
+            for (var y = 0; y < bitmap.Height; y++)
+            {
+                for (var x = 0; x < bitmap.Width; x++)
+                {
+                    if (Math.Abs(bitmap.GetPixel(x, y).Red - 0x40) > 32)
+                    {
+                        (left, top) = (Math.Min(left, x), Math.Min(top, y));
+                    }
+                }
+            }
+
+            return (left, top);
+        }
+
+        using var picture = Draw(Project(Pointer(sharp: false, scale: 2)), 2);
+        using var shape = Draw(Project(Pointer(sharp: true, scale: 2)), 2);
+        var (a, b) = (TopLeft(picture), TopLeft(shape));
+        Math.Abs(a.X - b.X).Should().BeLessThanOrEqualTo(2);
+        Math.Abs(a.Y - b.Y).Should().BeLessThanOrEqualTo(2);
     }
 
     [Fact]

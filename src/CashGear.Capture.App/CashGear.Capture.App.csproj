@@ -69,6 +69,7 @@
     <ProjectReference Include="..\CashGear.Capture.Outputs\CashGear.Capture.Outputs.csproj" />
     <ProjectReference Include="..\CashGear.Capture.VideoEditor\CashGear.Capture.VideoEditor.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Transcription\CashGear.Capture.Transcription.csproj" />
+    <ProjectReference Include="..\CashGear.Capture.Inference\CashGear.Capture.Inference.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Licensing\CashGear.Capture.Licensing.csproj" />
   </ItemGroup>
 

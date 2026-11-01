@@ -92,6 +92,9 @@ public sealed record VideoEditorState
     /// <summary>GIFs are made smaller until they are under this many megabytes (0: no limit).</summary>
     public double GifMaxMegabytes { get; init; }
 
+    /// <summary>The look a recording opens with (a look's id or a saved look's name; null: the usual one).</summary>
+    public string? DefaultLook { get; init; }
+
     /// <summary>A copy with <paramref name="path"/> first among the recent projects (once).</summary>
     public VideoEditorState WithRecent(string path) =>
         this with { RecentProjects = [path, .. (RecentProjects ?? []).Where(p => !string.Equals(p, path, StringComparison.OrdinalIgnoreCase)).Take(MaxRecent - 1)] };

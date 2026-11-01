@@ -64,6 +64,11 @@ internal sealed class FakeVideoDialogs : IVideoEditorDialogs
     public void ShowTranscribe(TranscribeViewModel viewModel) => Transcribe = viewModel;
 
     public string? AskSavePath(string title, string filter, string fileName, string? folder) => SavePath;
+
+    /// <summary>What name dialogs answer.</summary>
+    public string? Name { get; set; }
+
+    public string? AskName(string title, string suggested) => Name;
 }
 
 /// <summary>A test folder with the services a video editor window gets, and a stamped recording.</summary>
