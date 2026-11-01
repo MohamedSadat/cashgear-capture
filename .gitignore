@@ -496,3 +496,6 @@ TestResults/
 
 # Whisper models for the transcription tests (downloaded by tools/get-whisper-models.ps1, not committed)
 /tools/whisper/
+
+# Machine-learning models for the inference tests (downloaded by tools/get-inference-models.ps1, not committed)
+/tools/inference/

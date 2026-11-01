@@ -34,6 +34,12 @@ public enum ProFeature
 
     /// <summary>Animated GIFs from the video editor and after a recording.</summary>
     GifExport,
+
+    /// <summary>Video editor: saved looks, device frames, motion blur and auto-reframe.</summary>
+    StudioLook,
+
+    /// <summary>Video editor: the webcam's background blurred, replaced or removed.</summary>
+    WebcamBackground,
 }
 
 /// <summary>A licence's content (signed into a <c>.cglicense</c> file).</summary>

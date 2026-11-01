@@ -13,13 +13,13 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="PresetMp4Hd" xml:space="preserve">
-    <value>MP4، H.&#x200E;264، 1080p</value>
+    <value>MP4، H.‎264، 1080p</value>
   </data>
   <data name="PresetMp4Small" xml:space="preserve">
-    <value>MP4، H.&#x200E;264، 720p</value>
+    <value>MP4، H.‎264، 720p</value>
   </data>
   <data name="PresetMp4Project" xml:space="preserve">
-    <value>MP4، H.&#x200E;264، بحجم المشروع</value>
+    <value>MP4، H.‎264، بحجم المشروع</value>
   </data>
   <data name="PresetMp4Hevc" xml:space="preserve">
     <value>MP4، HEVC، بحجم المشروع</value>
@@ -31,7 +31,7 @@
     <value>WebM، AV1</value>
   </data>
   <data name="PresetM4a" xml:space="preserve">
-    <value>M4A (AAC)&#x200E;، صوت فقط</value>
+    <value>M4A (AAC)‎، صوت فقط</value>
   </data>
   <data name="PresetMp3" xml:space="preserve">
     <value>MP3، صوت فقط</value>
@@ -179,5 +179,44 @@
   </data>
   <data name="TrackMixed" xml:space="preserve">
     <value>الصوت المدمج</value>
+  </data>
+  <data name="LookNone" xml:space="preserve">
+    <value>بلا مظهر</value>
+  </data>
+  <data name="LookSoft" xml:space="preserve">
+    <value>ناعم</value>
+  </data>
+  <data name="LookGradient" xml:space="preserve">
+    <value>متدرج</value>
+  </data>
+  <data name="LookDark" xml:space="preserve">
+    <value>داكن</value>
+  </data>
+  <data name="LayoutCornerBubble" xml:space="preserve">
+    <value>فقاعة في الزاوية</value>
+  </data>
+  <data name="LayoutSideBySide" xml:space="preserve">
+    <value>جنبًا إلى جنب</value>
+  </data>
+  <data name="LayoutCameraOnly" xml:space="preserve">
+    <value>الكاميرا فقط</value>
+  </data>
+  <data name="LayoutScreenOnly" xml:space="preserve">
+    <value>الشاشة فقط</value>
+  </data>
+  <data name="TrackLayout" xml:space="preserve">
+    <value>التخطيط</value>
+  </data>
+  <data name="TrackLayoutNumbered" xml:space="preserve">
+    <value>التخطيط {0}</value>
+  </data>
+  <data name="PresetVertical" xml:space="preserve">
+    <value>MP4، H.‎264، 9:16 (Shorts وReels وTikTok)</value>
+  </data>
+  <data name="PresetSquare" xml:space="preserve">
+    <value>MP4، H.‎264، 1:1 (مربع)</value>
+  </data>
+  <data name="PresetPortrait" xml:space="preserve">
+    <value>MP4، H.‎264، 4:5 (عمودي)</value>
   </data>
 </root>

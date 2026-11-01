@@ -222,6 +222,15 @@ public sealed class TimelineRenderer : IDisposable
         }
     }
 
+    /// <summary>What a layout is called.</summary>
+    public static string LayoutLabel(LayoutKind kind) => kind switch
+    {
+        LayoutKind.SideBySide => VideoEditorStrings.LayoutSideBySide,
+        LayoutKind.CameraOnly => VideoEditorStrings.LayoutCameraOnly,
+        LayoutKind.ScreenOnly => VideoEditorStrings.LayoutScreenOnly,
+        _ => VideoEditorStrings.LayoutCornerBubble,
+    };
+
     /// <summary>
     /// What an item is called on the timeline: a clip's file name (with its speed when it isn't 1×), a text's words,
     /// an annotation's or an effect's kind, a zoom's scale, a caption's words.
@@ -240,6 +249,7 @@ public sealed class TimelineRenderer : IDisposable
             EffectItem => VideoEditorStrings.Pointer,
             ZoomItem zoom => zoom.Focus == ZoomFocus.FollowPointer ? VideoEditorStrings.ZoomFollowingLabel(zoom.ClampedScale) : VideoEditorStrings.ZoomLabel(zoom.ClampedScale),
             CaptionItem caption => caption.Text.ReplaceLineEndings(" "),
+            LayoutItem layout => LayoutLabel(layout.Kind),
             _ => item.GetType().Name,
         };
 

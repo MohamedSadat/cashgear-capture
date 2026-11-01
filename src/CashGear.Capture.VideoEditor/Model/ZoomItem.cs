@@ -9,6 +9,16 @@ public enum ZoomFocus
     Fixed,
 }
 
+/// <summary>How a zoom moves into and out of its place.</summary>
+public enum ZoomEasing
+{
+    /// <summary>Starts and stops gently (smootherstep).</summary>
+    Smooth,
+
+    /// <summary>Like a spring: quick, going a little past its place on the way in and settling back.</summary>
+    Spring,
+}
+
 /// <summary>
 /// A zoom into the screen pictures (the video tracks) while it lasts: from the whole picture it eases in to
 /// <see cref="Scale"/> over <see cref="EaseIn"/> seconds, holds, and eases back out over <see cref="EaseOut"/>.
@@ -41,6 +51,16 @@ public sealed record ZoomItem : TimelineItem
 
     /// <summary>Made by Auto-Zoom, which replaces it when it runs again; a zoom changed by hand is kept.</summary>
     public bool Auto { get; init; }
+
+    public ZoomEasing Easing { get; init; }
+
+    /// <summary>
+    /// How much the pictures blur along the camera's movement, 0 (none) to 1: the part of a frame's time a camera's
+    /// shutter would be open. New zooms get <see cref="DefaultMotionBlur"/>.
+    /// </summary>
+    public double MotionBlur { get; init; }
+
+    public const double DefaultMotionBlur = 0.5;
 
     [System.Text.Json.Serialization.JsonIgnore]
     public override double Duration => Length;

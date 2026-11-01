@@ -58,7 +58,7 @@ public sealed class ProjectFileTests : IDisposable
         using var zip = ZipFile.OpenRead(file);
         zip.Entries.Select(e => e.FullName).Should().Equal(ProjectFile.ProjectEntry);
         var json = new StreamReader(zip.GetEntry(ProjectFile.ProjectEntry)!.Open()).ReadToEnd();
-        json.Should().Contain("\"type\": \"clip\"").And.Contain("\"kind\": \"Webcam\"").And.Contain("\"background\": \"#102030\"");
+        json.Should().Contain("\"type\": \"clip\"").And.Contain("\"kind\": \"Webcam\"").And.Contain("\"color\": \"#102030\"");
     }
 
     [Fact]

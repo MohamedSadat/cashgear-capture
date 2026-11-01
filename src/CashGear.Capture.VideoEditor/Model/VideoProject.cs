@@ -3,10 +3,13 @@ using System.Text.Json.Serialization;
 namespace CashGear.Capture.VideoEditor.Model;
 
 /// <summary>
-/// The picture a project makes: its size in pixels, frames per second and the colour behind everything
-/// (<c>#RRGGBB</c>). Exports may scale it (a 720p preset of a 1080p project).
+/// The picture a project makes: its size in pixels, frames per second, what is behind everything, and how the screen
+/// fills it. Exports may scale it (a 720p preset of a 1080p project).
 /// </summary>
-public sealed record ProjectCanvas(int Width, int Height, int Fps, string Background = "#000000");
+public sealed record ProjectCanvas(int Width, int Height, int Fps, CanvasBackground? Background = null, ScreenFraming Framing = ScreenFraming.Fit)
+{
+    public CanvasBackground Background { get; init; } = Background ?? CanvasBackground.Black;
+}
 
 public enum StreamKind
 {
@@ -59,6 +62,9 @@ public enum TrackKind
 
     /// <summary>Captions: written, or made from speech; burned in while the track is shown, and saved as SRT or VTT.</summary>
     Caption,
+
+    /// <summary>How the screen and the webcam share the canvas, stretch by stretch.</summary>
+    Layout,
 }
 
 /// <summary>
@@ -102,7 +108,8 @@ public sealed record Track(
 /// </summary>
 public sealed record VideoProject(int Version, ProjectCanvas Canvas, IReadOnlyList<MediaAsset> Assets, IReadOnlyList<Track> Tracks)
 {
-    public const int CurrentVersion = 1;
+    /// <summary>1: to 1.1.1. 2: the canvas's background is a record (Phase 20); see <see cref="ProjectJson"/>'s migrations.</summary>
+    public const int CurrentVersion = 2;
 
     /// <summary>Where the last item ends.</summary>
     [JsonIgnore]

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Machine-learning models on this PC: ONNX Runtime on the graphics card (DirectML) or the processor, the models downloaded on first use and checked, and finding the person in a webcam's pictures. No WPF here. -->
+  <PropertyGroup>
+    <TargetFramework>$(CashGearWindowsTfm)</TargetFramework>
+    <SupportedOSPlatformVersion>$(CashGearMinWindowsVersion)</SupportedOSPlatformVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" />
+    <PackageReference Include="Microsoft.AI.DirectML" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <!-- DirectML's own package only copies its DLL for builds that name a platform; ours are AnyCPU, so it is copied here, beside the app (and whatever references this project). -->
+  <ItemGroup>
+    <None Include="$(PkgMicrosoft_AI_DirectML)\bin\x64-win\DirectML.dll" Link="DirectML.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CashGear.Capture.Inference.Tests" />
+  </ItemGroup>
+
+</Project>

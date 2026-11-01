@@ -147,14 +147,18 @@ public sealed class PreviewFrames : IFrameProvider, IDisposable
         }
     }
 
-    /// <summary>The stream's size, made smaller (keeping its shape) when it is larger than the canvas.</summary>
+    /// <summary>
+    /// The stream's size, made smaller (keeping its shape) when it is larger than the canvas: fitted inside it, or, when
+    /// the screen is to cover a canvas of another shape, covering it, so the part shown stays as sharp as in the export.
+    /// </summary>
     internal static (int Width, int Height) DecodeSize(AssetStream? stream, ProjectCanvas? canvas)
     {
         var width = stream is { Width: > 0 } ? stream.Width : canvas?.Width ?? 1280;
         var height = stream is { Height: > 0 } ? stream.Height : canvas?.Height ?? 720;
         if (canvas is not null && (width > canvas.Width || height > canvas.Height))
         {
-            var scale = Math.Min((double)canvas.Width / width, (double)canvas.Height / height);
+            var (acrossScale, downScale) = ((double)canvas.Width / width, (double)canvas.Height / height);
+            var scale = canvas.Framing == ScreenFraming.Fit ? Math.Min(acrossScale, downScale) : Math.Min(1, Math.Max(acrossScale, downScale));
             width = Math.Max(2, (int)Math.Round(width * scale));
             height = Math.Max(2, (int)Math.Round(height * scale));
         }

@@ -26,17 +26,21 @@ public sealed record WatermarkPreset(string Name, Watermark Watermark);
 /// <param name="Batch">The batch processor's last choices.</param>
 /// <param name="Combine">Combine Images' last choices.</param>
 /// <param name="Pdf">Images to PDF's last choices.</param>
+/// <param name="Looks">The video editor's saved looks.</param>
 public sealed record PresetLibrary(
     IReadOnlyList<EffectPreset>? Effects = null,
     IReadOnlyList<WatermarkPreset>? Watermarks = null,
     BatchOptions? Batch = null,
     CombineOptions? Combine = null,
-    PdfOptions? Pdf = null)
+    PdfOptions? Pdf = null,
+    IReadOnlyList<SavedLook>? Looks = null)
 {
     /// <summary>Never null once normalized.</summary>
     public IReadOnlyList<EffectPreset>? Effects { get; init; } = Effects ?? [];
 
     public IReadOnlyList<WatermarkPreset>? Watermarks { get; init; } = Watermarks ?? [];
+
+    public IReadOnlyList<SavedLook>? Looks { get; init; } = Looks ?? [];
 
     public BatchOptions? Batch { get; init; } = Batch ?? new BatchOptions();
 
@@ -62,6 +66,19 @@ public sealed record PresetLibrary(
     public IReadOnlyList<EffectPreset> EffectPresets => Effects ?? [];
 
     public IReadOnlyList<WatermarkPreset> WatermarkPresets => Watermarks ?? [];
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IReadOnlyList<SavedLook> SavedLooks => Looks ?? [];
+
+    /// <summary>A copy with <paramref name="look"/> added, or replacing the one with its name.</summary>
+    public PresetLibrary WithLook(SavedLook look)
+    {
+        ArgumentNullException.ThrowIfNull(look);
+        return this with { Looks = Replace(SavedLooks, look, l => l.Name) };
+    }
+
+    public PresetLibrary WithoutLook(string name) =>
+        this with { Looks = [.. SavedLooks.Where(l => !string.Equals(l.Name, name, StringComparison.OrdinalIgnoreCase))] };
 
     public EffectPreset? FindEffects(string? name) => EffectPresets.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
 
@@ -95,6 +112,7 @@ public sealed record PresetLibrary(
         ArgumentNullException.ThrowIfNull(imported);
         var merged = imported.EffectPresets.Aggregate(this, (library, preset) => library.WithEffects(preset));
         merged = imported.WatermarkPresets.Aggregate(merged, (library, preset) => library.WithWatermark(preset));
+        merged = imported.SavedLooks.Aggregate(merged, (library, look) => library.WithLook(look));
         return merged with { Batch = imported.Batch, Combine = imported.Combine, Pdf = imported.Pdf };
     }
 
@@ -124,6 +142,11 @@ public sealed record PresetLibrary(
                 .Where(p => p is not null && !string.IsNullOrWhiteSpace(p.Name))
                 .Select(p => new WatermarkPreset(p.Name.Trim(), (p.Watermark ?? new Watermark()).Normalize())),
             p => p.Name)],
+        Looks = [.. Unique(
+            SavedLooks
+                .Where(l => l is not null && !string.IsNullOrWhiteSpace(l.Name))
+                .Select(l => l with { Name = l.Name.Trim() }),
+            l => l.Name)],
         Batch = (Batch ?? new BatchOptions()).Normalize(),
         Combine = (Combine ?? new CombineOptions()).Normalize(),
         Pdf = (Pdf ?? new PdfOptions()).Normalize(),
@@ -133,6 +156,7 @@ public sealed record PresetLibrary(
         other is not null
         && EffectPresets.SequenceEqual(other.EffectPresets)
         && WatermarkPresets.SequenceEqual(other.WatermarkPresets)
+        && SavedLooks.SequenceEqual(other.SavedLooks)
         && Equals(Batch, other.Batch)
         && Equals(Combine, other.Combine)
         && Equals(Pdf, other.Pdf);

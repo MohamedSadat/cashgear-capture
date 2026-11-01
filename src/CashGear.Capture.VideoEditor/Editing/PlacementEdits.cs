@@ -1,4 +1,5 @@
 using CashGear.Capture.VideoEditor.Model;
+using CashGear.Capture.VideoEditor.Rendering;
 using SkiaSharp;
 
 namespace CashGear.Capture.VideoEditor.Editing;
@@ -46,6 +47,18 @@ public static class PlacementEdits
         return SKRect.Create((float)x, (float)y, (float)width, (float)height);
     }
 
+    /// <summary>A clip's area on the canvas at <paramref name="time"/>, where the layout track puts it.</summary>
+    public static SKRect Area(VideoProject project, Clip clip, double time)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(clip);
+        return project.Tracks.Any(t => t.Kind == TrackKind.Layout) && project.Find(clip.Id)?.Track is { } track ? Area(project, track, clip, time) : Area(project, clip);
+    }
+
+    /// <summary>A clip's area on the canvas at <paramref name="time"/>, where the layout track puts it.</summary>
+    public static SKRect Area(VideoProject project, Track track, Clip clip, double time) =>
+        LayoutEngine.Box(project, track, clip, time) is { } box ? box.Area : Area(project, clip);
+
     /// <summary>The top annotation or picture clip at <paramref name="point"/> (canvas pixels) at <paramref name="time"/>, or null.</summary>
     /// <param name="grip">The grip's size in canvas pixels (larger when the preview is shown small).</param>
     public static PreviewHit? HitTest(VideoProject project, double time, SKPoint point, double grip = GripSize)
@@ -78,8 +91,13 @@ public static class PlacementEdits
 
             foreach (var clip in track.Clips.Where(c => c.Covers(time)).Reverse())
             {
+                if (LayoutEngine.Box(project, track, clip, time) is { Opacity: <= 0 })
+                {
+                    continue;
+                }
+
                 // The grip never takes more than a quarter of a small picture, so the rest still moves it.
-                var area = Area(project, clip);
+                var area = Area(project, track, clip, time);
                 var reach = Math.Min(grip, Math.Min(area.Width, area.Height) / 4);
                 var onGrip = Math.Abs(point.X - area.Right) <= reach && Math.Abs(point.Y - area.Bottom) <= reach;
                 if (onGrip || area.Contains(point))
@@ -173,6 +191,7 @@ public static class TrackEdits
             Clip clip => IsSound(project, clip) ? track.HasSound : track.HasPictures,
             AnnotationItem => track.Kind == TrackKind.Annotation,
             CaptionItem => track.Kind == TrackKind.Caption,
+            LayoutItem => track.Kind == TrackKind.Layout,
             ZoomItem => track.Kind == TrackKind.Effect && track.Items.All(i => i is ZoomItem),
             EffectItem => track.Kind == TrackKind.Effect && !track.Items.Any(i => i is ZoomItem),
             _ => false,
@@ -214,6 +233,14 @@ public static class TrackEdits
 
         var tracks = project.Tracks.Where(t => t.Id != trackId).ToList();
         var used = tracks.SelectMany(t => t.Clips).Select(c => c.AssetId).ToHashSet();
+
+        // Pictures that show behind things are media too.
+        if (project.Canvas.Background.PictureAssetId is { } behind)
+        {
+            used.Add(behind);
+        }
+
+        used.UnionWith(tracks.SelectMany(t => t.Clips).Select(c => c.Background?.PictureAssetId).OfType<string>());
         return project with { Tracks = tracks, Assets = [.. project.Assets.Where(a => used.Contains(a.Id))] };
     }
 }

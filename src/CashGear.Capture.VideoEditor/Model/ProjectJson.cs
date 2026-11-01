@@ -1,5 +1,6 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using CashGear.Capture.VideoEditor.Resources;
 
@@ -31,19 +32,36 @@ internal sealed partial class ProjectJsonContext : JsonSerializerContext
 
 public static class ProjectJson
 {
+    private static readonly JsonNodeOptions NodeOptions = new() { PropertyNameCaseInsensitive = true };
+
+    private static readonly JsonDocumentOptions DocumentOptions = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
+
     public static byte[] Serialize(VideoProject project)
     {
         ArgumentNullException.ThrowIfNull(project);
         return JsonSerializer.SerializeToUtf8Bytes(project, ProjectJsonContext.Readable.VideoProject);
     }
 
+    /// <summary>A project from its JSON, of this version or brought up to it (<see cref="Migrate"/>).</summary>
     /// <exception cref="InvalidDataException">Not a project this version of the app can read.</exception>
     public static VideoProject Deserialize(ReadOnlySpan<byte> json)
     {
         VideoProject? project;
         try
         {
-            project = JsonSerializer.Deserialize(json, ProjectJsonContext.Readable.VideoProject);
+            var root = JsonNode.Parse(json, NodeOptions, DocumentOptions);
+            if (root is not JsonObject document)
+            {
+                throw new InvalidDataException(VideoEditorStrings.NotAProject);
+            }
+
+            if (VersionOf(document) > VideoProject.CurrentVersion)
+            {
+                throw new InvalidDataException(VideoEditorStrings.NewerProject);
+            }
+
+            Migrate(document);
+            project = document.Deserialize(ProjectJsonContext.Readable.VideoProject);
         }
         catch (JsonException e)
         {
@@ -55,11 +73,31 @@ public static class ProjectJson
             throw new InvalidDataException(VideoEditorStrings.NotAProject);
         }
 
-        if (project.Version > VideoProject.CurrentVersion)
+        return project with { Version = VideoProject.CurrentVersion };
+    }
+
+    /// <summary>
+    /// Brings the JSON of an older project up to this version, one version at a time.
+    /// 1 → 2 (Phase 20): the canvas's <c>background</c> colour string becomes a background record. Everything else
+    /// Phase 20 added is new properties whose defaults draw what 1.1.1 drew.
+    /// </summary>
+    internal static void Migrate(JsonObject document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        var version = VersionOf(document);
+        if (version < 2)
         {
-            throw new InvalidDataException(VideoEditorStrings.NewerProject);
+            if (document["canvas"] is JsonObject canvas && canvas["background"] is JsonValue color && color.TryGetValue<string>(out var text))
+            {
+                canvas["background"] = new JsonObject { ["kind"] = nameof(BackgroundKind.Color), ["color"] = text };
+            }
+
+            version = 2;
         }
 
-        return project;
+        document["version"] = version;
     }
+
+    private static int VersionOf(JsonObject document) =>
+        document["version"] is JsonValue value && value.TryGetValue<int>(out var version) ? version : 1;
 }

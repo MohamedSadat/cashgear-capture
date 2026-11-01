@@ -35,6 +35,15 @@ public sealed record EffectItem : TimelineItem
     /// <summary>How much the pointer's path is smoothed, 0 to 1 (only when the app draws the pointer).</summary>
     public double Smoothing { get; init; }
 
+    /// <summary>The standard arrow, hand and I-beam are drawn as shapes, sharp at any size, not as the recorded picture.</summary>
+    public bool SharpPointer { get; init; }
+
+    /// <summary>The pointer shrinks a little while a button is down.</summary>
+    public bool PressAnimation { get; init; }
+
+    /// <summary>The pointer keeps its size on the screen in a zoom, instead of growing with the pictures.</summary>
+    public bool ConstantPointerSize { get; init; }
+
     [JsonIgnore]
     public override double Duration => Length;
 

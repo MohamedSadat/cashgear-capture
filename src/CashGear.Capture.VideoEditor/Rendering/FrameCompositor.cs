@@ -13,15 +13,23 @@ public interface IFrameProvider
     VideoFrame? Frame(Clip clip, MediaAsset asset, double sourceTime);
 }
 
+/// <summary>The masks of webcam pictures: where the person is, at a source time.</summary>
+public interface IWebcamMasks
+{
+    /// <summary>The person's mask for that picture as a grey image (the caller disposes it), or null when it isn't ready.</summary>
+    SKImage? Mask(MediaAsset asset, int stream, double sourceTime);
+}
+
 /// <summary>What drawing a frame found.</summary>
 /// <param name="Missing">Pictures that weren't decoded yet (the preview draws again when they are).</param>
 public readonly record struct CompositionResult(int Missing);
 
 /// <summary>
 /// Draws a project at a moment: the background, then the tracks from the bottom up: pictures (each clip where its
-/// placement puts it, faded in and out, crossfading where clips overlap; the screen through the zooms' camera),
-/// annotations, effects and captions. The preview (on the GPU or in memory) and the export both draw through it, in
-/// the canvas's own pixels: the caller scales the canvas to the view or to the export's size.
+/// placement or the layout track puts it, with its corners, shadow and frame, faded in and out, crossfading where clips
+/// overlap; the screen through the zooms' camera, blurred along its movement), annotations, effects and captions. The
+/// preview (on the GPU or in memory) and the export both draw through it, in the canvas's own pixels: the caller scales
+/// the canvas to the view or to the export's size.
 /// </summary>
 public sealed class FrameCompositor
 {
@@ -34,6 +42,14 @@ public sealed class FrameCompositor
     private readonly MetadataOverlays _overlays = new();
     private readonly ZoomCamera _camera;
     private readonly CaptionRenderer _captions = new();
+    private readonly Dictionary<string, SKImage?> _pictures = new(StringComparer.OrdinalIgnoreCase);
+    private (string? Clip, double Time, double Blur, SKImage? Image) _blurredScreen;
+
+    /// <summary>The webcam clips' masks, for a background that is blurred, replaced or removed.</summary>
+    public IWebcamMasks? Masks { get; set; }
+
+    /// <summary>The most samples a frame's motion blur takes. The export may take more than the preview.</summary>
+    public int MotionSamples { get; set; } = 16;
 
     /// <summary>The recordings' metadata the effect tracks draw from.</summary>
     public MetadataOverlays Overlays => _overlays;
@@ -52,9 +68,10 @@ public sealed class FrameCompositor
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(project);
-        canvas.Clear(Color(project.Canvas.Background, SKColors.Black));
-        var camera = _camera.View(project, time).Matrix(project.Canvas);
-        return new CompositionResult(RenderTracks(canvas, project, time, project.Tracks.Count, camera));
+        var camera = _camera.View(project, time).Matrix(_camera.Viewport(project, time));
+        var missing = DrawBackground(canvas, project, time, camera);
+        var pass = new Pass(camera, LayoutEngine.ScreenCell(project, time), _camera.Motion(project, time, MotionSamples));
+        return new CompositionResult(missing + RenderTracks(canvas, project, time, project.Tracks.Count, pass));
     }
 
     /// <summary>
@@ -107,10 +124,11 @@ public sealed class FrameCompositor
 
     /// <summary>
     /// The tracks before <paramref name="count"/>, bottom up, the screen pictures (and what marks a place in them)
-    /// through <paramref name="camera"/>; returns the pictures that weren't ready.
+    /// through the camera of <paramref name="pass"/>; returns the pictures that weren't ready.
     /// </summary>
-    private int RenderTracks(SKCanvas canvas, VideoProject project, double time, int count, SKMatrix camera)
+    private int RenderTracks(SKCanvas canvas, VideoProject project, double time, int count, Pass pass)
     {
+        var camera = pass.Camera;
         var size = project.Canvas;
         var missing = 0;
         for (var index = 0; index < count; index++)
@@ -125,7 +143,7 @@ public sealed class FrameCompositor
             {
                 foreach (var effect in track.Items.OfType<EffectItem>().Where(e => e.Covers(time)))
                 {
-                    _overlays.Draw(canvas, project, index, effect, time, camera);
+                    _overlays.Draw(canvas, project, index, effect, time, camera, pass.Cell);
                 }
 
                 continue;
@@ -145,7 +163,7 @@ public sealed class FrameCompositor
             {
                 foreach (var item in track.Items.OfType<AnnotationItem>().Where(a => a.Covers(time)))
                 {
-                    missing += DrawAnnotation(canvas, project, index, item, time, camera);
+                    missing += DrawAnnotation(canvas, project, index, item, time, pass);
                 }
 
                 continue;
@@ -156,54 +174,25 @@ public sealed class FrameCompositor
                 continue;
             }
 
+            if (track.Kind == TrackKind.Video && pass.Motion is { } motion)
+            {
+                missing += DrawMoving(canvas, pass.Cell, motion, layer => DrawClips(layer, project, track, time));
+                continue;
+            }
+
             var zoomed = track.Kind == TrackKind.Video && !camera.IsIdentity;
             if (zoomed)
             {
                 canvas.Save();
+                if (pass.Cell is { } cell)
+                {
+                    canvas.ClipRect(cell);
+                }
+
                 canvas.Concat(in camera);
             }
 
-            Clip? previous = null;
-            foreach (var clip in track.Clips.Where(c => c.Covers(time)))
-            {
-                if (project.Asset(clip.AssetId) is not { } asset)
-                {
-                    continue;
-                }
-
-                var opacity = Fade(clip, time);
-                if (previous is not null && previous.End > clip.Start + Times.Epsilon)
-                {
-                    // Crossfade: the later clip comes in over the overlap.
-                    opacity *= Math.Clamp((time - clip.Start) / (previous.End - clip.Start), 0, 1);
-                }
-
-                previous = clip;
-                if (opacity <= 0)
-                {
-                    continue;
-                }
-
-                var frame = _frames.Frame(clip, asset, clip.SourceAt(time));
-                if (frame is null)
-                {
-                    missing++;
-                    continue;
-                }
-
-                try
-                {
-                    var stream = asset.Stream(clip.Stream);
-                    var pictureWidth = stream is { Width: > 0 } ? stream.Width : frame.Width;
-                    var pictureHeight = stream is { Height: > 0 } ? stream.Height : frame.Height;
-                    DrawPicture(canvas, frame, clip.Placement ?? Placement.Fit, size, pictureWidth, pictureHeight, opacity);
-                }
-                finally
-                {
-                    frame.Release();
-                }
-            }
-
+            missing += DrawClips(canvas, project, track, time);
             if (zoomed)
             {
                 canvas.Restore();
@@ -213,7 +202,107 @@ public sealed class FrameCompositor
         return missing;
     }
 
-    private int DrawAnnotation(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, SKMatrix camera)
+    /// <summary>A picture track's clips at <paramref name="time"/>; returns the pictures that weren't ready.</summary>
+    private int DrawClips(SKCanvas canvas, VideoProject project, Track track, double time)
+    {
+        var missing = 0;
+        Clip? previous = null;
+        foreach (var clip in track.Clips.Where(c => c.Covers(time)))
+        {
+            if (project.Asset(clip.AssetId) is not { } asset)
+            {
+                continue;
+            }
+
+            var opacity = Fade(clip, time);
+            if (previous is not null && previous.End > clip.Start + Times.Epsilon)
+            {
+                // Crossfade: the later clip comes in over the overlap.
+                opacity *= Math.Clamp((time - clip.Start) / (previous.End - clip.Start), 0, 1);
+            }
+
+            previous = clip;
+            var box = LayoutEngine.Box(project, track, clip, time);
+            if (opacity <= 0 || box is { Opacity: <= 0 })
+            {
+                continue;
+            }
+
+            var sourceTime = clip.SourceAt(time);
+            var frame = _frames.Frame(clip, asset, sourceTime);
+            if (frame is null)
+            {
+                missing++;
+                continue;
+            }
+
+            try
+            {
+                var stream = asset.Stream(clip.Stream);
+                var pictureWidth = stream is { Width: > 0 } ? stream.Width : frame.Width;
+                var pictureHeight = stream is { Height: > 0 } ? stream.Height : frame.Height;
+                DrawPicture(canvas, project, clip, asset, sourceTime, frame, box, pictureWidth, pictureHeight, opacity);
+            }
+            finally
+            {
+                frame.Release();
+            }
+        }
+
+        return missing;
+    }
+
+    /// <summary>
+    /// Pictures on the move: drawn once through the camera in the middle of the shutter's time into a layer of the
+    /// target's own pixels (on its graphics card when it has one), then read along the camera's path by a shader.
+    /// </summary>
+    private static int DrawMoving(SKCanvas canvas, SKRect? cell, CameraMotion motion, Func<SKCanvas, int> draw)
+    {
+        var bounds = canvas.DeviceClipBounds;
+        var info = new SKImageInfo(Math.Max(1, bounds.Width), Math.Max(1, bounds.Height), SKColorType.Bgra8888, SKAlphaType.Premul);
+        using var surface = (canvas.Context is { } gpu ? SKSurface.Create(gpu, false, info) : null) ?? SKSurface.Create(info);
+        var outer = canvas.TotalMatrix;
+        var middle = outer.PreConcat(motion.Middle);
+        if (surface is null || bounds.Width <= 0 || bounds.Height <= 0 || !outer.TryInvert(out var outerBack) || !motion.From.TryInvert(out var fromBack) || !motion.To.TryInvert(out var toBack))
+        {
+            canvas.Save();
+            canvas.Concat(motion.Middle);
+            var drawn = draw(canvas);
+            canvas.Restore();
+            return drawn;
+        }
+
+        var layer = surface.Canvas;
+        layer.Clear(SKColors.Transparent);
+        layer.Translate(-bounds.Left, -bounds.Top);
+        layer.Concat(in middle);
+        var missing = draw(layer);
+        surface.Flush();
+
+        // Where a pixel of the target was in the layer as the shutter opened and as it closed.
+        float[] Along(SKMatrix back)
+        {
+            var map = middle.PreConcat(back).PreConcat(outerBack);
+            return [map.ScaleX, map.ScaleY, map.TransX - bounds.Left, map.TransY - bounds.Top];
+        }
+
+        using var image = surface.Snapshot();
+        using var shader = image.ToShader(SKShaderTileMode.Decal, SKShaderTileMode.Decal, Sampling);
+        using var blurred = StudioShaders.MotionBlur(shader, Along(fromBack), Along(toBack), motion.Samples);
+        using var paint = new SKPaint { Shader = blurred };
+        canvas.Save();
+        if (cell is { } part)
+        {
+            canvas.ClipRect(part);
+        }
+
+        canvas.ResetMatrix();
+        canvas.DrawRect(SKRect.Create(bounds.Left, bounds.Top, bounds.Width, bounds.Height), paint);
+        canvas.Restore();
+        return missing;
+    }
+
+    private int DrawAnnotation(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, Pass pass)
     {
         if (item.Fade(time) * item.Look.Opacity <= 0.005)
         {
@@ -226,14 +315,14 @@ public sealed class FrameCompositor
             return 0;
         }
 
-        return DrawHidden(canvas, project, trackIndex, item, time, camera);
+        return DrawHidden(canvas, project, trackIndex, item, time, pass);
     }
 
     /// <summary>
     /// A blurred or pixelated area: what the tracks below draw there is drawn again on its own (with a margin, so a
     /// blur doesn't darken at its edges), blurred or pixelated, and drawn over them.
     /// </summary>
-    private int DrawHidden(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, SKMatrix camera)
+    private int DrawHidden(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, Pass pass)
     {
         var place = item.At(time);
         var canvasArea = SKRectI.Create(project.Canvas.Width, project.Canvas.Height);
@@ -253,9 +342,9 @@ public sealed class FrameCompositor
             return 0;
         }
 
-        surface.Canvas.Clear(Color(project.Canvas.Background, SKColors.Black));
         surface.Canvas.Translate(-region.Left, -region.Top);
-        var missing = RenderTracks(surface.Canvas, project, time, trackIndex, camera);
+        var missing = DrawBackground(surface.Canvas, project, time, pass.Camera);
+        missing += RenderTracks(surface.Canvas, project, time, trackIndex, pass);
         using var under = surface.Snapshot();
         var inner = SKRectI.Create(area.Left - region.Left, area.Top - region.Top, area.Width, area.Height);
         using var patch = blur ? EffectCache.Blur(under, SKRectI.Create(region.Width, region.Height), strength) : EffectCache.Pixelate(under, inner, strength);
@@ -311,25 +400,60 @@ public sealed class FrameCompositor
         return builder.Detach();
     }
 
-    private static void DrawPicture(SKCanvas canvas, VideoFrame frame, Placement placement, ProjectCanvas size, int pictureWidth, int pictureHeight, double opacity)
+    /// <summary>The radius of a picture's corners in <paramref name="area"/>: its own, or a rounded shape's usual ones, or half a circle.</summary>
+    public static float Radius(Placement placement, SKRect area)
     {
+        ArgumentNullException.ThrowIfNull(placement);
+        var shorter = Math.Min(area.Width, area.Height);
+        return placement.Shape switch
+        {
+            PlacementShape.Circle => shorter / 2,
+            _ when placement.CornerRadius > 0 => (float)placement.CornerRadius,
+            PlacementShape.Rounded => shorter * (float)CornerRadius,
+            _ => 0,
+        };
+    }
+
+    private void DrawPicture(SKCanvas canvas, VideoProject project, Clip clip, MediaAsset asset, double sourceTime, VideoFrame frame, PictureBox? box, int pictureWidth, int pictureHeight, double opacity)
+    {
+        var placement = clip.Placement ?? Placement.Fit;
+        var size = project.Canvas;
         var (x, y, width, height) = placement.Area(size.Width, size.Height, pictureWidth, pictureHeight);
-        var target = SKRect.Create((float)x, (float)y, (float)width, (float)height);
+        var target = box?.Area ?? SKRect.Create((float)x, (float)y, (float)width, (float)height);
+        if (target.Width <= 0 || target.Height <= 0)
+        {
+            return;
+        }
+
         var source = SKRect.Create(frame.Width, frame.Height);
-        if (placement.Shape == PlacementShape.Circle)
+        if (box is { Cover: true })
+        {
+            source = CutToShape(frame.Width, frame.Height, target.Width / target.Height);
+        }
+        else if (placement.Shape == PlacementShape.Circle)
         {
             var side = Math.Min(frame.Width, frame.Height);
             source = SKRect.Create((frame.Width - side) / 2f, (frame.Height - side) / 2f, side, side);
         }
 
-        using var outline = Outline(placement.Shape, target);
+        var radius = Math.Max(box?.Radius ?? Radius(placement, target), DeviceFrames.PictureRadius(placement.Frame, target));
+        using var outline = box is not null || placement.CornerRadius > 0 || placement.Frame != DeviceFrame.None
+            ? Rounded(target, radius)
+            : Outline(placement.Shape, target);
 
-        var alpha = (byte)Math.Round(Math.Clamp(opacity * placement.Opacity, 0, 1) * 255);
+        var alpha = (byte)Math.Round(Math.Clamp(opacity * placement.Opacity * (box?.Opacity ?? 1), 0, 1) * 255);
+        if (placement.Shadow is { Opacity: > 0 } shadow)
+        {
+            var (body, bodyRadius) = placement.Frame == DeviceFrame.None ? (target, radius) : DeviceFrames.Body(placement.Frame, target);
+            DrawShadow(canvas, shadow, body, bodyRadius, alpha);
+        }
+
+        DeviceFrames.Draw(canvas, placement.Frame, target, alpha);
         using var image = frame.ToImage();
         using (var paint = new SKPaint { Color = SKColors.White.WithAlpha(alpha) })
         {
             canvas.Save();
-            if (placement.Shape != PlacementShape.Rectangle)
+            if (placement.Shape != PlacementShape.Rectangle || radius > 0 || placement.InsetBorderWidth > 0)
             {
                 canvas.ClipPath(outline, SKClipOperation.Intersect, antialias: true);
             }
@@ -339,7 +463,26 @@ public sealed class FrameCompositor
                 canvas.Scale(-1, 1, target.MidX, 0);
             }
 
-            canvas.DrawImage(image, source, target, Sampling, paint);
+            if (clip.Background is { Effect: not BackgroundEffect.None } background && Masks?.Mask(asset, clip.Stream, sourceTime) is { } mask)
+            {
+                using (mask)
+                {
+                    DrawMatted(canvas, project, background, image, mask, source, target, frame.Width, frame.Height, paint);
+                }
+            }
+            else
+            {
+                canvas.DrawImage(image, source, target, Sampling, paint);
+            }
+
+            if (placement.InsetBorderWidth > 0 && placement.InsetBorder is { } inset)
+            {
+                // Twice as wide along the outline, the outer half cut off by the picture's own clip.
+                var color = Color(inset, SKColors.White);
+                using var line = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = (float)placement.InsetBorderWidth * 2, Color = color.WithAlpha((byte)Math.Round(color.Alpha * (alpha / 255f))) };
+                canvas.DrawPath(outline, line);
+            }
+
             canvas.Restore();
         }
 
@@ -355,4 +498,256 @@ public sealed class FrameCompositor
             canvas.DrawPath(outline, border);
         }
     }
+
+    private static SKPath Rounded(SKRect area, float radius)
+    {
+        using var builder = new SKPathBuilder();
+        if (radius > 0)
+        {
+            builder.AddRoundRect(new SKRoundRect(area, radius, radius));
+        }
+        else
+        {
+            builder.AddRect(area);
+        }
+
+        return builder.Detach();
+    }
+
+    /// <summary>The middle of a picture cut to a shape (width over height).</summary>
+    private static SKRect CutToShape(float width, float height, float shape)
+    {
+        if (width / height > shape)
+        {
+            var cut = height * shape;
+            return SKRect.Create((width - cut) / 2, 0, cut, height);
+        }
+
+        var tall = width / shape;
+        return SKRect.Create(0, (height - tall) / 2, width, tall);
+    }
+
+    /// <summary>A soft shadow under <paramref name="body"/>. Only what shows round it is worked out.</summary>
+    private static void DrawShadow(SKCanvas canvas, PlacementShadow shadow, SKRect body, float radius, byte alpha)
+    {
+        var sigma = (float)Math.Max(0.5, shadow.Blur);
+        var box = SKRect.Create(body.Left + (float)shadow.OffsetX, body.Top + (float)shadow.OffsetY, body.Width, body.Height);
+        var color = Color(shadow.Color, SKColors.Black);
+        var strength = (byte)Math.Round(Math.Clamp(shadow.Opacity, 0, 1) * alpha);
+        using var shader = StudioShaders.Shadow(box, radius, sigma, color.WithAlpha(strength));
+        using var paint = new SKPaint { Shader = shader };
+        canvas.Save();
+        var inner = SKRect.Inflate(body, -2, -2);
+        if (inner.Width > 0 && inner.Height > 0)
+        {
+            canvas.ClipRoundRect(new SKRoundRect(inner, Math.Max(0, radius - 2), Math.Max(0, radius - 2)), SKClipOperation.Difference, antialias: true);
+        }
+
+        canvas.DrawRect(SKRect.Inflate(box, (sigma * 3) + 2, (sigma * 3) + 2), paint);
+        canvas.Restore();
+    }
+
+    /// <summary>A webcam's picture with what is behind the person blurred, replaced or taken out, by the person's mask.</summary>
+    private void DrawMatted(SKCanvas canvas, VideoProject project, WebcamBackground background, SKImage image, SKImage mask, SKRect source, SKRect target, int frameWidth, int frameHeight, SKPaint paint)
+    {
+        var toTarget = Mapping(source, target);
+        using var picture = image.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, toTarget);
+        var maskToFrame = SKMatrix.CreateScale((float)frameWidth / mask.Width, (float)frameHeight / mask.Height);
+        using var masked = mask.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, toTarget.PreConcat(maskToFrame));
+        using var back = BackOf(project, background, image, source, target);
+        using var matte = StudioShaders.Matte(picture, masked, back);
+        paint.Shader = matte;
+        canvas.DrawRect(target, paint);
+        paint.Shader = null;
+    }
+
+    private SKShader BackOf(VideoProject project, WebcamBackground background, SKImage image, SKRect source, SKRect target)
+    {
+        if (background.Effect == BackgroundEffect.Remove)
+        {
+            return SKShader.CreateColor(SKColors.Transparent);
+        }
+
+        if (background.Effect == BackgroundEffect.Blur)
+        {
+            // Blurred small, so it costs little: the processor does it for the preview and the export alike.
+            const int shrink = 4;
+            var width = Math.Max(4, (int)Math.Ceiling(source.Width / shrink));
+            var height = Math.Max(4, (int)Math.Ceiling(source.Height / shrink));
+            using var small = Blurred(image, source, width, height, (float)Math.Max(0.5, background.Strength * source.Height / Math.Max(1, target.Height) / shrink));
+            if (small is not null)
+            {
+                return small.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, Mapping(SKRect.Create(width, height), target));
+            }
+        }
+
+        if (background.Effect == BackgroundEffect.Replace && background.PictureAssetId is { } id && PictureOf(project, id) is { } replacement)
+        {
+            var cut = CutToShape(replacement.Width, replacement.Height, target.Width / target.Height);
+            return replacement.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, Mapping(cut, target));
+        }
+
+        return SKShader.CreateColor(Color(background.Color, SKColors.Black));
+    }
+
+    private static SKMatrix Mapping(SKRect from, SKRect to)
+    {
+        var (scaleX, scaleY) = (to.Width / from.Width, to.Height / from.Height);
+        return SKMatrix.CreateScaleTranslation(scaleX, scaleY, to.Left - (from.Left * scaleX), to.Top - (from.Top * scaleY));
+    }
+
+    /// <summary>A part of a picture made small and blurred, on the processor (so the preview and the export get the same one).</summary>
+    private static SKImage? Blurred(SKImage image, SKRect source, int width, int height, float sigma)
+    {
+        var info = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
+        using var small = SKSurface.Create(info);
+        using var blurred = SKSurface.Create(info);
+        if (small is null || blurred is null)
+        {
+            return null;
+        }
+
+        small.Canvas.DrawImage(image, source, SKRect.Create(width, height), new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
+        using var shrunk = small.Snapshot();
+        using var filter = SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp);
+        using var paint = new SKPaint { ImageFilter = filter };
+        blurred.Canvas.DrawImage(shrunk, 0, 0, new SKSamplingOptions(SKFilterMode.Nearest), paint);
+        return blurred.Snapshot();
+    }
+
+    /// <summary>What is behind everything; returns the pictures that weren't ready.</summary>
+    private int DrawBackground(SKCanvas canvas, VideoProject project, double time, SKMatrix camera)
+    {
+        var background = project.Canvas.Background;
+        canvas.Clear(Color(background.Color, SKColors.Black));
+        if (background.Kind == BackgroundKind.Color)
+        {
+            return 0;
+        }
+
+        var size = project.Canvas;
+        var area = SKRect.Create(size.Width, size.Height);
+        canvas.Save();
+        if (background.Parallax > 0 && camera.ScaleX > 1)
+        {
+            // A little of the zoom, about the one point the camera keeps in place.
+            var grow = 1 + ((camera.ScaleX - 1) * (float)Math.Clamp(background.Parallax, 0, 1) * 0.1f);
+            var pivotX = Math.Clamp(camera.TransX / (1 - camera.ScaleX), 0, size.Width);
+            var pivotY = Math.Clamp(camera.TransY / (1 - camera.ScaleY), 0, size.Height);
+            canvas.Scale(grow, grow, pivotX, pivotY);
+        }
+
+        var missing = 0;
+        switch (background.Kind)
+        {
+            case BackgroundKind.LinearGradient:
+            case BackgroundKind.RadialGradient:
+            {
+                using var shader = Gradient(background, size);
+                using var paint = new SKPaint { Shader = shader, IsDither = true };
+                canvas.DrawRect(area, paint);
+                break;
+            }
+
+            case BackgroundKind.Picture when background.PictureAssetId is { } id && PictureOf(project, id) is { } picture:
+            {
+                canvas.DrawImage(picture, CutToShape(picture.Width, picture.Height, (float)size.Width / size.Height), area, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
+                break;
+            }
+
+            case BackgroundKind.BlurredScreen:
+                missing += DrawBlurredScreen(canvas, project, time, background, area);
+                break;
+        }
+
+        canvas.Restore();
+        return missing;
+    }
+
+    private static SKShader Gradient(CanvasBackground background, ProjectCanvas size)
+    {
+        var first = Color(background.Color, SKColors.Black);
+        var second = Color(background.Color2, first);
+        if (background.Kind == BackgroundKind.RadialGradient)
+        {
+            var radius = (float)Math.Sqrt((size.Width * size.Width) + (size.Height * size.Height)) / 2;
+            return SKShader.CreateRadialGradient(new SKPoint(size.Width / 2f, size.Height / 2f), radius, [first, second], SKShaderTileMode.Clamp);
+        }
+
+        var angle = background.Angle * Math.PI / 180;
+        var (dx, dy) = (Math.Cos(angle), Math.Sin(angle));
+        var reach = (Math.Abs(dx) * size.Width / 2) + (Math.Abs(dy) * size.Height / 2);
+        var (midX, midY) = (size.Width / 2.0, size.Height / 2.0);
+        return SKShader.CreateLinearGradient(
+            new SKPoint((float)(midX - (dx * reach)), (float)(midY - (dy * reach))),
+            new SKPoint((float)(midX + (dx * reach)), (float)(midY + (dy * reach))),
+            [first, second],
+            SKShaderTileMode.Clamp);
+    }
+
+    /// <summary>The top screen clip's picture covering the canvas, blurred. Made small on the processor; the last one stays while a picture is on its way.</summary>
+    private int DrawBlurredScreen(SKCanvas canvas, VideoProject project, double time, CanvasBackground background, SKRect area)
+    {
+        const int shrink = 8;
+        var missing = 0;
+        if (ZoomCamera.TopVideo(project, time) is { } top && project.Asset(top.Clip.AssetId) is { } asset)
+        {
+            var sourceTime = top.Clip.SourceAt(time);
+            if (_blurredScreen.Clip != top.Clip.Id || _blurredScreen.Time != sourceTime || _blurredScreen.Blur != background.Blur)
+            {
+                var frame = _frames.Frame(top.Clip, asset, sourceTime);
+                if (frame is null)
+                {
+                    missing++;
+                }
+                else
+                {
+                    using (var image = frame.ToImage())
+                    {
+                        var width = Math.Max(4, project.Canvas.Width / shrink);
+                        var height = Math.Max(4, project.Canvas.Height / shrink);
+                        var made = Blurred(image, CutToShape(frame.Width, frame.Height, area.Width / area.Height), width, height, (float)Math.Max(0.5, background.Blur / shrink));
+                        _blurredScreen.Image?.Dispose();
+                        _blurredScreen = (top.Clip.Id, sourceTime, background.Blur, made);
+                    }
+
+                    frame.Release();
+                }
+            }
+        }
+
+        if (_blurredScreen.Image is { } blurred)
+        {
+            canvas.DrawImage(blurred, SKRect.Create(blurred.Width, blurred.Height), area, new SKSamplingOptions(SKCubicResampler.Mitchell));
+        }
+
+        return missing;
+    }
+
+    /// <summary>A picture file among the project's assets, read once; null when it can't be read.</summary>
+    private SKImage? PictureOf(VideoProject project, string assetId)
+    {
+        if (project.Asset(assetId) is not { } asset)
+        {
+            return null;
+        }
+
+        if (_pictures.TryGetValue(asset.Path, out var known))
+        {
+            return known;
+        }
+
+        SKImage? picture = null;
+        if (File.Exists(asset.Path))
+        {
+            using var encoded = SKImage.FromEncodedData(asset.Path);
+            picture = encoded?.ToRasterImage(ensurePixelData: true);
+        }
+
+        _pictures[asset.Path] = picture;
+        return picture;
+    }
+
+    /// <summary>What a frame's tracks are drawn with: the camera, the part of the canvas it shows the screen in, and its movement.</summary>
+    private sealed record Pass(SKMatrix Camera, SKRect? Cell, CameraMotion? Motion);
 }

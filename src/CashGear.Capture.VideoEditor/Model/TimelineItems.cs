@@ -37,6 +37,7 @@ public enum ItemEdge
 [JsonDerivedType(typeof(EffectItem), "effect")]
 [JsonDerivedType(typeof(ZoomItem), "zoom")]
 [JsonDerivedType(typeof(CaptionItem), "caption")]
+[JsonDerivedType(typeof(LayoutItem), "layout")]
 public abstract record TimelineItem
 {
     public required string Id { get; init; }
@@ -82,8 +83,11 @@ public enum PlacementShape
 /// <summary>
 /// Where a clip's pictures go on the canvas. A <see cref="Size"/> of 1 is as large as fits the canvas, keeping the
 /// picture's shape (a circle is a square cut from its middle); the picture is centred on (<see cref="CenterX"/>,
-/// <see cref="CenterY"/>), fractions of the canvas. The border is in canvas pixels.
+/// <see cref="CenterY"/>), fractions of the canvas. A size below 1 leaves padding round it. The border, corners and
+/// shadow are in canvas pixels; a corner radius rounds a rectangle (and replaces a rounded one's usual corners).
 /// </summary>
+/// <param name="InsetBorder">A line just inside the picture's edge (<c>#AARRGGBB</c>), as glass has.</param>
+/// <param name="Frame">A device drawn round the picture, outside its area.</param>
 public sealed record Placement(
     double CenterX = 0.5,
     double CenterY = 0.5,
@@ -92,7 +96,12 @@ public sealed record Placement(
     string? Border = null,
     double BorderWidth = 0,
     bool Mirror = false,
-    double Opacity = 1)
+    double Opacity = 1,
+    double CornerRadius = 0,
+    PlacementShadow? Shadow = null,
+    string? InsetBorder = null,
+    double InsetBorderWidth = 0,
+    DeviceFrame Frame = DeviceFrame.None)
 {
     /// <summary>The whole canvas (letterboxed when the shapes differ).</summary>
     public static Placement Fit { get; } = new();
@@ -154,6 +163,9 @@ public sealed record Clip : TimelineItem
 
     /// <summary>Where its pictures go (null: the whole canvas).</summary>
     public Placement? Placement { get; init; }
+
+    /// <summary>What is done with what is behind the person in a webcam clip (null: nothing).</summary>
+    public WebcamBackground? Background { get; init; }
 
     public string? Link { get; init; }
 

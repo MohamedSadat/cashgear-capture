@@ -64,9 +64,10 @@ public sealed class MetadataOverlays
     /// <summary>
     /// Draws <paramref name="effect"/> as <see cref="Draw(SKCanvas, VideoProject, int, EffectItem, double)"/> does,
     /// with what marks a place in the pictures (rings, the pointer, its halo or spotlight) moved by
-    /// <paramref name="camera"/> as the pictures are; keystroke captions stay where they are.
+    /// <paramref name="camera"/> as the pictures are; keystroke captions stay where they are. A layout's
+    /// <paramref name="cell"/> is the part of the canvas the moved things show in.
     /// </summary>
-    public void Draw(SKCanvas canvas, VideoProject project, int trackIndex, EffectItem effect, double time, SKMatrix camera)
+    public void Draw(SKCanvas canvas, VideoProject project, int trackIndex, EffectItem effect, double time, SKMatrix camera, SKRect? cell = null)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(project);
@@ -93,24 +94,33 @@ public sealed class MetadataOverlays
                 var pointer = effect.Kind == EffectKind.Pointer;
                 var timeline = pointer && effect.Smoothing > 0 && !metadata.CursorInVideo ? loaded.Smoothed(effect.Smoothing) : loaded.Timeline;
                 var planner = new OverlayPlanner(effect.Settings(), new PixelPoint(metadata.Area.X, metadata.Area.Y), metadata.Scale, width, height, drawPointer: pointer && !metadata.CursorInVideo, webcam: false);
-                var scene = planner.Plan(timeline, TimeSpan.FromSeconds(clip.SourceAt(time) + loaded.PartStart(asset)));
+                var recordingTime = clip.SourceAt(time) + loaded.PartStart(asset);
+                var scene = planner.Plan(timeline, TimeSpan.FromSeconds(recordingTime));
                 if (scene.IsEmpty)
                 {
                     continue;
                 }
 
-                var area = PlacementEdits.Area(project, clip);
+                var style = new PointerStyle(
+                    pointer && effect.SharpPointer,
+                    (pointer && effect.PressAnimation ? PointerShapes.PressScale(metadata.Clicks, recordingTime) : 1) / (pointer && effect.ConstantPointerSize && camera.ScaleX > 0 ? camera.ScaleX : 1));
+                var area = PlacementEdits.Area(project, track, clip, time);
                 if (camera.IsIdentity)
                 {
-                    Paint(canvas, area, scene.Items, width, height, loaded);
+                    Paint(canvas, area, scene.Items, width, height, loaded, style);
                     continue;
                 }
 
                 canvas.Save();
+                if (cell is { } part)
+                {
+                    canvas.ClipRect(part);
+                }
+
                 canvas.Concat(in camera);
-                Paint(canvas, area, scene.Items.Where(i => i is not CaptionItem), width, height, loaded);
+                Paint(canvas, area, scene.Items.Where(i => i is not CaptionItem), width, height, loaded, style);
                 canvas.Restore();
-                Paint(canvas, area, scene.Items.OfType<CaptionItem>(), width, height, loaded);
+                Paint(canvas, area, scene.Items.OfType<CaptionItem>(), width, height, loaded, style);
             }
         }
     }
@@ -172,17 +182,17 @@ public sealed class MetadataOverlays
     }
 
     /// <summary>Scene items in the clip's <paramref name="area"/> of the canvas, from the picture's own pixels.</summary>
-    private static void Paint(SKCanvas canvas, SKRect area, IEnumerable<OverlayItem> items, float width, float height, Loaded loaded)
+    private static void Paint(SKCanvas canvas, SKRect area, IEnumerable<OverlayItem> items, float width, float height, Loaded loaded, PointerStyle style)
     {
         canvas.Save();
         canvas.ClipRect(area);
         canvas.Translate(area.Left, area.Top);
         canvas.Scale(area.Width / width, area.Height / height);
-        Paint(canvas, items, width, height, loaded);
+        Paint(canvas, items, width, height, loaded, style);
         canvas.Restore();
     }
 
-    private static void Paint(SKCanvas canvas, IEnumerable<OverlayItem> items, float width, float height, Loaded loaded)
+    private static void Paint(SKCanvas canvas, IEnumerable<OverlayItem> items, float width, float height, Loaded loaded, PointerStyle style)
     {
         foreach (var item in items)
         {
@@ -224,9 +234,13 @@ public sealed class MetadataOverlays
                     break;
                 }
 
+                case CursorItem cursor when style.Sharp && loaded.Vector(cursor.Shape) is { } vector:
+                    PointerShapes.Draw(canvas, vector, (float)cursor.X, (float)cursor.Y, (float)(cursor.Scale * style.Size), (float)cursor.Opacity);
+                    break;
+
                 case CursorItem cursor when loaded.Cursor(cursor.Shape) is { } shape:
                 {
-                    var scale = (float)cursor.Scale;
+                    var scale = (float)(cursor.Scale * style.Size);
                     var target = SKRect.Create((float)cursor.X - (shape.HotspotX * scale), (float)cursor.Y - (shape.HotspotY * scale), shape.Image.Width * scale, shape.Image.Height * scale);
                     using var paint = new SKPaint { Color = SKColors.White.WithAlpha((byte)Math.Round(Math.Clamp(cursor.Opacity, 0, 1) * 255)) };
                     canvas.DrawImage(shape.Image, target, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None), paint);
@@ -275,11 +289,15 @@ public sealed class MetadataOverlays
 
     private sealed record CursorShape(SKImage Image, int HotspotX, int HotspotY);
 
+    /// <summary>How the pointer is drawn: as a shape when it is a standard one, and how much larger than the plan says.</summary>
+    private readonly record struct PointerStyle(bool Sharp, double Size);
+
     /// <summary>A metadata file as read: its timeline, smoothed timelines and pointer shapes as Skia images.</summary>
     private sealed class Loaded(RecordingMetadata metadata)
     {
         private readonly ConcurrentDictionary<double, InputTimeline> _smoothed = new();
         private readonly ConcurrentDictionary<int, CursorShape?> _cursors = new();
+        private readonly ConcurrentDictionary<int, VectorPointer?> _vectors = new();
 
         public RecordingMetadata Metadata { get; } = metadata;
 
@@ -294,6 +312,9 @@ public sealed class MetadataOverlays
             var name = Path.GetFileName(asset.RelativePath ?? asset.Path);
             return Metadata.Parts.FirstOrDefault(p => string.Equals(p.File, name, StringComparison.OrdinalIgnoreCase))?.Start ?? 0;
         }
+
+        public VectorPointer? Vector(int id) => _vectors.GetOrAdd(id, shape =>
+            Metadata.Cursors.FirstOrDefault(c => c.Id == shape) is { } cursor ? PointerShapes.Classify(cursor) : null);
 
         public CursorShape? Cursor(int id) => _cursors.GetOrAdd(id, shape =>
         {

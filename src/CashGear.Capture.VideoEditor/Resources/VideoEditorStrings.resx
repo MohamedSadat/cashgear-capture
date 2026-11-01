@@ -232,4 +232,56 @@
     <value>Mixed</value>
     <comment>A recording's track with every sound mixed together, shown in the timeline (the file keeps the English title)</comment>
   </data>
+  <data name="LookNone" xml:space="preserve">
+    <value>None</value>
+    <comment>a video look: nothing round the screen</comment>
+  </data>
+  <data name="LookSoft" xml:space="preserve">
+    <value>Soft</value>
+    <comment>a video look: a light background</comment>
+  </data>
+  <data name="LookGradient" xml:space="preserve">
+    <value>Gradient</value>
+    <comment>a video look: a colourful background</comment>
+  </data>
+  <data name="LookDark" xml:space="preserve">
+    <value>Dark</value>
+    <comment>a video look: a dark background</comment>
+  </data>
+  <data name="LayoutCornerBubble" xml:space="preserve">
+    <value>Corner bubble</value>
+    <comment>a layout: the webcam in a corner</comment>
+  </data>
+  <data name="LayoutSideBySide" xml:space="preserve">
+    <value>Side by side</value>
+    <comment>a layout: the screen and the webcam next to each other</comment>
+  </data>
+  <data name="LayoutCameraOnly" xml:space="preserve">
+    <value>Camera only</value>
+    <comment>a layout</comment>
+  </data>
+  <data name="LayoutScreenOnly" xml:space="preserve">
+    <value>Screen only</value>
+    <comment>a layout</comment>
+  </data>
+  <data name="TrackLayout" xml:space="preserve">
+    <value>Layout</value>
+    <comment>a timeline track's name</comment>
+  </data>
+  <data name="TrackLayoutNumbered" xml:space="preserve">
+    <value>Layout {0}</value>
+    <comment>a timeline track's name; {0}: its number</comment>
+  </data>
+  <data name="PresetVertical" xml:space="preserve">
+    <value>MP4, H.264, 9:16 (Shorts, Reels, TikTok)</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetSquare" xml:space="preserve">
+    <value>MP4, H.264, 1:1 (square)</value>
+    <comment>export kind of file</comment>
+  </data>
+  <data name="PresetPortrait" xml:space="preserve">
+    <value>MP4, H.264, 4:5 (portrait)</value>
+    <comment>export kind of file</comment>
+  </data>
 </root>
