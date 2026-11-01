@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CashGear.Capture.Core\CashGear.Capture.Core.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Editor\CashGear.Capture.Editor.csproj" />
+    <ProjectReference Include="..\CashGear.Capture.Inference\CashGear.Capture.Inference.csproj" />
     <ProjectReference Include="..\CashGear.Capture.Media\CashGear.Capture.Media.csproj" />
   </ItemGroup>
 

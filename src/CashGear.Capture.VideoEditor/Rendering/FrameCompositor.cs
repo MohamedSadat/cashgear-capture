@@ -38,11 +38,15 @@ public sealed class FrameCompositor
 
     private static readonly SKSamplingOptions Sampling = new(SKFilterMode.Linear, SKMipmapMode.None);
 
+    /// <summary>Things kept for the processor's frames: a background and a shadow for each of a few pictures.</summary>
+    private const int MaxKept = 6;
+
     private readonly IFrameProvider _frames;
     private readonly MetadataOverlays _overlays = new();
     private readonly ZoomCamera _camera;
     private readonly CaptionRenderer _captions = new();
     private readonly Dictionary<string, SKImage?> _pictures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<(object Key, SKMatrix Matrix, SKRectI Area, SKImage Image)> _kept = [];
     private (string? Clip, double Time, double Blur, SKImage? Image) _blurredScreen;
 
     /// <summary>The webcam clips' masks, for a background that is blurred, replaced or removed.</summary>
@@ -289,7 +293,6 @@ public sealed class FrameCompositor
         using var image = surface.Snapshot();
         using var shader = image.ToShader(SKShaderTileMode.Decal, SKShaderTileMode.Decal, Sampling);
         using var blurred = StudioShaders.MotionBlur(shader, Along(fromBack), Along(toBack), motion.Samples);
-        using var paint = new SKPaint { Shader = blurred };
         canvas.Save();
         if (cell is { } part)
         {
@@ -297,9 +300,102 @@ public sealed class FrameCompositor
         }
 
         canvas.ResetMatrix();
-        canvas.DrawRect(SKRect.Create(bounds.Left, bounds.Top, bounds.Width, bounds.Height), paint);
+        if (canvas.Context is null)
+        {
+            DrawInTiles(canvas, bounds, blurred);
+        }
+        else
+        {
+            using var paint = new SKPaint { Shader = blurred };
+            canvas.DrawRect(SKRect.Create(bounds.Left, bounds.Top, bounds.Width, bounds.Height), paint);
+        }
+
         canvas.Restore();
         return missing;
+    }
+
+    /// <summary>
+    /// A shader over <paramref name="bounds"/> (device pixels) on the processor, in strips side by side: the same code
+    /// as on the graphics card, where a pixel reading a picture many times is otherwise far too slow one at a time.
+    /// </summary>
+    private static void DrawInTiles(SKCanvas canvas, SKRectI bounds, SKShader shader)
+    {
+        using var result = new SKBitmap(new SKImageInfo(bounds.Width, bounds.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
+        var strips = Math.Clamp(Environment.ProcessorCount, 1, 32);
+        Parallel.For(0, strips, strip =>
+        {
+            var top = bounds.Height * strip / strips;
+            var bottom = bounds.Height * (strip + 1) / strips;
+            using var part = new SKBitmap();
+            if (bottom > top && result.ExtractSubset(part, SKRectI.Create(0, top, bounds.Width, bottom - top)))
+            {
+                using var target = new SKCanvas(part);
+                target.Translate(-bounds.Left, -bounds.Top - top);
+                using var paint = new SKPaint { Shader = shader };
+                target.DrawRect(SKRect.Create(bounds.Left, bounds.Top + top, bounds.Width, bottom - top), paint);
+            }
+        });
+        using var image = SKImage.FromBitmap(result);
+        canvas.DrawImage(image, bounds.Left, bounds.Top, new SKSamplingOptions(SKFilterMode.Nearest));
+    }
+
+    /// <summary>
+    /// Something that doesn't change from frame to frame, drawn by <paramref name="draw"/> in canvas coordinates. On the
+    /// graphics card it is simply drawn. On the processor (an export of many frames) its pixels are kept for as long as
+    /// the same key and the same place on the target ask for them, and copied.
+    /// </summary>
+    private void DrawKept(SKCanvas canvas, object key, SKRect area, Action<SKCanvas> draw)
+    {
+        if (canvas.Context is not null)
+        {
+            draw(canvas);
+            return;
+        }
+
+        var matrix = canvas.TotalMatrix;
+        var outer = SKRectI.Ceiling(matrix.MapRect(area), true);
+        var clip = canvas.DeviceClipBounds;
+        outer = SKRectI.Intersect(outer, clip);
+        if (outer.Width <= 0 || outer.Height <= 0)
+        {
+            return;
+        }
+
+        SKImage? kept = null;
+        foreach (var entry in _kept)
+        {
+            if (entry.Key.Equals(key) && entry.Matrix == matrix && entry.Area == outer)
+            {
+                kept = entry.Image;
+                break;
+            }
+        }
+
+        if (kept is null)
+        {
+            using var surface = SKSurface.Create(new SKImageInfo(outer.Width, outer.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
+            if (surface is null)
+            {
+                draw(canvas);
+                return;
+            }
+
+            surface.Canvas.Translate(-outer.Left, -outer.Top);
+            surface.Canvas.Concat(in matrix);
+            draw(surface.Canvas);
+            kept = surface.Snapshot();
+            _kept.Add((key, matrix, outer, kept));
+            if (_kept.Count > MaxKept)
+            {
+                _kept[0].Image.Dispose();
+                _kept.RemoveAt(0);
+            }
+        }
+
+        canvas.Save();
+        canvas.ResetMatrix();
+        canvas.DrawImage(kept, outer.Left, outer.Top, new SKSamplingOptions(SKFilterMode.Nearest));
+        canvas.Restore();
     }
 
     private int DrawAnnotation(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, Pass pass)
@@ -445,7 +541,8 @@ public sealed class FrameCompositor
         if (placement.Shadow is { Opacity: > 0 } shadow)
         {
             var (body, bodyRadius) = placement.Frame == DeviceFrame.None ? (target, radius) : DeviceFrames.Body(placement.Frame, target);
-            DrawShadow(canvas, shadow, body, bodyRadius, alpha);
+            var reach = (float)((Math.Max(0.5, shadow.Blur) * 3) + 2 + Math.Max(Math.Abs(shadow.OffsetX), Math.Abs(shadow.OffsetY)));
+            DrawKept(canvas, (shadow, body, bodyRadius, alpha), SKRect.Inflate(body, reach, reach), target => DrawShadow(target, shadow, body, bodyRadius, alpha));
         }
 
         DeviceFrames.Draw(canvas, placement.Frame, target, alpha);
@@ -642,18 +739,18 @@ public sealed class FrameCompositor
         {
             case BackgroundKind.LinearGradient:
             case BackgroundKind.RadialGradient:
-            {
-                using var shader = Gradient(background, size);
-                using var paint = new SKPaint { Shader = shader, IsDither = true };
-                canvas.DrawRect(area, paint);
+                DrawKept(canvas, (background, size.Width, size.Height), area, target =>
+                {
+                    using var shader = Gradient(background, size);
+                    using var paint = new SKPaint { Shader = shader, IsDither = true };
+                    target.DrawRect(area, paint);
+                });
                 break;
-            }
 
             case BackgroundKind.Picture when background.PictureAssetId is { } id && PictureOf(project, id) is { } picture:
-            {
-                canvas.DrawImage(picture, CutToShape(picture.Width, picture.Height, (float)size.Width / size.Height), area, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
+                DrawKept(canvas, (background, size.Width, size.Height), area, target =>
+                    target.DrawImage(picture, CutToShape(picture.Width, picture.Height, (float)size.Width / size.Height), area, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear)));
                 break;
-            }
 
             case BackgroundKind.BlurredScreen:
                 missing += DrawBlurredScreen(canvas, project, time, background, area);

@@ -6,10 +6,14 @@ namespace CashGear.Capture.VideoEditor.Export;
 
 /// <summary>
 /// A kind of file an export makes: the container, the video codec (none for sound only and GIFs), the sound codec,
-/// and the picture's height (0: the project's own size; a GIF's size comes from its <see cref="GifOptions"/>).
+/// and the picture's height (0: the project's own size; a GIF's size comes from its <see cref="GifOptions"/>). A preset
+/// with a canvas of its own (9:16, 1:1, 4:5) makes the project's screen cover that shape, following the pointer.
 /// </summary>
-public sealed record ExportPreset(string Id, string Name, ExportContainer Container, VideoCodec? Codec, string AudioCodec, int Height, string Extension)
+public sealed record ExportPreset(string Id, string Name, ExportContainer Container, VideoCodec? Codec, string AudioCodec, int Height, string Extension, int CanvasWidth = 0, int CanvasHeight = 0)
 {
+    /// <summary>It has a canvas of its own, whatever the project's shape.</summary>
+    public bool HasCanvas => CanvasWidth > 0 && CanvasHeight > 0;
+
     /// <summary>An animated GIF: pictures without sound, two passes for its palette.</summary>
     public bool IsGif => Container == ExportContainer.Gif;
 
@@ -22,8 +26,8 @@ public sealed record ExportPreset(string Id, string Name, ExportContainer Contai
     /// <summary>The picture's size for a project: the preset's height (the width in proportion), even, and in multiples of 8 for HEVC.</summary>
     public (int Width, int Height) Size(int projectWidth, int projectHeight)
     {
-        var height = Height > 0 ? Height : projectHeight;
-        var width = (int)Math.Round((double)projectWidth * height / projectHeight);
+        var height = HasCanvas ? CanvasHeight : Height > 0 ? Height : projectHeight;
+        var width = HasCanvas ? CanvasWidth : (int)Math.Round((double)projectWidth * height / projectHeight);
         var step = Codec == VideoCodec.Hevc ? 8 : 2;
         return (Math.Max(step, width / step * step), Math.Max(step, height / step * step));
     }
@@ -62,7 +66,13 @@ public static class ExportPresets
 
     public static ExportPreset Gif => new("gif", VideoEditorStrings.PresetGif, ExportContainer.Gif, null, "", 0, ".gif");
 
-    public static IReadOnlyList<ExportPreset> All => [Mp4H264Hd, Mp4H264Small, Mp4H264Project, Mp4Hevc, WebMVp9, WebMAv1, Gif, M4a, Mp3];
+    public static ExportPreset Vertical => new("mp4-9x16", VideoEditorStrings.PresetVertical, ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 0, ".mp4", 1080, 1920);
+
+    public static ExportPreset Square => new("mp4-1x1", VideoEditorStrings.PresetSquare, ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 0, ".mp4", 1080, 1080);
+
+    public static ExportPreset Portrait => new("mp4-4x5", VideoEditorStrings.PresetPortrait, ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 0, ".mp4", 1080, 1350);
+
+    public static IReadOnlyList<ExportPreset> All => [Mp4H264Hd, Mp4H264Small, Mp4H264Project, Mp4Hevc, Vertical, Square, Portrait, WebMVp9, WebMAv1, Gif, M4a, Mp3];
 
     public static ExportPreset? Find(string? id) => All.FirstOrDefault(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
 }

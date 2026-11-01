@@ -284,4 +284,8 @@
     <value>MP4, H.264, 4:5 (portrait)</value>
     <comment>export kind of file</comment>
   </data>
+  <data name="MasksFailed" xml:space="preserve">
+    <value>The webcam's background can't be changed: {0}</value>
+    <comment>{0}: what went wrong</comment>
+  </data>
 </root>

@@ -96,6 +96,19 @@ internal static class AppHost
             new System.Net.Http.HttpClient { Timeout = System.Threading.Timeout.InfiniteTimeSpan },
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CashGear.Capture.Transcription.WhisperModelStore>>(),
             alsoIn: [System.IO.Path.Combine(AppContext.BaseDirectory, "models")]));
+        builder.Services.AddSingleton(sp => new CashGear.Capture.Inference.InferenceModelStore(
+            System.IO.Path.Combine(sp.GetRequiredService<AppPaths>().DataDirectory, "Models", "Inference"),
+            new System.Net.Http.HttpClient { Timeout = System.Threading.Timeout.InfiniteTimeSpan },
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CashGear.Capture.Inference.InferenceModelStore>>(),
+            alsoIn: [System.IO.Path.Combine(AppContext.BaseDirectory, "models")]));
+        builder.Services.AddSingleton(sp =>
+        {
+            var models = sp.GetRequiredService<CashGear.Capture.Inference.InferenceModelStore>();
+            return new CashGear.Capture.VideoEditor.Playback.WebcamMasks(
+                System.IO.Path.Combine(sp.GetRequiredService<AppPaths>().DataDirectory, "VideoEditor", "cache"),
+                async ct => new CashGear.Capture.Inference.PersonSegmenter(await models.EnsureAsync(CashGear.Capture.Inference.InferenceModels.PersonFinder, null, ct).ConfigureAwait(false)),
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CashGear.Capture.VideoEditor.Playback.WebcamMasks>>());
+        });
         builder.Services.AddSingleton<VideoEditor.VideoEditorWindows>();
         builder.Services.AddSingleton<VideoEditor.IVideoEditorLauncher>(sp => sp.GetRequiredService<VideoEditor.VideoEditorWindows>());
         builder.Services.AddSingleton<InterruptedRecordings>();

@@ -219,4 +219,7 @@
   <data name="PresetPortrait" xml:space="preserve">
     <value>MP4، H.‎264، 4:5 (عمودي)</value>
   </data>
+  <data name="MasksFailed" xml:space="preserve">
+    <value>تعذر تغيير خلفية كاميرا الويب: {0}</value>
+  </data>
 </root>

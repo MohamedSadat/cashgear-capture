@@ -48,10 +48,18 @@ public sealed record ExportRequest(
     CaptionFiles CaptionFiles = CaptionFiles.None,
     GifOptions? Gif = null)
 {
-    /// <summary>The project as the export makes it: the range only, caption tracks hidden when they aren't burned in.</summary>
+    /// <summary>
+    /// The project as the export makes it: the range only, on the preset's own canvas (the screen covering it and
+    /// following the pointer, when the project is of another shape), caption tracks hidden when they aren't burned in.
+    /// </summary>
     public VideoProject Prepared()
     {
         var project = Range is { } range ? ProjectRange.Extract(Project, range) : Project;
+        if (Preset.HasCanvas && Math.Abs(((double)project.Canvas.Width / project.Canvas.Height) - ((double)Preset.CanvasWidth / Preset.CanvasHeight)) > 0.01)
+        {
+            project = CanvasEdits.Change(project, Preset.CanvasWidth, Preset.CanvasHeight, ScreenFraming.FollowPointer);
+        }
+
         return BurnCaptions ? project : project with { Tracks = [.. project.Tracks.Select(t => t.Kind == TrackKind.Caption ? t with { Hidden = true } : t)] };
     }
 }
@@ -62,7 +70,8 @@ public sealed record ExportProgress(double Fraction, TimeSpan Elapsed, TimeSpan?
 /// <param name="Encoder">The video encoder used (null for sound only).</param>
 /// <param name="CaptionPaths">The subtitle files written next to it.</param>
 /// <param name="Gif">For a GIF, how it was made in the end (smaller than asked, to fit its size).</param>
-public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed, IReadOnlyList<string>? CaptionPaths = null, GifOptions? Gif = null);
+/// <param name="PointerOutOfView">When the screen followed the pointer: the times it moved too fast to stay in the picture.</param>
+public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed, IReadOnlyList<string>? CaptionPaths = null, GifOptions? Gif = null, IReadOnlyList<TimeRange>? PointerOutOfView = null);
 
 /// <summary>
 /// Makes a file from a project on a background thread: each frame drawn by the same <see cref="FrameCompositor"/>
@@ -71,9 +80,12 @@ public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, l
 /// the time left are reported; cancelling leaves no file. The file is written as <c>…​.partial</c> and renamed at
 /// the end.
 /// </summary>
-public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger<ProjectExporter> logger)
+public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger<ProjectExporter> logger, WebcamMasks? masks = null)
 {
     private static readonly TimeSpan ReportEvery = TimeSpan.FromMilliseconds(200);
+
+    /// <summary>Motion blur's samples in an export: more than the preview takes, since nobody is waiting on each frame.</summary>
+    public const int MotionSamples = 32;
 
     /// <summary>The sound stream's title in the file, kept in English like a recording's ("Microphone").</summary>
     [Localizable(false)]
@@ -99,6 +111,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         }
 
         var project = request.Prepared();
+        await MakeMasksAsync(project, ct).ConfigureAwait(false);
 
         var detected = request.Preset.Codec is not null ? await encoders.DetectAsync(ct: ct).ConfigureAwait(false) : [];
         var partial = request.Path + ".partial";
@@ -110,7 +123,10 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
             var result = request.Preset.IsGif ? WriteGif(prepared, partial, progress, ct) : Write(prepared, partial, detected, progress, ct);
             File.Move(partial, request.Path, overwrite: true);
             LogFinished(request.Path, result.Frames, result.Elapsed.TotalSeconds);
-            return result with { Path = request.Path, CaptionPaths = WriteCaptions(project, request.Path, request.CaptionFiles) };
+            var outOfView = project.Canvas.Framing == ScreenFraming.FollowPointer && request.Preset.HasVideo
+                ? new ZoomCamera(new MetadataOverlays()).PointerOutOfView(project)
+                : null;
+            return result with { Path = request.Path, CaptionPaths = WriteCaptions(project, request.Path, request.CaptionFiles), PointerOutOfView = outOfView };
         }
         catch (FfmpegException e)
         {
@@ -200,7 +216,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         using var converter = new FrameConverter(width, height, video.PixelFormat);
         using var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul))
             ?? throw new ExportException(VideoEditorStrings.NotEnoughMemory(width, height));
-        var compositor = new FrameCompositor(frames);
+        var compositor = NewCompositor(frames);
         var count = (long)Math.Ceiling((duration * fps) - 1e-6);
         for (var n = 0L; n < count; n++)
         {
@@ -260,7 +276,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
                 for (var pass = 0; pass < 2; pass++)
                 {
                     using var frames = new ExportFrameProvider(VideoDecoding.Hardware);
-                    var compositor = new FrameCompositor(frames);
+                    var compositor = NewCompositor(frames);
                     for (var n = 0L; n < count; n++)
                     {
                         ct.ThrowIfCancellationRequested();
@@ -313,6 +329,38 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
 
             LogGifTooLarge(bytes, options.MaxBytes, attempt);
             options = smaller;
+        }
+    }
+
+    private FrameCompositor NewCompositor(IFrameProvider frames) => new(frames) { Masks = masks, MotionSamples = MotionSamples };
+
+    /// <summary>The masks of the webcam clips that need them, made now if they aren't there yet (the export says what stopped it).</summary>
+    private async Task MakeMasksAsync(VideoProject project, CancellationToken ct)
+    {
+        if (masks is null)
+        {
+            return;
+        }
+
+        var needed = project.Tracks.Where(t => t.HasPictures && !t.Hidden).SelectMany(t => t.Clips)
+            .Where(c => c.Background is { Effect: not BackgroundEffect.None })
+            .Select(c => (c.AssetId, c.Stream))
+            .Distinct();
+        foreach (var (assetId, stream) in needed)
+        {
+            if (project.Asset(assetId) is not { } asset)
+            {
+                continue;
+            }
+
+            try
+            {
+                await masks.EnsureAsync(asset, stream, null, ct).ConfigureAwait(false);
+            }
+            catch (Exception e) when (e is HttpRequestException or InvalidDataException or InvalidOperationException or FfmpegException or IOException)
+            {
+                throw new ExportException(VideoEditorStrings.MasksFailed(e.Message), e);
+            }
         }
     }
 
