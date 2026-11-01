@@ -8,7 +8,8 @@ namespace CashGear.Capture.VideoEditor.Tests;
 /// <summary>
 /// <c>Fixtures\v1.1.1</c> was written once by the 1.1.1 code and never again: a project with every kind of item 1.1.1
 /// knew (<c>Project.cgcap</c>, version 1, with its metadata file; the media isn't needed, <see cref="PatternFrames"/>
-/// draws it) and the frames 1.1.1 drew from it. Every later version must open it and draw the same pixels.
+/// draws it) and the frames 1.1.1 drew from it after opening it. Every later version must open it and draw the same
+/// pixels. (Its second caption track has a box: 1.1.1 reads a style without one as having the default box.)
 /// </summary>
 public sealed class GoldenFrameTests : IDisposable
 {
