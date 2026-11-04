@@ -60,6 +60,10 @@ public sealed partial class RecordingScheduler(
         await state.UpdateAsync(s => s with { ScheduledRecording = plan }).ConfigureAwait(false);
         Begin(plan);
         LogScheduled(plan.StartAt);
+        if (plan.StartAt is { } at)
+        {
+            notifier.Notify(RecordingText.ScheduleTitle, RecordingText.ScheduledFor(at.ToLocalTime().ToString("g", System.Globalization.CultureInfo.CurrentCulture)));
+        }
     }
 
     /// <summary>Lets go of what was waiting.</summary>

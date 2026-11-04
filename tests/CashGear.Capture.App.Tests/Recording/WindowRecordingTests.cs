@@ -107,6 +107,7 @@ public sealed class WindowRecordingTests : IDisposable
             var started = DateTime.UtcNow;
             var round = 0;
             var resizedFrom = new List<(double From, double To)>();
+            var grown = new List<double>();
             while ((DateTime.UtcNow - started).TotalSeconds < seconds)
             {
                 var at = recorder.Elapsed.TotalSeconds;
@@ -124,6 +125,7 @@ public sealed class WindowRecordingTests : IDisposable
                         cover = null;
                         break;
                     case 3:
+                        grown.Add(at);
                         window.Width = 320;
                         window.Height = 400;
                         resizedFrom.Add((at + 0.5, at + 3));
@@ -132,6 +134,7 @@ public sealed class WindowRecordingTests : IDisposable
                         window.Left = -200; // partly off the screen, or over another monitor
                         break;
                     case 5:
+                        grown.Add(at);
                         window.Left = 200;
                         window.Width = 640;
                         window.Height = 400;
@@ -147,7 +150,8 @@ public sealed class WindowRecordingTests : IDisposable
 
             var frames = 0;
             var green = 0;
-            var noWindow = 0;
+            var foreign = 0;
+            var unpainted = new List<double>();
             var letterboxed = 0;
             using var reader = new MediaReader(result.Path);
             reader.Video.Width.Should().Be(width);
@@ -159,16 +163,24 @@ public sealed class WindowRecordingTests : IDisposable
                 var middle = Look(bgra, w, x1, h / 2);
                 if (!middle.Magenta)
                 {
-                    noWindow++; // nothing but the window is ever in the middle
+                    unpainted.Add(time);
                 }
 
                 for (var y = 2; y < h; y += h / 8)
                 {
                     for (var x = 2; x < w; x += w / 16)
                     {
+                        var at = ((y * w) + x) * 4;
                         if (Look(bgra, w, x, y).Green)
                         {
                             green++;
+                        }
+
+                        // The window, a bar, or the soft edge between them: no other colour, so nothing from behind it.
+                        var (b, g, r) = (bgra[at], bgra[at + 1], bgra[at + 2]);
+                        if (g >= 80 || Math.Abs(r - b) >= 60)
+                        {
+                            foreign++;
                         }
                     }
                 }
@@ -180,10 +192,14 @@ public sealed class WindowRecordingTests : IDisposable
                 }
             });
 
-            Log($"Window recording: {frames} frames in {result.Duration}, {noWindow} without the window, {green} green samples, {letterboxed} letterboxed, {result.FramesDropped} dropped, {round} changes");
+            Log($"Window recording: {frames} frames in {result.Duration}, {unpainted.Count} with the window half painted just after a resize ({string.Join(", ", unpainted.Select(t => t.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)))}), {foreign} foreign samples, {green} green samples, {letterboxed} letterboxed, {result.FramesDropped} dropped, {round} changes, {grown.Count} resizes");
             frames.Should().Be((int)result.FramesWritten);
             green.Should().Be(0, "the window covering it is never in the pictures");
-            noWindow.Should().Be(0, "the window is in every frame");
+            foreign.Should().Be(0, "nothing but the window and its bars is ever in the pictures");
+
+            // Resized, this window shows half of its picture for a frame before it has painted itself: Windows' own frames
+            // show that too (Resizing_over_and_over_keeps_the_picture). It is the window as it is then, and only then.
+            unpainted.Should().AllSatisfy(t => grown.Should().Contain(g => t >= g - 0.1 && t <= g + 0.5, $"only just after it was resized, not at {t:0.00} s"));
             letterboxed.Should().BeGreaterThan(20, "a window of another shape gets bars");
         }
         finally
@@ -251,6 +267,137 @@ public sealed class WindowRecordingTests : IDisposable
         File.Exists(result.Path).Should().BeTrue();
         result.Note.Should().Contain("was closed");
     });
+
+    /// <summary>
+    /// How often a resized window comes out without its picture: hundreds of resizes, in a test window and in Windows'
+    /// own view of it, to tell the recording's doing from the window's. By hand: <c>CASHGEAR_RESIZE_SECONDS=120</c>.
+    /// </summary>
+    [Fact(Timeout = 480_000)]
+    public Task Resizing_over_and_over_keeps_the_picture() => StaDispatcher.RunAsync(async () =>
+    {
+        Assert.SkipUnless(int.TryParse(Environment.GetEnvironmentVariable("CASHGEAR_RESIZE_SECONDS"), out var seconds), "Only when asked for.");
+        var ct = TestContext.Current.CancellationToken;
+        var recorder = new ScreenRecorder(TestFfmpeg.Encoders, _store, _interop, new FakeSound(), _loggers);
+        var window = Plain(Colors.Magenta, 200, 200, 640, 400, topmost: false);
+        try
+        {
+            await Task.Delay(300, ct);
+            var scale = Scale(window);
+            var (width, height) = EncoderPresets.EvenSize((int)Math.Round(640 * scale), (int)Math.Round(400 * scale));
+            var options = Options(window, width, height, "resizing.mp4");
+            using var control = new PlainCapture(_interop, options.Window!.Handle);
+            await recorder.StartAsync(options, ct);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var resizes = 0;
+            while (watch.Elapsed.TotalSeconds < seconds)
+            {
+                window.Width = resizes++ % 2 == 0 ? 320 : 640;
+                await Task.Delay(400, ct);
+            }
+
+            var result = await recorder.StopAsync(ct);
+            using var reader = new MediaReader(result.Path);
+            var blank = 0;
+            var seen = new List<string>();
+            reader.ReadVideo((time, w, h, bgra) =>
+            {
+                if (!Look(bgra, w, w / 2, h / 2).Magenta)
+                {
+                    blank++;
+                    var magenta = 0;
+                    for (var x = 0; x < w; x += 8)
+                    {
+                        magenta += Look(bgra, w, x, h / 2).Magenta ? 1 : 0;
+                    }
+
+                    var at = (((h / 2) * w) + (w / 2)) * 4;
+                    seen.Add($"{time:0.00}s middle {bgra[at + 2]},{bgra[at + 1]},{bgra[at]}, {magenta * 8} of {w} across are the window");
+                }
+            });
+            Log($"Resizing: {resizes} resizes, {blank} frames of {result.FramesWritten} without the picture in the middle: {string.Join("; ", seen)}");
+            Log($"Resizing, Windows' own frames beside it: {control.Frames} frames, {control.Blank} without the picture in the middle: {string.Join("; ", control.Seen.Take(12))}");
+        }
+        finally
+        {
+            window.Close();
+        }
+    });
+
+    /// <summary>The window through a capture of its own, nothing of the recording in between: what Windows sends, read frame by frame.</summary>
+    private sealed class PlainCapture : IDisposable
+    {
+        private readonly D3DDeviceManager _devices = new(NullLogger<D3DDeviceManager>.Instance);
+        private readonly D3DResources _resources;
+        private readonly Windows.Graphics.Capture.Direct3D11CaptureFramePool _pool;
+        private readonly Windows.Graphics.Capture.GraphicsCaptureSession _session;
+        private Windows.Graphics.SizeInt32 _size;
+
+        public PlainCapture(WgcInterop interop, nint window)
+        {
+            _resources = _devices.Acquire();
+            (_pool, _session) = Task.Run(() =>
+            {
+                var item = interop.CreateItemForWindow(window);
+                _size = item.Size;
+                var pool = Windows.Graphics.Capture.Direct3D11CaptureFramePool.CreateFreeThreaded(_resources.WinRtDevice, Windows.Graphics.DirectX.DirectXPixelFormat.B8G8R8A8UIntNormalized, 2, _size);
+                pool.FrameArrived += OnFrame;
+                var session = pool.CreateCaptureSession(item);
+                session.IsCursorCaptureEnabled = false;
+                session.StartCapture();
+                return (pool, session);
+            }).GetAwaiter().GetResult();
+        }
+
+        public int Frames { get; private set; }
+
+        public int Blank { get; private set; }
+
+        public List<string> Seen { get; } = [];
+
+        public void Dispose()
+        {
+            Task.Run(() =>
+            {
+                _pool.FrameArrived -= OnFrame;
+                _session.Dispose();
+                _pool.Dispose();
+            }).GetAwaiter().GetResult();
+            _devices.Dispose();
+        }
+
+        private unsafe void OnFrame(Windows.Graphics.Capture.Direct3D11CaptureFramePool sender, object args)
+        {
+            using var frame = sender.TryGetNextFrame();
+            if (frame is null)
+            {
+                return;
+            }
+
+            var content = frame.ContentSize;
+            using (var texture = WgcInterop.GetTexture(frame.Surface))
+            {
+                var description = texture.Description with { Usage = Vortice.Direct3D11.ResourceUsage.Staging, BindFlags = Vortice.Direct3D11.BindFlags.None, CPUAccessFlags = Vortice.Direct3D11.CpuAccessFlags.Read, MiscFlags = Vortice.Direct3D11.ResourceOptionFlags.None };
+                using var staging = _resources.Device.CreateTexture2D(description);
+                _resources.Context.CopyResource(staging, texture);
+                var mapped = _resources.Context.Map(staging, 0, Vortice.Direct3D11.MapMode.Read, Vortice.Direct3D11.MapFlags.None);
+                var pixel = (byte*)mapped.DataPointer + ((content.Height / 2) * mapped.RowPitch) + ((content.Width / 2) * 4);
+                var (b, g, r) = (pixel[0], pixel[1], pixel[2]);
+                _resources.Context.Unmap(staging, 0);
+                Frames++;
+                if (!(r > 170 && b > 170 && g < 80))
+                {
+                    Blank++;
+                    Seen.Add($"{content.Width}x{content.Height} in a pool of {_size.Width}x{_size.Height}: {r},{g},{b}");
+                }
+            }
+
+            if (content.Width != _size.Width || content.Height != _size.Height)
+            {
+                _size = content;
+                sender.Recreate(_resources.WinRtDevice, Windows.Graphics.DirectX.DirectXPixelFormat.B8G8R8A8UIntNormalized, 2, _size);
+            }
+        }
+    }
 
     /// <summary>A lost graphics device: the picture holds, and a window goes on in the same file, as a monitor's area does.</summary>
     [Fact(Timeout = 60_000)]

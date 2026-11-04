@@ -40,6 +40,7 @@ public sealed class HdrTests : IDisposable
     private unsafe string Write(string name)
     {
         TestMedia.Require();
+        using var turn = new CashGear.Capture.Tests.MachineTurn(); // AV1 in software works every core
         var path = Path.Combine(_media.Root, name);
         var format = new VideoFormat(Width, Height, 30);
         var candidate = EncoderPresets.SvtAv1;
@@ -169,7 +170,8 @@ public sealed class HdrTests : IDisposable
         var asset = ProjectFactory.ReadAsset(source);
         var project = ProjectFactory.FromRecording(asset);
         var exporter = new ProjectExporter(new SoftwareEncoders(), NullLogger<ProjectExporter>.Instance);
-        return await exporter.ExportAsync(new ExportRequest(project, preset, QualityPreset.Lossless, Path.Combine(_media.Root, name)), ct: TestContext.Current.CancellationToken);
+        var ct = TestContext.Current.CancellationToken;
+        return await CashGear.Capture.Tests.MachineTurn.RunAsync(() => exporter.ExportAsync(new ExportRequest(project, preset, QualityPreset.Lossless, Path.Combine(_media.Root, name)), ct: ct));
     }
 
     [Fact]

@@ -189,6 +189,11 @@ public sealed partial class RecordingController
         }
 
         current = profile?.Apply(current) ?? current;
+        if (!_features.IsEnabled(ProFeature.WebcamBackground))
+        {
+            current = current with { Overlays = current.Overlays with { Webcam = current.Overlays.WebcamSettings with { LiveBackground = WebcamLiveBackground.None } } };
+        }
+
         var kind = plan.Area ?? profile?.Area ?? RecordingAreaKind.Ask;
         if (kind == RecordingAreaKind.AllMonitors && !pro)
         {

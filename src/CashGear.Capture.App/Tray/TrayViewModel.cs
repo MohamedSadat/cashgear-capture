@@ -392,7 +392,6 @@ public sealed partial class TrayViewModel : ObservableObject
         if (plan.StartAt is not null)
         {
             await _scheduler.ScheduleAsync(plan);
-            _notifier.Notify(RecordingText.ScheduleTitle, RecordingText.ScheduledFor(plan.StartAt.Value.ToLocalTime().ToString("g", System.Globalization.CultureInfo.CurrentCulture)));
         }
         else
         {

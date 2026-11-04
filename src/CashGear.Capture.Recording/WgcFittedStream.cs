@@ -748,22 +748,22 @@ internal sealed partial class WgcFittedStream : IPictureStream
             {
                 var (width, height) = CaptureFrameAbi.ContentSize(frame);
                 var ticks = CaptureFrameAbi.SystemRelativeTime(frame);
-                if (!Fits(sender, width, height) || Rent(width, height) is not { } target)
+                if (Fits(width, height) && Rent(width, height) is { } target)
                 {
-                    return;
+                    var texture = CaptureFrameAbi.Texture(frame, InteropGuids.ID3D11Texture2D);
+                    try
+                    {
+                        CaptureFrameAbi.CopySubresourceRegion(_resources!.Context.NativePointer, target.Texture.NativePointer, texture, 0, 0, width, height);
+                    }
+                    finally
+                    {
+                        CaptureFrameAbi.Release(texture);
+                    }
+
+                    owner.Deliver(this, target, width, height, QpcTime.FromHundredNanoseconds(ticks, Stopwatch.Frequency));
                 }
 
-                var texture = CaptureFrameAbi.Texture(frame, InteropGuids.ID3D11Texture2D);
-                try
-                {
-                    CaptureFrameAbi.CopySubresourceRegion(_resources!.Context.NativePointer, target.Texture.NativePointer, texture, 0, 0, width, height);
-                }
-                finally
-                {
-                    CaptureFrameAbi.Release(texture);
-                }
-
-                owner.Deliver(this, target, width, height, QpcTime.FromHundredNanoseconds(ticks, Stopwatch.Frequency));
+                FollowSize(sender, width, height);
             }
             finally
             {
@@ -789,36 +789,29 @@ internal sealed partial class WgcFittedStream : IPictureStream
                     && CaptureFrameAbi.SystemRelativeTime(native) == frame.SystemRelativeTime.Ticks;
             }
 
-            if (!Fits(sender, width, height) || Rent(width, height) is not { } target)
+            if (Fits(width, height) && Rent(width, height) is { } target)
             {
-                return;
+                using (var texture = WgcInterop.GetTexture(frame.Surface))
+                {
+                    _resources!.Context.CopySubresourceRegion(target.Texture, 0, 0, 0, 0, texture, 0, new Box(0, 0, 0, width, height, 1));
+                }
+
+                owner.Deliver(this, target, width, height, QpcTime.FromHundredNanoseconds(frame.SystemRelativeTime.Ticks, Stopwatch.Frequency));
             }
 
-            using (var texture = WgcInterop.GetTexture(frame.Surface))
-            {
-                _resources!.Context.CopySubresourceRegion(target.Texture, 0, 0, 0, 0, texture, 0, new Box(0, 0, 0, width, height, 1));
-            }
-
-            owner.Deliver(this, target, width, height, QpcTime.FromHundredNanoseconds(frame.SystemRelativeTime.Ticks, Stopwatch.Frequency));
+            FollowSize(sender, width, height);
         }
 
         /// <summary>
-        /// Follows the picture's size: the pool is made again at it, and the textures are made larger by the video thread
-        /// when it doesn't fit them. False when this picture can't be used: nothing to show (a minimized window sends
-        /// odd sizes), or larger than the pool it came from or the textures it has to go in.
+        /// Whether this picture can be used: not when there is nothing to show (a minimized window sends odd sizes), or
+        /// when it is larger than the pool it came from or the textures it has to go in, which the video thread then
+        /// makes larger.
         /// </summary>
-        private bool Fits(Direct3D11CaptureFramePool sender, int width, int height)
+        private bool Fits(int width, int height)
         {
             if (width < 2 || height < 2 || (Spec.Window != 0 && User32.IsIconic(Spec.Window)))
             {
                 return false;
-            }
-
-            var fromPool = width <= _poolSize.Width && height <= _poolSize.Height;
-            if (width != _poolSize.Width || height != _poolSize.Height)
-            {
-                _poolSize = new SizeInt32 { Width = width, Height = height };
-                sender.Recreate(_resources!.WinRtDevice, _format, PoolBuffers, _poolSize);
             }
 
             if (width > Capacity.Width || height > Capacity.Height)
@@ -828,7 +821,17 @@ internal sealed partial class WgcFittedStream : IPictureStream
                 return false;
             }
 
-            return fromPool && Larger is null;
+            return width <= _poolSize.Width && height <= _poolSize.Height && Larger is null;
+        }
+
+        /// <summary>The pool is made again at the picture's size, once that picture has been copied.</summary>
+        private void FollowSize(Direct3D11CaptureFramePool sender, int width, int height)
+        {
+            if (width >= 2 && height >= 2 && (width != _poolSize.Width || height != _poolSize.Height))
+            {
+                _poolSize = new SizeInt32 { Width = width, Height = height };
+                sender.Recreate(_resources!.WinRtDevice, _format, PoolBuffers, _poolSize);
+            }
         }
 
         /// <summary>A free picture for the next frame, a new one while there are few, or null (under the gate).</summary>
