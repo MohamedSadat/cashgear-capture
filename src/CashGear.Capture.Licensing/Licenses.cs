@@ -40,6 +40,12 @@ public enum ProFeature
 
     /// <summary>Video editor: the webcam's background blurred, replaced or removed.</summary>
     WebcamBackground,
+
+    /// <summary>Video editor: cutting by the transcript, shortening silences, removing filler words.</summary>
+    TranscriptEditing,
+
+    /// <summary>Video editor: captions translated into another language.</summary>
+    Translation,
 }
 
 /// <summary>A licence's content (signed into a <c>.cglicense</c> file).</summary>

@@ -14,4 +14,8 @@
     <ProjectReference Include="..\..\src\CashGear.Capture.Transcription\CashGear.Capture.Transcription.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\MachineTurn.cs" Link="MachineTurn.cs" />
+  </ItemGroup>
+
 </Project>

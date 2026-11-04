@@ -11,13 +11,14 @@ public enum CaptionPosition
 /// <summary>
 /// How a caption track's captions look when burned in: font, size in canvas pixels (0: a size that suits the
 /// canvas), colours as <c>#RRGGBB</c> / <c>#AARRGGBB</c>, a box behind each line (null: none), and where they go
-/// (<see cref="Margin"/> from the edge and <see cref="MaxWidth"/> as parts of the canvas).
+/// (<see cref="Margin"/> from the edge and <see cref="MaxWidth"/> as parts of the canvas). "No box" is written as a null
+/// since version 3: older versions left it out, which reads as the default box, as it always has for their files.
 /// </summary>
 public sealed record CaptionStyle(
     [Localizable(false)] string FontFamily = CaptionStyle.DefaultFontFamily,
     double FontSize = 0,
     string Color = "#FFFFFF",
-    string? Box = CaptionStyle.DefaultBox,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.Never)] string? Box = CaptionStyle.DefaultBox,
     bool Bold = false,
     CaptionPosition Position = CaptionPosition.Bottom,
     double Margin = 0.06,

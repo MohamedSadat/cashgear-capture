@@ -82,7 +82,9 @@ public static class TransitionEdits
         }
 
         var next = track.Clips.FirstOrDefault(c => c.Id != clip.Id && c.Start > clip.Start + Times.Epsilon && c.Start < clip.End - Times.Epsilon);
-        return next is null ? 0 : Times.Round(clip.End - next.Start);
+
+        // A cut's short join on the sound (TranscriptEdits) isn't a crossfade to offer taking away.
+        return next is null || clip.End - next.Start <= TranscriptEdits.LongestJoin ? 0 : Times.Round(clip.End - next.Start);
     }
 
     /// <summary>Undoes a crossfade from a clip: what follows moves on again so the clips meet end to start.</summary>

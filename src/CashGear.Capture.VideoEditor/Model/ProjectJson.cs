@@ -80,6 +80,9 @@ public static class ProjectJson
     /// Brings the JSON of an older project up to this version, one version at a time.
     /// 1 → 2 (Phase 20): the canvas's <c>background</c> colour string becomes a background record. Everything else
     /// Phase 20 added is new properties whose defaults draw what 1.1.1 drew.
+    /// 2 → 3 (Phase 21): nothing to change: a transcript on an asset is new and optional, and whether a caption style's
+    /// missing box means "the default box" stays as it was for what older versions wrote. Their caption words become a
+    /// transcript only when the user takes up the offer (<see cref="Editing.TranscriptBuilder.FromCaptions"/>).
     /// </summary>
     internal static void Migrate(JsonObject document)
     {
@@ -93,6 +96,11 @@ public static class ProjectJson
             }
 
             version = 2;
+        }
+
+        if (version < 3)
+        {
+            version = 3;
         }
 
         document["version"] = version;

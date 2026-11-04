@@ -37,55 +37,6 @@ internal static class Repository
     }
 }
 
-/// <summary>Speech made by Windows' own voices into memory (nothing is played), as Whisper takes it: mono at 16 kHz.</summary>
-internal static class Speech
-{
-    public static async Task<float[]> SayAsync(string text)
-    {
-        using var synthesizer = new SpeechSynthesizer();
-        Assert.SkipWhen(SpeechSynthesizer.AllVoices.Count == 0, "Windows has no speech voice.");
-        synthesizer.Voice = SpeechSynthesizer.AllVoices.FirstOrDefault(v => v.Language.StartsWith("en", StringComparison.OrdinalIgnoreCase)) ?? SpeechSynthesizer.DefaultVoice;
-        using var stream = await synthesizer.SynthesizeTextToStreamAsync(text);
-        var bytes = new byte[stream.Size];
-        using (var reader = new DataReader(stream.GetInputStreamAt(0)))
-        {
-            await reader.LoadAsync((uint)stream.Size);
-            reader.ReadBytes(bytes);
-        }
-
-        // A RIFF WAVE of 16-bit samples: find "data", average the channels, resample linearly to 16 kHz.
-        var channels = BitConverter.ToInt16(bytes, 22);
-        var rate = BitConverter.ToInt32(bytes, 24);
-        var at = 12;
-        while (System.Text.Encoding.ASCII.GetString(bytes, at, 4) != "data")
-        {
-            at += 8 + BitConverter.ToInt32(bytes, at + 4);
-        }
-
-        var count = BitConverter.ToInt32(bytes, at + 4) / 2 / channels;
-        var source = new float[count];
-        for (var i = 0; i < count; i++)
-        {
-            for (var c = 0; c < channels; c++)
-            {
-                source[i] += BitConverter.ToInt16(bytes, at + 8 + (((i * channels) + c) * 2)) / 32768f / channels;
-            }
-        }
-
-        var length = (int)((long)count * WhisperTranscriber.SampleRate / rate);
-        var samples = new float[length];
-        for (var i = 0; i < length; i++)
-        {
-            var position = i * (double)rate / WhisperTranscriber.SampleRate;
-            var k = (int)position;
-            var f = (float)(position - k);
-            samples[i] = (source[Math.Min(k, count - 1)] * (1 - f)) + (source[Math.Min(k + 1, count - 1)] * f);
-        }
-
-        return samples;
-    }
-}
-
 public sealed class TranscriptionTests
 {
     private const string Said = "The quick brown fox jumps over the lazy dog. Screen recordings with captions are easy to follow.";
@@ -115,7 +66,7 @@ public sealed class TranscriptionTests
         var model = Repository.Model(WhisperModels.Base);
         var samples = await Speech.SayAsync(Said);
         var progress = new List<double>();
-        var result = await Transcriber().TranscribeAsync(samples, new TranscriptionOptions(model, Language: null, UseGpu: false), new SyncProgress(progress.Add), TestContext.Current.CancellationToken);
+        var result = await CashGear.Capture.Tests.MachineTurn.RunAsync(() => Transcriber().TranscribeAsync(samples, new TranscriptionOptions(model, Language: null, UseGpu: false), new SyncProgress(progress.Add), TestContext.Current.CancellationToken));
 
         result.Language.Should().Be("en", "detected");
         result.Runtime.Should().BeOneOf("Vulkan", "Cpu", "CpuNoAvx");
@@ -140,7 +91,7 @@ public sealed class TranscriptionTests
         var said = Words(Said);
         foreach (var (model, gpu) in new[] { (WhisperModels.Base, true), (WhisperModels.Small, true) })
         {
-            var result = await Transcriber().TranscribeAsync(samples, new TranscriptionOptions(Repository.Model(model), "en", gpu), ct: TestContext.Current.CancellationToken);
+            var result = await CashGear.Capture.Tests.MachineTurn.RunAsync(() => Transcriber().TranscribeAsync(samples, new TranscriptionOptions(Repository.Model(model), "en", gpu), ct: TestContext.Current.CancellationToken));
             var heard = Words(string.Join(' ', result.Segments.Select(s => s.Text)));
             TestContext.Current.TestOutputHelper?.WriteLine($"{model.Name} on {result.Runtime}: {string.Join(' ', heard)}");
             result.Language.Should().Be("en");
@@ -173,9 +124,119 @@ public sealed class TranscriptionTests
         WhisperTranscriber.Words(segment, "Hello world").Should().Equal(
             new Core.Transcripts.TranscriptWord(0, 0.4, " Hello"), new Core.Transcripts.TranscriptWord(0.45, 0.9, " world"));
 
-        // An Arabic letter split between two tokens comes out as replacement characters in each: no words then.
+        // Tokens that don't spell the text: no words.
+        var other = new SegmentData(" Hello", TimeSpan.Zero, TimeSpan.FromSeconds(1), 0, 1, 1, 0, "en", [Token(" Goodbye", 0, 40)]);
+        WhisperTranscriber.Words(other, "Hello").Should().BeNull();
+    }
+
+    [Fact]
+    public void A_letter_split_between_tokens_goes_to_the_token_it_began_in()
+    {
+        static WhisperToken Token(string text, long start, long end) => new() { Text = text, Start = start, End = end };
+
+        // An Arabic letter split between two tokens comes out as a replacement character in each.
         var split = new SegmentData(" مرحبا", TimeSpan.Zero, TimeSpan.FromSeconds(1), 0, 1, 1, 0, "ar", [Token(" مر�", 0, 40), Token("�با", 40, 90)]);
-        WhisperTranscriber.Words(split, "مرحبا").Should().BeNull();
+        WhisperTranscriber.Words(split, "مرحبا").Should().Equal(
+            new Core.Transcripts.TranscriptWord(0, 0.4, " مرح"), new Core.Transcripts.TranscriptWord(0.4, 0.9, "با"));
+
+        // A token that is only part of a letter spells nothing, and two letters lost in one run are found by the next one.
+        WhisperTranscriber.Spell([" م", "�", "�", "با"], "محبا").Should().Equal(" م", "ح", "", "با");
+        WhisperTranscriber.Spell([" a�", "�", "z"], "abcz").Should().Equal(" ab", "", "cz");
+        WhisperTranscriber.Spell([" a�", "�"], "a").Should().BeNull("more letters than the text has");
+        WhisperTranscriber.Spell([" a�", "�", "z"], "a").Should().BeNull();
+        WhisperTranscriber.Spell([], "").Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("[BLANK_AUDIO]", true)]
+    [InlineData("(music)", true)]
+    [InlineData("[Music]", true)]
+    [InlineData("Hello (there)", false)]
+    [InlineData("[a] and [b]", false)]
+    [InlineData("()", false)]
+    public void Notes_about_the_sound_arent_speech(string text, bool note) => WhisperTranscriber.IsSoundNote(text).Should().Be(note);
+
+    [Fact]
+    public void Long_sound_is_cut_into_chunks_at_quiet_moments()
+    {
+        WhisperTranscriber.Chunks([]).Should().BeEmpty();
+        WhisperTranscriber.Chunks(new float[16_000]).Should().Equal((0, 16_000));
+
+        // A tone with a short gap every 11 s: each chunk ends in a gap.
+        var samples = new float[16_000 * 100];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = i % (16_000 * 11) < 1600 ? 0 : MathF.Sin(i * 0.1f) * 0.3f;
+        }
+
+        var chunks = WhisperTranscriber.Chunks(samples);
+        chunks[0].From.Should().Be(0);
+        chunks[^1].To.Should().Be(samples.Length);
+        chunks.Zip(chunks.Skip(1)).Should().OnlyContain(p => p.First.To == p.Second.From);
+        chunks.Should().OnlyContain(c => c.To - c.From <= WhisperTranscriber.LongestChunk * 16_000);
+        foreach (var (_, to) in chunks.SkipLast(1))
+        {
+            (to % (16_000 * 11)).Should().BeLessThan(1600, "the chunk ending at {0} ends in a gap", to);
+        }
+    }
+
+    [Theory]
+    [InlineData("ggml-base-q5_1.bin", WhisperAlignmentHeadsPreset.Base)]
+    [InlineData("ggml-small-q5_1.bin", WhisperAlignmentHeadsPreset.Small)]
+    [InlineData("ggml-medium-q5_0.bin", WhisperAlignmentHeadsPreset.Medium)]
+    [InlineData("other.bin", WhisperAlignmentHeadsPreset.None)]
+    public void Models_are_aligned_with_their_own_heads(string file, WhisperAlignmentHeadsPreset heads) => WhisperTranscriber.Heads(file).Should().Be(heads);
+
+    private const string Longer = "Today I want to show you how the new editor works. First we open a recording from the tray, and the timeline shows every track of it. The screen is on top, with the webcam next to it, and the sound from the microphone sits below them. If you press the space bar the preview plays, and the playhead moves along the ruler. Now look at the settings on the right. We can choose a background, make the corners round, and add a soft shadow under the picture. Most people leave these alone, because the default look is good enough. Later on we will talk about zooms, which follow the pointer around the screen. Remember that nothing here ever changes the original file, so you can always go back and try something else.";
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task All_of_long_speech_comes_back_with_times_near_its_words(bool gpu)
+    {
+        var model = Repository.Model(WhisperModels.Base);
+        var speech = await Speech.SayWithWordsAsync(Longer + " " + Longer);
+        speech.Words.Should().HaveCountGreaterThan(250);
+        (speech.Samples.Length / 16_000.0).Should().BeGreaterThan(60, "more than Whisper.net hands back with alignment in one run");
+        var result = await CashGear.Capture.Tests.MachineTurn.RunAsync(() => Transcriber().TranscribeAsync(speech.Samples, new TranscriptionOptions(model, "en", gpu), ct: TestContext.Current.CancellationToken));
+
+        var heard = result.Segments.Where(s => s.Words is not null).SelectMany(s => s.Words!).ToList();
+        InOrder(Words(string.Join(' ', speech.Words.Select(w => w.Text))), Words(string.Join(' ', result.Segments.Select(s => s.Text)))).Should().BeGreaterThan(speech.Words.Count * 95 / 100, "all of it is heard");
+        heard.Zip(heard.Skip(1)).Should().OnlyContain(p => p.Second.Start >= p.First.Start - 1e-6, "in time order, across the chunks");
+
+        // A word's aligned end is near the start of the next word said.
+        var whole = new List<(double End, string Text)>();
+        foreach (var token in heard)
+        {
+            if (token.Text.StartsWith(' ') || whole.Count == 0)
+            {
+                whole.Add((token.End, token.Text.Trim()));
+            }
+            else if (!token.Text.Trim().All(char.IsPunctuation))
+            {
+                whole[^1] = (token.End, whole[^1].Text + token.Text.Trim());
+            }
+        }
+
+        var nearest = whole.Zip(whole.Skip(1)).Select(p =>
+        {
+            var next = speech.Words.Where(w => Words(w.Text).FirstOrDefault() == Words(p.Second.Text).FirstOrDefault()).Select(w => w.Start).OrderBy(t => Math.Abs(t - p.First.End)).FirstOrDefault(p.First.End);
+            return Math.Abs(next - p.First.End);
+        }).Order().ToList();
+        var middle = nearest[nearest.Count / 2];
+        TestContext.Current.TestOutputHelper?.WriteLine($"On {result.Runtime}: half of {nearest.Count} word ends within {middle * 1000:0} ms of the next word's start.");
+        middle.Should().BeLessThan(0.08, "alignment is far nearer than token times");
+    }
+
+    [Fact]
+    public async Task Whisper_can_translate_into_english()
+    {
+        var model = Repository.Model(WhisperModels.Base);
+        var samples = await Speech.SayAsync(Said);
+        var result = await CashGear.Capture.Tests.MachineTurn.RunAsync(() => Transcriber().TranscribeAsync(samples, new TranscriptionOptions(model, "en", UseGpu: false, Translate: true), ct: TestContext.Current.CancellationToken));
+        result.Segments.Should().NotBeEmpty();
+        Words(string.Join(' ', result.Segments.Select(s => s.Text))).Should().Contain("fox");
+        result.Segments.Should().OnlyContain(s => s.End > s.Start);
     }
 
     [Fact]

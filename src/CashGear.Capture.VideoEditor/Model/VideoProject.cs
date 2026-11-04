@@ -26,6 +26,7 @@ public sealed record AssetStream(int Index, StreamKind Kind, string? Title, doub
 /// together. An embedded asset is inside the <c>.cgcap</c> as <see cref="EmbeddedName"/>.
 /// </summary>
 /// <param name="MetadataPath">The recording's <c>.cgmeta.json</c> (clicks, keys, the pointer), if it has one.</param>
+/// <param name="Transcript">What is said in it, if that was worked out.</param>
 public sealed record MediaAsset(
     string Id,
     string Path,
@@ -35,7 +36,8 @@ public sealed record MediaAsset(
     string? MetadataPath = null,
     string? MetadataRelativePath = null,
     string? EmbeddedName = null,
-    string? EmbeddedMetadataName = null)
+    string? EmbeddedMetadataName = null,
+    MediaTranscript? Transcript = null)
 {
     [JsonIgnore]
     public string Name => System.IO.Path.GetFileName(Path);
@@ -108,8 +110,8 @@ public sealed record Track(
 /// </summary>
 public sealed record VideoProject(int Version, ProjectCanvas Canvas, IReadOnlyList<MediaAsset> Assets, IReadOnlyList<Track> Tracks)
 {
-    /// <summary>1: to 1.1.1. 2: the canvas's background is a record (Phase 20); see <see cref="ProjectJson"/>'s migrations.</summary>
-    public const int CurrentVersion = 2;
+    /// <summary>1: to 1.1.1. 2: the canvas's background is a record (Phase 20). 3: media has transcripts (Phase 21). See <see cref="ProjectJson"/>'s migrations.</summary>
+    public const int CurrentVersion = 3;
 
     /// <summary>Where the last item ends.</summary>
     [JsonIgnore]

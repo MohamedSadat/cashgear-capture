@@ -51,7 +51,7 @@ public sealed class StudioLookTests(ITestOutputHelper output) : IDisposable
         project.Canvas.Framing.Should().Be(ScreenFraming.Fit);
 
         var written = JsonNode.Parse(ProjectJson.Serialize(project))!;
-        written["version"]!.GetValue<int>().Should().Be(2);
+        written["version"]!.GetValue<int>().Should().Be(VideoProject.CurrentVersion);
         written["canvas"]!["background"]!["color"]!.GetValue<string>().Should().Be("#102030");
 
         // A project with nothing to migrate (no background at all, as a hand-written one) reads too.

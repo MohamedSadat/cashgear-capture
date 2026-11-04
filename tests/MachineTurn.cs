@@ -30,6 +30,17 @@ internal sealed class MachineTurn : IDisposable
         }
     }
 
+    /// <summary>Asynchronous heavy work (Whisper) in a turn: on a thread of its own, which holds the mutex until the work is over.</summary>
+    public static Task<T> RunAsync<T>(Func<Task<T>> work) => Task.Factory.StartNew(
+        () =>
+        {
+            using var turn = new MachineTurn();
+            return work().GetAwaiter().GetResult();
+        },
+        CancellationToken.None,
+        TaskCreationOptions.LongRunning,
+        TaskScheduler.Default);
+
     public void Dispose()
     {
         if (_owned)

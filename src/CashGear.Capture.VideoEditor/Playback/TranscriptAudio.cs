@@ -67,6 +67,18 @@ public static class TranscriptAudio
         return output;
     }
 
+    /// <summary>
+    /// A stream's sound on its own clock, whatever the timeline does with it: sample <c>n</c> at 16 kHz is <c>n / 16000</c> s
+    /// on the stream's clock. What a transcript that belongs to the media is heard from.
+    /// </summary>
+    public static float[] RenderStream(MediaAsset asset, int stream, IProgress<double>? progress = null, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(asset);
+        var clip = new Clip { Id = Ids.New(), AssetId = asset.Id, Stream = stream, SourceIn = 0, SourceOut = asset.Duration };
+        var project = VideoProject.Empty(new ProjectCanvas(16, 16, 30)) with { Assets = [asset], Tracks = [new Track(Ids.New(), TrackKind.Audio, "", [clip])] };
+        return Render(project, null, progress, ct);
+    }
+
     private static float[] MakeFilter()
     {
         const double cutoff = 7_000.0 / TimelineMixer.SampleRate;
