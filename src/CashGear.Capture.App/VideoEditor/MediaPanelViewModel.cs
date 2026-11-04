@@ -39,6 +39,12 @@ public sealed partial class MediaItemViewModel(MediaAsset asset, string details)
     }
 }
 
+/// <summary>A row of the transitions' library.</summary>
+public sealed record TransitionChoice(ClipTransition Transition, string Name)
+{
+    public override string ToString() => Name;
+}
+
 /// <summary>
 /// The project's media: every file in it, added but not necessarily used, to put on the timeline by dragging, or with
 /// Enter at the playhead. Adding and removing files are undo steps of the editor's history.
@@ -67,6 +73,26 @@ public sealed partial class MediaPanelViewModel : ObservableObject
     private bool _isShown;
 
     public bool IsEmpty => Items.Count == 0;
+
+    /// <summary>The transitions to drag onto a cut or an edge.</summary>
+    public IReadOnlyList<TransitionChoice> Transitions { get; } =
+    [
+        new(new ClipTransition(TransitionKind.Dissolve), VideoEditorText.TransitionDissolve),
+        new(new ClipTransition(TransitionKind.DipToColor, Color: ClipTransition.DefaultColor), VideoEditorText.TransitionDip),
+        new(new ClipTransition(TransitionKind.Wipe, Direction: TransitionDirection.Left), VideoEditorText.TransitionWipeLeft),
+        new(new ClipTransition(TransitionKind.Wipe, Direction: TransitionDirection.Right), VideoEditorText.TransitionWipeRight),
+        new(new ClipTransition(TransitionKind.Wipe, Direction: TransitionDirection.Up), VideoEditorText.TransitionWipeUp),
+        new(new ClipTransition(TransitionKind.Wipe, Direction: TransitionDirection.Down), VideoEditorText.TransitionWipeDown),
+        new(new ClipTransition(TransitionKind.Slide), VideoEditorText.TransitionSlide),
+        new(new ClipTransition(TransitionKind.Push), VideoEditorText.TransitionPush),
+        new(new ClipTransition(TransitionKind.Zoom), VideoEditorText.TransitionZoom),
+        new(new ClipTransition(TransitionKind.Blur), VideoEditorText.TransitionBlur),
+        new(new ClipTransition(TransitionKind.Circle), VideoEditorText.TransitionCircle),
+    ];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ApplyTransitionCommand))]
+    private TransitionChoice? _selectedTransition;
 
     /// <summary>The files in the project; each row stays while its asset does.</summary>
     internal void Refresh()
@@ -167,6 +193,18 @@ public sealed partial class MediaPanelViewModel : ObservableObject
     private void AddColour() => _owner.AddSolidAtPlayhead();
 
     private bool HasSelected() => Selected is not null;
+
+    private bool HasTransition() => SelectedTransition is not null;
+
+    /// <summary>Enter on a transition: on the chosen clip's edge nearest the playhead.</summary>
+    [RelayCommand(CanExecute = nameof(HasTransition))]
+    private void ApplyTransition()
+    {
+        if (SelectedTransition is { } row)
+        {
+            _owner.ApplyTransition(row.Transition, null, null);
+        }
+    }
 
     private void OnPreviewsChanged(object? sender, EventArgs e)
     {

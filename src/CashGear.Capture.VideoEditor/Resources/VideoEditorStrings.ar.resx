@@ -237,4 +237,7 @@
   <data name="UndoMoveKeyframe" xml:space="preserve">
     <value>نقل إطار رئيسي</value>
   </data>
+  <data name="NotACube" xml:space="preserve">
+    <value>{0} ليس جدول بحث يستطيع هذا التطبيق قراءته (ملف .cube).</value>
+  </data>
 </root>

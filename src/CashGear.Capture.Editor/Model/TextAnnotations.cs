@@ -41,6 +41,38 @@ public sealed record TextAnnotation(AnnotationId Id, AnnotationStyle Style, SKPo
 {
     public override AnnotationKind Kind => AnnotationKind.Text;
 
+    /// <summary>How many grapheme clusters show, as a typewriter reaches them (null: all of them). Its box stays the whole text's.</summary>
+    public int? Revealed { get; init; }
+
+    /// <summary>The grapheme clusters of a text, across its lines: what a typewriter counts, so a letter and its marks come together.</summary>
+    public static int GraphemeCount(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return TextLayout.SplitLines(text).Sum(line => new System.Globalization.StringInfo(line).LengthInTextElements);
+    }
+
+    /// <summary>The characters of a line that show when <paramref name="graphemes"/> clusters of it do.</summary>
+    private static int CharactersOf(string line, int graphemes)
+    {
+        if (graphemes <= 0)
+        {
+            return 0;
+        }
+
+        var enumerator = System.Globalization.StringInfo.GetTextElementEnumerator(line);
+        var shown = 0;
+        while (enumerator.MoveNext())
+        {
+            shown += enumerator.GetTextElement().Length;
+            if (--graphemes == 0)
+            {
+                break;
+            }
+        }
+
+        return shown;
+    }
+
     public override StyleParts StyleParts =>
         StyleParts.Color | StyleParts.Fill | StyleParts.Opacity | StyleParts.Font | StyleParts.FontSize;
 
@@ -72,9 +104,19 @@ public sealed record TextAnnotation(AnnotationId Id, AnnotationStyle Style, SKPo
         using var font = Fonts.CreateFont(typeface, Style.FontSize);
         using var paint = FillPaint(Style.Color);
         var y = Position.Y + layout.Padding + layout.Ascent;
+        var left = Revealed;
         for (var i = 0; i < layout.Shaped.Count; i++)
         {
-            layout.Shaped[i].Draw(canvas, Position.X + layout.LineStart(i), y, font, paint);
+            if (left is { } graphemes)
+            {
+                layout.Shaped[i].DrawFirst(canvas, Position.X + layout.LineStart(i), y, font, paint, CharactersOf(layout.Lines[i], graphemes));
+                left = Math.Max(0, graphemes - new System.Globalization.StringInfo(layout.Lines[i]).LengthInTextElements);
+            }
+            else
+            {
+                layout.Shaped[i].Draw(canvas, Position.X + layout.LineStart(i), y, font, paint);
+            }
+
             y += layout.LineHeight;
         }
     }

@@ -7,7 +7,8 @@ using SkiaSharp.HarfBuzz;
 namespace CashGear.Capture.Editor.Text;
 
 /// <summary>Glyphs in one typeface, with their positions from the left end of the line (on the baseline).</summary>
-public sealed record GlyphRun(SKTypeface Typeface, ushort[] Glyphs, SKPoint[] Positions);
+/// <param name="Clusters">The index in the line of the first character each glyph stands for.</param>
+public sealed record GlyphRun(SKTypeface Typeface, ushort[] Glyphs, SKPoint[] Positions, uint[]? Clusters = null);
 
 /// <summary>One line of text laid out from left to right as it appears, and its advance width.</summary>
 public sealed record ShapedLine(IReadOnlyList<GlyphRun> Runs, float Width)
@@ -28,6 +29,42 @@ public sealed record ShapedLine(IReadOnlyList<GlyphRun> Runs, float Width)
             var buffer = builder.AllocatePositionedRun(runFont, run.Glyphs.Length);
             run.Glyphs.CopyTo(buffer.Glyphs);
             run.Positions.CopyTo(buffer.Positions);
+            using var blob = builder.Build();
+            if (blob is not null)
+            {
+                canvas.DrawText(blob, x, baseline, paint);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Draws only the glyphs of the first <paramref name="characters"/> characters of the line, each where and as the whole
+    /// line has it: letters that join keep their joined forms, in whichever direction the text runs.
+    /// </summary>
+    public void DrawFirst(SKCanvas canvas, float x, float baseline, SKFont font, SKPaint paint, int characters)
+    {
+        ArgumentNullException.ThrowIfNull(canvas);
+        ArgumentNullException.ThrowIfNull(font);
+        ArgumentNullException.ThrowIfNull(paint);
+        foreach (var run in Runs)
+        {
+            var kept = Enumerable.Range(0, run.Glyphs.Length).Where(i => run.Clusters is not null && run.Clusters[i] < characters).ToArray();
+            if (kept.Length == 0)
+            {
+                continue;
+            }
+
+            using var runFont = new SKFont(run.Typeface, font.Size) { Edging = font.Edging, Subpixel = font.Subpixel };
+            using var builder = new SKTextBlobBuilder();
+            var buffer = builder.AllocatePositionedRun(runFont, kept.Length);
+            var glyphs = buffer.Glyphs;
+            var positions = buffer.Positions;
+            for (var i = 0; i < kept.Length; i++)
+            {
+                glyphs[i] = run.Glyphs[kept[i]];
+                positions[i] = run.Positions[kept[i]];
+            }
+
             using var blob = builder.Build();
             if (blob is not null)
             {
@@ -77,7 +114,7 @@ public static class TextShaper
                 {
                     var glyphs = shaped.Codepoints.Select(g => (ushort)g).ToArray();
                     var positions = shaped.Points.Select(p => new SKPoint(p.X + x, p.Y)).ToArray();
-                    runs.Add(new GlyphRun(face.Typeface, glyphs, positions));
+                    runs.Add(new GlyphRun(face.Typeface, glyphs, positions, shaped.Clusters));
                 }
 
                 x += shaped.Width;

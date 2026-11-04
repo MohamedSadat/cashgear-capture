@@ -1667,6 +1667,55 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         History.Apply(VideoEditorText.UndoRemoveCrossfade, TransitionEdits.RemoveCrossfade(Project, clipId));
     }
 
+    /// <summary>A way in or out of a clip, from its panel; what follows moves with an overlap it makes.</summary>
+    public void SetClipTransition(string clipId, ItemEdge edge, ClipTransition? transition, string mergeKey)
+    {
+        if (transition is { } made && !TransitionAllowed(made.Kind))
+        {
+            return;
+        }
+
+        StopPlaying();
+        var after = TransitionEdits.SetTransition(Project, clipId, edge, transition);
+        _applied = after.Find(clipId)?.Item; // the panel stays while its own slider moves
+        History.Apply(VideoEditorText.UndoTransition, after, mergeKey);
+    }
+
+    /// <summary>A transition from the library on the clip's edge: Enter on its row with a clip chosen, nearest the playhead, or at the cut it was dropped on.</summary>
+    public bool ApplyTransition(ClipTransition transition, string? trackId, double? at)
+    {
+        ArgumentNullException.ThrowIfNull(transition);
+        (string ClipId, ItemEdge Edge)? edge = null;
+        if (trackId is not null && at is { } time && Project.Track(trackId) is { } track)
+        {
+            edge = TransitionEdits.EdgeNear(track, time);
+        }
+        else if (Timeline.Selected is Clip selected && Project.Find(selected.Id)?.Track is { HasPictures: true })
+        {
+            edge = (selected.Id, Math.Abs(selected.Start - Position) <= Math.Abs(selected.End - Position) ? ItemEdge.Start : ItemEdge.End);
+        }
+
+        if (edge is not { } target)
+        {
+            _dialogs.ShowError(VideoEditorText.TransitionNeedsClip);
+            return false;
+        }
+
+        if (!TransitionAllowed(transition.Kind))
+        {
+            return false;
+        }
+
+        StopPlaying();
+        _shown = null;
+        History.Apply(VideoEditorText.UndoTransition, TransitionEdits.SetTransition(Project, target.ClipId, target.Edge, transition));
+        Timeline.Select(target.ClipId);
+        return true;
+    }
+
+    /// <summary>Dissolve and dip are free; the other transitions are part of Pro.</summary>
+    private bool TransitionAllowed(TransitionKind kind) => kind is TransitionKind.Dissolve or TransitionKind.DipToColor || Allowed(ProFeature.MotionEffects);
+
     private void Step(int frames)
     {
         StopPlaying();
@@ -1804,7 +1853,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         Properties.Clear();
         if (item is not null)
         {
-            var actions = new ItemProperties.ClipActions(SetSpeed, SetFreezeLength, CrossfadeFrom, RemoveCrossfadeFrom);
+            var actions = new ItemProperties.ClipActions(SetSpeed, SetFreezeLength, CrossfadeFrom, RemoveCrossfadeFrom)
+            {
+                SetTransition = SetClipTransition,
+                PickLut = () => _dialogs.PickMedia(VideoEditorText.LutTitle, VideoEditorText.LutFilter, Folder()),
+            };
             var captions = new ItemProperties.CaptionActions(SplitCaption, MergeCaption, ChangeCaptionStyle);
             var motion = new ItemProperties.MotionActions(() => Timeline.Playhead, Seek, SetMovesWithZoom, Project.Canvas.Fps);
             foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions, captions, _services.Gate, PickPicture, (asset, name, key) => History.Apply(name, Project.WithAsset(asset), key), motion))

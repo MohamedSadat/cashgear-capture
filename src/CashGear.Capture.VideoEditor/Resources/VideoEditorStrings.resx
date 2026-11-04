@@ -303,4 +303,7 @@
   <data name="UndoMoveKeyframe" xml:space="preserve">
     <value>Move a Keyframe</value>
   </data>
+  <data name="NotACube" xml:space="preserve">
+    <value>{0} isn't a look-up table this app can read (a .cube file).</value>
+  </data>
 </root>

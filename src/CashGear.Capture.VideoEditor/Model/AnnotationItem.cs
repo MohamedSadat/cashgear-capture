@@ -77,6 +77,21 @@ public sealed record AnnotationItem : TimelineItem
 
     public double FadeOut { get; init; }
 
+    /// <summary>How its fade in goes.</summary>
+    public MotionEasing FadeInCurve { get; init; }
+
+    /// <summary>How its fade out goes.</summary>
+    public MotionEasing FadeOutCurve { get; init; }
+
+    /// <summary>How it comes in (null: it is simply there).</summary>
+    public TextAnimation? TextIn { get; init; }
+
+    /// <summary>What it does while it is there.</summary>
+    public TextAnimation? TextDuring { get; init; }
+
+    /// <summary>How it goes out.</summary>
+    public TextAnimation? TextOut { get; init; }
+
     /// <summary>Its position, scale, rotation, opacity and crop over time, on top of its keyframes (null: none).</summary>
     public ItemMotion? Motion { get; init; }
 
@@ -154,12 +169,12 @@ public sealed record AnnotationItem : TimelineItem
         var level = 1.0;
         if (FadeIn > 0)
         {
-            level = Math.Min(level, (time - Start) / FadeIn);
+            level = Math.Min(level, MotionCurves.Ease(FadeInCurve, (time - Start) / FadeIn));
         }
 
         if (FadeOut > 0)
         {
-            level = Math.Min(level, (End - time) / FadeOut);
+            level = Math.Min(level, MotionCurves.Ease(FadeOutCurve, (End - time) / FadeOut));
         }
 
         return Math.Clamp(level, 0, 1);
@@ -241,6 +256,8 @@ public sealed record AnnotationItem : TimelineItem
             FadeIn = KeptFade(FadeIn, from <= Start + Times.Epsilon, length),
             FadeOut = KeptFade(FadeOut, to >= End - Times.Epsilon, length),
             Motion = Motion?.Sliced(shift, length),
+            TextIn = from <= Start + Times.Epsilon ? TextIn : null,
+            TextOut = to >= End - Times.Epsilon ? TextOut : null,
         };
     }
 

@@ -2234,4 +2234,181 @@
   <data name="UndoMovesWithZoom" xml:space="preserve">
     <value>Moves with Zooms</value>
   </data>
+  <data name="TransitionsTab" xml:space="preserve">
+    <value>Transitions</value>
+  </data>
+  <data name="MediaTab" xml:space="preserve">
+    <value>Media</value>
+  </data>
+  <data name="TransitionsNote" xml:space="preserve">
+    <value>Drag one onto a cut or a clip's edge on the timeline, or choose a clip and press Enter: it goes on the edge nearest the playhead.</value>
+  </data>
+  <data name="TransitionsListName" xml:space="preserve">
+    <value>Transitions</value>
+  </data>
+  <data name="ApplyTransitionButton" xml:space="preserve">
+    <value>Apply to the Clip</value>
+  </data>
+  <data name="ApplyTransitionTip" xml:space="preserve">
+    <value>Put it on the chosen clip's edge nearest the playhead (Enter)</value>
+  </data>
+  <data name="TransitionNeedsClip" xml:space="preserve">
+    <value>Choose a picture clip on the timeline first, or drag the transition onto a cut.</value>
+  </data>
+  <data name="TransitionNone" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="TransitionDissolve" xml:space="preserve">
+    <value>Dissolve</value>
+  </data>
+  <data name="TransitionDip" xml:space="preserve">
+    <value>Dip to colour</value>
+  </data>
+  <data name="TransitionWipeLeft" xml:space="preserve">
+    <value>Wipe left</value>
+  </data>
+  <data name="TransitionWipeRight" xml:space="preserve">
+    <value>Wipe right</value>
+  </data>
+  <data name="TransitionWipeUp" xml:space="preserve">
+    <value>Wipe up</value>
+  </data>
+  <data name="TransitionWipeDown" xml:space="preserve">
+    <value>Wipe down</value>
+  </data>
+  <data name="TransitionWipe" xml:space="preserve">
+    <value>Wipe</value>
+  </data>
+  <data name="TransitionSlide" xml:space="preserve">
+    <value>Slide</value>
+  </data>
+  <data name="TransitionPush" xml:space="preserve">
+    <value>Push</value>
+  </data>
+  <data name="TransitionZoom" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="TransitionBlur" xml:space="preserve">
+    <value>Blur</value>
+  </data>
+  <data name="TransitionCircle" xml:space="preserve">
+    <value>Circle</value>
+  </data>
+  <data name="WayIn" xml:space="preserve">
+    <value>Way in</value>
+  </data>
+  <data name="WayOut" xml:space="preserve">
+    <value>Way out</value>
+  </data>
+  <data name="TransitionLength" xml:space="preserve">
+    <value>Its length</value>
+  </data>
+  <data name="TransitionDirectionLabel" xml:space="preserve">
+    <value>Direction</value>
+  </data>
+  <data name="DirectionLeft" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="DirectionRight" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="DirectionUp" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="DirectionDown" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="TransitionColour" xml:space="preserve">
+    <value>Its colour</value>
+  </data>
+  <data name="TransitionEasing" xml:space="preserve">
+    <value>Its pace</value>
+  </data>
+  <data name="UndoTransition" xml:space="preserve">
+    <value>Transition</value>
+  </data>
+  <data name="FadeInCurve" xml:space="preserve">
+    <value>Fade in's curve</value>
+  </data>
+  <data name="FadeOutCurve" xml:space="preserve">
+    <value>Fade out's curve</value>
+  </data>
+  <data name="UndoFadeCurve" xml:space="preserve">
+    <value>Fade's Curve</value>
+  </data>
+  <data name="EffectsTitle" xml:space="preserve">
+    <value>Effects</value>
+  </data>
+  <data name="Brightness" xml:space="preserve">
+    <value>Brightness</value>
+  </data>
+  <data name="Contrast" xml:space="preserve">
+    <value>Contrast</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>Saturation</value>
+  </data>
+  <data name="Temperature" xml:space="preserve">
+    <value>Temperature</value>
+  </data>
+  <data name="LutLabel" xml:space="preserve">
+    <value>Look-up table (.cube)</value>
+  </data>
+  <data name="LutTitle" xml:space="preserve">
+    <value>Choose a Look-up Table</value>
+  </data>
+  <data name="LutFilter" xml:space="preserve">
+    <value>Look-up tables|*.cube|All files|*.*</value>
+  </data>
+  <data name="LutStrength" xml:space="preserve">
+    <value>Its strength</value>
+  </data>
+  <data name="ChromaKeyOn" xml:space="preserve">
+    <value>Chroma key (green screen)</value>
+  </data>
+  <data name="ChromaColour" xml:space="preserve">
+    <value>Colour taken out</value>
+  </data>
+  <data name="ChromaTolerance" xml:space="preserve">
+    <value>How near</value>
+  </data>
+  <data name="ChromaSoftness" xml:space="preserve">
+    <value>Edge</value>
+  </data>
+  <data name="ChromaSpill" xml:space="preserve">
+    <value>Spill taken out</value>
+  </data>
+  <data name="UndoEffect" xml:space="preserve">
+    <value>Effect</value>
+  </data>
+  <data name="TextAnimationIn" xml:space="preserve">
+    <value>Comes in</value>
+  </data>
+  <data name="TextAnimationDuring" xml:space="preserve">
+    <value>While shown</value>
+  </data>
+  <data name="TextAnimationOut" xml:space="preserve">
+    <value>Goes out</value>
+  </data>
+  <data name="TextAnimationLength" xml:space="preserve">
+    <value>In and out take</value>
+  </data>
+  <data name="AnimationNone" xml:space="preserve">
+    <value>Nothing</value>
+  </data>
+  <data name="AnimationFade" xml:space="preserve">
+    <value>Fade</value>
+  </data>
+  <data name="AnimationSlide" xml:space="preserve">
+    <value>Slide</value>
+  </data>
+  <data name="AnimationPop" xml:space="preserve">
+    <value>Pop</value>
+  </data>
+  <data name="AnimationTypewriter" xml:space="preserve">
+    <value>Typewriter</value>
+  </data>
+  <data name="UndoTextAnimation" xml:space="preserve">
+    <value>Animation</value>
+  </data>
 </root>

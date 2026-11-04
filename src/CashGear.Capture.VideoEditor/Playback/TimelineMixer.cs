@@ -124,14 +124,18 @@ public sealed class TimelineMixer : IDisposable
         var level = 1.0;
         var fadeIn = Math.Max(clip.FadeIn, overlapIn);
         var fadeOut = Math.Max(clip.FadeOut, overlapOut);
+
+        // A clip's own fade goes by its curve; an overlap's crossfade stays a straight line.
         if (fadeIn > 0)
         {
-            level = Math.Min(level, (time - clip.Start) / fadeIn);
+            var part = (time - clip.Start) / fadeIn;
+            level = Math.Min(level, clip.FadeIn >= overlapIn ? MotionCurves.Ease(clip.FadeInCurve, part) : part);
         }
 
         if (fadeOut > 0)
         {
-            level = Math.Min(level, (clip.End - time) / fadeOut);
+            var part = (clip.End - time) / fadeOut;
+            level = Math.Min(level, clip.FadeOut >= overlapOut ? MotionCurves.Ease(clip.FadeOutCurve, part) : part);
         }
 
         return Math.Clamp(level, 0, 1);

@@ -44,9 +44,115 @@ public static class TransitionEdits
                     return FitFades(faster);
                 }
 
-                return item.Start >= after - Times.Epsilon ? item with { Start = Times.Round(Math.Max(0, item.Start + delta)) } : item;
+                return Follows(project, track, item, after) ? item with { Start = Times.Round(Math.Max(0, item.Start + delta)) } : item;
             })))],
         };
+    }
+
+    /// <summary>
+    /// A way in or out of a clip: at the edge of a clip that another meets there, the way from one to the other (they come
+    /// to overlap by its length, and what follows moves back); at a free edge, from or to nothing. Every picture clip linked
+    /// to it gets it too. Null takes it away, and the overlap it made.
+    /// </summary>
+    public static VideoProject SetTransition(VideoProject project, string clipId, ItemEdge edge, ClipTransition? transition)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        if (project.Find(clipId) is not { Item: Clip clip, Track: { Locked: false } track })
+        {
+            return project;
+        }
+
+        // The cut is the same for both of its clips: its way is on the clip that comes in.
+        if (edge == ItemEdge.End && (Next(track, clip) ?? Overlapping(track, clip)) is { } following)
+        {
+            return SetTransition(project, following.Id, ItemEdge.Start, transition);
+        }
+
+        if (edge == ItemEdge.End)
+        {
+            return WithLinkedPictures(project, clip, c => c with { TransitionOut = transition is null ? null : Fitted(transition, c.Duration) });
+        }
+
+        var before = Previous(track, clip);
+        var overlap = before is null ? 0 : Times.Round(before.End - clip.Start);
+        if (before is null)
+        {
+            return WithLinkedPictures(project, clip, c => c with { TransitionIn = transition is null ? null : Fitted(transition, c.Duration) });
+        }
+
+        var result = project;
+        if (transition is null)
+        {
+            result = WithLinkedPictures(result, clip, c => c with { TransitionIn = null });
+            return overlap > TranscriptEdits.LongestJoin ? RemoveCrossfade(result, before.Id) : result;
+        }
+
+        var length = Math.Min(transition.Length, Math.Min(before.Duration, clip.Duration) / 2);
+        if (overlap > TranscriptEdits.LongestJoin && Math.Abs(overlap - length) > Times.Epsilon)
+        {
+            result = RemoveCrossfade(result, before.Id);
+            overlap = 0;
+        }
+
+        if (overlap <= TranscriptEdits.LongestJoin)
+        {
+            result = Crossfade(result, before.Id, length);
+        }
+
+        if (result.Find(clipId)?.Item is not Clip placed)
+        {
+            return project;
+        }
+
+        return WithLinkedPictures(result, placed, c => c with { TransitionIn = transition with { Length = Times.Round(length) } });
+    }
+
+    /// <summary>The clip nearest the time on a picture track and which of its edges, for a transition dropped there: at a cut, the clip coming in.</summary>
+    public static (string ClipId, ItemEdge Edge)? EdgeNear(Track track, double time)
+    {
+        ArgumentNullException.ThrowIfNull(track);
+        if (!track.HasPictures || track.Clips.MinBy(c => Math.Min(Math.Abs(c.Start - time), Math.Abs(c.End - time))) is not { } nearest)
+        {
+            return null;
+        }
+
+        return Math.Abs(nearest.Start - time) <= Math.Abs(nearest.End - time) ? (nearest.Id, ItemEdge.Start) : (nearest.Id, ItemEdge.End);
+    }
+
+    private static ClipTransition Fitted(ClipTransition transition, double duration) =>
+        transition with { Length = Times.Round(Math.Clamp(transition.Length, TimelineEdits.ShortestItem, Math.Max(TimelineEdits.ShortestItem, duration))) };
+
+    /// <summary>The clip and the clips linked to it on picture tracks, changed.</summary>
+    private static VideoProject WithLinkedPictures(VideoProject project, Clip clip, Func<Clip, Clip> change) => project with
+    {
+        Tracks = [.. project.Tracks.Select(t => t.HasPictures && !t.Locked && t.Clips.Any(c => c.Id == clip.Id || (clip.Link is not null && c.Link == clip.Link))
+            ? t.WithItems(t.Items.Select(i => i is Clip c && (c.Id == clip.Id || (clip.Link is not null && c.Link == clip.Link)) ? change(c) : i))
+            : t)],
+    };
+
+    /// <summary>
+    /// Whether something moves when the time after <paramref name="from"/> does: it starts there or later, or it is the sound
+    /// joined just before a cut (<see cref="TranscriptEdits.Join"/>), or linked to something that does.
+    /// </summary>
+    private static bool Follows(VideoProject project, Track track, TimelineItem item, double from)
+    {
+        if (item.Start >= from - Times.Epsilon)
+        {
+            return true;
+        }
+
+        if (item is not Clip clip)
+        {
+            return false;
+        }
+
+        // Sound overlapping by a join starts a little before the picture it goes with.
+        if (track.HasSound && clip.Start >= from - TranscriptEdits.LongestJoin && track.Clips.Any(c => c.Id != clip.Id && c.Start < clip.Start && c.End > clip.Start + Times.Epsilon && c.End <= from + TranscriptEdits.LongestJoin))
+        {
+            return true;
+        }
+
+        return track.HasSound && clip.Link is { } link && project.Tracks.Where(t => t.HasPictures).SelectMany(t => t.Clips).Any(c => c.Link == link && c.Start >= from - Times.Epsilon);
     }
 
     /// <summary>
@@ -163,7 +269,7 @@ public static class TransitionEdits
         {
             Tracks = [.. project.Tracks.Select(track => track.Locked ? track : track.WithItems(track.Items.Select(item =>
                 group.Contains(item.Id) && item is Clip linked ? linked with { FreezeLength = length }
-                : item.Start >= after - Times.Epsilon ? item with { Start = Times.Round(Math.Max(0, item.Start + delta)) }
+                : Follows(project, track, item, after) ? item with { Start = Times.Round(Math.Max(0, item.Start + delta)) }
                 : item)))],
         };
     }
@@ -180,11 +286,19 @@ public static class TransitionEdits
     private static Clip? Next(Track track, Clip clip) =>
         track.Clips.FirstOrDefault(c => c.Id != clip.Id && Math.Abs(c.Start - clip.End) <= Times.Epsilon * 10);
 
+    /// <summary>The clip that overlaps the end of <paramref name="clip"/>, if any.</summary>
+    private static Clip? Overlapping(Track track, Clip clip) =>
+        track.Clips.FirstOrDefault(c => c.Id != clip.Id && c.Start > clip.Start + Times.Epsilon && c.Start < clip.End - Times.Epsilon);
+
+    /// <summary>The clip that ends where <paramref name="clip"/> starts, or overlaps its start, if any.</summary>
+    private static Clip? Previous(Track track, Clip clip) =>
+        track.Clips.FirstOrDefault(c => c.Id != clip.Id && c.Start < clip.Start - Times.Epsilon && c.End >= clip.Start - (Times.Epsilon * 10) && c.End < clip.End);
+
     /// <summary>Everything on unlocked tracks starting at or after <paramref name="from"/> moved by <paramref name="by"/> seconds.</summary>
     private static VideoProject Shift(VideoProject project, double from, double by, IReadOnlySet<string>? exclude = null) => project with
     {
         Tracks = [.. project.Tracks.Select(track => track.Locked ? track : track.WithItems(track.Items.Select(item =>
-            item.Start >= from - Times.Epsilon && exclude?.Contains(item.Id) != true ? item with { Start = Times.Round(Math.Max(0, item.Start + by)) } : item)))],
+            Follows(project, track, item, from) && exclude?.Contains(item.Id) != true ? item with { Start = Times.Round(Math.Max(0, item.Start + by)) } : item)))],
     };
 
     /// <summary>A clip's fades no longer than the clip.</summary>

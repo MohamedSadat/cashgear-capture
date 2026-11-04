@@ -80,7 +80,7 @@ public static class MediaEdits
     {
         ArgumentNullException.ThrowIfNull(project);
         return project.Canvas.Background.PictureAssetId == assetId
-            || project.Tracks.SelectMany(t => t.Clips).Any(c => c.AssetId == assetId || c.Background?.PictureAssetId == assetId);
+            || project.Tracks.SelectMany(t => t.Clips).Any(c => c.AssetId == assetId || c.Background?.PictureAssetId == assetId || c.Effects?.LutAssetId == assetId);
     }
 
     /// <summary>A picture smaller than the canvas keeps its pixels; a larger one fits inside it.</summary>

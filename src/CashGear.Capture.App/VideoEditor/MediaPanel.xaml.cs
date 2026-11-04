@@ -13,6 +13,10 @@ public partial class MediaPanel : UserControl
     [Localizable(false)]
     public const string DragFormat = "CashGear.Capture.MediaAsset";
 
+    /// <summary>What a transition's drag carries: its row (a format name, not text).</summary>
+    [Localizable(false)]
+    public const string TransitionFormat = "CashGear.Capture.Transition";
+
     private Point? _pressed;
 
     public MediaPanel() => InitializeComponent();
@@ -67,6 +71,38 @@ public partial class MediaPanel : UserControl
         if (RowAt(e.OriginalSource) is not null && DataContext is MediaPanelViewModel panel && panel.AddToTimelineCommand.CanExecute(null))
         {
             panel.AddToTimelineCommand.Execute(null);
+        }
+    }
+
+    private void OnTransitionPress(object sender, MouseButtonEventArgs e) =>
+        _pressed = RowAt(e.OriginalSource) is not null ? e.GetPosition(TransitionList) : null;
+
+    private void OnTransitionMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _pressed is not { } from)
+        {
+            return;
+        }
+
+        var moved = e.GetPosition(TransitionList) - from;
+        if (Math.Abs(moved.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(moved.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        _pressed = null;
+        if (RowAt(e.OriginalSource)?.DataContext is TransitionChoice row)
+        {
+            DragDrop.DoDragDrop(TransitionList, new DataObject(TransitionFormat, row), DragDropEffects.Copy);
+        }
+    }
+
+    private void OnTransitionKey(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && DataContext is MediaPanelViewModel panel && panel.ApplyTransitionCommand.CanExecute(null))
+        {
+            panel.ApplyTransitionCommand.Execute(null);
+            e.Handled = true;
         }
     }
 

@@ -48,6 +48,7 @@ public sealed class FrameCompositor
     private readonly Dictionary<string, SKImage?> _pictures = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, PictureFile?> _stills = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, SKImage> _solids = [];
+    private readonly Dictionary<string, CubeLut?> _luts = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<(object Key, SKMatrix Matrix, SKRectI Area, SKImage Image)> _kept = [];
     private (string? Clip, double Time, double Blur, SKImage? Image) _blurredScreen;
 
@@ -90,7 +91,8 @@ public sealed class FrameCompositor
         var place = item.At(time);
         var look = item.Look;
         var color = place.Color ?? look.Color;
-        var level = (place.Opacity ?? look.Opacity) * (item.Motion?.At(time - item.Start).Opacity ?? 1);
+        var moment = TextAnimator.At(item, time);
+        var level = (place.Opacity ?? look.Opacity) * (item.Motion?.At(time - item.Start).Opacity ?? 1) * moment.Opacity;
         var style = new AnnotationStyle
         {
             Color = Color(color, EditorColors.Red),
@@ -107,7 +109,7 @@ public sealed class FrameCompositor
         var box = SKRect.Create((float)Math.Min(place.X, place.X + place.Width), (float)Math.Min(place.Y, place.Y + place.Height), (float)Math.Abs(place.Width), (float)Math.Abs(place.Height));
         return item.Shape switch
         {
-            AnnotationShape.Text => new TextAnnotation(id, style, from, item.Text.Length == 0 ? " " : item.Text),
+            AnnotationShape.Text => new TextAnnotation(id, style, from, item.Text.Length == 0 ? " " : item.Text) { Revealed = moment.Reveal >= 1 ? null : TextAnimator.Graphemes(item.Text, moment.Reveal) },
             AnnotationShape.Arrow => new ArrowAnnotation(id, style, from, to),
             AnnotationShape.Line => new LineAnnotation(id, style, from, to),
             AnnotationShape.Rectangle => new RectangleAnnotation(id, style, box),
@@ -237,6 +239,11 @@ public sealed class FrameCompositor
     /// <summary>A picture track's clips at <paramref name="time"/>; returns the pictures that weren't ready.</summary>
     private int DrawClips(SKCanvas canvas, VideoProject project, Track track, double time)
     {
+        if (TransitionAt(track, time) is { } transition)
+        {
+            return DrawTransition(canvas, project, track, time, transition);
+        }
+
         var missing = 0;
         Clip? previous = null;
         foreach (var clip in track.Clips.Where(c => c.Covers(time)))
@@ -255,51 +262,161 @@ public sealed class FrameCompositor
             }
 
             previous = clip;
-            var box = LayoutEngine.Box(project, track, clip, time);
-            if (opacity <= 0 || box is { Opacity: <= 0 })
-            {
-                continue;
-            }
-
-            if (asset is null)
-            {
-                DrawPicture(canvas, project, clip, asset, 0, Solid(clip.Solid!), box, project.Canvas.Width, project.Canvas.Height, opacity, time);
-                continue;
-            }
-
-            if (asset.IsPicture)
-            {
-                // A file that is gone draws nothing: there is nothing to wait for.
-                if (StillOf(asset) is { } still)
-                {
-                    DrawPicture(canvas, project, clip, asset, 0, still.At(time - clip.Start), box, still.Width, still.Height, opacity, time);
-                }
-
-                continue;
-            }
-
-            var sourceTime = clip.SourceAt(time);
-            var frame = _frames.Frame(clip, asset, sourceTime);
-            if (frame is null)
-            {
-                missing++;
-                continue;
-            }
-
-            try
-            {
-                var stream = asset.Stream(clip.Stream);
-                var pictureWidth = stream is { Width: > 0 } ? stream.Width : frame.Width;
-                var pictureHeight = stream is { Height: > 0 } ? stream.Height : frame.Height;
-                using var image = frame.ToImage();
-                DrawPicture(canvas, project, clip, asset, sourceTime, image, box, pictureWidth, pictureHeight, opacity, time);
-            }
-            finally
-            {
-                frame.Release();
-            }
+            missing += DrawClip(canvas, project, track, clip, asset, time, opacity);
         }
 
+        return missing;
+    }
+
+    /// <summary>One clip's picture at <paramref name="time"/>; returns 1 when it wasn't ready.</summary>
+    private int DrawClip(SKCanvas canvas, VideoProject project, Track track, Clip clip, MediaAsset? asset, double time, double opacity)
+    {
+        var box = LayoutEngine.Box(project, track, clip, time);
+        if (opacity <= 0 || box is { Opacity: <= 0 })
+        {
+            return 0;
+        }
+
+        if (asset is null)
+        {
+            DrawPicture(canvas, project, clip, asset, 0, Solid(clip.Solid!), box, project.Canvas.Width, project.Canvas.Height, opacity, time);
+            return 0;
+        }
+
+        if (asset.IsPicture)
+        {
+            // A file that is gone draws nothing: there is nothing to wait for.
+            if (StillOf(asset) is { } still)
+            {
+                DrawPicture(canvas, project, clip, asset, 0, still.At(time - clip.Start), box, still.Width, still.Height, opacity, time);
+            }
+
+            return 0;
+        }
+
+        var sourceTime = clip.SourceAt(time);
+        var frame = _frames.Frame(clip, asset, sourceTime);
+        if (frame is null)
+        {
+            return 1;
+        }
+
+        try
+        {
+            var stream = asset.Stream(clip.Stream);
+            var pictureWidth = stream is { Width: > 0 } ? stream.Width : frame.Width;
+            var pictureHeight = stream is { Height: > 0 } ? stream.Height : frame.Height;
+            using var image = frame.ToImage();
+            DrawPicture(canvas, project, clip, asset, sourceTime, image, box, pictureWidth, pictureHeight, opacity, time);
+        }
+        finally
+        {
+            frame.Release();
+        }
+
+        return 0;
+    }
+
+    /// <summary>The transition under way on a track at a moment: what goes and what comes (null: nothing there), and how far it is.</summary>
+    internal readonly record struct ActiveTransition(ClipTransition Transition, Clip? From, Clip? To, double Progress);
+
+    /// <summary>The transition under way at <paramref name="time"/> on <paramref name="track"/>, or null. A way in over an overlap comes before any other.</summary>
+    internal static ActiveTransition? TransitionAt(Track track, double time)
+    {
+        ActiveTransition? edge = null;
+        Clip? previous = null;
+        foreach (var clip in track.Items.OfType<Clip>())
+        {
+            if (!clip.Covers(time))
+            {
+                continue;
+            }
+
+            var overlapped = previous is not null && previous.End > clip.Start + Times.Epsilon;
+            if (clip.TransitionIn is { } coming)
+            {
+                var length = overlapped ? previous!.End - clip.Start : Math.Min(coming.Length, clip.Duration);
+                if (time - clip.Start < length && length > 0)
+                {
+                    var progress = MotionCurves.Ease(coming.Easing, (time - clip.Start) / length);
+                    if (overlapped)
+                    {
+                        return new ActiveTransition(coming, previous, clip, progress);
+                    }
+
+                    edge ??= new ActiveTransition(coming, null, clip, progress);
+                }
+            }
+
+            if (clip.TransitionOut is { } going && !track.Items.OfType<Clip>().Any(c => c.Id != clip.Id && c.Start > clip.Start + Times.Epsilon && c.Start < clip.End - Times.Epsilon))
+            {
+                var length = Math.Min(going.Length, clip.Duration);
+                if (clip.End - time <= length && length > 0)
+                {
+                    edge ??= new ActiveTransition(going, clip, null, MotionCurves.Ease(going.Easing, 1 - ((clip.End - time) / length)));
+                }
+            }
+
+            previous = clip;
+        }
+
+        return edge;
+    }
+
+    /// <summary>
+    /// A transition: each side drawn into a layer of the target's own pixels (on its graphics card when it has one), whole,
+    /// and the two read by the transition's shader.
+    /// </summary>
+    private int DrawTransition(SKCanvas canvas, VideoProject project, Track track, double time, ActiveTransition active)
+    {
+        var bounds = canvas.DeviceClipBounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return 0;
+        }
+
+        var missing = 0;
+        var outer = canvas.TotalMatrix;
+        var info = new SKImageInfo(bounds.Width, bounds.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+        var toTarget = SKMatrix.CreateTranslation(bounds.Left, bounds.Top);
+        SKShader Layer(Clip? clip)
+        {
+            if (clip is null)
+            {
+                return SKShader.CreateColor(SKColors.Transparent);
+            }
+
+            using var surface = (canvas.Context is { } gpu ? SKSurface.Create(gpu, false, info) : null) ?? SKSurface.Create(info);
+            if (surface is null)
+            {
+                return SKShader.CreateColor(SKColors.Transparent);
+            }
+
+            surface.Canvas.Clear(SKColors.Transparent);
+            surface.Canvas.Translate(-bounds.Left, -bounds.Top);
+            surface.Canvas.Concat(in outer);
+            missing += DrawClip(surface.Canvas, project, track, clip, project.Asset(clip.AssetId), time, Fade(clip, time));
+            surface.Flush();
+            using var image = surface.Snapshot();
+            return image.ToShader(SKShaderTileMode.Decal, SKShaderTileMode.Decal, Sampling, toTarget);
+        }
+
+        using var going = Layer(active.From);
+        using var coming = Layer(active.To);
+        using var shader = TransitionShaders.Transition(active.Transition, going, coming, (float)active.Progress, bounds);
+        canvas.Save();
+        canvas.ResetMatrix();
+        if (canvas.Context is null)
+        {
+            DrawInTiles(canvas, bounds, shader);
+        }
+        else
+        {
+            using var paint = new SKPaint { Shader = shader };
+            canvas.DrawRect(SKRect.Create(bounds.Left, bounds.Top, bounds.Width, bounds.Height), paint);
+        }
+
+        canvas.Restore();
         return missing;
     }
 
@@ -448,7 +565,8 @@ public sealed class FrameCompositor
     private int DrawAnnotation(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, Pass pass, bool followsCamera = false)
     {
         var motion = item.Motion?.At(time - item.Start);
-        if (item.Fade(time) * (item.At(time).Opacity ?? item.Look.Opacity) * (motion?.Opacity ?? 1) <= 0.005)
+        var moment = TextAnimator.At(item, time);
+        if (item.Fade(time) * (item.At(time).Opacity ?? item.Look.Opacity) * (motion?.Opacity ?? 1) * moment.Opacity <= 0.005)
         {
             return 0;
         }
@@ -456,7 +574,7 @@ public sealed class FrameCompositor
         if (AnnotationFor(item, time) is { } annotation)
         {
             var context = new RenderContext(Blank, NoEffects, Sampling);
-            if (motion is not { } state)
+            if (motion is null && !moment.Moves)
             {
                 annotation.Render(canvas, context);
                 return 0;
@@ -464,10 +582,20 @@ public sealed class FrameCompositor
 
             var bounds = annotation.Bounds;
             canvas.Save();
-            canvas.Concat(MotionDrawing.Matrix(state, bounds, project.Canvas));
-            if (state.HasCrop)
+            if (motion is { } state)
             {
-                canvas.ClipRect(MotionDrawing.Cropped(state, bounds), SKClipOperation.Intersect, antialias: true);
+                canvas.Concat(MotionDrawing.Matrix(state, bounds, project.Canvas));
+            }
+
+            if (moment.Moves)
+            {
+                canvas.Translate(0, (float)(-moment.Lift * bounds.Height));
+                canvas.Scale((float)moment.Scale, (float)moment.Scale, bounds.MidX, bounds.MidY);
+            }
+
+            if (motion is { HasCrop: true } cropped)
+            {
+                canvas.ClipRect(MotionDrawing.Cropped(cropped, bounds), SKClipOperation.Intersect, antialias: true);
             }
 
             annotation.Render(canvas, context);
@@ -537,12 +665,12 @@ public sealed class FrameCompositor
         var level = 1.0;
         if (clip.FadeIn > 0)
         {
-            level = Math.Min(level, (time - clip.Start) / clip.FadeIn);
+            level = Math.Min(level, MotionCurves.Ease(clip.FadeInCurve, (time - clip.Start) / clip.FadeIn));
         }
 
         if (clip.FadeOut > 0)
         {
-            level = Math.Min(level, (clip.End - time) / clip.FadeOut);
+            level = Math.Min(level, MotionCurves.Ease(clip.FadeOutCurve, (clip.End - time) / clip.FadeOut));
         }
 
         return Math.Clamp(level, 0, 1);
@@ -635,7 +763,26 @@ public sealed class FrameCompositor
             : Outline(placement.Shape, target);
 
         var alpha = (byte)Math.Round(Math.Clamp(opacity * placement.Opacity * (box?.Opacity ?? 1), 0, 1) * 255);
-        if (placement.Shadow is { Opacity: > 0 } shadow)
+        var effects = clip.Effects is { IsActive: true } active ? active : null;
+        SKShader Graded(SKShader picture) => effects is null ? picture : GradedShader(project, effects, picture);
+        var seeThrough = effects?.Key is not null || (asset is { IsPicture: true } && StillOf(asset) is { HasTransparency: true });
+        if (placement.Shadow is { Opacity: > 0 } shape && seeThrough)
+        {
+            // What can be seen through has a shadow of its own shape, not of its box.
+            using var plain = image.ToShader(SKShaderTileMode.Decal, SKShaderTileMode.Decal, Sampling, Mapping(source, target));
+            var keyed = Graded(plain);
+            var reach = (float)Math.Max(0.5, shape.Blur) * 1.5f;
+            var shadowColor = Color(shape.Color, SKColors.Black);
+            using var fall = TransitionShaders.ShapeShadow(keyed, (float)shape.OffsetX, (float)shape.OffsetY, reach, shadowColor.WithAlpha((byte)Math.Round(Math.Clamp(shape.Opacity, 0, 1) * alpha)));
+            using var falling = new SKPaint { Shader = fall };
+            var margin = reach + 2 + (float)Math.Max(Math.Abs(shape.OffsetX), Math.Abs(shape.OffsetY));
+            DrawFilled(canvas, SKRect.Inflate(target, margin, margin), 0, falling);
+            if (!ReferenceEquals(keyed, plain))
+            {
+                keyed.Dispose();
+            }
+        }
+        else if (placement.Shadow is { Opacity: > 0 } shadow)
         {
             var (body, bodyRadius) = placement.Frame == DeviceFrame.None ? (target, radius) : DeviceFrames.Body(placement.Frame, target);
             var reach = (float)((Math.Max(0.5, shadow.Blur) * 3) + 2 + Math.Max(Math.Abs(shadow.OffsetX), Math.Abs(shadow.OffsetY)));
@@ -664,8 +811,17 @@ public sealed class FrameCompositor
             {
                 using (mask)
                 {
-                    DrawMatted(canvas, project, background, image, mask, source, target, image.Width, image.Height, paint, radius);
+                    DrawMatted(canvas, project, background, image, mask, source, target, image.Width, image.Height, paint, radius, effects);
                 }
+            }
+            else if (effects is not null)
+            {
+                using var picture = image.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, Mapping(source, target));
+                using var graded = GradedShader(project, effects, picture);
+                paint.Shader = graded;
+                paint.IsAntialias = true;
+                DrawFilled(canvas, target, rounded ? radius : 0, paint);
+                paint.Shader = null;
             }
             else if (rounded && radius > 0)
             {
@@ -756,10 +912,12 @@ public sealed class FrameCompositor
     }
 
     /// <summary>A webcam's picture with what is behind the person blurred, replaced or taken out, by the person's mask.</summary>
-    private void DrawMatted(SKCanvas canvas, VideoProject project, WebcamBackground background, SKImage image, SKImage mask, SKRect source, SKRect target, int frameWidth, int frameHeight, SKPaint paint, float radius)
+    private void DrawMatted(SKCanvas canvas, VideoProject project, WebcamBackground background, SKImage image, SKImage mask, SKRect source, SKRect target, int frameWidth, int frameHeight, SKPaint paint, float radius, ClipEffects? effects = null)
     {
         var toTarget = Mapping(source, target);
-        using var picture = image.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, toTarget);
+        using var plain = image.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, toTarget);
+        using var graded = effects is null ? null : GradedShader(project, effects, plain);
+        var picture = graded ?? plain;
         var maskToFrame = SKMatrix.CreateScale((float)frameWidth / mask.Width, (float)frameHeight / mask.Height);
         using var masked = mask.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Sampling, toTarget.PreConcat(maskToFrame));
         using var back = BackOf(project, background, image, source, target);
@@ -931,6 +1089,91 @@ public sealed class FrameCompositor
         }
 
         return missing;
+    }
+
+    /// <summary>A picture with its effects: the key and the colour's changes, then the look-up table.</summary>
+    private SKShader GradedShader(VideoProject project, ClipEffects effects, SKShader picture)
+    {
+        var result = effects.HasColor || effects.Key is not null ? TransitionShaders.Effect(picture, effects) : picture;
+        if (effects.LutAssetId is { } id && LutOf(project, id) is { } lut)
+        {
+            var looked = TransitionShaders.Lut(result, lut.Table, lut.Cells, (float)effects.LutStrength);
+            if (!ReferenceEquals(result, picture))
+            {
+                result.Dispose();
+            }
+
+            return looked;
+        }
+
+        return ReferenceEquals(result, picture) ? TransitionShaders.Effect(picture, new ClipEffects()) : result;
+    }
+
+    /// <summary>A .cube file among the project's assets, read once; null when it can't be.</summary>
+    private CubeLut? LutOf(VideoProject project, string assetId)
+    {
+        if (project.Asset(assetId) is not { } asset)
+        {
+            return null;
+        }
+
+        if (!_luts.TryGetValue(asset.Path, out var lut))
+        {
+            try
+            {
+                lut = CubeLut.Read(asset.Path);
+            }
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                lut = null;
+            }
+
+            _luts[asset.Path] = lut;
+        }
+
+        return lut;
+    }
+
+    /// <summary>
+    /// A rounded rectangle filled by a paint with a shader, in canvas coordinates. On the processor it is drawn in strips side
+    /// by side, one per core: a shader per pixel costs too much for an export one strip at a time.
+    /// </summary>
+    private static void DrawFilled(SKCanvas canvas, SKRect target, float radius, SKPaint paint)
+    {
+        if (canvas.Context is not null)
+        {
+            canvas.DrawRoundRect(target, radius, radius, paint);
+            return;
+        }
+
+        var matrix = canvas.TotalMatrix;
+        var bounds = SKRectI.Intersect(SKRectI.Ceiling(matrix.MapRect(target), true), canvas.DeviceClipBounds);
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        using var result = new SKBitmap(new SKImageInfo(bounds.Width, bounds.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
+        var strips = Math.Clamp(Environment.ProcessorCount, 1, 32);
+        Parallel.For(0, strips, strip =>
+        {
+            var top = bounds.Height * strip / strips;
+            var bottom = bounds.Height * (strip + 1) / strips;
+            using var part = new SKBitmap();
+            if (bottom > top && result.ExtractSubset(part, SKRectI.Create(0, top, bounds.Width, bottom - top)))
+            {
+                using var strokes = new SKCanvas(part);
+                using var own = paint.Clone();
+                strokes.Translate(-bounds.Left, -bounds.Top - top);
+                strokes.Concat(in matrix);
+                strokes.DrawRoundRect(target, radius, radius, own);
+            }
+        });
+        using var image = SKImage.FromBitmap(result);
+        canvas.Save();
+        canvas.ResetMatrix();
+        canvas.DrawImage(image, bounds.Left, bounds.Top, new SKSamplingOptions(SKFilterMode.Nearest));
+        canvas.Restore();
     }
 
     /// <summary>A picture clip's file, read once; null when it is gone.</summary>

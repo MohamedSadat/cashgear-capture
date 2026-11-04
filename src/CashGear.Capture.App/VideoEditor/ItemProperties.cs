@@ -31,7 +31,37 @@ public static class ItemProperties
     /// Changes that move what follows the clip (speed, a freeze frame's length, crossfades): (clip id, speed, end
     /// speed or null, merge key), (clip id, length, merge key), (clip id) and (clip id).
     /// </summary>
-    public sealed record ClipActions(Action<string, double, double?, string> SetSpeed, Action<string, double, string> SetFreeze, Action<string> Crossfade, Action<string> RemoveCrossfade);
+    public sealed record ClipActions(Action<string, double, double?, string> SetSpeed, Action<string, double, string> SetFreeze, Action<string> Crossfade, Action<string> RemoveCrossfade)
+    {
+        /// <summary>A way in or out of a clip: (clip id, which edge, the transition or null, merge key).</summary>
+        public Action<string, ItemEdge, ClipTransition?, string>? SetTransition { get; init; }
+
+        /// <summary>A .cube file chosen by the user, or null.</summary>
+        public Func<string?>? PickLut { get; init; }
+    }
+
+    /// <summary>The kinds of transition in the panel's lists.</summary>
+    private static IReadOnlyList<Choice> TransitionChoices() =>
+    [
+        new((TransitionKind?)null, VideoEditorText.TransitionNone),
+        new(TransitionKind.Dissolve, VideoEditorText.TransitionDissolve),
+        new(TransitionKind.DipToColor, VideoEditorText.TransitionDip),
+        new(TransitionKind.Wipe, VideoEditorText.TransitionWipe),
+        new(TransitionKind.Slide, VideoEditorText.TransitionSlide),
+        new(TransitionKind.Push, VideoEditorText.TransitionPush),
+        new(TransitionKind.Zoom, VideoEditorText.TransitionZoom),
+        new(TransitionKind.Blur, VideoEditorText.TransitionBlur),
+        new(TransitionKind.Circle, VideoEditorText.TransitionCircle),
+    ];
+
+    /// <summary>The paces and curves in the panel's lists.</summary>
+    private static IReadOnlyList<Choice> Paces() =>
+    [
+        new(MotionEasing.Linear, VideoEditorText.EasingLinear),
+        new(MotionEasing.EaseIn, VideoEditorText.EasingIn),
+        new(MotionEasing.EaseOut, VideoEditorText.EasingOut),
+        new(MotionEasing.EaseInOut, VideoEditorText.EasingInOut),
+    ];
 
     /// <summary>
     /// A caption's buttons and its track's look: split it at the playhead, merge it with the next, and change the
@@ -99,7 +129,7 @@ public static class ItemProperties
 
         if (item is AnnotationItem annotation)
         {
-            var settings = ForAnnotation(annotation, current, apply, keyframes, motion);
+            var settings = ForAnnotation(annotation, current, apply, keyframes, motion, gate);
             if (motion is not null && project.Find(annotation.Id) is { Track: var written })
             {
                 AddMotion(annotation, written, settings, current, apply, motion);
@@ -234,6 +264,10 @@ public static class ItemProperties
         Change(fadeIn, "fade in", VideoEditorText.UndoFadeIn, c => c with { FadeIn = Math.Round(fadeIn.Value, 2) });
         var fadeOut = new NumberParameter(VideoEditorText.FadeOut, 0, Math.Min(10, clip.Duration), clip.FadeOut, 0.1, VideoEditorText.SecondsUnit);
         Change(fadeOut, "fade out", VideoEditorText.UndoFadeOut, c => c with { FadeOut = Math.Round(fadeOut.Value, 2) });
+        var fadeInCurve = new ChoiceParameter(VideoEditorText.FadeInCurve, Paces(), clip.FadeInCurve);
+        Change(fadeInCurve, "fade in curve", VideoEditorText.UndoFadeCurve, c => c with { FadeInCurve = fadeInCurve.As<MotionEasing>() });
+        var fadeOutCurve = new ChoiceParameter(VideoEditorText.FadeOutCurve, Paces(), clip.FadeOutCurve);
+        Change(fadeOutCurve, "fade out curve", VideoEditorText.UndoFadeCurve, c => c with { FadeOutCurve = fadeOutCurve.As<MotionEasing>() });
 
         if (found.Track.HasPictures)
         {
@@ -263,6 +297,17 @@ public static class ItemProperties
                 AddBackdrop(clip, list, current, apply, pickPicture, addAsset);
             }
 
+            if (actions?.SetTransition is { } setTransition)
+            {
+                AddTransition(clip, ItemEdge.Start, list, current, setTransition);
+                AddTransition(clip, ItemEdge.End, list, current, setTransition);
+            }
+
+            if (gate.IsEnabled(ProFeature.MotionEffects))
+            {
+                AddEffects(clip, list, current, apply, actions?.PickLut, addAsset);
+            }
+
             if (motion is not null)
             {
                 AddMotion(clip, found.Track, list, current, apply, motion);
@@ -270,6 +315,109 @@ public static class ItemProperties
         }
 
         return list;
+    }
+
+    /// <summary>A clip's way in or out: its kind, and what that kind takes.</summary>
+    private static void AddTransition(Clip clip, ItemEdge edge, List<EditParameter> list, Func<VideoProject> current, Action<string, ItemEdge, ClipTransition?, string> set)
+    {
+        var way = edge == ItemEdge.Start ? clip.TransitionIn : clip.TransitionOut;
+        var kind = new ChoiceParameter(edge == ItemEdge.Start ? VideoEditorText.WayIn : VideoEditorText.WayOut, TransitionChoices(), way?.Kind);
+        var length = new NumberParameter(VideoEditorText.TransitionLength, 0.1, 5, way?.Length ?? 1, 0.1, VideoEditorText.SecondsUnit) { IsVisible = way is not null };
+        var direction = new ChoiceParameter(VideoEditorText.TransitionDirectionLabel, [new(TransitionDirection.Left, VideoEditorText.DirectionLeft), new(TransitionDirection.Right, VideoEditorText.DirectionRight), new(TransitionDirection.Up, VideoEditorText.DirectionUp), new(TransitionDirection.Down, VideoEditorText.DirectionDown)], way?.Direction ?? TransitionDirection.Left) { IsVisible = way?.Kind is TransitionKind.Wipe or TransitionKind.Slide or TransitionKind.Push };
+        var color = new ColorParameter(VideoEditorText.TransitionColour, FrameCompositor.Color(way?.Color, SKColors.Black)) { IsVisible = way?.Kind == TransitionKind.DipToColor };
+        var pace = new ChoiceParameter(VideoEditorText.TransitionEasing, Paces(), way?.Easing ?? MotionEasing.EaseInOut) { IsVisible = way is not null };
+        void Changed()
+        {
+            var chosen = (TransitionKind?)kind.Selected.Value;
+            length.IsVisible = pace.IsVisible = chosen is not null;
+            direction.IsVisible = chosen is TransitionKind.Wipe or TransitionKind.Slide or TransitionKind.Push;
+            color.IsVisible = chosen == TransitionKind.DipToColor;
+            if (current().Find(clip.Id) is not null)
+            {
+                set(clip.Id, edge, chosen is { } made ? new ClipTransition(made, Math.Round(length.Value, 2), pace.As<MotionEasing>(), direction.As<TransitionDirection>(), made == TransitionKind.DipToColor ? Hex(color.Value.Value) : null) : null, $"property {clip.Id} transition {edge}");
+            }
+        }
+
+        foreach (var parameter in new EditParameter[] { kind, length, direction, color, pace })
+        {
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is "Value" or "Selected")
+                {
+                    Changed();
+                }
+            };
+            list.Add(parameter);
+        }
+    }
+
+    /// <summary>A picture's colour changes, look-up table and chroma key.</summary>
+    private static void AddEffects(Clip clip, List<EditParameter> list, Func<VideoProject> current, Apply apply, Func<string?>? pickLut, Action<MediaAsset, string, string>? addAsset)
+    {
+        var effects = clip.Effects ?? new ClipEffects();
+        list.Add(new NoteParameter(VideoEditorText.EffectsTitle));
+        void Change(EditParameter parameter, [Localizable(false)] string key, Func<ClipEffects, ClipEffects> update)
+        {
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is "Value" or "Selected" && current().Find(clip.Id)?.Item is Clip now)
+                {
+                    var changed = update(now.Effects ?? new ClipEffects());
+                    apply(now with { Effects = changed.IsActive ? changed : null }, VideoEditorText.UndoEffect, $"property {clip.Id} {key}");
+                }
+            };
+            list.Add(parameter);
+        }
+
+        NumberParameter Slider(string label, double value) => new(label, -100, 100, value * 100, 1, " %");
+        var brightness = Slider(VideoEditorText.Brightness, effects.Brightness);
+        Change(brightness, "brightness", e => e with { Brightness = brightness.Value / 100 });
+        var contrast = Slider(VideoEditorText.Contrast, effects.Contrast);
+        Change(contrast, "contrast", e => e with { Contrast = contrast.Value / 100 });
+        var saturation = Slider(VideoEditorText.Saturation, effects.Saturation);
+        Change(saturation, "saturation", e => e with { Saturation = saturation.Value / 100 });
+        var temperature = Slider(VideoEditorText.Temperature, effects.Temperature);
+        Change(temperature, "temperature", e => e with { Temperature = temperature.Value / 100 });
+
+        var lut = new FileParameter(VideoEditorText.LutLabel, effects.LutAssetId is { } id ? current().Asset(id)?.Path : null, pickLut ?? (() => null));
+        var strength = new NumberParameter(VideoEditorText.LutStrength, 0, 100, effects.LutStrength * 100, 1, " %") { IsVisible = effects.LutAssetId is not null };
+        lut.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Path" && lut.Path is { } path && current() is var project)
+            {
+                // The table joins the project's media and the clip uses it, as one undo step.
+                var asset = project.Assets.FirstOrDefault(a => string.Equals(a.Path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase)) ?? Looks.PictureAsset(path);
+                var mergeKey = $"property {clip.Id} lut {asset.Id}";
+                addAsset?.Invoke(asset, VideoEditorText.UndoEffect, mergeKey);
+                if (current().Find(clip.Id)?.Item is Clip latest)
+                {
+                    strength.IsVisible = true;
+                    apply(latest with { Effects = (latest.Effects ?? new ClipEffects()) with { LutAssetId = asset.Id } }, VideoEditorText.UndoEffect, mergeKey);
+                }
+            }
+        };
+        list.Add(lut);
+        Change(strength, "lut strength", e => e with { LutStrength = strength.Value / 100 });
+
+        var key = effects.Key ?? new ChromaKey();
+        var keyOn = new SwitchParameter(VideoEditorText.ChromaKeyOn, effects.Key is not null);
+        var keyColor = new ColorParameter(VideoEditorText.ChromaColour, FrameCompositor.Color(key.Color, SKColors.Lime)) { IsVisible = keyOn.Value };
+        var tolerance = new NumberParameter(VideoEditorText.ChromaTolerance, 0, 100, key.Tolerance * 100, 1, " %") { IsVisible = keyOn.Value };
+        var softness = new NumberParameter(VideoEditorText.ChromaSoftness, 0, 100, key.Softness * 100, 1, " %") { IsVisible = keyOn.Value };
+        var spill = new NumberParameter(VideoEditorText.ChromaSpill, 0, 100, key.Spill * 100, 1, " %") { IsVisible = keyOn.Value };
+        ChromaKey? Keyed() => keyOn.Value ? new ChromaKey(Hex(keyColor.Value.Value), tolerance.Value / 100, softness.Value / 100, spill.Value / 100) : null;
+        keyOn.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Value")
+            {
+                keyColor.IsVisible = tolerance.IsVisible = softness.IsVisible = spill.IsVisible = keyOn.Value;
+            }
+        };
+        Change(keyOn, "key", e => e with { Key = Keyed() });
+        Change(keyColor, "key colour", e => e with { Key = Keyed() });
+        Change(tolerance, "key tolerance", e => e with { Key = Keyed() });
+        Change(softness, "key softness", e => e with { Key = Keyed() });
+        Change(spill, "key spill", e => e with { Key = Keyed() });
     }
 
     /// <summary>
@@ -681,7 +829,7 @@ public static class ItemProperties
         return list;
     }
 
-    private static List<EditParameter> ForAnnotation(AnnotationItem annotation, Func<VideoProject> current, Apply apply, Keyframes? keyframes, MotionActions? motion)
+    private static List<EditParameter> ForAnnotation(AnnotationItem annotation, Func<VideoProject> current, Apply apply, Keyframes? keyframes, MotionActions? motion, IFeatureGate? features = null)
     {
         var list = new List<EditParameter>();
         void Change<T>(T parameter, [Localizable(false)] string key, string name, Func<AnnotationItem, AnnotationItem> update)
@@ -742,8 +890,28 @@ public static class ItemProperties
         Change(fadeIn, "fade in", VideoEditorText.UndoFadeIn, a => a with { FadeIn = Math.Round(fadeIn.Value, 2) });
         var fadeOut = new NumberParameter(VideoEditorText.FadeOut, 0, Math.Min(5, annotation.Length), annotation.FadeOut, 0.1, VideoEditorText.SecondsUnit);
         Change(fadeOut, "fade out", VideoEditorText.UndoFadeOut, a => a with { FadeOut = Math.Round(fadeOut.Value, 2) });
+        var fadeInCurve = new ChoiceParameter(VideoEditorText.FadeInCurve, Paces(), annotation.FadeInCurve);
+        Change(fadeInCurve, "fade in curve", VideoEditorText.UndoFadeCurve, a => a with { FadeInCurve = fadeInCurve.As<MotionEasing>() });
+        var fadeOutCurve = new ChoiceParameter(VideoEditorText.FadeOutCurve, Paces(), annotation.FadeOutCurve);
+        Change(fadeOutCurve, "fade out curve", VideoEditorText.UndoFadeCurve, a => a with { FadeOutCurve = fadeOutCurve.As<MotionEasing>() });
         var easing = new ChoiceParameter(VideoEditorText.Movement, [new(Easing.Smooth, VideoEditorText.Smooth), new(Easing.Linear, VideoEditorText.Even)], annotation.Easing);
         Change(easing, "movement", VideoEditorText.UndoMovement, a => a with { Easing = easing.As<Easing>() });
+        if (!hidden && (features ?? FeatureGate.Open).IsEnabled(ProFeature.MotionEffects))
+        {
+            IReadOnlyList<Choice> kinds = shape == AnnotationShape.Text
+                ? [new(TextAnimationKind.None, VideoEditorText.AnimationNone), new(TextAnimationKind.Fade, VideoEditorText.AnimationFade), new(TextAnimationKind.Slide, VideoEditorText.AnimationSlide), new(TextAnimationKind.Pop, VideoEditorText.AnimationPop), new(TextAnimationKind.Typewriter, VideoEditorText.AnimationTypewriter)]
+                : [new(TextAnimationKind.None, VideoEditorText.AnimationNone), new(TextAnimationKind.Fade, VideoEditorText.AnimationFade), new(TextAnimationKind.Slide, VideoEditorText.AnimationSlide), new(TextAnimationKind.Pop, VideoEditorText.AnimationPop)];
+            var edgeLength = new NumberParameter(VideoEditorText.TextAnimationLength, 0.1, 5, annotation.TextIn?.Length ?? annotation.TextOut?.Length ?? 0.5, 0.1, VideoEditorText.SecondsUnit);
+            TextAnimation? Made(ChoiceParameter choice, double length) => choice.As<TextAnimationKind>() is var kind && kind == TextAnimationKind.None ? null : new TextAnimation(kind, Math.Round(length, 2));
+            var comes = new ChoiceParameter(VideoEditorText.TextAnimationIn, kinds, annotation.TextIn?.Kind ?? TextAnimationKind.None);
+            var during = new ChoiceParameter(VideoEditorText.TextAnimationDuring, kinds, annotation.TextDuring?.Kind ?? TextAnimationKind.None);
+            var goes = new ChoiceParameter(VideoEditorText.TextAnimationOut, kinds, annotation.TextOut?.Kind ?? TextAnimationKind.None);
+            Change(comes, "text in", VideoEditorText.UndoTextAnimation, a => a with { TextIn = Made(comes, edgeLength.Value) });
+            Change(during, "text during", VideoEditorText.UndoTextAnimation, a => a with { TextDuring = Made(during, 2) });
+            Change(goes, "text out", VideoEditorText.UndoTextAnimation, a => a with { TextOut = Made(goes, edgeLength.Value) });
+            Change(edgeLength, "text length", VideoEditorText.UndoTextAnimation, a => a with { TextIn = Made(comes, edgeLength.Value), TextOut = Made(goes, edgeLength.Value) });
+        }
+
         if (keyframes is not null)
         {
             list.Add(new ActionParameter(VideoEditorText.AddKeyframe(annotation.Keyframes.Count), new CommunityToolkit.Mvvm.Input.RelayCommand(keyframes.Add)));

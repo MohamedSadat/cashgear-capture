@@ -18,12 +18,16 @@ public sealed class PictureFile : IDisposable
     private readonly SKImage[] _frames;
     private readonly double[] _starts;
 
-    private PictureFile(SKImage[] frames, double[] starts, double duration)
+    private PictureFile(SKImage[] frames, double[] starts, double duration, bool seeThrough)
     {
         _frames = frames;
         _starts = starts;
         Duration = duration;
+        HasTransparency = seeThrough;
     }
+
+    /// <summary>Whether the file can have see-through parts, so a shadow follows its shape.</summary>
+    public bool HasTransparency { get; }
 
     /// <summary>One time through an animation, in seconds (0 for a still).</summary>
     public double Duration { get; }
@@ -122,7 +126,7 @@ public sealed class PictureFile : IDisposable
             bitmaps.ForEach(b => b.Dispose());
         }
 
-        return new PictureFile([.. frames], starts[..frames.Count], frames.Count > 1 ? at : 0);
+        return new PictureFile([.. frames], starts[..frames.Count], frames.Count > 1 ? at : 0, codec.Info.AlphaType != SKAlphaType.Opaque);
     }
 
     /// <summary>The pixels the right way up, as an image of their own.</summary>

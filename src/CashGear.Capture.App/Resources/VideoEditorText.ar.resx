@@ -1965,4 +1965,181 @@
   <data name="UndoMovesWithZoom" xml:space="preserve">
     <value>التحرك مع التكبير</value>
   </data>
+  <data name="TransitionsTab" xml:space="preserve">
+    <value>الانتقالات</value>
+  </data>
+  <data name="MediaTab" xml:space="preserve">
+    <value>الوسائط</value>
+  </data>
+  <data name="TransitionsNote" xml:space="preserve">
+    <value>اسحب انتقالًا إلى قطع أو إلى حافة مقطع على المخطط الزمني، أو اختر مقطعًا واضغط Enter ليوضع على الحافة الأقرب إلى مؤشر التشغيل.</value>
+  </data>
+  <data name="TransitionsListName" xml:space="preserve">
+    <value>الانتقالات</value>
+  </data>
+  <data name="ApplyTransitionButton" xml:space="preserve">
+    <value>تطبيق على المقطع</value>
+  </data>
+  <data name="ApplyTransitionTip" xml:space="preserve">
+    <value>وضعه على حافة المقطع المختار الأقرب إلى مؤشر التشغيل (Enter)</value>
+  </data>
+  <data name="TransitionNeedsClip" xml:space="preserve">
+    <value>اختر أولًا مقطع صورة على المخطط الزمني، أو اسحب الانتقال إلى قطع.</value>
+  </data>
+  <data name="TransitionNone" xml:space="preserve">
+    <value>بلا</value>
+  </data>
+  <data name="TransitionDissolve" xml:space="preserve">
+    <value>تلاشٍ متداخل</value>
+  </data>
+  <data name="TransitionDip" xml:space="preserve">
+    <value>مرور عبر لون</value>
+  </data>
+  <data name="TransitionWipeLeft" xml:space="preserve">
+    <value>مسح إلى اليسار</value>
+  </data>
+  <data name="TransitionWipeRight" xml:space="preserve">
+    <value>مسح إلى اليمين</value>
+  </data>
+  <data name="TransitionWipeUp" xml:space="preserve">
+    <value>مسح إلى الأعلى</value>
+  </data>
+  <data name="TransitionWipeDown" xml:space="preserve">
+    <value>مسح إلى الأسفل</value>
+  </data>
+  <data name="TransitionWipe" xml:space="preserve">
+    <value>مسح</value>
+  </data>
+  <data name="TransitionSlide" xml:space="preserve">
+    <value>انزلاق</value>
+  </data>
+  <data name="TransitionPush" xml:space="preserve">
+    <value>دفع</value>
+  </data>
+  <data name="TransitionZoom" xml:space="preserve">
+    <value>تكبير</value>
+  </data>
+  <data name="TransitionBlur" xml:space="preserve">
+    <value>تمويه</value>
+  </data>
+  <data name="TransitionCircle" xml:space="preserve">
+    <value>دائرة</value>
+  </data>
+  <data name="WayIn" xml:space="preserve">
+    <value>طريقة الدخول</value>
+  </data>
+  <data name="WayOut" xml:space="preserve">
+    <value>طريقة الخروج</value>
+  </data>
+  <data name="TransitionLength" xml:space="preserve">
+    <value>مدته</value>
+  </data>
+  <data name="TransitionDirectionLabel" xml:space="preserve">
+    <value>الاتجاه</value>
+  </data>
+  <data name="DirectionLeft" xml:space="preserve">
+    <value>يسار</value>
+  </data>
+  <data name="DirectionRight" xml:space="preserve">
+    <value>يمين</value>
+  </data>
+  <data name="DirectionUp" xml:space="preserve">
+    <value>أعلى</value>
+  </data>
+  <data name="DirectionDown" xml:space="preserve">
+    <value>أسفل</value>
+  </data>
+  <data name="TransitionColour" xml:space="preserve">
+    <value>لونه</value>
+  </data>
+  <data name="TransitionEasing" xml:space="preserve">
+    <value>إيقاعه</value>
+  </data>
+  <data name="UndoTransition" xml:space="preserve">
+    <value>انتقال</value>
+  </data>
+  <data name="FadeInCurve" xml:space="preserve">
+    <value>منحنى الظهور التدريجي</value>
+  </data>
+  <data name="FadeOutCurve" xml:space="preserve">
+    <value>منحنى الاختفاء التدريجي</value>
+  </data>
+  <data name="UndoFadeCurve" xml:space="preserve">
+    <value>منحنى التلاشي</value>
+  </data>
+  <data name="EffectsTitle" xml:space="preserve">
+    <value>التأثيرات</value>
+  </data>
+  <data name="Brightness" xml:space="preserve">
+    <value>السطوع</value>
+  </data>
+  <data name="Contrast" xml:space="preserve">
+    <value>التباين</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>التشبع</value>
+  </data>
+  <data name="Temperature" xml:space="preserve">
+    <value>درجة حرارة اللون</value>
+  </data>
+  <data name="LutLabel" xml:space="preserve">
+    <value>جدول البحث (.cube)</value>
+  </data>
+  <data name="LutTitle" xml:space="preserve">
+    <value>اختيار جدول بحث</value>
+  </data>
+  <data name="LutFilter" xml:space="preserve">
+    <value>جداول البحث|*.cube|كل الملفات|*.*</value>
+  </data>
+  <data name="LutStrength" xml:space="preserve">
+    <value>قوته</value>
+  </data>
+  <data name="ChromaKeyOn" xml:space="preserve">
+    <value>مفتاح لوني (شاشة خضراء)</value>
+  </data>
+  <data name="ChromaColour" xml:space="preserve">
+    <value>اللون المُزال</value>
+  </data>
+  <data name="ChromaTolerance" xml:space="preserve">
+    <value>مدى القرب</value>
+  </data>
+  <data name="ChromaSoftness" xml:space="preserve">
+    <value>الحافة</value>
+  </data>
+  <data name="ChromaSpill" xml:space="preserve">
+    <value>إزالة انعكاس اللون</value>
+  </data>
+  <data name="UndoEffect" xml:space="preserve">
+    <value>تأثير</value>
+  </data>
+  <data name="TextAnimationIn" xml:space="preserve">
+    <value>الدخول</value>
+  </data>
+  <data name="TextAnimationDuring" xml:space="preserve">
+    <value>أثناء العرض</value>
+  </data>
+  <data name="TextAnimationOut" xml:space="preserve">
+    <value>الخروج</value>
+  </data>
+  <data name="TextAnimationLength" xml:space="preserve">
+    <value>مدة الدخول والخروج</value>
+  </data>
+  <data name="AnimationNone" xml:space="preserve">
+    <value>بلا حركة</value>
+  </data>
+  <data name="AnimationFade" xml:space="preserve">
+    <value>تلاشٍ</value>
+  </data>
+  <data name="AnimationSlide" xml:space="preserve">
+    <value>انزلاق</value>
+  </data>
+  <data name="AnimationPop" xml:space="preserve">
+    <value>قفزة</value>
+  </data>
+  <data name="AnimationTypewriter" xml:space="preserve">
+    <value>آلة كاتبة</value>
+  </data>
+  <data name="UndoTextAnimation" xml:space="preserve">
+    <value>حركة</value>
+  </data>
 </root>

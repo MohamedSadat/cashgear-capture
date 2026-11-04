@@ -169,6 +169,21 @@ public sealed record Clip : TimelineItem
 
     public string? Link { get; init; }
 
+    /// <summary>How its fade in goes.</summary>
+    public MotionEasing FadeInCurve { get; init; }
+
+    /// <summary>How its fade out goes.</summary>
+    public MotionEasing FadeOutCurve { get; init; }
+
+    /// <summary>The way into it from the clip before (where they overlap), or from nothing.</summary>
+    public ClipTransition? TransitionIn { get; init; }
+
+    /// <summary>The way out of it to nothing (into the next clip is the next clip's <see cref="TransitionIn"/>).</summary>
+    public ClipTransition? TransitionOut { get; init; }
+
+    /// <summary>Its colour's changes, look-up table and key (null: as it is).</summary>
+    public ClipEffects? Effects { get; init; }
+
     /// <summary>Its position, scale, rotation, opacity and crop over time, on top of its placement (null: as placed).</summary>
     public ItemMotion? Motion { get; init; }
 
@@ -198,7 +213,7 @@ public sealed record Clip : TimelineItem
         var length = Math.Max(0, to - from);
         var keepsStart = from <= Start + Times.Epsilon;
         var keepsEnd = to >= End - Times.Epsilon;
-        var fades = this with { FadeIn = KeptFade(FadeIn, keepsStart, length), FadeOut = KeptFade(FadeOut, keepsEnd, length), Motion = Motion?.Sliced(from - Start, length) };
+        var fades = this with { FadeIn = KeptFade(FadeIn, keepsStart, length), FadeOut = KeptFade(FadeOut, keepsEnd, length), Motion = Motion?.Sliced(from - Start, length), TransitionIn = keepsStart ? TransitionIn : null, TransitionOut = keepsEnd ? TransitionOut : null };
         if (IsFreeze)
         {
             return fades with { Start = from, FreezeLength = length };

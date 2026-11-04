@@ -348,6 +348,7 @@ public sealed class TimelineRenderer : IDisposable
         if (item is Clip shaped)
         {
             DrawFades(canvas, shaped, box, view, Colors.Fade);
+            DrawTransitions(canvas, shaped, box, view, Colors.Selection);
         }
 
         using var shadow = new SKPaint { Color = Colors.LabelShadow, IsAntialias = true };
@@ -424,6 +425,22 @@ public sealed class TimelineRenderer : IDisposable
             var peak = (float)wave.Peak(from, to) * gain;
             var h = Math.Min(half, peak * half);
             canvas.DrawLine(x + 0.5f, middle - h, x + 0.5f, middle + h, paint);
+        }
+    }
+
+    /// <summary>A clip's ways in and out: a bar along the top of each.</summary>
+    private static void DrawTransitions(SKCanvas canvas, Clip clip, SKRect box, TimelineView view, SKColor color)
+    {
+        using var bar = new SKPaint { Color = color };
+        if (clip.TransitionIn is { } coming)
+        {
+            canvas.DrawRect(SKRect.Create(box.Left, box.Top, (float)(coming.Length * view.PixelsPerSecond), 4), bar);
+        }
+
+        if (clip.TransitionOut is { } going)
+        {
+            var width = (float)(going.Length * view.PixelsPerSecond);
+            canvas.DrawRect(SKRect.Create(box.Right - width, box.Top, width, 4), bar);
         }
     }
 

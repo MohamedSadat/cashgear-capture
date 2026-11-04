@@ -11,8 +11,9 @@
   <UserControl.Resources>
     <BooleanToVisibilityConverter x:Key="Visible" />
   </UserControl.Resources>
-  <DockPanel Margin="10,8,10,8">
-    <TextBlock DockPanel.Dock="Top" Text="{x:Static r:VideoEditorText.MediaPanelTitle}" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6" />
+  <TabControl x:Name="Tabs" BorderThickness="0" Padding="0">
+    <TabItem Header="{x:Static r:VideoEditorText.MediaTab}">
+  <DockPanel Margin="6,6,6,6">
     <WrapPanel DockPanel.Dock="Top">
       <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.ImportMediaButton}" Command="{Binding ImportCommand}" ToolTip="{x:Static r:VideoEditorText.ImportMediaTip}" />
       <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.AddColourButton}" Command="{Binding AddColourCommand}" ToolTip="{x:Static r:VideoEditorText.AddColourTip}" />
@@ -47,4 +48,21 @@
       </ListBox.ItemTemplate>
     </ListBox>
   </DockPanel>
+    </TabItem>
+    <TabItem Header="{x:Static r:VideoEditorText.TransitionsTab}">
+      <DockPanel Margin="6,6,6,6">
+        <TextBlock DockPanel.Dock="Top" Text="{x:Static r:VideoEditorText.TransitionsNote}" TextWrapping="Wrap" FontSize="11" Opacity="0.8" Margin="0,0,0,6" />
+        <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" Margin="0,6,0,0" Padding="8,2" Content="{x:Static r:VideoEditorText.ApplyTransitionButton}" Command="{Binding ApplyTransitionCommand}" ToolTip="{x:Static r:VideoEditorText.ApplyTransitionTip}" />
+        <ListBox x:Name="TransitionList" ItemsSource="{Binding Transitions}" SelectedItem="{Binding SelectedTransition}" DisplayMemberPath="Name"
+                 AutomationProperties.Name="{x:Static r:VideoEditorText.TransitionsListName}"
+                 PreviewMouseLeftButtonDown="OnTransitionPress" PreviewMouseMove="OnTransitionMove" PreviewKeyDown="OnTransitionKey">
+          <ListBox.ItemContainerStyle>
+            <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+              <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+            </Style>
+          </ListBox.ItemContainerStyle>
+        </ListBox>
+      </DockPanel>
+    </TabItem>
+  </TabControl>
 </UserControl>
