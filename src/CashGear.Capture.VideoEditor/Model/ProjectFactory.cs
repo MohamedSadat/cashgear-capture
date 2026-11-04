@@ -13,6 +13,9 @@ public static class ProjectFactory
     /// <summary>The webcam's place when its recording didn't say: a circle at the bottom right, a quarter of the height.</summary>
     public static Placement DefaultWebcam { get; } = new(0.86, 0.78, 0.25, PlacementShape.Circle, "#FFFFFF", 3);
 
+    /// <summary>A second camera's place: as the first's, on the other side.</summary>
+    public static Placement SecondWebcam { get; } = new(0.14, 0.78, 0.25, PlacementShape.Circle, "#FFFFFF", 3);
+
     /// <summary>Reads a media file's streams, and finds a recording's metadata file next to it.</summary>
     /// <exception cref="FfmpegException">It can't be read.</exception>
     public static MediaAsset ReadAsset(string path, string? id = null)
@@ -90,7 +93,7 @@ public static class ProjectFactory
     {
         ArgumentNullException.ThrowIfNull(asset);
         var videos = asset.Streams.Where(s => s.Kind == StreamKind.Video).ToList();
-        return videos.FirstOrDefault(s => s.Title is null || !string.Equals(s.Title, WebcamTitle, StringComparison.OrdinalIgnoreCase)) ?? videos.FirstOrDefault();
+        return videos.FirstOrDefault(s => s.Title is null || !(string.Equals(s.Title, WebcamTitle, StringComparison.OrdinalIgnoreCase) || string.Equals(s.Title, RecordedTracks.SecondWebcam, StringComparison.OrdinalIgnoreCase))) ?? videos.FirstOrDefault();
     }
 
     /// <summary>A recording's webcam video: the stream titled "Webcam", or a second video.</summary>
@@ -98,9 +101,19 @@ public static class ProjectFactory
     {
         ArgumentNullException.ThrowIfNull(asset);
         var main = MainVideo(asset);
-        var videos = asset.Streams.Where(s => s.Kind == StreamKind.Video && s != main).ToList();
+        var videos = asset.Streams.Where(s => s.Kind == StreamKind.Video && s != main && !IsExtraTrack(s)).ToList();
         return videos.FirstOrDefault(s => string.Equals(s.Title, WebcamTitle, StringComparison.OrdinalIgnoreCase)) ?? videos.FirstOrDefault();
     }
+
+    /// <summary>A recording's other video tracks, each by its title: other monitors, a second camera.</summary>
+    public static IReadOnlyList<AssetStream> ExtraVideos(MediaAsset asset)
+    {
+        ArgumentNullException.ThrowIfNull(asset);
+        return [.. asset.Streams.Where(s => s.Kind == StreamKind.Video && IsExtraTrack(s))];
+    }
+
+    private static bool IsExtraTrack(AssetStream stream) =>
+        RecordedTracks.IsScreen(stream.Title) || string.Equals(stream.Title, RecordedTracks.SecondWebcam, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// The sound streams to put on the timeline: each source by itself when the recording kept them apart (the
@@ -161,9 +174,17 @@ public static class ProjectFactory
 
         var sounds = SoundStreams(asset).Select(s => new Track(Ids.New(), TrackKind.Audio, SoundName(s, asset), [ClipOf(s)]));
         var pictures = new List<Track>();
+        var extras = ExtraVideos(asset);
         if (MainVideo(asset) is { } main)
         {
-            pictures.Add(new Track(Ids.New(), TrackKind.Video, main.Title ?? (metadata is null ? VideoEditorStrings.TrackVideo : VideoEditorStrings.TrackScreen), [ClipOf(main)]));
+            var mainName = main.Title ?? (extras.Any(s => RecordedTracks.IsScreen(s.Title)) ? VideoEditorStrings.TrackScreenNumbered(1) : metadata is null ? VideoEditorStrings.TrackVideo : VideoEditorStrings.TrackScreen);
+            pictures.Add(new Track(Ids.New(), TrackKind.Video, mainName, [ClipOf(main)]));
+        }
+
+        // Other monitors, above the first and not shown: Edit › Cut to Screen shows them from the playhead.
+        foreach (var screen in extras.Where(s => RecordedTracks.IsScreen(s.Title)))
+        {
+            pictures.Add(new Track(Ids.New(), TrackKind.Video, VideoEditorStrings.TrackScreenNumbered(RecordedTracks.ScreenNumber(screen.Title)), [ClipOf(screen)], Hidden: true));
         }
 
         if (WebcamVideo(asset) is { } webcam)
@@ -180,6 +201,12 @@ public static class ProjectFactory
                 : DefaultWebcam;
             var clip = ClipOf(webcam) with { Placement = placement };
             pictures.Add(new Track(Ids.New(), TrackKind.Webcam, VideoEditorStrings.TrackWebcam, [clip], Hidden: metadata?.OverlaysInVideo == true && metadata.Webcam is not null));
+        }
+
+        // A second camera has no place yet: on the other side, and not shown until asked for.
+        foreach (var camera in extras.Where(s => !RecordedTracks.IsScreen(s.Title)))
+        {
+            pictures.Add(new Track(Ids.New(), TrackKind.Webcam, VideoEditorStrings.TrackSecondWebcam, [ClipOf(camera) with { Placement = SecondWebcam }], Hidden: true));
         }
 
         // Sound tracks go first (drawn at the bottom of the timeline), the pictures above the existing ones.

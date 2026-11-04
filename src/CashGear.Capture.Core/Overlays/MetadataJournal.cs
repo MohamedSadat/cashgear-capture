@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Text.Json;
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Recording;
 
 namespace CashGear.Capture.Core.Overlays;
 
@@ -25,7 +26,7 @@ public sealed class MetadataJournal : IDisposable
     private readonly FileStream _file;
     private readonly ArrayBufferWriter<byte> _line = new(256);
     private readonly Utf8JsonWriter _json;
-    private readonly PixelPoint _origin;
+    private PointMap _map;
     private long _flushed = Stopwatch.GetTimestamp();
     private bool _disposed;
 
@@ -34,9 +35,29 @@ public sealed class MetadataJournal : IDisposable
         ArgumentNullException.ThrowIfNull(header);
         _file = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 64 * 1024);
         _json = new Utf8JsonWriter(_line, new JsonWriterOptions { Encoder = MetadataJsonContext.Compact.Options.Encoder });
-        _origin = new PixelPoint(header.Area.X, header.Area.Y);
+        _map = PointMap.FromOrigin(new PixelPoint(header.Area.X, header.Area.Y));
         Write("header", header, MetadataJsonContext.Compact.MetadataHeader);
         Flush();
+    }
+
+    /// <summary>Where a place on the screen is in the video from now on (a window's recording moves it with the window).</summary>
+    public PointMap Map
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _map;
+            }
+        }
+
+        set
+        {
+            lock (_gate)
+            {
+                _map = value;
+            }
+        }
     }
 
     public void Cursor(MetadataCursor cursor) => Write("cursor", cursor, MetadataJsonContext.Compact.MetadataCursor);
@@ -54,8 +75,8 @@ public sealed class MetadataJournal : IDisposable
             _json.WriteStartObject();
             _json.WriteStartArray("f");
             _json.WriteNumberValue(frame);
-            _json.WriteNumberValue(at.X - _origin.X);
-            _json.WriteNumberValue(at.Y - _origin.Y);
+            _json.WriteNumberValue((int)Math.Round(_map.X(at.X)));
+            _json.WriteNumberValue((int)Math.Round(_map.Y(at.Y)));
             _json.WriteNumberValue(cursor);
             _json.WriteNumberValue(visible ? 1 : 0);
             _json.WriteEndArray();
@@ -64,8 +85,11 @@ public sealed class MetadataJournal : IDisposable
         }
     }
 
-    public void ButtonDown(TimeSpan time, PointerButton button, PixelPoint at) =>
-        Write("down", new MetadataClick(Seconds(time), null, button, at.X - _origin.X, at.Y - _origin.Y), MetadataJsonContext.Compact.MetadataClick);
+    public void ButtonDown(TimeSpan time, PointerButton button, PixelPoint at)
+    {
+        var map = Map;
+        Write("down", new MetadataClick(Seconds(time), null, button, (int)Math.Round(map.X(at.X)), (int)Math.Round(map.Y(at.Y))), MetadataJsonContext.Compact.MetadataClick);
+    }
 
     public void ButtonUp(TimeSpan time, PointerButton button) =>
         Write("up", new MetadataRelease(Seconds(time), button), MetadataJsonContext.Compact.MetadataRelease);
@@ -206,7 +230,8 @@ public sealed class MetadataJournal : IDisposable
             [.. keys.OrderBy(k => k.T)],
             [.. focus.OrderBy(f => f.T)],
             [.. drawing.OrderBy(d => d.T)],
-            header.Webcam);
+            header.Webcam,
+            header.Look);
     }
 
     private static double Seconds(TimeSpan time) => Math.Round(time.TotalSeconds, 6);

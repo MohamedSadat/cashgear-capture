@@ -12,6 +12,10 @@ public sealed unsafe class Win32DesktopState : IDesktopState
 
     public bool IsRemoteSession => User32.GetSystemMetrics(User32.SmRemoteSession) != 0;
 
+    public bool IsMinimized(nint window) => User32.IsIconic(window);
+
+    public bool IsClosed(nint window) => !User32.IsWindow(window);
+
     /// <summary>
     /// The desktop receiving input isn't the user's: opening it is refused (the Winlogon desktop of a UAC prompt, the
     /// lock screen, Ctrl+Alt+Del), or it has another name than "Default".

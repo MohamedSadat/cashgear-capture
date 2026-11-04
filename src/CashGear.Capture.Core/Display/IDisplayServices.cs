@@ -13,6 +13,12 @@ public interface IDesktopState
 
     /// <summary>This is a Remote Desktop session.</summary>
     bool IsRemoteSession { get; }
+
+    /// <summary>The window is minimized (it sends no pictures meanwhile).</summary>
+    bool IsMinimized(nint window) => false;
+
+    /// <summary>The window no longer exists.</summary>
+    bool IsClosed(nint window) => false;
 }
 
 public interface IMonitorService

@@ -138,4 +138,25 @@
   <data name="AreaOffMonitor" xml:space="preserve">
     <value>أصبح حجم «{0}» {1}x{2}، ولم تعد المنطقة المسجَّلة ضمنه، لذا توقف التسجيل.</value>
   </data>
+  <data name="WindowMinimizedNote" xml:space="preserve">
+    <value>صُغّرت «{0}» من {1} إلى {2}: تبقى آخر صورة لها طوال تلك المدة.</value>
+  </data>
+  <data name="WindowClosed" xml:space="preserve">
+    <value>أُغلقت النافذة «{0}».</value>
+  </data>
+  <data name="ScreenTrackEnded" xml:space="preserve">
+    <value>اختفت الشاشة {0} أو تغيّر حجمها: ينتهي مسارها هنا ويستمر التسجيل.</value>
+  </data>
+  <data name="ScreenTrackStopped" xml:space="preserve">
+    <value>توقّف مسار الشاشة {0} ({1}) ويستمر التسجيل.</value>
+  </data>
+  <data name="ScreenTrackSkipped" xml:space="preserve">
+    <value>تخطّى مسار شاشة أخرى بعض الإطارات: كان ترميز مسارين معًا أكثر مما يحتمله هذا الحاسوب.</value>
+  </data>
+  <data name="NoHdrEncoder" xml:space="preserve">
+    <value>لا يوجد هنا مرمّز يقبل HEVC بعمق 10 بت، لذا سُجّلت شاشة HDR بعد تحويلها إلى SDR.</value>
+  </data>
+  <data name="HdrKeepsOverlaysApart" xml:space="preserve">
+    <value>يُبقي تسجيل HDR هذا النقرات والمفاتيح وكاميرا الويب منفصلة ليستخدمها محرر الفيديو، لأنها تُرسم بنطاق SDR.</value>
+  </data>
 </root>

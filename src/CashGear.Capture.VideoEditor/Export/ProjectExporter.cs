@@ -174,6 +174,37 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         }
     }
 
+    /// <summary>Whether any video of the project is HDR, so an HDR export has light to keep. Media that can't be read counts as none.</summary>
+    public static bool HasHdrMedia(VideoProject project)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        foreach (var track in project.Tracks.Where(t => t.HasPictures))
+        {
+            foreach (var clip in track.Clips)
+            {
+                if (project.Assets.FirstOrDefault(a => a.Id == clip.AssetId) is not { IsPicture: false } asset || !File.Exists(asset.Path))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    using var reader = new VideoStreamReader(asset.Path, clip.Stream, VideoDecoding.Software);
+                    if (reader.IsHdr)
+                    {
+                        return true;
+                    }
+                }
+                catch (FfmpegException)
+                {
+                    // not one that can be read here
+                }
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>The sound tracks that are heard in the mix.</summary>
     internal static IReadOnlyList<Track> HeardTracks(VideoProject project)
     {
@@ -310,9 +341,11 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
                 packets.Clear();
             }
 
-            using var frames = new ExportFrameProvider(VideoDecoding.Hardware);
+            using var frames = new ExportFrameProvider(VideoDecoding.Hardware, preset.Hdr);
             using var converter = new FrameConverter(width, height, video.PixelFormat);
-            using var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul))
+
+            // Drawn as ever, on float pixels that can hold light past white: everything else blends as in an SDR export.
+            using var surface = SKSurface.Create(new SKImageInfo(width, height, preset.Hdr ? SKColorType.RgbaF16 : SKColorType.Bgra8888, SKAlphaType.Premul))
                 ?? throw new ExportException(VideoEditorStrings.NotEnoughMemory(width, height));
             var compositor = NewCompositor(frames);
             var count = (long)Math.Ceiling((duration * fps) - 1e-6);
@@ -330,7 +363,14 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
                 {
                     unsafe
                     {
-                        converter.Convert(new ReadOnlySpan<byte>((void*)pixmap.GetPixels(), pixmap.RowBytes * height), pixmap.RowBytes, video.NextFrame());
+                        if (preset.Hdr)
+                        {
+                            PqPictures.FromExtended((byte*)pixmap.GetPixels(), pixmap.RowBytes, video.NextFrame(), width, height);
+                        }
+                        else
+                        {
+                            converter.Convert(new ReadOnlySpan<byte>((void*)pixmap.GetPixels(), pixmap.RowBytes * height), pixmap.RowBytes, video.NextFrame());
+                        }
                     }
                 }
 
@@ -515,6 +555,23 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
     private VideoEncoder OpenEncoder(VideoCodec codec, VideoFormat format, ExportRequest request, IReadOnlyList<EncoderProbe> detected)
     {
         var problems = new List<string>();
+        if (request.Preset.Hdr)
+        {
+            foreach (var candidate in EncoderPresets.ForHdrExport(codec))
+            {
+                try
+                {
+                    return VideoEncoder.Open(candidate, format, EncoderPresets.HdrOptions(candidate, request.Quality, format.Width, format.Height, format.Fps), hdr: true);
+                }
+                catch (FfmpegException e)
+                {
+                    LogOpenFailed(candidate.Id, e.Message);
+                }
+            }
+
+            throw new ExportException(VideoEditorStrings.NoHdrEncoder);
+        }
+
         foreach (var (candidate, probe) in EncoderPresets.ForExport(codec, request.EncoderSetting, detected))
         {
             try
@@ -547,7 +604,7 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
 }
 
 /// <summary>The export's pictures: a <see cref="FrameCursor"/> per clip, read forward as the export goes, closed once the clip is behind.</summary>
-internal sealed class ExportFrameProvider(VideoDecoding decoding) : IFrameProvider, IDisposable
+internal sealed class ExportFrameProvider(VideoDecoding decoding, bool keepHdr = false) : IFrameProvider, IDisposable
 {
     private readonly Dictionary<string, FrameCursor> _cursors = [];
     private readonly HashSet<string> _used = [];
@@ -559,7 +616,7 @@ internal sealed class ExportFrameProvider(VideoDecoding decoding) : IFrameProvid
     {
         if (!_cursors.TryGetValue(clip.Id, out var cursor))
         {
-            cursor = new FrameCursor(asset.Path, clip.Stream, decoding);
+            cursor = new FrameCursor(asset.Path, clip.Stream, decoding, keepHdr: keepHdr);
             _cursors[clip.Id] = cursor;
             Opened++;
         }

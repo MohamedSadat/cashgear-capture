@@ -7,9 +7,10 @@ namespace CashGear.Capture.VideoEditor.Export;
 /// <summary>
 /// A kind of file an export makes: the container, the video codec (none for sound only and GIFs), the sound codec,
 /// and the picture's height (0: the project's own size; a GIF's size comes from its <see cref="GifOptions"/>). A preset
-/// with a canvas of its own (9:16, 1:1, 4:5) makes the project's screen cover that shape, following the pointer.
+/// with a canvas of its own (9:16, 1:1, 4:5) makes the project's screen cover that shape, following the pointer. An HDR
+/// preset keeps the light of HDR media, on BT.2100 with PQ in 10 bits.
 /// </summary>
-public sealed record ExportPreset(string Id, string Name, ExportContainer Container, VideoCodec? Codec, string AudioCodec, int Height, string Extension, int CanvasWidth = 0, int CanvasHeight = 0)
+public sealed record ExportPreset(string Id, string Name, ExportContainer Container, VideoCodec? Codec, string AudioCodec, int Height, string Extension, int CanvasWidth = 0, int CanvasHeight = 0, bool Hdr = false)
 {
     /// <summary>It has a canvas of its own, whatever the project's shape.</summary>
     public bool HasCanvas => CanvasWidth > 0 && CanvasHeight > 0;
@@ -60,6 +61,12 @@ public static class ExportPresets
 
     public static ExportPreset Mp4Hevc => new("mp4-hevc", VideoEditorStrings.PresetMp4Hevc, ExportContainer.Mp4, VideoCodec.Hevc, AudioEncoder.Aac, 0, ".mp4");
 
+    /// <summary>HEVC Main10 with PQ, on a graphics card that offers 10-bit: a project with HDR media keeps its light.</summary>
+    public static ExportPreset Mp4HevcHdr => new("mp4-hevc-hdr", VideoEditorStrings.PresetMp4HevcHdr, ExportContainer.Mp4, VideoCodec.Hevc, AudioEncoder.Aac, 0, ".mp4", Hdr: true);
+
+    /// <summary>10-bit AV1 with PQ, in software: HDR that any PC can make, slowly.</summary>
+    public static ExportPreset Mp4Av1Hdr => new("mp4-av1-hdr", VideoEditorStrings.PresetMp4Av1Hdr, ExportContainer.Mp4, VideoCodec.Av1, AudioEncoder.Aac, 0, ".mp4", Hdr: true);
+
     public static ExportPreset WebMVp9 => new("webm-vp9", VideoEditorStrings.PresetWebMVp9, ExportContainer.WebM, VideoCodec.Vp9, AudioEncoder.Opus, 0, ".webm");
 
     public static ExportPreset WebMAv1 => new("webm-av1", VideoEditorStrings.PresetWebMAv1, ExportContainer.WebM, VideoCodec.Av1, AudioEncoder.Opus, 0, ".webm");
@@ -84,7 +91,10 @@ public static class ExportPresets
 
     public static IReadOnlyList<ExportPreset> All => [Mp4H264Hd, Mp4H264Small, Mp4H264Project, Mp4Hevc, Vertical, Square, Portrait, Mkv, WebMVp9, WebMAv1, Gif, M4a, Mp3, Wav, Flac];
 
-    public static ExportPreset? Find(string? id) => All.FirstOrDefault(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+    /// <summary>The presets for a project with HDR media, which only it offers.</summary>
+    public static IReadOnlyList<ExportPreset> Hdr => [Mp4HevcHdr, Mp4Av1Hdr];
+
+    public static ExportPreset? Find(string? id) => All.Concat(Hdr).FirstOrDefault(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
 }
 
 /// <summary>

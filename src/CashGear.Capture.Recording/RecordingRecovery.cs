@@ -61,14 +61,23 @@ internal sealed partial class RecordingRecovery(RecordingStore store, FfmpegRunt
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             var part = i;
 
-            // The webcam's track goes with the part it was recorded during (a later part starts at its own time).
-            var webcam = manifest.Webcam is { } file
-                ? new RemuxExtra(Path.Combine(directory, file), WebcamFeed.TrackTitle, i + 1 < segments.Count ? Remuxer.StartOf(segments[i + 1]) : double.MaxValue)
-                : null;
+            // The webcam's track and the others go with the part they were recorded during (a later part starts at its own time).
+            var until = (manifest.Webcam is not null || manifest.ExtraVideos is { Count: > 0 }) && i + 1 < segments.Count ? Remuxer.StartOf(segments[i + 1]) : double.MaxValue;
+            var extras = new List<RemuxExtra>();
+            if (manifest.Webcam is { } file)
+            {
+                extras.Add(new RemuxExtra(Path.Combine(directory, file), WebcamFeed.TrackTitle, until));
+            }
+
+            foreach (var video in manifest.ExtraVideos ?? [])
+            {
+                extras.Add(new RemuxExtra(Path.Combine(directory, video.File), video.Title, until));
+            }
+
             try
             {
                 var result = Remuxer.Remux(
-                    segments[i], destination, progress is null ? null : new Progress<double>(p => progress.Report((part + p) / segments.Count)), ct, manifest.NormalizeLoudness, webcam);
+                    segments[i], destination, extras, progress is null ? null : new Progress<double>(p => progress.Report((part + p) / segments.Count)), ct, manifest.NormalizeLoudness);
                 files.Add(result.Path);
                 parts.Add(new MetadataPart(Path.GetFileName(result.Path), Math.Round(result.Start, 6)));
                 duration += result.Duration;

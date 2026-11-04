@@ -72,6 +72,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
     private PixelRect? _pendingCrop;
     private D3DResources? _resources;
     private ToneMapper? _toneMapper;
+    private PqEncoder? _pq;
     private ID3D11Texture2D? _toned;
     private GraphicsCaptureItem? _item;
     private Direct3D11CaptureFramePool? _pool;
@@ -264,6 +265,30 @@ internal sealed partial class WgcAreaStream : IPictureStream
         }
     }
 
+    /// <summary>Copies a float picture as P010 on BT.2100 with PQ (only a stream of a monitor in HDR mode).</summary>
+    public void ReadPq(Picture picture, Span<ushort> luma, Span<ushort> chroma)
+    {
+        lock (_contextGate)
+        {
+            ThrowIfUnreadable(picture);
+            if (_hdr is null)
+            {
+                throw new InvalidOperationException("Only a float capture can be read as HDR.");
+            }
+
+            try
+            {
+                SimulatedLoss();
+                _pq ??= new PqEncoder(_resources!.Device, Width, Height);
+                _pq.Encode(_resources!.Context, picture.Texture, 0, 0, _hdr.WhiteScale, luma, chroma);
+            }
+            catch (Exception e) when (e is not DeviceLostException && DeviceLostException.IsLost(e))
+            {
+                throw Lost(e);
+            }
+        }
+    }
+
     /// <summary>Gives a picture's texture back for the next frame Windows sends (one from before a rebuild or resize is forgotten).</summary>
     public void Release(Picture picture)
     {
@@ -365,6 +390,8 @@ internal sealed partial class WgcAreaStream : IPictureStream
             }
 
             _toned = null;
+            _pq?.Dispose(); // of the old size
+            _pq = null;
             _monitor = FindMonitor(_monitor) ?? _monitor;
             _crop = crop;
             Width = crop.Width;
@@ -570,6 +597,7 @@ internal sealed partial class WgcAreaStream : IPictureStream
         foreach (var picture in pictures)
         {
             _toneMapper?.Forget(picture.Texture);
+            _pq?.Forget(picture.Texture);
             picture.Texture.Dispose();
         }
 
@@ -586,6 +614,8 @@ internal sealed partial class WgcAreaStream : IPictureStream
         _toned = null;
         _toneMapper?.Dispose();
         _toneMapper = null;
+        _pq?.Dispose();
+        _pq = null;
     }
 
     private Texture2DDescription Description(ResourceUsage usage, CpuAccessFlags cpu) => new()

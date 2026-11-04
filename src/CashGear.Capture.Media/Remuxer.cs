@@ -32,15 +32,21 @@ public static unsafe class Remuxer
     private const double MeasureShare = 0.35;
 
     public static RemuxResult Remux(
-        string source, string destination, IProgress<double>? progress = null, CancellationToken ct = default, bool normalizeLoudness = false, RemuxExtra? extra = null)
+        string source, string destination, IProgress<double>? progress = null, CancellationToken ct = default, bool normalizeLoudness = false, RemuxExtra? extra = null) =>
+        Remux(source, destination, extra is null ? [] : [extra], progress, ct, normalizeLoudness);
+
+    /// <param name="extras">Other recording files whose video joins as tracks of their own, in this order.</param>
+    public static RemuxResult Remux(
+        string source, string destination, IReadOnlyList<RemuxExtra> extras, IProgress<double>? progress = null, CancellationToken ct = default, bool normalizeLoudness = false)
     {
+        ArgumentNullException.ThrowIfNull(extras);
         ArgumentException.ThrowIfNullOrEmpty(source);
         ArgumentException.ThrowIfNullOrEmpty(destination);
         var partial = destination + ".partial";
         AVFormatContext* input = null;
         AVFormatContext* output = null;
         var packet = ffmpeg.av_packet_alloc();
-        ExtraVideo? extraVideo = null;
+        var extraVideos = new List<ExtraVideo>();
         LoudnessTrack?[] tracks = [];
         var encoded = new List<EncodedPacket>();
         try
@@ -100,9 +106,12 @@ public static unsafe class Remuxer
                 offsets[i] = (long)Math.Round(start / ffmpeg.av_q2d(from->time_base));
             }
 
-            if (extra is not null && File.Exists(extra.Path))
+            foreach (var extra in extras)
             {
-                extraVideo = ExtraVideo.Open(extra, output, start);
+                if (File.Exists(extra.Path) && ExtraVideo.Open(extra, output, start) is { } opened)
+                {
+                    extraVideos.Add(opened);
+                }
             }
 
             FfmpegException.Check(ffmpeg.avio_open(&output->pb, partial, ffmpeg.AVIO_FLAG_WRITE), MediaStrings.Creating(partial));
@@ -147,10 +156,13 @@ public static unsafe class Remuxer
                     packet->dts -= offsets[index];
                 }
 
-                // The other file's packets up to this one's time go in first, so the two stay interleaved.
-                if (extraVideo is not null && packet->dts != ffmpeg.AV_NOPTS_VALUE)
+                // The other files' packets up to this one's time go in first, so they stay interleaved.
+                if (packet->dts != ffmpeg.AV_NOPTS_VALUE)
                 {
-                    end = Math.Max(end, extraVideo.WriteUntil(output, start + (packet->dts * ffmpeg.av_q2d(from->time_base))));
+                    foreach (var extraVideo in extraVideos)
+                    {
+                        end = Math.Max(end, extraVideo.WriteUntil(output, start + (packet->dts * ffmpeg.av_q2d(from->time_base))));
+                    }
                 }
 
                 if (tracks[index] is { } normalizing)
@@ -181,7 +193,7 @@ public static unsafe class Remuxer
                 }
             }
 
-            if (extraVideo is not null)
+            foreach (var extraVideo in extraVideos)
             {
                 end = Math.Max(end, extraVideo.WriteUntil(output, double.MaxValue));
             }
@@ -195,7 +207,7 @@ public static unsafe class Remuxer
         }
         finally
         {
-            extraVideo?.Dispose();
+            extraVideos.ForEach(v => v.Dispose());
             encoded.ForEach(p => p.Dispose());
             foreach (var track in tracks)
             {

@@ -23,11 +23,27 @@ internal sealed class Picture(ID3D11Texture2D texture)
 
     public int Generation { get; private set; }
 
+    /// <summary>How much of the texture holds the picture (a stream that fits pictures of any size keeps them in larger textures).</summary>
+    public int ContentWidth { get; private set; }
+
+    public int ContentHeight { get; private set; }
+
+    /// <summary>Which of the stream's sources it came from (a stream of several monitors).</summary>
+    public int Source { get; private set; }
+
     public Picture Set(long timestamp, long slot, int generation)
     {
         Timestamp = timestamp;
         Slot = slot;
         Generation = generation;
+        return this;
+    }
+
+    public Picture SetContent(int width, int height, int source)
+    {
+        ContentWidth = width;
+        ContentHeight = height;
+        Source = source;
         return this;
     }
 }
@@ -90,6 +106,20 @@ internal interface IPictureStream : IDisposable
 
     /// <summary>Moves to the area's new size after the monitor's resolution changed (video thread).</summary>
     void ApplyResize();
+
+    /// <summary>
+    /// Copies a float picture as P010, on BT.2100 with PQ: <paramref name="luma"/> gets <c>Width × Height</c> values,
+    /// <paramref name="chroma"/> <c>Width × Height / 2</c>.
+    /// </summary>
+    /// <exception cref="DeviceLostException">The graphics device was lost: <see cref="Recover"/>.</exception>
+    void ReadPq(Picture picture, Span<ushort> luma, Span<ushort> chroma) => throw new NotSupportedException();
+
+    /// <summary>Where a place on the screen is on the picture now, when that moves (a window's recording).</summary>
+    bool TryMovingMap(out Core.Recording.PointMap map)
+    {
+        map = default;
+        return false;
+    }
 }
 
 /// <summary>The graphics device behind a picture stream was removed or reset (a driver update or crash, a GPU switch on a laptop).</summary>

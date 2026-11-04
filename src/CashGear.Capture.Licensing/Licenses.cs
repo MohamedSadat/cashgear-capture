@@ -55,6 +55,9 @@ public enum ProFeature
 
     /// <summary>Video editor: clip sound effects, volume keyframes, loudness targets, ducking and separate tracks out.</summary>
     AudioPost,
+
+    /// <summary>Recording: several monitors at once, named profiles, and HDR recording.</summary>
+    RecordingPro,
 }
 
 /// <summary>A licence's content (signed into a <c>.cglicense</c> file).</summary>

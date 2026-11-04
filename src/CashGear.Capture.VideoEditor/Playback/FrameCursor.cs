@@ -14,15 +14,18 @@ public sealed class FrameCursor : IDisposable
 
     private readonly VideoStreamReader _reader;
     private readonly FramePool _pool;
+    private readonly bool _extended;
     private VideoFrame? _current;
     private VideoFrame? _next;
     private bool _ended;
     private double _seekedTo = double.NaN;
 
     /// <param name="width">The pictures' width as given (0: the video's own size).</param>
-    public FrameCursor(string path, int stream, VideoDecoding decoding, int width = 0, int height = 0, FramePool? pool = null)
+    /// <param name="keepHdr">An HDR video gives float pictures that keep its light (an HDR export); others are as ever.</param>
+    public FrameCursor(string path, int stream, VideoDecoding decoding, int width = 0, int height = 0, FramePool? pool = null, bool keepHdr = false)
     {
         _reader = new VideoStreamReader(path, stream, decoding);
+        _extended = keepHdr && _reader.IsHdr;
         _pool = pool ?? FramePool.Shared;
         (Width, Height) = width > 0 && height > 0 ? (width, height) : (_reader.Width, _reader.Height);
     }
@@ -108,8 +111,8 @@ public sealed class FrameCursor : IDisposable
 
     private VideoFrame? Read()
     {
-        var frame = _pool.Rent(Width, Height);
-        var time = _reader.Read(frame.Pixels, Width, Height);
+        var frame = _pool.Rent(Width, Height, _extended ? FramePool.ExtendedFloat : FramePool.Bgra);
+        var time = _extended ? _reader.ReadExtended(frame.Pixels, Width, Height) : _reader.Read(frame.Pixels, Width, Height);
         if (time is null)
         {
             frame.Release();

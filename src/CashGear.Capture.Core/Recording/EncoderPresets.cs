@@ -82,8 +82,33 @@ public static class EncoderPresets
     /// </summary>
     public static IReadOnlyList<EncoderCandidate> ExportSoftware { get; } = [Vp9, SvtAv1, Kvazaar];
 
+    /// <summary>HEVC on Intel's card, which takes 10-bit (only HDR tries it: recording's detection doesn't change).</summary>
+    public static EncoderCandidate QuickSyncHevc { get; } = new("hevc_qsv", "hevc_qsv", VideoCodec.Hevc, true, CoreStrings.EncoderQuickSyncHevc);
+
+    /// <summary>HEVC on AMD's card, which takes 10-bit (only HDR tries it: recording's detection doesn't change).</summary>
+    public static EncoderCandidate AmfHevc { get; } = new("hevc_amf", "hevc_amf", VideoCodec.Hevc, true, CoreStrings.EncoderAmfHevc);
+
+    /// <summary>The encoders an HDR recording tries, best first: HEVC Main10 on a graphics card.</summary>
+    public static IReadOnlyList<EncoderCandidate> HdrHevc { get; } = [NvencHevc, QuickSyncHevc, AmfHevc];
+
     public static EncoderCandidate? Find(string? id) =>
-        All.Concat(ExportSoftware).FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase));
+        All.Concat(ExportSoftware).Concat(HdrHevc).FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The encoders an HDR export of <paramref name="codec"/> tries, which open or don't: the graphics card's HEVC, or AV1 in software.</summary>
+    public static IReadOnlyList<EncoderCandidate> ForHdrExport(VideoCodec codec) =>
+        codec == VideoCodec.Av1 ? [SvtAv1] : HdrHevc;
+
+    /// <summary>A candidate's options for 10-bit: its usual ones, and the profile that says so.</summary>
+    public static IReadOnlyList<KeyValuePair<string, string>> HdrOptions(EncoderCandidate encoder, QualityPreset preset, int width, int height, int fps)
+    {
+        var options = Options(encoder, preset, width, height, fps).ToList();
+        if (encoder.Codec == VideoCodec.Hevc)
+        {
+            options.Add(new("profile", "main10"));
+        }
+
+        return options;
+    }
 
     /// <summary>The encoders to try for a setting, best first, keeping only those detection found working.</summary>
     public static IReadOnlyList<(EncoderCandidate Candidate, EncoderProbe Probe)> Usable(string? setting, IReadOnlyList<EncoderProbe> detected)
@@ -155,6 +180,9 @@ public static class EncoderPresets
     /// <summary>OpenH264 and the export-only software encoders take planar YUV 4:2:0; every other encoder gets NV12.</summary>
     public static bool UsesPlanarYuv(EncoderCandidate encoder) => encoder == OpenH264 || ExportSoftware.Contains(encoder);
 
+    /// <summary>A software encoder's 10-bit frames are planar; a graphics card's are P010.</summary>
+    public static bool UsesPlanar10Bit(EncoderCandidate encoder) => encoder == SvtAv1;
+
     /// <summary>
     /// The encoder's FFmpeg options for a preset. <paramref name="qualityMode"/> false means detection found the
     /// Media Foundation encoder ignores its quality setting, so a bit rate is used instead.
@@ -175,12 +203,16 @@ public static class EncoderPresets
                 Add("cq", Pick(preset, 30, 25, 21, 16));
                 Add("b", 0);
                 break;
-            case "h264_qsv":
+            case "h264_qsv" or "hevc_qsv":
                 Add("preset", "veryfast");
                 Add("global_quality", Pick(preset, 30, 25, 21, 16));
-                Add("look_ahead", 0);
+                if (encoder.FfmpegName == "h264_qsv")
+                {
+                    Add("look_ahead", 0);
+                }
+
                 break;
-            case "h264_amf":
+            case "h264_amf" or "hevc_amf":
                 Add("usage", "transcoding");
                 Add("quality", "balanced");
                 Add("rc", "cqp");

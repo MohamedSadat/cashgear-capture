@@ -174,4 +174,32 @@
     <value>{0} is now {1}x{2}, and the recorded area isn't on it any more, so the recording stopped.</value>
     <comment>{0} is a monitor (DISPLAY2), {1}x{2} its new size in pixels</comment>
   </data>
+  <data name="WindowMinimizedNote" xml:space="preserve">
+    <value>"{0}" was minimized from {1} to {2}: its last picture holds there.</value>
+    <comment>Saved notification. {0} a window title, {1} and {2} times such as 1:05.</comment>
+  </data>
+  <data name="WindowClosed" xml:space="preserve">
+    <value>The window "{0}" was closed.</value>
+    <comment>Why a window's recording stopped.</comment>
+  </data>
+  <data name="ScreenTrackEnded" xml:space="preserve">
+    <value>The monitor {0} went away or changed its size: its track ends here, and the recording goes on.</value>
+    <comment>{0} a monitor name such as DISPLAY2.</comment>
+  </data>
+  <data name="ScreenTrackStopped" xml:space="preserve">
+    <value>The track of the monitor {0} stopped ({1}), and the recording goes on.</value>
+    <comment>{0} a monitor name, {1} the reason.</comment>
+  </data>
+  <data name="ScreenTrackSkipped" xml:space="preserve">
+    <value>Another monitor's track skipped frames: two encoders at once were too much for this PC.</value>
+    <comment>Saved notification.</comment>
+  </data>
+  <data name="NoHdrEncoder" xml:space="preserve">
+    <value>No encoder here takes 10-bit HEVC, so the HDR monitor was recorded tone-mapped to SDR.</value>
+    <comment>Saved notification.</comment>
+  </data>
+  <data name="HdrKeepsOverlaysApart" xml:space="preserve">
+    <value>This HDR recording keeps the clicks, the keys and the webcam apart, for the video editor: they are drawn in SDR.</value>
+    <comment>Saved notification.</comment>
+  </data>
 </root>

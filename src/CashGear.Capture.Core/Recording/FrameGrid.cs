@@ -100,6 +100,9 @@ public sealed class FrameGrid
 
     /// <summary>The recording stops at <paramref name="elapsed"/>: the remaining frames up to it are due at once.</summary>
     public void Finish(TimeSpan elapsed) => End = Math.Max(Next, FramesIn(elapsed));
+
+    /// <summary>The recording has exactly this length (or what is made already, when more): a video stopped at a set length.</summary>
+    public void FinishAtLength(TimeSpan length) => End = Math.Max(Next, (long)Math.Round(length.TotalSeconds * Fps));
 }
 
 /// <summary>Windows' 100 ns QPC times (WASAPI's <c>qpcPosition</c>, a captured frame's <c>SystemRelativeTime</c>) in <see cref="TimeProvider"/> timestamps.</summary>

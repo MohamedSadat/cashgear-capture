@@ -1,4 +1,5 @@
 using CashGear.Capture.Core.Geometry;
+using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 
 namespace CashGear.Capture.Core.Overlays;
@@ -170,7 +171,6 @@ public sealed class OverlayPlanner
     public const int MaxCaptions = 3;
 
     private readonly OverlaySettings _settings;
-    private readonly PixelPoint _origin;
     private readonly double _scale;
     private readonly int _width;
     private readonly int _height;
@@ -198,7 +198,7 @@ public sealed class OverlayPlanner
     {
         ArgumentNullException.ThrowIfNull(settings);
         _settings = settings.Normalize();
-        _origin = origin;
+        Map = PointMap.FromOrigin(origin);
         _scale = scale > 0 ? scale : 1;
         _width = width;
         _height = height;
@@ -223,6 +223,9 @@ public sealed class OverlayPlanner
                 webcamSettings.BorderWidth * _scale);
         }
     }
+
+    /// <summary>Where a place on the screen is on the frame: a window's recording moves it with the window, a canvas scales it.</summary>
+    public PointMap Map { get; set; }
 
     /// <summary>Whether anything at all can be drawn (else a recording needn't compose its frames).</summary>
     public bool DrawsAnything =>
@@ -260,8 +263,8 @@ public sealed class OverlayPlanner
     {
         ArgumentNullException.ThrowIfNull(timeline);
         var pointer = timeline.Pointer(time);
-        var x = pointer.At.X - _origin.X;
-        var y = pointer.At.Y - _origin.Y;
+        var x = Map.X(pointer.At.X);
+        var y = Map.Y(pointer.At.Y);
         var settings = _settings.PointerSettings;
         var shown = PointerOpacity(pointer, time);
 
@@ -335,7 +338,7 @@ public sealed class OverlayPlanner
             {
                 var eased = 1 - Math.Pow(1 - progress, 3);
                 var opacity = progress < 0.3 ? 1 : 1 - ((progress - 0.3) / 0.7);
-                var (ringX, ringY) = (click.At.X - _origin.X, click.At.Y - _origin.Y);
+                var (ringX, ringY) = (Map.X(click.At.X), Map.Y(click.At.Y));
                 var (radius, thickness, ring) = (size * (0.3 + (0.7 * eased)), Math.Max(1.5, 3 * _scale), color.WithOpacity(opacity));
                 items.Add(Next(_rings, reuse)?.Set(ringX, ringY, radius, thickness, ring) ?? Keep(_rings, reuse, new RingItem(ringX, ringY, radius, thickness, ring)));
             }

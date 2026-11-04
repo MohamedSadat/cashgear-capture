@@ -69,6 +69,12 @@ internal sealed partial class ScreenRecorder(
     /// <summary>Makes the picture stream instead of a Windows.Graphics.Capture one (tests: a fake that can fail on cue).</summary>
     internal Func<StreamRequest, CancellationToken, Task<IPictureStream>>? StreamFactory { get; set; }
 
+    /// <summary>The encoders an HDR recording tries (tests: AV1 in software, where no graphics card here encodes 10-bit).</summary>
+    internal IReadOnlyList<EncoderCandidate> HdrCandidates { get; set; } = EncoderPresets.HdrHevc;
+
+    /// <summary>Makes a monitor's stream for its own track instead of a Windows.Graphics.Capture one (tests).</summary>
+    internal Func<StreamRequest, CancellationToken, Task<IPictureStream>>? ScreenStreamFactory { get; set; }
+
     /// <summary>The recording clock's time (tests: one that runs faster than real time).</summary>
     internal TimeProvider Time { get; set; } = TimeProvider.System;
 
@@ -196,14 +202,36 @@ internal sealed partial class ScreenRecorder(
                     string.Join(" ", detected.Where(p => !p.Works).Select(p => $"{p.Id}: {p.Detail}"))));
             }
 
-            var (width, height) = EncoderPresets.EvenSize(options.Area.Width, options.Area.Height);
-            var area = options.Area with { Width = width, Height = height };
+            // Several monitors on one canvas: the canvas is the recording, and the monitors' bounding box its area.
+            var canvas = options.Monitors is { Mode: SeveralMonitors.OneCanvas } several
+                ? MonitorCanvas.Of([options.Monitor.Bounds, .. several.Others.Select(m => m.Bounds)], several.CanvasHeight)
+                : null;
+            var (width, height) = canvas is not null ? (canvas.Width, canvas.Height) : EncoderPresets.EvenSize(options.Area.Width, options.Area.Height);
+            var area = canvas is not null ? canvas.Area : options.Area with { Width = width, Height = height };
             var format = new VideoFormat(width, height, options.Fps);
             var output = Path.GetFullPath(options.OutputPath);
             Directory.CreateDirectory(Path.GetDirectoryName(output)!);
 
             var fallbacks = new Queue<(EncoderCandidate, EncoderProbe)>(usable);
-            var video = await Task.Run(() => OpenFirst(fallbacks, format, options.Quality, _logger), ct).ConfigureAwait(false);
+
+            // HDR as HDR: a 10-bit encoder if one opens, and the overlays are left for later, since they are drawn in SDR.
+            string? hdrNote = null;
+            VideoEncoder? hdrEncoder = null;
+            if (options.HdrVideo && options.Hdr is not null && options.Window is null && canvas is null)
+            {
+                hdrEncoder = await Task.Run(() => OpenHdr(format, options.Quality), ct).ConfigureAwait(false);
+                if (hdrEncoder is null)
+                {
+                    hdrNote = RecordingStrings.NoHdrEncoder;
+                }
+                else if (options.Overlays is { BurnIn: true } burned)
+                {
+                    options = options with { Overlays = burned with { BurnIn = false } };
+                    hdrNote = RecordingStrings.HdrKeepsOverlaysApart;
+                }
+            }
+
+            var video = hdrEncoder ?? await Task.Run(() => OpenFirst(fallbacks, format, options.Quality, _logger), ct).ConfigureAwait(false);
             var parts = new Parts();
             parts.Add(video);
             try
@@ -273,12 +301,17 @@ internal sealed partial class ScreenRecorder(
                         Path.Combine(parts.Folder.Directory, journal),
                         new MetadataHeader(
                             options.Fps,
-                            new MetadataArea(area.X, area.Y, area.Width, area.Height),
-                            options.Monitor.Scale.ScaleX,
+                            new MetadataArea(area.X, area.Y, width, height),
+                            options.Monitor.Scale.ScaleX * (canvas?.Scale ?? 1),
                             CursorInVideo: options.IncludeCursor && (!ownPointer || overlays!.BurnIn),
                             OverlaysInVideo: overlays!.DrawsLive,
                             overlays!.KeystrokeSettings.Mode,
-                            parts.Webcam is { } feed ? Placement(overlays.WebcamSettings, feed) : null));
+                            parts.Webcam is { } feed ? Placement(overlays.WebcamSettings, feed) : null,
+                            options.Look));
+                    if (canvas is not null)
+                    {
+                        parts.Journal.Map = canvas.Map;
+                    }
                 }
 
                 parts.Writer = new MediaWriter(
@@ -287,17 +320,33 @@ internal sealed partial class ScreenRecorder(
                     loggers.CreateLogger<MediaWriter>());
                 // Keys are shown once their privacy check is done: frames are made a little later so a key lands on its own frame.
                 var grid = new FrameGrid(options.Fps, overlays is { BurnIn: true } && overlays.KeystrokeSettings.Mode != KeystrokeMode.Off ? KeystrokeLag : null);
-                var request = new StreamRequest(options.Monitor, area, options.IncludeCursor && !ownPointer, timestamp => grid.SlotOf(clock.MapInstant(timestamp)), options.Hdr);
+                var request = new StreamRequest(options.Monitor, area, options.IncludeCursor && !ownPointer, timestamp => grid.SlotOf(clock.MapInstant(timestamp)), options.Hdr, options.Window);
                 parts.Stream = StreamFactory is { } factory
                     ? await factory(request, ct).ConfigureAwait(false)
-                    : await WgcAreaStream.StartAsync(interop, request.Monitor, request.Area, request.IncludeCursor, loggers, ct, request.SlotOf, request.Hdr).ConfigureAwait(false);
+                    : options.Window is { } window
+                        ? await WgcFittedStream.StartAsync(interop, [new FittedSource(window.Title, i => i.CreateItemForWindow(window.Handle), new PixelRect(0, 0, width, height), options.Hdr, window.Handle)], width, height, area, request.IncludeCursor, loggers, ct, request.SlotOf).ConfigureAwait(false)
+                        : canvas is not null
+                            ? await WgcFittedStream.StartAsync(interop, [.. CanvasSources(options, canvas)], width, height, area, request.IncludeCursor, loggers, ct, request.SlotOf).ConfigureAwait(false)
+                            : await WgcAreaStream.StartAsync(interop, request.Monitor, request.Area, request.IncludeCursor, loggers, ct, request.SlotOf, request.Hdr).ConfigureAwait(false);
+                if (options.Monitors is { Mode: SeveralMonitors.TrackEach } tracks2)
+                {
+                    await AddScreensAsync(parts, tracks2, options, clock, usable, manifest, ct).ConfigureAwait(false);
+                    manifest = parts.Manifest ?? manifest;
+                }
 
                 var chain = options.MicrophoneProcessing is { } processing && sources.Any(s => s.Kind == RecordingSound.Microphone)
                     ? _processors.Create(processing)
                     : null;
                 var session = new Session(
-                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, usable, fallbacks, parts, manifest, tracks, soundNote, chain, ownPointer, clickSound, loggers, _logger);
+                    this, options with { Area = area, OutputPath = output }, format, clock, grid, video, usable, fallbacks, parts, manifest, tracks, soundNote, chain, ownPointer, clickSound, canvas?.Map, loggers, _logger);
                 session.Failed += (_, e) => OnFailed(e);
+
+                // Everything is ready: a scheduled recording starts on its second.
+                if (options.StartAt is { } startAt && startAt - Time.GetUtcNow() is { Ticks: > 0 } wait)
+                {
+                    await Task.Delay(wait, Time, ct).ConfigureAwait(false);
+                }
+
                 session.Start();
                 _session = session;
                 if (webcamNote is not null)
@@ -309,6 +358,12 @@ internal sealed partial class ScreenRecorder(
                 if (_desktop.IsRemoteSession)
                 {
                     session.AddNote(RemoteNote);
+                }
+
+                if (hdrNote is not null)
+                {
+                    OnNotice(hdrNote);
+                    session.AddNote(hdrNote);
                 }
 
                 LogStarted(area, options.Monitor.ShortName, options.Fps, video.Candidate.DisplayName, video.Detail ?? "", options.Quality, output, parts.Folder.Directory);
@@ -374,6 +429,64 @@ internal sealed partial class ScreenRecorder(
             _saving = null;
             OnStateChanged();
         }
+    }
+
+    /// <summary>The first 10-bit encoder that opens at the recording's size; null when none does.</summary>
+    private VideoEncoder? OpenHdr(VideoFormat format, QualityPreset quality)
+    {
+        foreach (var candidate in HdrCandidates)
+        {
+            try
+            {
+                return VideoEncoder.Open(candidate, format, EncoderPresets.HdrOptions(candidate, quality, format.Width, format.Height, format.Fps), hdr: true);
+            }
+            catch (FfmpegException e)
+            {
+                LogOpenFailed(_logger, candidate.Id, e.Message);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Each monitor's place on the canvas, its handle found again if the capture is rebuilt.</summary>
+    private static IEnumerable<FittedSource> CanvasSources(RecordingOptions options, MonitorCanvas canvas)
+    {
+        var monitors = new[] { options.Monitor with { Hdr = options.Hdr } }.Concat(options.Monitors!.Others).ToList();
+        return monitors.Select((monitor, i) => new FittedSource(
+            monitor.ShortName,
+            interop => interop.CreateItemForMonitor((FindMonitor(monitor) ?? monitor).Handle),
+            canvas.Places[i],
+            monitor.Hdr));
+    }
+
+    /// <summary>The monitor again (by its device name): its handle and bounds change with the display layout.</summary>
+    private static MonitorInfo? FindMonitor(MonitorInfo monitor) =>
+        new Engine.Display.Win32MonitorService(Microsoft.Extensions.Logging.Abstractions.NullLogger<Engine.Display.Win32MonitorService>.Instance).GetMonitors()
+            .FirstOrDefault(m => string.Equals(m.DeviceName, monitor.DeviceName, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>A track of its own for each other monitor, with its own capture, encoder and file.</summary>
+    private async Task AddScreensAsync(Parts parts, MonitorsTarget target, RecordingOptions options, RecordingClock clock, IReadOnlyList<(EncoderCandidate, EncoderProbe)> usable, RecordingManifest manifest, CancellationToken ct)
+    {
+        var videos = new List<RecordedVideo>(manifest.ExtraVideos ?? []);
+        var number = 2;
+        foreach (var monitor in target.Others)
+        {
+            var (monitorWidth, monitorHeight) = EncoderPresets.EvenSize(monitor.Bounds.Width, monitor.Bounds.Height);
+            var grid = new FrameGrid(options.Fps);
+            var request = new StreamRequest(monitor, monitor.Bounds with { Width = monitorWidth, Height = monitorHeight }, options.IncludeCursor, timestamp => grid.SlotOf(clock.MapInstant(timestamp)), monitor.Hdr);
+            var stream = ScreenStreamFactory is { } factory
+                ? await factory(request, ct).ConfigureAwait(false)
+                : await WgcAreaStream.StartAsync(interop, monitor, request.Area, request.IncludeCursor, loggers, ct, request.SlotOf, request.Hdr).ConfigureAwait(false);
+            var file = $"screen-{number}.mp4";
+            var candidates = usable.ToList();
+            parts.Screens.Add(new ScreenFeed(stream, grid, clock, monitor.ShortName, Path.Combine(parts.Folder!.Directory, file), format => OpenFirst(new Queue<(EncoderCandidate, EncoderProbe)>(candidates), format, options.Quality, _logger), OnWarning, loggers));
+            videos.Add(new RecordedVideo(file, RecordedTracks.ScreenTitle(number)));
+            number++;
+        }
+
+        parts.Manifest = manifest with { ExtraVideos = videos };
+        parts.Folder!.Save(parts.Manifest);
     }
 
     /// <summary>The first encoder that opens at the recording's real size (a 256×256 test passing doesn't promise that).</summary>
@@ -515,12 +628,19 @@ internal sealed partial class ScreenRecorder(
 
         public WebcamFeed? Webcam { get; set; }
 
+        /// <summary>The other monitors, a track each.</summary>
+        public List<ScreenFeed> Screens { get; } = [];
+
+        /// <summary>The manifest when adding the tracks above changed it.</summary>
+        public RecordingManifest? Manifest { get; set; }
+
         public void Add(VideoEncoder video) => Video.Add(video);
 
         public void Dispose(bool deleteFolder)
         {
             Stream?.Dispose();
             Webcam?.Dispose();
+            Screens.ForEach(s => s.Dispose());
             Journal?.Dispose();
             Sources.ForEach(s => s.Dispose());
             Writer?.Complete(FinishTimeout);
@@ -593,11 +713,16 @@ internal sealed partial class ScreenRecorder(
         private OverlayCompositor? _compositor;
         private readonly OverlayScene _scene = OverlayScene.Reusable();
         private byte[] _picture = [];
+        private ushort[] _hdrLuma = [];
+        private ushort[] _hdrChroma = [];
+        private bool _readHdr;
         private bool _awaitingPicture;
         private long _lostSince;
         private long _nextRecovery;
         private TimeSpan? _secureSince;
+        private TimeSpan? _minimizedSince;
         private bool _pausedForSleep;
+        private readonly PointMap? _map;
         private readonly WebcamFeed? _webcam;
         private readonly AudioMixer? _mixer;
         private readonly AudioTrack? _clickTrack;
@@ -640,9 +765,11 @@ internal sealed partial class ScreenRecorder(
             MicrophoneChain? microphoneChain,
             bool ownPointer,
             bool clickSound,
+            PointMap? map,
             ILoggerFactory loggers,
             ILogger logger)
         {
+            _map = map;
             MicrophoneChain = microphoneChain;
             _loggers = loggers;
             _overlays = options.Overlays;
@@ -655,7 +782,7 @@ internal sealed partial class ScreenRecorder(
                 _timeline = new InputTimeline(InputRecorder.PointerNow());
             }
 
-            _planner = Planner(options.Area, options.Monitor.Scale.ScaleX, format.Width, format.Height);
+            _planner = Planner(options.Area, options.Monitor.Scale.ScaleX * (map?.Scale ?? 1), format.Width, format.Height);
             _owner = owner;
             _options = options;
             _format = format;
@@ -752,6 +879,7 @@ internal sealed partial class ScreenRecorder(
             Clock.Start();
             StartInput();
             _webcam?.StartTrack();
+            _parts.Screens.ForEach(s => s.StartTrack());
             _videoThread = new Thread(WriteVideo) { IsBackground = true, Name = VideoThreadName, Priority = ThreadPriority.AboveNormal };
             _videoThread.Start();
             _watchdog = new Timer(_ => Watch(), null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
@@ -831,6 +959,8 @@ internal sealed partial class ScreenRecorder(
 
         public async Task<RecordingResult> StopAsync(TimeSpan timeout)
         {
+            bool exact;
+            TimeSpan end;
             lock (_gridGate)
             {
                 _stopping = true;
@@ -840,8 +970,19 @@ internal sealed partial class ScreenRecorder(
                     _stillSince = Stopwatch.GetTimestamp();
                 }
 
-                // The video ends with the frame due at the stop, and the sound at the same moment.
-                _grid.Finish(Clock.Elapsed);
+                // The video ends with the frame due at the stop, and the sound at the same moment. Stopped at its set
+                // length, it has exactly that length, however late the stop came.
+                exact = _options.StopAfter is { } length && Clock.Elapsed >= length - _grid.TimeOf(1);
+                end = exact ? _options.StopAfter!.Value : Clock.Elapsed;
+                if (exact)
+                {
+                    _grid.FinishAtLength(end);
+                }
+                else
+                {
+                    _grid.Finish(end);
+                }
+
                 _finalSamples = _grid.End!.Value * AudioSchedule.FramesPerVideoFrame(_format.Fps);
             }
 
@@ -856,9 +997,20 @@ internal sealed partial class ScreenRecorder(
             LogStopStep($"video done ({videoDone}), {_grid.Written} frames");
             if (_webcam is { } webcam)
             {
-                webcam.Finish(Clock.Elapsed, timeout);
+                webcam.Finish(end, timeout);
                 webcam.Dispose();
                 LogStopStep($"webcam done, {webcam.Written} frames");
+            }
+
+            foreach (var screen in _parts.Screens)
+            {
+                screen.Finish(end, exact, timeout);
+                screen.Dispose();
+                LogStopStep($"screen done, {screen.Written} frames, {screen.Dropped} dropped, {screen.Delivered} pictures from Windows");
+                if (screen.Written + screen.Dropped > 0 && (double)screen.Dropped / (screen.Written + screen.Dropped) > 0.05)
+                {
+                    AddNote(RecordingStrings.ScreenTrackSkipped);
+                }
             }
 
             _input?.Dispose();
@@ -875,6 +1027,11 @@ internal sealed partial class ScreenRecorder(
             if (_secureSince is { } secureSince)
             {
                 NoteSecureScreen(secureSince, Clock.Elapsed);
+            }
+
+            if (_minimizedSince is { } minimizedSince)
+            {
+                NoteMinimized(minimizedSince, Clock.Elapsed);
             }
 
             EndTimerPeriod();
@@ -997,6 +1154,9 @@ internal sealed partial class ScreenRecorder(
             Kernel32.SetThreadExecutionState(Kernel32.EsContinuous | Kernel32.EsSystemRequired | Kernel32.EsDisplayRequired);
             var packets = new List<EncodedPacket>();
             _picture = new byte[_format.Width * _format.Height * 4];
+            _hdrLuma = _video.IsHdr ? new ushort[_format.Width * _format.Height] : [];
+            _hdrChroma = _video.IsHdr ? new ushort[_format.Width * _format.Height / 2] : [];
+            _readHdr = _video.IsHdr;
             _compositor = _planner is null ? null : new OverlayCompositor(_stream.Device, _format.Width, _format.Height, _cursors);
             var composed = false;
             Picture? current = null;
@@ -1036,6 +1196,12 @@ internal sealed partial class ScreenRecorder(
                     }
 
                     var time = _grid.TimeOf(step.Slot);
+                    if (_stream.TryMovingMap(out var map))
+                    {
+                        _journal?.Map = map;
+                        _planner?.Map = map;
+                    }
+
                     var scene = _planner?.Plan(_timeline ?? NoInput, time, _scene) ?? OverlayScene.Empty;
                     var changed = false;
                     try
@@ -1066,9 +1232,18 @@ internal sealed partial class ScreenRecorder(
                                 }
                             }
                         }
-                        else if (changed || composed)
+                        else if (_video.IsHdr)
+                        {
+                            if (changed || !_readHdr)
+                            {
+                                _stream.ReadPq(current, _hdrLuma, _hdrChroma);
+                                _readHdr = true;
+                            }
+                        }
+                        else if (changed || composed || _readHdr)
                         {
                             _stream.Read(current, _picture);
+                            _readHdr = false;
                         }
                     }
                     catch (DeviceLostException lost)
@@ -1215,9 +1390,17 @@ internal sealed partial class ScreenRecorder(
             }
 
             var previous = _video;
+            var hdr = previous.IsHdr;
             previous.Dispose();
             var candidates = _usable.Where(u => u.Candidate.Id == previous.Candidate.Id).Concat(_fallbacks).ToList();
-            _video = OpenFirst(new Queue<(EncoderCandidate, EncoderProbe)>(candidates), format, _options.Quality, _logger);
+            _video = (hdr ? _owner.OpenHdr(format, _options.Quality) : null) ?? OpenFirst(new Queue<(EncoderCandidate, EncoderProbe)>(candidates), format, _options.Quality, _logger);
+            if (_video.IsHdr)
+            {
+                _hdrLuma = new ushort[width * height];
+                _hdrChroma = new ushort[width * height / 2];
+            }
+
+            _readHdr = false;
             if (_video.Candidate.Id != previous.Candidate.Id)
             {
                 _encoderNames.Add(_video.Candidate.DisplayName);
@@ -1274,7 +1457,15 @@ internal sealed partial class ScreenRecorder(
                 {
                     Volatile.Write(ref _encodingSince, Stopwatch.GetTimestamp());
                     _owner.BeforeEncode?.Invoke(_video.Candidate, slot);
-                    _converter.Convert(bgra, _format.Width * 4, _video.NextFrame());
+                    if (_video.IsHdr)
+                    {
+                        PqPictures.CopyPlanes(_hdrLuma, _hdrChroma, _video.NextFrame(), _format.Width, _format.Height);
+                    }
+                    else
+                    {
+                        _converter.Convert(bgra, _format.Width * 4, _video.NextFrame());
+                    }
+
                     _video.Encode(slot, packets);
                     Post(packets);
                     return;
@@ -1507,6 +1698,31 @@ internal sealed partial class ScreenRecorder(
                 // The video thread finds out on its next read.
             }
 
+            foreach (var screen in _parts.Screens)
+            {
+                screen.CheckDevice();
+            }
+
+            if (_options.Window is { } window)
+            {
+                // Windows doesn't always say a window's capture item closed: found out here at the latest.
+                if (_owner._desktop.IsClosed(window.Handle))
+                {
+                    OnStreamClosed(this, EventArgs.Empty);
+                }
+
+                var minimized = _owner._desktop.IsMinimized(window.Handle);
+                if (minimized && _minimizedSince is null)
+                {
+                    _minimizedSince = Clock.Elapsed;
+                }
+                else if (!minimized && _minimizedSince is { } minimizedSince)
+                {
+                    _minimizedSince = null;
+                    NoteMinimized(minimizedSince, Clock.Elapsed);
+                }
+            }
+
             var secure = _owner._desktop.IsSecure;
             if (secure && _secureSince is null)
             {
@@ -1524,11 +1740,14 @@ internal sealed partial class ScreenRecorder(
         private void NoteSecureScreen(TimeSpan from, TimeSpan to) =>
             AddNote(RecordingStrings.SecureScreenNote(Time(from), Time(to)));
 
+        private void NoteMinimized(TimeSpan from, TimeSpan to) =>
+            AddNote(RecordingStrings.WindowMinimizedNote(_options.Window!.Title, Time(from), Time(to)));
+
         private static string Time(TimeSpan at) => $"{(int)at.TotalMinutes}:{at.Seconds:00}";
 
         /// <summary>The monitor went away (disconnected): the recording can't go on.</summary>
         private void OnStreamClosed(object? sender, EventArgs e) =>
-            Fail(new CaptureException(RecordingStrings.MonitorDisconnected(_options.Monitor.ShortName)));
+            Fail(new CaptureException(_options.Window is { } window ? RecordingStrings.WindowClosed(window.Title) : RecordingStrings.MonitorDisconnected(_options.Monitor.ShortName)));
 
         /// <summary>
         /// The PC is going to sleep: pause, so the time asleep isn't recorded (hours of a still picture and silence
@@ -1567,6 +1786,11 @@ internal sealed partial class ScreenRecorder(
             }
 
             var planner = new OverlayPlanner(_overlays, new PixelPoint(area.X, area.Y), scale, width, height, _ownPointer, webcam: _webcam is not null);
+            if (_map is { } map)
+            {
+                planner.Map = map;
+            }
+
             return planner.DrawsAnything ? planner : null;
         }
 
@@ -1651,7 +1875,7 @@ public static class RecordingServiceCollectionExtensions
 }
 
 /// <summary>What a picture stream is asked to capture.</summary>
-internal sealed record StreamRequest(MonitorInfo Monitor, PixelRect Area, bool IncludeCursor, Func<long, long> SlotOf, HdrInfo? Hdr);
+internal sealed record StreamRequest(MonitorInfo Monitor, PixelRect Area, bool IncludeCursor, Func<long, long> SlotOf, HdrInfo? Hdr, WindowTarget? Window = null);
 
 /// <summary>Bytes the video, sound and file threads have allocated, and the video frames and sound frames made by then.</summary>
 internal readonly record struct AllocationCounts(long Video, long Sound, long Writer, long Frames, long SoundFrames);

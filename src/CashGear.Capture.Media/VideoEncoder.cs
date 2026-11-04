@@ -16,8 +16,9 @@ public sealed unsafe partial class VideoEncoder : IDisposable
     private AVFrame* _frame;
     private AVPacket* _packet;
 
-    private VideoEncoder(EncoderCandidate candidate, VideoFormat format, int stream, AVCodecContext* context, string? detail)
+    private VideoEncoder(EncoderCandidate candidate, VideoFormat format, int stream, AVCodecContext* context, string? detail, bool hdr)
     {
+        IsHdr = hdr;
         Candidate = candidate;
         Format = format;
         Stream = stream;
@@ -37,6 +38,9 @@ public sealed unsafe partial class VideoEncoder : IDisposable
 
     public EncoderCandidate Candidate { get; }
 
+    /// <summary>It encodes 10-bit BT.2100 with PQ: frames are P010, or planar 10-bit for a software encoder.</summary>
+    public bool IsHdr { get; }
+
     /// <summary>"Encoding with h264_mf": made once, as the error's wording is passed on every packet.</summary>
     private string Encoding => field ??= MediaStrings.EncodingWith(Candidate.FfmpegName);
 
@@ -53,8 +57,9 @@ public sealed unsafe partial class VideoEncoder : IDisposable
     internal AVCodecContext* Context => _context;
 
     /// <summary>Opens the encoder; throws <see cref="FfmpegException"/> (with FFmpeg's explanation) if it won't open.</summary>
+    /// <param name="hdr">Encode 10-bit BT.2100 with PQ (HEVC Main10, or 10-bit AV1): the options must ask for it too.</param>
     public static VideoEncoder Open(
-        EncoderCandidate candidate, VideoFormat format, IReadOnlyList<KeyValuePair<string, string>> options, int stream = 0)
+        EncoderCandidate candidate, VideoFormat format, IReadOnlyList<KeyValuePair<string, string>> options, int stream = 0, bool hdr = false)
     {
         ArgumentNullException.ThrowIfNull(candidate);
         ArgumentNullException.ThrowIfNull(options);
@@ -77,10 +82,15 @@ public sealed unsafe partial class VideoEncoder : IDisposable
         context->pix_fmt = EncoderPresets.UsesPlanarYuv(candidate) ? AVPixelFormat.AV_PIX_FMT_YUV420P : AVPixelFormat.AV_PIX_FMT_NV12;
         context->gop_size = format.Fps * 2;
         context->max_b_frames = 0;
-        context->colorspace = AVColorSpace.AVCOL_SPC_BT709;
-        context->color_primaries = AVColorPrimaries.AVCOL_PRI_BT709;
-        context->color_trc = AVColorTransferCharacteristic.AVCOL_TRC_BT709;
+        context->colorspace = hdr ? AVColorSpace.AVCOL_SPC_BT2020_NCL : AVColorSpace.AVCOL_SPC_BT709;
+        context->color_primaries = hdr ? AVColorPrimaries.AVCOL_PRI_BT2020 : AVColorPrimaries.AVCOL_PRI_BT709;
+        context->color_trc = hdr ? AVColorTransferCharacteristic.AVCOL_TRC_SMPTE2084 : AVColorTransferCharacteristic.AVCOL_TRC_BT709;
         context->color_range = AVColorRange.AVCOL_RANGE_MPEG;
+        if (hdr)
+        {
+            context->pix_fmt = EncoderPresets.UsesPlanar10Bit(candidate) ? AVPixelFormat.AV_PIX_FMT_YUV420P10LE : AVPixelFormat.AV_PIX_FMT_P010LE;
+        }
+
         context->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
 
         AVDictionary* dictionary = null;
@@ -108,7 +118,7 @@ public sealed unsafe partial class VideoEncoder : IDisposable
         var detail = log.Messages.Select(m => MftName().Match(m)).FirstOrDefault(m => m.Success)?.Groups[1].Value;
         try
         {
-            return new VideoEncoder(candidate, format, stream, context, detail);
+            return new VideoEncoder(candidate, format, stream, context, detail, hdr);
         }
         catch
         {

@@ -45,7 +45,8 @@ public sealed record MetadataHeader(
     bool CursorInVideo,
     bool OverlaysInVideo,
     KeystrokeMode Keystrokes,
-    MetadataWebcam? Webcam = null);
+    MetadataWebcam? Webcam = null,
+    string? Look = null);
 
 /// <summary>
 /// The metadata track of a recording, <c>name.cgmeta.json</c> next to the video: the pointer on every frame
@@ -71,7 +72,8 @@ public sealed record RecordingMetadata(
     IReadOnlyList<MetadataKey> Keys,
     IReadOnlyList<MetadataFocus> Focus,
     IReadOnlyList<MetadataToggle> Drawing,
-    MetadataWebcam? Webcam = null)
+    MetadataWebcam? Webcam = null,
+    string? Look = null)
 {
     public const string FormatName = "cashgear-capture-metadata";
     public const int CurrentVersion = 1;

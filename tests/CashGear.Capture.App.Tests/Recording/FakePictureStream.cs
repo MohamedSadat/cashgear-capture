@@ -27,6 +27,10 @@ internal sealed class FakePictureStream : IPictureStream
     private readonly TimeProvider _time;
     private readonly int _fps;
     private readonly Thread _producer;
+    private readonly HdrInfo? _hdr;
+    private ToneMapper? _toneMapper;
+    private ID3D11Texture2D? _toned;
+    private PqEncoder? _pq;
     private D3DDeviceManager _devices = new(NullLogger<D3DDeviceManager>.Instance);
     private ID3D11Texture2D? _staging;
     private (int Width, int Height)? _pendingSize;
@@ -37,6 +41,7 @@ internal sealed class FakePictureStream : IPictureStream
 
     public FakePictureStream(StreamRequest request, TimeProvider time, int fps)
     {
+        _hdr = request.Hdr;
         _slotOf = request.SlotOf;
         _time = time;
         _fps = fps;
@@ -49,6 +54,9 @@ internal sealed class FakePictureStream : IPictureStream
     }
 
     public event EventHandler? Closed;
+
+    /// <summary>What a float stream's pictures show (a stream asked for a monitor in HDR mode): linear scRGB.</summary>
+    public (float R, float G, float B) HdrColor { get; set; } = (1, 1, 1);
 
     /// <summary>After this many pictures, the device is lost (reads throw until <see cref="Recover"/>); -1: never.</summary>
     public long LoseDeviceAfter { get; set; } = -1;
@@ -131,7 +139,28 @@ internal sealed class FakePictureStream : IPictureStream
         lock (_gate)
         {
             ThrowIfUnreadable(picture);
+            if (_hdr is not null)
+            {
+                var resources = _devices.Acquire();
+                _toneMapper ??= new ToneMapper(resources.Device);
+                _toned ??= resources.Device.CreateTexture2D(ToneMapper.TargetDescription(Width, Height));
+                _toneMapper.Draw(resources.Context, picture.Texture, _toned, 0, 0, _hdr.WhiteScale);
+                ReadBack(_toned, destination);
+                return;
+            }
+
             ReadBack(picture.Texture, destination);
+        }
+    }
+
+    public void ReadPq(Picture picture, Span<ushort> luma, Span<ushort> chroma)
+    {
+        lock (_gate)
+        {
+            ThrowIfUnreadable(picture);
+            var resources = _devices.Acquire();
+            _pq ??= new PqEncoder(resources.Device, Width, Height);
+            _pq.Encode(resources.Context, picture.Texture, 0, 0, _hdr!.WhiteScale, luma, chroma);
         }
     }
 
@@ -207,6 +236,9 @@ internal sealed class FakePictureStream : IPictureStream
         lock (_gate)
         {
             DropTextures();
+            _toned?.Dispose();
+            _toneMapper?.Dispose();
+            _pq?.Dispose();
             _devices.Dispose();
         }
     }
@@ -234,7 +266,7 @@ internal sealed class FakePictureStream : IPictureStream
         _staging = null;
     }
 
-    private ID3D11Texture2D CreateStaging() => _devices.Acquire().Device.CreateTexture2D(Description(ResourceUsage.Staging, CpuAccessFlags.Read));
+    private ID3D11Texture2D CreateStaging() => _devices.Acquire().Device.CreateTexture2D(Description(ResourceUsage.Staging, CpuAccessFlags.Read) with { Format = Format.B8G8R8A8_UNorm });
 
     private Texture2DDescription Description(ResourceUsage usage, CpuAccessFlags cpu) => new()
     {
@@ -242,9 +274,10 @@ internal sealed class FakePictureStream : IPictureStream
         Height = (uint)Height,
         MipLevels = 1,
         ArraySize = 1,
-        Format = Format.B8G8R8A8_UNorm,
+        Format = _hdr is null ? Format.B8G8R8A8_UNorm : ToneMapper.SourceFormat,
         SampleDescription = new SampleDescription(1, 0),
         Usage = usage,
+        BindFlags = _hdr is null || usage == ResourceUsage.Staging ? BindFlags.None : BindFlags.ShaderResource,
         CPUAccessFlags = cpu,
     };
 
@@ -305,12 +338,21 @@ internal sealed class FakePictureStream : IPictureStream
                     continue;
                 }
 
-                if (pixels.Length != Width * Height * 4)
+                var bytesPerPixel = _hdr is null ? 4 : 8;
+                if (pixels.Length != Width * Height * bytesPerPixel)
                 {
-                    pixels = new byte[Width * Height * 4];
+                    pixels = new byte[Width * Height * bytesPerPixel];
                 }
 
-                Paint(pixels, number);
+                if (_hdr is null)
+                {
+                    Paint(pixels, number);
+                }
+                else
+                {
+                    PaintFloat(pixels, HdrColor);
+                }
+
                 var texture = Rent();
                 if (texture is null)
                 {
@@ -319,7 +361,7 @@ internal sealed class FakePictureStream : IPictureStream
 
                 fixed (byte* data = pixels)
                 {
-                    _devices.Acquire().Context.UpdateSubresource(texture, 0, null, (nint)data, (uint)(Width * 4), 0);
+                    _devices.Acquire().Context.UpdateSubresource(texture, 0, null, (nint)data, (uint)(Width * bytesPerPixel), 0);
                 }
 
                 var picture = new Picture(texture, now, _slotOf(now), _generation);
@@ -353,6 +395,18 @@ internal sealed class FakePictureStream : IPictureStream
         texture = _devices.Acquire().Device.CreateTexture2D(Description(ResourceUsage.Default, CpuAccessFlags.None));
         _textures.Add(texture);
         return texture;
+    }
+
+    private static void PaintFloat(byte[] pixels, (float R, float G, float B) color)
+    {
+        var values = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan());
+        for (var i = 0; i < values.Length; i += 4)
+        {
+            values[i] = (Half)color.R;
+            values[i + 1] = (Half)color.G;
+            values[i + 2] = (Half)color.B;
+            values[i + 3] = (Half)1f;
+        }
     }
 
     /// <summary>A flat colour that changes with every picture.</summary>

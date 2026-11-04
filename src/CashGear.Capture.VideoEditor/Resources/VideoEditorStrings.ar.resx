@@ -327,4 +327,19 @@
   <data name="UndoAddVolumeKey" xml:space="preserve">
     <value>إضافة إطار مفتاحي لمستوى الصوت</value>
   </data>
+  <data name="PresetMp4HevcHdr" xml:space="preserve">
+    <value>MP4 HEVC HDR (10 بت، بطاقة الرسوميات)</value>
+  </data>
+  <data name="PresetMp4Av1Hdr" xml:space="preserve">
+    <value>MP4 AV1 HDR (10 بت، بطيء)</value>
+  </data>
+  <data name="NoHdrEncoder" xml:space="preserve">
+    <value>لا يوجد هنا مرمّز يقبل الفيديو بعمق 10 بت. يعمل MP4 AV1 HDR على أي حاسوب، لكنه بطيء.</value>
+  </data>
+  <data name="TrackScreenNumbered" xml:space="preserve">
+    <value>الشاشة {0}</value>
+  </data>
+  <data name="TrackSecondWebcam" xml:space="preserve">
+    <value>كاميرا الويب 2</value>
+  </data>
 </root>

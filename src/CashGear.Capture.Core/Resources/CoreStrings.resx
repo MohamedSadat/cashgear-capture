@@ -273,4 +273,12 @@
     <value>{0} is not a recording metadata file this version of the app can read.</value>
     <comment>{0}: file name</comment>
   </data>
+  <data name="EncoderQuickSyncHevc" xml:space="preserve">
+    <value>Intel Quick Sync (HEVC)</value>
+    <comment>An encoder's name.</comment>
+  </data>
+  <data name="EncoderAmfHevc" xml:space="preserve">
+    <value>AMD (HEVC)</value>
+    <comment>An encoder's name.</comment>
+  </data>
 </root>

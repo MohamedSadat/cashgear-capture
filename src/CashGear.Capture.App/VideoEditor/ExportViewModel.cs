@@ -79,7 +79,8 @@ public sealed partial class ExportViewModel : ObservableObject
     public ExportViewModel(VideoProject project, string name, string folder, ProjectExporter exporter, ISettingsService settings, IAppStateStore state, IShell shell, ILogger logger, TimeRange? range = null, IFeatureGate? features = null)
     {
         var gate = features ?? FeatureGate.Open;
-        Presets = [.. ExportPresets.All.Where(p => (!p.IsGif || gate.IsEnabled(ProFeature.GifExport)) && (!p.HasCanvas || gate.IsEnabled(ProFeature.StudioLook)))];
+        var hdr = gate.IsEnabled(ProFeature.RecordingPro) && ProjectExporter.HasHdrMedia(project) ? ExportPresets.Hdr : [];
+        Presets = [.. ExportPresets.All.Where(p => (!p.IsGif || gate.IsEnabled(ProFeature.GifExport)) && (!p.HasCanvas || gate.IsEnabled(ProFeature.StudioLook))), .. hdr];
         _project = project;
         _range = range;
         _exporter = exporter;

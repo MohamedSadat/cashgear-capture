@@ -397,4 +397,24 @@
     <value>Add volume keyframe</value>
     <comment>undo step</comment>
   </data>
+  <data name="PresetMp4HevcHdr" xml:space="preserve">
+    <value>MP4 HEVC HDR (10-bit, graphics card)</value>
+    <comment>Export preset.</comment>
+  </data>
+  <data name="PresetMp4Av1Hdr" xml:space="preserve">
+    <value>MP4 AV1 HDR (10-bit, slow)</value>
+    <comment>Export preset.</comment>
+  </data>
+  <data name="NoHdrEncoder" xml:space="preserve">
+    <value>No encoder here takes 10-bit video. MP4 AV1 HDR works on any PC, slowly.</value>
+    <comment>An HDR export that can't be made.</comment>
+  </data>
+  <data name="TrackScreenNumbered" xml:space="preserve">
+    <value>Screen {0}</value>
+    <comment>Track name. {0} a number.</comment>
+  </data>
+  <data name="TrackSecondWebcam" xml:space="preserve">
+    <value>Webcam 2</value>
+    <comment>Track name.</comment>
+  </data>
 </root>

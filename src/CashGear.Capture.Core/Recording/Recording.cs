@@ -44,6 +44,12 @@ public enum SystemAudioScope
 /// <param name="Microphone">The microphone to record: null for none, <see cref="Settings.RecordingSettings.DefaultMicrophone"/> or a device ID.</param>
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 /// <param name="Overlays">Clicks, pointer, keystrokes and webcam drawn over the video and/or kept in the metadata file (null: none, and no metadata).</param>
+/// <param name="Window">Record this window through its own capture item instead of an area of the monitor; <paramref name="Area"/> gives the recording's size.</param>
+/// <param name="Monitors">Record other monitors beside <paramref name="Monitor"/>, on one canvas or a track each.</param>
+/// <param name="StartAt">Everything is made ready, then the recording's clock starts at this moment (it starts at once when that has gone).</param>
+/// <param name="StopAfter">The video's length when it is stopped at it: stopped a moment later, it still has exactly this length.</param>
+/// <param name="HdrVideo">Record a monitor in HDR mode as HEVC Main10 with PQ when an encoder offers 10-bit, instead of tone-mapping it (needs <paramref name="Hdr"/>).</param>
+/// <param name="Look">The look the video editor opens this recording with (an id; null: the editor's own default).</param>
 public sealed record RecordingOptions(
     MonitorInfo Monitor,
     PixelRect Area,
@@ -64,7 +70,13 @@ public sealed record RecordingOptions(
     MicrophoneProcessing? MicrophoneProcessing = null,
     bool NormalizeLoudness = false,
     OverlaySettings? Overlays = null,
-    HdrInfo? Hdr = null);
+    HdrInfo? Hdr = null,
+    WindowTarget? Window = null,
+    MonitorsTarget? Monitors = null,
+    DateTimeOffset? StartAt = null,
+    TimeSpan? StopAfter = null,
+    bool HdrVideo = false,
+    string? Look = null);
 
 /// <param name="Path">The (first) file saved.</param>
 /// <param name="FramesDropped">Frames skipped because encoding fell behind (the picture holds still for that long).</param>

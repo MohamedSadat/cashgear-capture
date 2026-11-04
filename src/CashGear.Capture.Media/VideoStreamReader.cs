@@ -44,6 +44,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
     private SwsContext* _scaler;
     private (int Width, int Height, int Format, int OutWidth, int OutHeight, int Space, int Range) _scalerShape;
     private bool _flushed;
+    private byte[] _wide = [];
 
     /// <param name="streamIndex">The stream among all the file's streams; -1 for the file's main video.</param>
     /// <param name="keyframesOnly">Decode only keyframes (thumbnails): every other picture is skipped.</param>
@@ -117,6 +118,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
             Duration = stream->duration != ffmpeg.AV_NOPTS_VALUE ? stream->duration * _timeBase
                 : input->duration != ffmpeg.AV_NOPTS_VALUE ? input->duration / (double)ffmpeg.AV_TIME_BASE : 0;
             Codec = ffmpeg.avcodec_get_name(stream->codecpar->codec_id);
+            IsHdr = stream->codecpar->color_trc == AVColorTransferCharacteristic.AVCOL_TRC_SMPTE2084;
         }
         catch
         {
@@ -147,6 +149,9 @@ public sealed unsafe class VideoStreamReader : IDisposable
     public double Duration { get; }
 
     public string Codec { get; }
+
+    /// <summary>The video is HDR (PQ): <see cref="Read"/> tone-maps it, and <see cref="ReadExtended"/> keeps its light.</summary>
+    public bool IsHdr { get; }
 
     /// <summary>The graphics card was asked to decode (it may still have declined; see <see cref="IsHardware"/>).</summary>
     public bool HardwareRequested { get; }
@@ -229,6 +234,50 @@ public sealed unsafe class VideoStreamReader : IDisposable
         {
             var time = TimeOf(_decoded);
             Convert(_decoded, bgra, width, height);
+            return time;
+        }
+        finally
+        {
+            ffmpeg.av_frame_unref(_decoded);
+        }
+    }
+
+    /// <summary>
+    /// As <see cref="Read"/>, as float RGBA of 8 bytes a pixel (see <see cref="PqPictures.ToExtended"/>), for an HDR
+    /// export. Only for an HDR video.
+    /// </summary>
+    public double? ReadExtended(Span<byte> rgbaF16, int width, int height)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(rgbaF16.Length, width * height * 8, nameof(rgbaF16));
+        if (!IsHdr)
+        {
+            throw new InvalidOperationException("Only an HDR video can be read as extended float.");
+        }
+
+        if (_ready.TryDequeue(out var queued))
+        {
+            var frame = (AVFrame*)queued;
+            try
+            {
+                var time = TimeOf(frame);
+                Convert(frame, rgbaF16, width, height, extended: true);
+                return time;
+            }
+            finally
+            {
+                Free(frame);
+            }
+        }
+
+        if (!DecodeNext())
+        {
+            return null;
+        }
+
+        try
+        {
+            var time = TimeOf(_decoded);
+            Convert(_decoded, rgbaF16, width, height, extended: true);
             return time;
         }
         finally
@@ -343,6 +392,65 @@ public sealed unsafe class VideoStreamReader : IDisposable
         return pts == ffmpeg.AV_NOPTS_VALUE ? 0 : pts * _timeBase;
     }
 
+    /// <summary>A PQ picture: to 16-bit R′G′B′A through swscale (scaled there, in PQ), then tone-mapped or kept as float.</summary>
+    private void ConvertHdr(AVFrame* source, Span<byte> target, int width, int height, int range, bool extended)
+    {
+        var shape = (source->width, source->height, source->format, width, height, -1, range);
+        if (_scaler is null || shape != _scalerShape)
+        {
+            ffmpeg.sws_freeContext(_scaler);
+            var scaling = source->width != width || source->height != height;
+            _scaler = ffmpeg.sws_getContext(
+                source->width, source->height, (AVPixelFormat)source->format,
+                width, height, AVPixelFormat.AV_PIX_FMT_RGBA64LE,
+                (int)(scaling ? SwsFlags.SWS_BILINEAR : SwsFlags.SWS_POINT), null, null, null);
+            if (_scaler is null)
+            {
+                throw new FfmpegException(MediaStrings.CantConvertToBgra((AVPixelFormat)source->format));
+            }
+
+            var yuv = *(int4*)ffmpeg.sws_getCoefficients(ffmpeg.SWS_CS_BT2020);
+            var rgb = *(int4*)ffmpeg.sws_getCoefficients(ffmpeg.SWS_CS_DEFAULT);
+            var fullRange = (AVColorRange)range == AVColorRange.AVCOL_RANGE_JPEG ? 1 : 0;
+            ffmpeg.sws_setColorspaceDetails(_scaler, in yuv, fullRange, in rgb, 1, 0, 1 << 16, 1 << 16);
+            _scalerShape = shape;
+        }
+
+        var bytes = width * height * 8;
+        if (_wide.Length < bytes)
+        {
+            _wide = new byte[bytes];
+        }
+
+        fixed (byte* wide = _wide, destination = target)
+        {
+            for (uint i = 0; i < 4; i++)
+            {
+                _sourcePlanes[i] = source->data[i];
+                _sourceStrides[i] = source->linesize[i];
+                _planes[i] = null;
+                _strides[i] = 0;
+            }
+
+            _planes[0] = wide;
+            _strides[0] = width * 8;
+            var rows = ffmpeg.sws_scale(_scaler, _sourcePlanes, _sourceStrides, 0, source->height, _planes, _strides);
+            if (rows != height)
+            {
+                throw new FfmpegException(MediaStrings.ConvertingPicture, rows < 0 ? rows : ffmpeg.AVERROR_UNKNOWN);
+            }
+
+            if (extended)
+            {
+                PqPictures.ToExtended(wide, width * 8, destination, width * 8, width, height);
+            }
+            else
+            {
+                PqPictures.ToSdr(wide, width * 8, destination, width * 4, width, height);
+            }
+        }
+    }
+
     private void ClearReady()
     {
         while (_ready.TryDequeue(out var queued))
@@ -399,7 +507,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
         }
     }
 
-    private void Convert(AVFrame* frame, Span<byte> bgra, int width, int height)
+    private void Convert(AVFrame* frame, Span<byte> bgra, int width, int height, bool extended = false)
     {
         var source = frame;
         if (frame->format == (int)AVPixelFormat.AV_PIX_FMT_D3D11)
@@ -416,6 +524,12 @@ public sealed unsafe class VideoStreamReader : IDisposable
 
         var space = (int)source->colorspace;
         var range = (int)source->color_range;
+        if (IsHdr)
+        {
+            ConvertHdr(source, bgra, width, height, range, extended);
+            return;
+        }
+
         var shape = (source->width, source->height, source->format, width, height, space, range);
         if (_scaler is null || shape != _scalerShape)
         {

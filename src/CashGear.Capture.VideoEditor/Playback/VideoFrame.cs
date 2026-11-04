@@ -5,8 +5,8 @@ using SkiaSharp;
 namespace CashGear.Capture.VideoEditor.Playback;
 
 /// <summary>
-/// A decoded picture: top-down premultiplied BGRA in native memory (opaque, so premultiplied is plain), with the
-/// source time it is shown at. Reference-counted: whoever keeps it calls <see cref="AddRef"/> and later
+/// A decoded picture: top-down premultiplied BGRA in native memory (opaque, so premultiplied is plain), or float RGBA
+/// for an HDR export, with the source time it is shown at. Reference-counted: whoever keeps it calls <see cref="AddRef"/> and later
 /// <see cref="Release"/>; the memory goes back to <see cref="FramePool"/> when the last reference is released, so a
 /// frame being drawn on another thread (or by Skia's GPU upload) is never freed under it.
 /// </summary>
@@ -15,26 +15,30 @@ public sealed unsafe class VideoFrame
     private readonly FramePool _pool;
     private int _references = 1;
 
-    internal VideoFrame(FramePool pool, nint memory, int width, int height)
+    internal VideoFrame(FramePool pool, nint memory, int width, int height, int bytesPerPixel = FramePool.Bgra)
     {
         _pool = pool;
         Memory = memory;
         Width = width;
         Height = height;
+        BytesPerPixel = bytesPerPixel;
     }
 
     public int Width { get; }
 
     public int Height { get; }
 
-    public int RowBytes => Width * 4;
+    /// <summary><see cref="FramePool.Bgra"/>, or <see cref="FramePool.ExtendedFloat"/> for an HDR export's.</summary>
+    public int BytesPerPixel { get; }
+
+    public int RowBytes => Width * BytesPerPixel;
 
     /// <summary>The source time it is shown from, in seconds.</summary>
     public double Time { get; internal set; }
 
     internal nint Memory { get; }
 
-    public Span<byte> Pixels => new((void*)Memory, Width * Height * 4);
+    public Span<byte> Pixels => new((void*)Memory, Width * Height * BytesPerPixel);
 
     public VideoFrame AddRef()
     {
@@ -66,7 +70,7 @@ public sealed unsafe class VideoFrame
     public SKImage ToImage()
     {
         AddRef();
-        var info = new SKImageInfo(Width, Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+        var info = new SKImageInfo(Width, Height, BytesPerPixel == FramePool.Bgra ? SKColorType.Bgra8888 : SKColorType.RgbaF16, SKAlphaType.Premul);
         using var pixmap = new SKPixmap(info, Memory, RowBytes);
         return SKImage.FromPixels(pixmap, (_, context) => ((VideoFrame)context!).Release(), this)
             ?? throw new InvalidOperationException("Skia couldn't wrap a frame.");
@@ -81,18 +85,24 @@ public sealed unsafe class VideoFrame
 /// </summary>
 public sealed class FramePool : IDisposable
 {
+    /// <summary>Top-down premultiplied BGRA.</summary>
+    public const int Bgra = 4;
+
+    /// <summary>Float RGBA, each channel 2 bytes: an HDR picture for an HDR export.</summary>
+    public const int ExtendedFloat = 8;
+
     private const int KeptPerSize = 24;
 
-    private readonly ConcurrentDictionary<(int Width, int Height), ConcurrentBag<VideoFrame>> _free = new();
+    private readonly ConcurrentDictionary<(int Width, int Height, int Bytes), ConcurrentBag<VideoFrame>> _free = new();
     private bool _disposed;
 
     public static FramePool Shared { get; } = new();
 
-    public VideoFrame Rent(int width, int height)
+    public VideoFrame Rent(int width, int height, int bytesPerPixel = Bgra)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
-        if (_free.TryGetValue((width, height), out var bag) && bag.TryTake(out var frame))
+        if (_free.TryGetValue((width, height, bytesPerPixel), out var bag) && bag.TryTake(out var frame))
         {
             frame.Revive();
             return frame;
@@ -100,14 +110,14 @@ public sealed class FramePool : IDisposable
 
         unsafe
         {
-            var memory = (nint)NativeMemory.Alloc((nuint)width * (nuint)height * 4);
-            return new VideoFrame(this, memory, width, height);
+            var memory = (nint)NativeMemory.Alloc((nuint)width * (nuint)height * (nuint)bytesPerPixel);
+            return new VideoFrame(this, memory, width, height, bytesPerPixel);
         }
     }
 
     internal unsafe void Return(VideoFrame frame)
     {
-        var bag = _free.GetOrAdd((frame.Width, frame.Height), _ => []);
+        var bag = _free.GetOrAdd((frame.Width, frame.Height, frame.BytesPerPixel), _ => []);
         if (_disposed || bag.Count >= KeptPerSize)
         {
             NativeMemory.Free((void*)frame.Memory);
