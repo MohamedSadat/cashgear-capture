@@ -30,7 +30,7 @@ internal enum HandOffResult
 /// <summary>Used by a second launch (before any host exists) to hand its command to the running instance.</summary>
 internal static class InstancePipeClient
 {
-    public static HandOffResult Send(string pipeName, InstanceCommand command, TimeSpan timeout)
+    public static HandOffResult Send(string pipeName, InstanceCommand command, TimeSpan timeout, IReadOnlyList<string>? arguments = null)
     {
         var log = Log.ForContext(typeof(InstancePipeClient));
         try
@@ -57,7 +57,7 @@ internal static class InstancePipeClient
 
             using (var writer = new StreamWriter(client, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), leaveOpen: true))
             {
-                writer.WriteLine(InstanceCommandParser.ToWire(command));
+                writer.WriteLine(InstanceCommandParser.ToWire(command, arguments ?? []));
             }
 
             client.WaitForPipeDrain();

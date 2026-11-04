@@ -24,7 +24,13 @@ internal sealed class WebcamFrame(int width, int height)
 
     public long Version { get; set; }
 
-    public WebcamPicture Picture => new(Width, Height, Pixels, Version);
+    /// <summary>When it was captured, on the recording's clock.</summary>
+    public TimeSpan Time { get; set; }
+
+    /// <summary>Its alpha means something: what is behind the person was removed.</summary>
+    public bool Premultiplied { get; set; }
+
+    public WebcamPicture Picture => new(Width, Height, Pixels, Version, Premultiplied);
 
     public void Hold() => Interlocked.Increment(ref _references);
 
@@ -58,6 +64,7 @@ internal sealed partial class WebcamFeed : IDisposable
     private readonly RecordingClock _clock;
     private readonly FrameGrid _grid;
     private readonly TimedQueue<WebcamFrame> _pictures = new(Kept);
+    private readonly TimedQueue<WebcamFrame> _worked = new(Kept);
     private readonly ConcurrentBag<WebcamFrame> _free = [];
     private readonly TaskCompletionSource _first = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Func<VideoFormat, VideoEncoder> _openEncoder;
@@ -65,6 +72,8 @@ internal sealed partial class WebcamFeed : IDisposable
     private readonly Action<string> _warn;
     private readonly ILogger _logger;
     private readonly object _gridGate = new();
+    private readonly LiveWebcamBackground? _live;
+    private readonly bool _premultiplied;
     private Thread? _thread;
     private long _version;
     private long _written;
@@ -72,7 +81,9 @@ internal sealed partial class WebcamFeed : IDisposable
 
     /// <param name="openEncoder">Opens an encoder for the webcam's size (the first that works).</param>
     /// <param name="warn">Tells the user something went wrong while recording continues.</param>
-    public WebcamFeed(IWebcamSource source, RecordingClock clock, int fps, string folder, Func<VideoFormat, VideoEncoder> openEncoder, Action<string> warn, ILoggerFactory loggers)
+    /// <param name="fileName">The file of its own track in the folder.</param>
+    /// <param name="segmenter">Finds the person, for <paramref name="background"/> in what is drawn into the video (the track stays as the camera sees).</param>
+    public WebcamFeed(IWebcamSource source, RecordingClock clock, int fps, string folder, Func<VideoFormat, VideoEncoder> openEncoder, Action<string> warn, ILoggerFactory loggers, string fileName = FileName, Inference.IPersonSegmenter? segmenter = null, Core.Settings.WebcamLiveBackground background = Core.Settings.WebcamLiveBackground.None)
     {
         _source = source;
         _clock = clock;
@@ -80,9 +91,20 @@ internal sealed partial class WebcamFeed : IDisposable
         _openEncoder = openEncoder;
         _warn = warn;
         _logger = loggers.CreateLogger<WebcamFeed>();
-        _writer = new MediaWriter(_ => Path.Combine(folder, FileName), [], loggers.CreateLogger<MediaWriter>());
+        _writer = new MediaWriter(_ => Path.Combine(folder, fileName), [], loggers.CreateLogger<MediaWriter>());
         (Width, Height) = EncoderPresets.EvenSize(source.Width, source.Height);
+        if (segmenter is not null && background != Core.Settings.WebcamLiveBackground.None)
+        {
+            _premultiplied = background == Core.Settings.WebcamLiveBackground.Remove;
+            _live = new LiveWebcamBackground(segmenter, background, source.Fps, Worked, OnFellBehind, Rent, clock.Time) { Returned = Release };
+        }
     }
+
+    /// <summary>Whether what is behind the person is being done live (it stops when it can't keep up).</summary>
+    public bool WorksBackground => _live?.IsWorking == true;
+
+    /// <summary>A live background gave up: the webcam shows as it is, and the editor can still do it.</summary>
+    public event EventHandler? BackgroundFellBehind;
 
     public string Name => _source.Name;
 
@@ -112,6 +134,10 @@ internal sealed partial class WebcamFeed : IDisposable
     /// <summary>The picture shown at recording time <paramref name="time"/>, held: give it back with <see cref="Release"/>.</summary>
     public WebcamFrame? Hold(TimeSpan time) => _pictures.At(time, f => f.Hold())?.Item;
 
+    /// <summary>What is drawn into the video at that time: with its background done while that works, else the camera's picture.</summary>
+    public WebcamFrame? HoldDrawn(TimeSpan time) =>
+        (WorksBackground ? _worked.At(time, f => f.Hold())?.Item : null) ?? Hold(time);
+
     public void Release(WebcamFrame frame)
     {
         if (frame.Release())
@@ -138,6 +164,7 @@ internal sealed partial class WebcamFeed : IDisposable
     {
         _stopping = true;
         _source.Dispose();
+        _live?.Dispose();
         _thread?.Join(TimeSpan.FromSeconds(5));
         _writer.Dispose();
         LogFinished(_source.Name, Written);
@@ -146,11 +173,8 @@ internal sealed partial class WebcamFeed : IDisposable
     /// <summary>The camera's thread: the picture is copied and placed by its capture time.</summary>
     private void OnPicture(ReadOnlySpan<byte> bgra, int width, int height, int stride, long timestamp)
     {
-        if (!_free.TryTake(out var frame) || frame.Width != width || frame.Height != height)
-        {
-            frame = new WebcamFrame(width, height);
-        }
-
+        var frame = Rent(width, height);
+        frame.Premultiplied = false;
         var row = width * 4;
         for (var y = 0; y < height && ((y * stride) + row) <= bgra.Length; y++)
         {
@@ -158,14 +182,34 @@ internal sealed partial class WebcamFeed : IDisposable
         }
 
         frame.Version = Interlocked.Increment(ref _version);
+        frame.Time = _clock.MapInstant(timestamp);
         frame.Hold(); // the queue's
-        if (_pictures.Add(_clock.MapInstant(timestamp), frame) is { } dropped)
+        if (_pictures.Add(frame.Time, frame) is { } dropped)
         {
             Release(dropped);
         }
 
+        _live?.Offer(frame);
         _first.TrySetResult();
     }
+
+    private WebcamFrame Rent(int width, int height) =>
+        _free.TryTake(out var frame) && frame.Width == width && frame.Height == height ? frame : new WebcamFrame(width, height);
+
+    /// <summary>A picture with its background done (its thread): placed at the time the camera captured it.</summary>
+    private void Worked(WebcamFrame from, WebcamFrame worked)
+    {
+        worked.Version = Interlocked.Increment(ref _version);
+        worked.Time = from.Time;
+        worked.Premultiplied = _premultiplied;
+        worked.Hold(); // the queue's
+        if (_worked.Add(worked.Time, worked) is { } dropped)
+        {
+            Release(dropped);
+        }
+    }
+
+    private void OnFellBehind() => BackgroundFellBehind?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Encodes the webcam's own track: frame n shows the picture shown at n / fps.</summary>
     private unsafe void WriteTrack()

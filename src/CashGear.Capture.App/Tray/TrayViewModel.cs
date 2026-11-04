@@ -9,8 +9,10 @@ using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Recording;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.App.Settings;
+using CashGear.Capture.Core.Display;
 using CashGear.Capture.Core.History;
 using CashGear.Capture.Core.Hotkeys;
+using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -37,6 +39,16 @@ public sealed class RecentCapture(HistoryItem item, IAsyncRelayCommand open)
     public HistoryItem Item => item;
 
     public IAsyncRelayCommand Open => open;
+}
+
+/// <summary>A recording profile in the tray's and the toolbar's lists.</summary>
+public sealed class ProfileChoice(string name, string id, IAsyncRelayCommand<string?> record)
+{
+    public string Name => name;
+
+    public string Id => id;
+
+    public IAsyncRelayCommand<string?> Record => record;
 }
 
 /// <summary>Commands behind the tray context menu (and the hotkeys, which reuse them).</summary>
@@ -67,6 +79,12 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly TimeProvider _time;
     private readonly VideoEditor.VideoEditorWindows _videoEditors;
     private readonly Diagnostics.DiagnosticsService? _diagnostics;
+    private readonly RecordingScheduler _scheduler;
+    private readonly ScheduleWindowService _scheduleWindow;
+    private readonly ProfilesWindowService _profilesWindow;
+    private readonly ITrayNotifier _notifier;
+    private readonly IMonitorService _monitors;
+    private readonly Licensing.IFeatureGate _features;
 
     public TrayViewModel(
         CaptureCoordinator coordinator,
@@ -89,8 +107,20 @@ public sealed partial class TrayViewModel : ObservableObject
         TimeProvider time,
         ImageTools.ImageToolWindows imageTools,
         VideoEditor.VideoEditorWindows videoEditors,
+        RecordingScheduler scheduler,
+        ScheduleWindowService scheduleWindow,
+        ProfilesWindowService profilesWindow,
+        ITrayNotifier notifier,
+        IMonitorService monitors,
+        Licensing.IFeatureGate features,
         Diagnostics.DiagnosticsService? diagnostics = null)
     {
+        _scheduler = scheduler;
+        _scheduleWindow = scheduleWindow;
+        _profilesWindow = profilesWindow;
+        _notifier = notifier;
+        _monitors = monitors;
+        _features = features;
         _diagnostics = diagnostics;
         _imageTools = imageTools;
         _videoEditors = videoEditors;
@@ -125,6 +155,12 @@ public sealed partial class TrayViewModel : ObservableObject
         _interrupted.Changed += (_, _) => _ = _ui.InvokeAsync(() => OnPropertyChanged(nameof(HasInterruptedRecordings)));
         _hotkeys.RegistrationsChanged += (_, _) => RefreshHotkeyLabels();
         _settings.Changed += (_, _) => _ = _ui.InvokeAsync(RefreshDelay);
+        _settings.Changed += (_, _) => _ = _ui.InvokeAsync(RefreshProfiles);
+        _scheduler.Changed += (_, _) => _ = _ui.InvokeAsync(() =>
+        {
+            OnPropertyChanged(nameof(ScheduledText));
+            OnPropertyChanged(nameof(HasScheduled));
+        });
         _history.Changed += (_, _) => _ = _ui.InvokeAsync(RefreshRecent);
         _updates.StateChanged += (_, _) => _ = _ui.InvokeAsync(RefreshUpdate);
         _updates.RestartRequested += (_, _) => _ = _ui.InvokeAsync(() => RestartToUpdateCommand.ExecuteAsync(null));
@@ -132,6 +168,7 @@ public sealed partial class TrayViewModel : ObservableObject
         RefreshDelay();
         RefreshRecent();
         RefreshUpdate();
+        RefreshProfiles();
     }
 
     /// <summary>Shown next to the menu item; empty when the action has no working hotkey.</summary>
@@ -310,6 +347,81 @@ public sealed partial class TrayViewModel : ObservableObject
     /// <summary>Starts a screen recording (pick the area), or stops and saves the one running.</summary>
     [RelayCommand]
     private Task ToggleRecordingAsync() => _recording.ToggleAsync();
+
+    /// <summary>Pick a window, and record it by itself however it moves.</summary>
+    [RelayCommand]
+    private Task RecordWindowAsync() => _recording.StartAsync(new RecordingPlan(RecordingAreaKind.Window));
+
+    /// <summary>Every monitor, as Settings says: on one canvas or a track each.</summary>
+    [RelayCommand]
+    private Task RecordAllMonitorsAsync() => _recording.StartAsync(new RecordingPlan(RecordingAreaKind.AllMonitors));
+
+    /// <summary>A recording with a profile's settings.</summary>
+    [RelayCommand]
+    private Task RecordProfileAsync(string? id) => _recording.StartAsync(new RecordingPlan(ProfileId: id));
+
+    /// <summary>The window that sets a recording for a time, or for a length.</summary>
+    [RelayCommand]
+    private void ScheduleRecording() => _scheduleWindow.Show();
+
+    /// <summary>Lets go of the recording waiting for its time.</summary>
+    [RelayCommand]
+    private void CancelSchedule() => _scheduler.Cancel();
+
+    /// <summary>The window of named recording profiles.</summary>
+    [RelayCommand]
+    private void ManageProfiles() => _profilesWindow.Show();
+
+    /// <summary><c>--record</c> with its options (see <see cref="RecordingCommandLine"/>).</summary>
+    internal async Task RecordFromCommandLineAsync(IReadOnlyList<string> arguments)
+    {
+        var now = _time.GetLocalNow();
+        var problem = RecordingCommandLine.Parse(arguments, now, out var plan, MonitorNumbered);
+        if (problem is not null)
+        {
+            _notifier.Notify(RecordingText.CouldNotStart, problem, NotificationKind.Error);
+            return;
+        }
+
+        if (plan is null)
+        {
+            await _recording.ToggleAsync();
+            return;
+        }
+
+        if (plan.StartAt is not null)
+        {
+            await _scheduler.ScheduleAsync(plan);
+            _notifier.Notify(RecordingText.ScheduleTitle, RecordingText.ScheduledFor(plan.StartAt.Value.ToLocalTime().ToString("g", System.Globalization.CultureInfo.CurrentCulture)));
+        }
+        else
+        {
+            await _recording.StartAsync(plan);
+        }
+    }
+
+    private string? MonitorNumbered(int number)
+    {
+        var monitors = _monitors.GetMonitors().OrderBy(m => !m.IsPrimary).ToList();
+        return number >= 1 && number <= monitors.Count ? monitors[number - 1].DeviceName : null;
+    }
+
+    /// <summary>The profiles to pick from, which the tray and the toolbar list.</summary>
+    public IReadOnlyList<ProfileChoice> Profiles { get; private set; } = [];
+
+    /// <summary>Several monitors, profiles and HDR are in this licence.</summary>
+    public bool HasRecordingPro => _features.IsEnabled(Licensing.ProFeature.RecordingPro);
+
+    /// <summary>What the tray says about what is waiting for its time; empty when nothing is.</summary>
+    public string ScheduledText => _scheduler.Pending?.StartAt is { } at ? RecordingText.CancelScheduled(at.ToLocalTime().ToString("t", System.Globalization.CultureInfo.CurrentCulture)) : string.Empty;
+
+    public bool HasScheduled => _scheduler.Pending is not null;
+
+    private void RefreshProfiles()
+    {
+        Profiles = [.. (_settings.Current.RecordingProfiles.Profiles ?? []).Select(p => new ProfileChoice(p.ShownName, p.Id, RecordProfileCommand))];
+        OnPropertyChanged(nameof(Profiles));
+    }
 
     [RelayCommand]
     private Task RecoverRecordingsAsync() => _interrupted.RecoverAllAsync();

@@ -136,4 +136,8 @@
     <value>{0} ({1})</value>
     <comment>a tooltip and its hotkey, e.g. Capture full screen (PrintScreen)</comment>
   </data>
+  <data name="RecordProfilesHelp" xml:space="preserve">
+    <value>Shift+F10 or a right click offers the recording profiles.</value>
+    <comment>Screen reader help.</comment>
+  </data>
 </root>

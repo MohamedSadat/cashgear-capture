@@ -22,13 +22,15 @@ public partial class CaptureApplication : Application
 {
     private readonly IServiceProvider _services;
     private readonly InstanceCommand _startupCommand;
+    private readonly IReadOnlyList<string> _startupArguments;
     private readonly ILogger<CaptureApplication> _logger;
     private TrayIconHost? _tray;
 
-    public CaptureApplication(IServiceProvider services, InstanceCommand startupCommand)
+    public CaptureApplication(IServiceProvider services, InstanceCommand startupCommand, IReadOnlyList<string>? startupArguments = null)
     {
         _services = services;
         _startupCommand = startupCommand;
+        _startupArguments = startupArguments ?? [];
         _logger = services.GetRequiredService<ILogger<CaptureApplication>>();
     }
 
@@ -90,10 +92,11 @@ public partial class CaptureApplication : Application
         AskAboutCrashReports();
         _ = _services.GetRequiredService<RecordingController>().WarmUpAsync(
             _services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+        _services.GetRequiredService<Recording.RecordingScheduler>().Resume();
 
         if (_startupCommand != InstanceCommand.Activate)
         {
-            _ = _services.GetRequiredService<InstanceCommandDispatcher>().DispatchAsync(_startupCommand);
+            _ = _services.GetRequiredService<InstanceCommandDispatcher>().DispatchAsync(_startupCommand, _startupArguments);
         }
     }
 

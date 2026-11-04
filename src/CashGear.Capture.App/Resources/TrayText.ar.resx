@@ -174,4 +174,22 @@
   <data name="IconRefused" xml:space="preserve">
     <value>CashGear Capture قيد التشغيل، لكن Windows لم يسمح له بإضافة أيقونته إلى منطقة الإعلامات.&#10;&#10;لا تزال مفاتيح اختصار الالتقاط تعمل. قد يحدث هذا عندما لا يكون شريط المهام قيد التشغيل، أو عندما تحتفظ نسخ أخرى من CashGear Capture، مثبتة في مكان آخر، بأيقونته.&#10;&#10;التفاصيل في السجل: {0}</value>
   </data>
+  <data name="RecordMore" xml:space="preserve">
+    <value>المزيد من التسجيل</value>
+  </data>
+  <data name="RecordWindow" xml:space="preserve">
+    <value>تسجيل _نافذة…</value>
+  </data>
+  <data name="RecordAllMonitors" xml:space="preserve">
+    <value>تسجيل _كل الشاشات</value>
+  </data>
+  <data name="ScheduleRecording" xml:space="preserve">
+    <value>_جدولة تسجيل…</value>
+  </data>
+  <data name="ManageProfiles" xml:space="preserve">
+    <value>_ملفات تعريف التسجيل…</value>
+  </data>
+  <data name="RecordProfile" xml:space="preserve">
+    <value>التسجيل بملف تعريف</value>
+  </data>
 </root>

@@ -788,6 +788,23 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private HdrCapture _hdr;
 
+    /// <summary>Several monitors and HDR recording are in this licence.</summary>
+    public bool HasRecordingPro { get; set; } = true;
+
+    public IReadOnlyList<SeveralMonitors> SeveralMonitorChoices { get; } = Enum.GetValues<SeveralMonitors>();
+
+    /// <summary>The canvas heights offered: its own size, or a common one.</summary>
+    public IReadOnlyList<CanvasHeightChoice> CanvasHeights { get; } = [.. MonitorCanvas.Heights.Select(h => new CanvasHeightChoice(h, h == 0 ? SettingsText.CanvasOwnSize : SettingsText.CanvasHeightOf(h)))];
+
+    [ObservableProperty]
+    private SeveralMonitors _severalMonitors;
+
+    [ObservableProperty]
+    private int _canvasHeight;
+
+    [ObservableProperty]
+    private bool _hdrVideo;
+
     [ObservableProperty]
     private FullScreenOutput _fullScreenOutput;
 
@@ -1170,6 +1187,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             SystemAudioApp = RecordingApp?.Exe,
             SystemAudioAppName = RecordingApp?.Name,
             NormalizeLoudness = NormalizeLoudness,
+            Monitors = SeveralMonitors,
+            CanvasHeight = CanvasHeight,
+            HdrVideo = HdrVideo,
             PushToTalk = string.IsNullOrWhiteSpace(PushToTalkText) ? null : PushToTalkText.Trim(),
             MicrophoneProcessing = (current.Recording.MicrophoneProcessing ?? new MicrophoneProcessing()) with
             {
@@ -1263,6 +1283,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         MicrophoneCompressor = processing.Compressor;
         MicrophoneLimiter = processing.Limiter;
         NormalizeLoudness = s.Recording.NormalizeLoudness;
+        SeveralMonitors = s.Recording.Monitors;
+        CanvasHeight = s.Recording.CanvasHeight;
+        HdrVideo = s.Recording.HdrVideo;
         PushToTalkText = s.Recording.PushToTalk ?? string.Empty;
         RecordingSystemAudioScope = SystemAudioScopes.Contains(s.Recording.SystemAudioScope) ? s.Recording.SystemAudioScope : SystemAudioScope.All;
         RefreshApps(s.Recording.SystemAudioApp, s.Recording.SystemAudioAppName);

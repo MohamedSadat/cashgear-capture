@@ -216,4 +216,19 @@
   <data name="EncoderAmfHevc" xml:space="preserve">
     <value>AMD (HEVC)</value>
   </data>
+  <data name="ProfileTutorial" xml:space="preserve">
+    <value>شرح تعليمي</value>
+  </data>
+  <data name="ProfileMeeting" xml:space="preserve">
+    <value>اجتماع</value>
+  </data>
+  <data name="ProfileBugReport" xml:space="preserve">
+    <value>تقرير خطأ</value>
+  </data>
+  <data name="RecordingOptionNeedsValue" xml:space="preserve">
+    <value>يحتاج {0} إلى قيمة.</value>
+  </data>
+  <data name="RecordingOptionBad" xml:space="preserve">
+    <value>لا يمكن أن يكون {0} بقيمة «{1}».</value>
+  </data>
 </root>

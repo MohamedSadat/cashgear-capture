@@ -40,6 +40,9 @@ public sealed record AppSettings
     /// <summary>Clicks, pointer, keystrokes, webcam and the on-screen pen in recordings.</summary>
     public OverlaySettings Overlays { get; init; } = new();
 
+    /// <summary>Named sets of recording settings, picked from the toolbar.</summary>
+    public RecordingProfiles RecordingProfiles { get; init; } = new();
+
     public OcrSettings Ocr { get; init; } = new();
 
     public HistorySettings History { get; init; } = new();
@@ -63,6 +66,7 @@ public sealed record AppSettings
         Appearance = (Appearance ?? new AppearanceSettings()).Normalize(),
         Recording = (Recording ?? new RecordingSettings()).Normalize(),
         Overlays = (Overlays ?? new OverlaySettings()).Normalize(),
+        RecordingProfiles = (RecordingProfiles ?? new RecordingProfiles()).Normalize(),
         Ocr = (Ocr ?? new OcrSettings()).Normalize(),
         History = (History ?? new HistorySettings()).Normalize(),
         Updates = (Updates ?? new UpdateSettings()).Normalize(),
@@ -274,6 +278,9 @@ public enum AppTheme
 /// <param name="Tracks">How system audio and the microphone become tracks when both are recorded.</param>
 /// <param name="SystemAudioGain">System audio's volume in recordings, 1 as captured (0 to 4; set on the recording toolbar).</param>
 /// <param name="MicrophoneGain">The microphone's volume in recordings, 1 as captured (0 to 4; set on the recording toolbar).</param>
+/// <param name="Monitors">What a recording of every monitor makes of them: one canvas, or a track each.</param>
+/// <param name="CanvasHeight">How high the one canvas is, in pixels; 0 keeps the monitors' own size.</param>
+/// <param name="HdrVideo">Record a monitor in HDR mode as HDR (HEVC Main10 with PQ) when an encoder offers 10-bit; else it is tone-mapped to SDR.</param>
 public sealed record RecordingSettings(
     int Fps = 30,
     Recording.QualityPreset Quality = Recording.QualityPreset.Balanced,
@@ -290,7 +297,10 @@ public sealed record RecordingSettings(
     string? SystemAudioAppName = null,
     MicrophoneProcessing? MicrophoneProcessing = null,
     bool NormalizeLoudness = false,
-    string? PushToTalk = null)
+    string? PushToTalk = null,
+    Recording.SeveralMonitors Monitors = Recording.SeveralMonitors.OneCanvas,
+    int CanvasHeight = 0,
+    bool HdrVideo = false)
 {
     public const float MaxGain = 4;
 
@@ -318,6 +328,8 @@ public sealed record RecordingSettings(
         Tracks = Enum.IsDefined(Tracks) ? Tracks : Recording.AudioTrackLayout.Mixed,
         SystemAudioGain = Gain(SystemAudioGain),
         MicrophoneGain = Gain(MicrophoneGain),
+        Monitors = Enum.IsDefined(Monitors) ? Monitors : Recording.SeveralMonitors.OneCanvas,
+        CanvasHeight = Recording.MonitorCanvas.Heights.Contains(CanvasHeight) ? CanvasHeight : 0,
     };
 
     private static float Gain(float value) => float.IsFinite(value) ? Math.Clamp(value, 0, MaxGain) : 1;

@@ -40,7 +40,7 @@ public static class Program
             if (!guard.IsPrimary)
             {
                 log.Information("Another instance is running; forwarding {Command}", command);
-                var handOff = InstancePipeClient.Send(InstanceNames.PipeName, command, TimeSpan.FromSeconds(3));
+                var handOff = InstancePipeClient.Send(InstanceNames.PipeName, command, TimeSpan.FromSeconds(3), InstanceCommandParser.ArgumentsFor(command, args));
                 if (handOff == HandOffResult.InstanceElevated)
                 {
                     // Exiting silently made the launch (or --exit) look ignored.
@@ -70,7 +70,7 @@ public static class Program
             using var host = AppHost.Build(args, paths, install);
             host.Start();
 
-            var app = new CaptureApplication(host.Services, command);
+            var app = new CaptureApplication(host.Services, command, InstanceCommandParser.ArgumentsFor(command, args));
             app.InitializeComponent();
             var exitCode = app.Run();
 

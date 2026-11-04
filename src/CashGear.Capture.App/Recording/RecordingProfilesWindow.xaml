@@ -1,0 +1,111 @@
+<Window x:Class="CashGear.Capture.App.Recording.RecordingProfilesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.Recording"
+        xmlns:settings="clr-namespace:CashGear.Capture.App.Settings"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:RecordingProfilesViewModel}"
+        Title="{x:Static r:RecordingText.ProfilesWindowTitle}" Width="660" SizeToContent="Height" ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen" ShowInTaskbar="True">
+  <Window.Resources>
+    <settings:EnumChoicesConverter x:Key="Choices" />
+    <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+      <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+    <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+      <Setter Property="Margin" Value="0,2,0,4" />
+    </Style>
+    <Style TargetType="Label" BasedOn="{StaticResource {x:Type Label}}">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+  </Window.Resources>
+  <Grid Margin="16">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="190" />
+      <ColumnDefinition Width="16" />
+      <ColumnDefinition />
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <DockPanel>
+      <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+        <Button Content="{x:Static r:RecordingText.ProfileAdd}" Command="{Binding AddCommand}" Margin="0,0,0,4" Padding="8,2" />
+        <Button Content="{x:Static r:RecordingText.ProfileDuplicate}" Command="{Binding DuplicateCommand}" Margin="0,0,0,4" Padding="8,2" />
+        <Button Content="{x:Static r:RecordingText.ProfileDelete}" Command="{Binding DeleteCommand}" Padding="8,2" />
+      </StackPanel>
+      <ListBox x:Name="List" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" DisplayMemberPath="Name"
+               AutomationProperties.Name="{x:Static r:RecordingText.ProfilesListName}" />
+    </DockPanel>
+
+    <Grid Grid.Column="2" DataContext="{Binding Selected}" IsEnabled="{Binding DataContext.HasSelected, RelativeSource={RelativeSource AncestorType=Window}}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="130" />
+        <ColumnDefinition />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <Label Content="{x:Static r:RecordingText.ProfileName}" Target="{Binding ElementName=NameBox}" />
+      <TextBox x:Name="NameBox" Grid.Column="1" Margin="0,0,0,6" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:RecordingText.ProfileNameName}" />
+
+      <Label Grid.Row="1" Content="{x:Static r:RecordingText.ProfileArea}" Target="{Binding ElementName=AreaBox}" />
+      <ComboBox x:Name="AreaBox" Grid.Row="1" Grid.Column="1" ItemsSource="{Binding DataContext.Areas, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding Area}"
+                AutomationProperties.Name="{x:Static r:RecordingText.ProfileAreaName}" />
+
+      <Label Grid.Row="2" Content="{x:Static r:RecordingText.ProfileFps}" Target="{Binding ElementName=FpsBox}" />
+      <ComboBox x:Name="FpsBox" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding DataContext.FrameRates, RelativeSource={RelativeSource AncestorType=Window}}" SelectedItem="{Binding Fps}" ItemStringFormat="{x:Static r:CommonText.FpsFormat}"
+                AutomationProperties.Name="{x:Static r:RecordingText.ProfileFpsName}" />
+
+      <Label Grid.Row="3" Content="{x:Static r:RecordingText.ProfileQuality}" Target="{Binding ElementName=QualityBox}" />
+      <ComboBox x:Name="QualityBox" Grid.Row="3" Grid.Column="1" ItemsSource="{Binding DataContext.Qualities, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding Quality}"
+                AutomationProperties.Name="{x:Static r:RecordingText.ProfileQualityName}" />
+
+      <Label Grid.Row="4" Content="{x:Static r:RecordingText.ProfileTracks}" Target="{Binding ElementName=TracksBox}" />
+      <ComboBox x:Name="TracksBox" Grid.Row="4" Grid.Column="1" ItemsSource="{Binding DataContext.TrackLayouts, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding Tracks}"
+                AutomationProperties.Name="{x:Static r:RecordingText.ProfileTracksName}" />
+
+      <Label Grid.Row="5" Content="{x:Static r:RecordingText.ProfileKeys}" Target="{Binding ElementName=KeysBox}" />
+      <ComboBox x:Name="KeysBox" Grid.Row="5" Grid.Column="1" ItemsSource="{Binding DataContext.KeyModes, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding Keystrokes}"
+                AutomationProperties.Name="{x:Static r:RecordingText.ProfileKeysName}" />
+
+      <Label Grid.Row="6" Content="{x:Static r:RecordingText.ProfileBackground}" Target="{Binding ElementName=BackgroundBox}" />
+      <ComboBox x:Name="BackgroundBox" Grid.Row="6" Grid.Column="1" ItemsSource="{Binding DataContext.Backgrounds, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding WebcamBackground}"
+                AutomationProperties.Name="{x:Static r:RecordingText.ProfileBackgroundName}" />
+
+      <Label Grid.Row="7" Content="{x:Static r:RecordingText.ProfileLook}" Target="{Binding ElementName=LookBox}" />
+      <ComboBox x:Name="LookBox" Grid.Row="7" Grid.Column="1" ItemsSource="{Binding DataContext.Looks, RelativeSource={RelativeSource AncestorType=Window}}" SelectedValuePath="Id" SelectedValue="{Binding Look}"
+                AutomationProperties.Name="{x:Static r:RecordingText.ProfileLookName}" />
+
+      <WrapPanel Grid.Row="8" Grid.Column="1" Orientation="Vertical" MaxHeight="96" Margin="0,4,0,0">
+        <CheckBox Content="{x:Static r:RecordingText.ProfilePointer}" IsChecked="{Binding IncludeCursor}" />
+        <CheckBox Content="{x:Static r:RecordingText.ProfileSystemAudio}" IsChecked="{Binding SystemAudio}" />
+        <CheckBox Content="{x:Static r:RecordingText.ProfileMicrophone}" IsChecked="{Binding Microphone}" />
+        <CheckBox Content="{x:Static r:RecordingText.ProfileBurnIn}" IsChecked="{Binding BurnIn}" Margin="16,2,0,4" />
+        <CheckBox Content="{x:Static r:RecordingText.ProfileClicks}" IsChecked="{Binding Clicks}" Margin="16,2,0,4" />
+        <CheckBox Content="{x:Static r:RecordingText.ProfileWebcam}" IsChecked="{Binding Webcam}" Margin="16,2,0,4" />
+      </WrapPanel>
+    </Grid>
+
+    <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+      <Button Content="{x:Static r:CommonText.Save}" Command="{Binding SaveCommand}" IsDefault="True" MinWidth="80" Padding="10,3" />
+      <Button Content="{x:Static r:CommonText.Cancel}" IsCancel="True" Click="OnCancel" MinWidth="80" Margin="8,0,0,0" Padding="10,3" />
+    </StackPanel>
+  </Grid>
+</Window>

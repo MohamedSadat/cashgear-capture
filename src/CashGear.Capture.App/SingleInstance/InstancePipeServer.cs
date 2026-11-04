@@ -58,7 +58,7 @@ internal sealed partial class InstancePipeServer(
             using var reader = new StreamReader(server, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
             var line = await reader.ReadLineAsync(timeout.Token).ConfigureAwait(false);
 
-            if (!InstanceCommandParser.TryParseWire(line, out var command))
+            if (!InstanceCommandParser.TryParseWire(line, out var command, out var arguments))
             {
                 LogUnknownCommand(line is null ? "<none>" : line[..Math.Min(line.Length, 64)]);
                 return;
@@ -66,15 +66,15 @@ internal sealed partial class InstancePipeServer(
 
             LogReceived(command);
             await uiReady.WhenReady.WaitAsync(ct).ConfigureAwait(false);
-            _ = DispatchAsync(command); // don't hold up the next connection while a capture runs
+            _ = DispatchAsync(command, arguments); // don't hold up the next connection while a capture runs
         }
     }
 
-    private async Task DispatchAsync(InstanceCommand command)
+    private async Task DispatchAsync(InstanceCommand command, IReadOnlyList<string> arguments)
     {
         try
         {
-            await dispatcher.DispatchAsync(command).ConfigureAwait(false);
+            await dispatcher.DispatchAsync(command, arguments).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

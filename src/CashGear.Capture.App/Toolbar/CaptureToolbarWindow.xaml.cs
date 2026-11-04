@@ -154,6 +154,11 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
             Open((ContextMenu)Resources["SizesMenu"], FixedButton);
             e.Handled = true;
         }
+        else if (menuKey && Keyboard.FocusedElement == RecordButton)
+        {
+            OpenProfiles();
+            e.Handled = true;
+        }
     }
 
     private void SetVertical(bool vertical)
@@ -320,6 +325,21 @@ public partial class CaptureToolbarWindow : Window, IThemedWindow
     }
 
     private void OnTools(object sender, RoutedEventArgs e) => Open((ContextMenu)Resources["ToolsMenu"], ToolsButton);
+
+    private void OnProfiles(object sender, MouseButtonEventArgs e)
+    {
+        OpenProfiles();
+        e.Handled = true;
+    }
+
+    /// <summary>The recording profiles, on the record button: a right click, Shift+F10 or the menu key.</summary>
+    private void OpenProfiles()
+    {
+        if (DataContext is CaptureToolbarViewModel { Tray.HasRecordingPro: true })
+        {
+            Open((ContextMenu)Resources["ProfilesMenu"], RecordButton);
+        }
+    }
 
     private void OnFixedSizes(object sender, MouseButtonEventArgs e)
     {

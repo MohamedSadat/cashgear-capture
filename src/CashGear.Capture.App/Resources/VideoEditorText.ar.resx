@@ -2697,4 +2697,13 @@
   <data name="ExportStagesMeasuring" xml:space="preserve">
     <value>جارٍ قياس شدة الصوت…</value>
   </data>
+  <data name="CutToScreenMenu" xml:space="preserve">
+    <value>القص إلى شاشة</value>
+  </data>
+  <data name="ScreenNumbered" xml:space="preserve">
+    <value>الشاشة {0}</value>
+  </data>
+  <data name="UndoCutToScreen" xml:space="preserve">
+    <value>القص إلى الشاشة {0}</value>
+  </data>
 </root>

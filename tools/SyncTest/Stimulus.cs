@@ -27,6 +27,7 @@ internal sealed class Stimulus : IDisposable
     private readonly AudioRenderClient _render;
     private readonly AudioClockClient _clock;
     private readonly Window _square;
+    private readonly Window? _secondSquare;
     private readonly long _period;
     private readonly long _firstBeep;
     private readonly Thread _audioThread;
@@ -34,7 +35,8 @@ internal sealed class Stimulus : IDisposable
     private volatile bool _stopping;
     private long _written;
 
-    public Stimulus(PixelRect square, double scale, TimeSpan interval)
+    /// <param name="second">A square that flashes with the first, on another monitor: its place and that monitor's scale.</param>
+    public Stimulus(PixelRect square, double scale, TimeSpan interval, (PixelRect Square, double Scale)? second = null)
     {
         Interval = interval;
         _period = (long)(interval.TotalSeconds * SampleRate);
@@ -70,6 +72,24 @@ internal sealed class Stimulus : IDisposable
             Background = Brushes.Black,
             Title = "CashGear sync test",
         };
+        if (second is { } other)
+        {
+            _secondSquare = new Window
+            {
+                WindowStyle = WindowStyle.None,
+                ResizeMode = ResizeMode.NoResize,
+                ShowInTaskbar = false,
+                ShowActivated = false,
+                Topmost = true,
+                Left = other.Square.X / other.Scale,
+                Top = other.Square.Y / other.Scale,
+                Width = other.Square.Width / other.Scale,
+                Height = other.Square.Height / other.Scale,
+                Background = Brushes.Black,
+                Title = "CashGear sync test 2",
+            };
+        }
+
         _audioThread = new Thread(RenderLoop) { IsBackground = true, Name = "Sync test sound", Priority = ThreadPriority.Highest };
         _flashThread = new Thread(FlashLoop) { IsBackground = true, Name = "Sync test flashes", Priority = ThreadPriority.Highest };
     }
@@ -85,6 +105,7 @@ internal sealed class Stimulus : IDisposable
     public void Start()
     {
         _square.Show();
+        _secondSquare?.Show();
         Prefill();
         _client.Start();
         _audioThread.Start();
@@ -108,6 +129,7 @@ internal sealed class Stimulus : IDisposable
         _client.Dispose();
         _device.Dispose();
         _square.Dispatcher.Invoke(_square.Close);
+        _secondSquare?.Dispatcher.Invoke(_secondSquare.Close);
     }
 
     private void Prefill()
@@ -199,10 +221,18 @@ internal sealed class Stimulus : IDisposable
                 return;
             }
 
-            _square.Dispatcher.Invoke(() => _square.Background = white);
+            _square.Dispatcher.Invoke(() =>
+            {
+                _square.Background = white;
+                _secondSquare?.Background = white;
+            });
             Flashes++;
             Thread.Sleep(FlashLength);
-            _square.Dispatcher.Invoke(() => _square.Background = black);
+            _square.Dispatcher.Invoke(() =>
+            {
+                _square.Background = black;
+                _secondSquare?.Background = black;
+            });
         }
     }
 }

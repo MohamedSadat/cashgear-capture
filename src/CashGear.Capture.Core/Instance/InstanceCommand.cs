@@ -82,6 +82,9 @@ public static class InstanceCommandParser
 
     private static readonly IReadOnlyDictionary<string, InstanceCommand> Commands = Wires.ToDictionary(p => p.Value, p => p.Key);
 
+    /// <summary>Between a pipe message's parts: nothing a command line holds.</summary>
+    private const char ArgumentSeparator = '\u001f';
+
     /// <summary>Every switch (without its <c>--</c>), e.g. for help text.</summary>
     public static IReadOnlyCollection<string> Switches => [.. Wires.Values];
 
@@ -109,6 +112,27 @@ public static class InstanceCommandParser
     public static string ToWire(InstanceCommand command) =>
         Wires.TryGetValue(command, out var wire) ? wire : throw new ArgumentOutOfRangeException(nameof(command), command, null);
 
-    public static bool TryParseWire(string? text, out InstanceCommand command) =>
-        Commands.TryGetValue(text?.Trim().ToLowerInvariant() ?? string.Empty, out command);
+    public static bool TryParseWire(string? text, out InstanceCommand command) => TryParseWire(text, out command, out _);
+
+    /// <summary>A pipe message: the command's word, then any arguments it came with (<see cref="ToWire(InstanceCommand, IReadOnlyList{string})"/>).</summary>
+    public static bool TryParseWire(string? text, out InstanceCommand command, out IReadOnlyList<string> arguments)
+    {
+        var parts = (text ?? string.Empty).TrimEnd('\r', '\n').Split(ArgumentSeparator);
+        arguments = parts[1..];
+        return Commands.TryGetValue(parts[0].Trim().ToLowerInvariant(), out command);
+    }
+
+    /// <summary>A command with its arguments, as one line for the pipe.</summary>
+    public static string ToWire(InstanceCommand command, IReadOnlyList<string> arguments)
+    {
+        ArgumentNullException.ThrowIfNull(arguments);
+        return string.Join(ArgumentSeparator, [ToWire(command), .. arguments.Select(a => a.Replace(ArgumentSeparator, ' ').Replace('\n', ' ').Replace('\r', ' '))]);
+    }
+
+    /// <summary>The arguments that go with a command: <c>--record</c>'s options (see <see cref="Recording.RecordingCommandLine"/>).</summary>
+    public static IReadOnlyList<string> ArgumentsFor(InstanceCommand command, IReadOnlyList<string> args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        return command == InstanceCommand.Record ? [.. args.Where(a => !TryParseWire(a.TrimStart('-', '/'), out var other) || other != InstanceCommand.Record)] : [];
+    }
 }

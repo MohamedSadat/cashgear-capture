@@ -45,6 +45,18 @@ public enum WebcamShape
     RoundedRectangle,
 }
 
+/// <summary>What is done behind the person while recording, when the graphics card keeps up.</summary>
+public enum WebcamLiveBackground
+{
+    None,
+
+    /// <summary>Blurred.</summary>
+    Blur,
+
+    /// <summary>Removed, so the camera shows on the screen behind it.</summary>
+    Remove,
+}
+
 /// <summary>
 /// What is drawn over recordings (Phase 12): clicks, the pointer, keystrokes and the webcam, either into the video
 /// while recording (<see cref="BurnIn"/>) or kept in the metadata file to be added later; plus the on-screen pen.
@@ -267,6 +279,8 @@ public sealed record KeystrokeOverlaySettings(
 /// <param name="BorderColor">The border's colour.</param>
 /// <param name="BorderWidth">The border's width at 100% scale, pixels (0 to 12).</param>
 /// <param name="Mirror">Show it mirrored, like a mirror (the separate track stays as the camera sees).</param>
+/// <param name="LiveBackground">What is done behind the person in what is drawn into the video, while the graphics card keeps up; the separate track stays as the camera sees.</param>
+/// <param name="SecondDevice">Another camera's device ID, recorded as a track of its own; null for none.</param>
 public sealed record WebcamSettings(
     bool Enabled = false,
     string? Device = null,
@@ -279,7 +293,9 @@ public sealed record WebcamSettings(
     double CenterY = WebcamSettings.DefaultCenterY,
     string BorderColor = WebcamSettings.DefaultBorderColor,
     int BorderWidth = 3,
-    bool Mirror = true)
+    bool Mirror = true,
+    WebcamLiveBackground LiveBackground = WebcamLiveBackground.None,
+    string? SecondDevice = null)
 {
     public const int DefaultSize = 28;
     public const double DefaultCenterX = 86;
@@ -298,6 +314,8 @@ public sealed record WebcamSettings(
         CenterY = double.IsFinite(CenterY) ? Math.Clamp(CenterY, 0, 100) : DefaultCenterY,
         BorderColor = OverlaySettings.Color(BorderColor, DefaultBorderColor),
         BorderWidth = Math.Clamp(BorderWidth, 0, 12),
+        LiveBackground = Enum.IsDefined(LiveBackground) ? LiveBackground : WebcamLiveBackground.None,
+        SecondDevice = string.IsNullOrWhiteSpace(SecondDevice) ? null : SecondDevice.Trim(),
     };
 }
 

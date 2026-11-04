@@ -182,6 +182,15 @@ public sealed class ArabicUiTests : IDisposable
         var refused = new TrayIconRefusedWindow(_root, AppTheme.Light);
         problems.AddRange(await ArabicUi.CheckAsync(refused, "tray-icon-refused", escCloses: true, data: text => text.Contains(_root, StringComparison.OrdinalIgnoreCase)));
 
+        var settings = new MutableSettings();
+        settings.Current = settings.Current.Normalize();
+        var monitors = new Win32MonitorService(NullLogger<Win32MonitorService>.Instance);
+        var schedule = new ScheduleRecordingViewModel(null!, null!, monitors, new Win32WindowService(), settings, TimeProvider.System, pro: true);
+        schedule.Problem = RecordingText.BadTime("x");
+        problems.AddRange(await ArabicUi.CheckAsync(new ScheduleRecordingWindow(schedule, AppTheme.Light), "schedule-recording", escCloses: true, data: IsData));
+
+        problems.AddRange(await ArabicUi.CheckAsync(new RecordingProfilesWindow(new RecordingProfilesViewModel(settings), AppTheme.Light), "recording-profiles", escCloses: true, data: IsData));
+
         Pass("Small windows", problems);
     });
 
@@ -205,6 +214,9 @@ public sealed class ArabicUiTests : IDisposable
 
         Pass("Toolbars", problems);
     });
+
+    /// <summary>What comes from the PC, not the app: monitor names, window titles, times typed, a frame rate.</summary>
+    private static bool IsData(string text) => text.Contains("DISPLAY", StringComparison.Ordinal) || text.All(c => c < 128) || text.Contains(':', StringComparison.Ordinal) || text.Contains('«', StringComparison.Ordinal);
 
     private static DependencyObject TestLayoutFind<T>(Window window)
         where T : DependencyObject =>

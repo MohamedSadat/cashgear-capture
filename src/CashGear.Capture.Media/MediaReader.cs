@@ -159,10 +159,12 @@ public sealed unsafe class MediaReader : IDisposable
     /// Decodes the whole video: each picture's time in seconds and the mean luma (0–255) of a rectangle of it (the
     /// whole picture by default).
     /// </summary>
-    public List<(double Time, double Luma)> VideoLuma(int x = 0, int y = 0, int width = 0, int height = 0)
+    /// <param name="streamIndex">The video stream (-1: the main one).</param>
+    public List<(double Time, double Luma)> VideoLuma(int x = 0, int y = 0, int width = 0, int height = 0, int streamIndex = -1)
     {
         var result = new List<(double, double)>();
-        Decode(Video.Index, frame =>
+        var index = streamIndex >= 0 ? streamIndex : Video.Index;
+        Decode(index, frame =>
         {
             var w = width > 0 ? width : frame->width - x;
             var h = height > 0 ? height : frame->height - y;
@@ -176,7 +178,7 @@ public sealed unsafe class MediaReader : IDisposable
                 }
             }
 
-            result.Add((frame->best_effort_timestamp * TimeBase(Video.Index), (double)sum / (w * h)));
+            result.Add((frame->best_effort_timestamp * TimeBase(index), (double)sum / (w * h)));
         });
         return result;
     }

@@ -114,7 +114,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
             else
             {
                 var asset = await Task.Run(() => ProjectFactory.ReadAsset(path), ct).ConfigureAwait(false);
-                var project = NewRecordingLook.Apply(ProjectFactory.FromRecording(asset), _services);
+                var project = NewRecordingLook.Apply(ProjectFactory.FromRecording(asset), _services, ProjectFactory.LookOf(asset));
                 if (project.Duration <= 0)
                 {
                     _notifier.Notify(VideoEditorText.VideoEditor, VideoEditorText.NothingToEdit(Path.GetFileName(path)), NotificationKind.Warning);

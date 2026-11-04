@@ -125,6 +125,15 @@
         <MenuItem Header="{x:Static r:VideoEditorText.TrimStartMenu}" Command="{Binding TrimStartToPlayheadCommand}" InputGestureText="Ctrl+[" />
         <MenuItem Header="{x:Static r:VideoEditorText.TrimEndMenu}" Command="{Binding TrimEndToPlayheadCommand}" InputGestureText="Ctrl+]" />
         <Separator />
+        <MenuItem Header="{x:Static r:VideoEditorText.CutToScreenMenu}" ItemsSource="{Binding ScreenChoices}" Visibility="{Binding HasScreens, Converter={StaticResource Visible}}">
+          <MenuItem.ItemContainerStyle>
+            <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+              <Setter Property="Header" Value="{Binding Name}" />
+              <Setter Property="Command" Value="{Binding Command}" />
+              <Setter Property="CommandParameter" Value="{Binding Screen}" />
+            </Style>
+          </MenuItem.ItemContainerStyle>
+        </MenuItem>
         <MenuItem Header="{x:Static r:VideoEditorText.FreezeFrameMenu}" Command="{Binding FreezeFrameCommand}" ToolTip="{x:Static r:VideoEditorText.FreezeFrameTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.CrossfadeMenu}" Command="{Binding CrossfadeCommand}" ToolTip="{x:Static r:VideoEditorText.CrossfadeTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.DuckMusicMenu}" Command="{Binding DuckMusicCommand}" ToolTip="{x:Static r:VideoEditorText.DuckMusicTip}" />

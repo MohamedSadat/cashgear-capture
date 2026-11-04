@@ -672,6 +672,29 @@
               <TextBlock Style="{StaticResource Hint}" Text="{Binding MicrophoneTestStatus}" p:LiveText.IsLive="True" />
             </StackPanel>
 
+            <StackPanel Visibility="{Binding HasRecordingPro, Converter={StaticResource Visible}}">
+              <TextBlock Text="{x:Static r:SettingsText.SeveralMonitorsSection}" FontWeight="SemiBold" Margin="0,12,0,4" />
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="220" />
+                  <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition />
+                  <RowDefinition />
+                </Grid.RowDefinitions>
+                <TextBlock Text="{x:Static r:SettingsText.SeveralMonitorsLabel}" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding SeveralMonitorChoices, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding SeveralMonitors}"
+                          HorizontalAlignment="Left" MinWidth="240" AutomationProperties.Name="{x:Static r:SettingsText.SeveralMonitorsLabel}" />
+                <TextBlock Grid.Row="1" Text="{x:Static r:SettingsText.CanvasHeightLabel}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CanvasHeights}" SelectedValuePath="Value" SelectedValue="{Binding CanvasHeight}"
+                          HorizontalAlignment="Left" MinWidth="240" Margin="0,6,0,0" AutomationProperties.Name="{x:Static r:SettingsText.CanvasHeightLabel}" />
+              </Grid>
+              <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.SeveralMonitorsHint}" />
+              <CheckBox Margin="0,8,0,2" Content="{x:Static r:SettingsText.RecordHdr}" IsChecked="{Binding HdrVideo}" />
+              <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.RecordHdrHint}" />
+            </StackPanel>
+
             <TextBlock Text="{x:Static r:SettingsText.LoudnessSection}" FontWeight="SemiBold" Margin="0,12,0,4" />
             <CheckBox Margin="0,2" Content="{x:Static r:SettingsText.NormalizeLoudness}" IsChecked="{Binding NormalizeLoudness}" />
             <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:SettingsText.LoudnessHint}" />
@@ -869,6 +892,8 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
               </Grid.RowDefinitions>
               <TextBlock Text="{x:Static r:OverlaysText.Camera}" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -898,6 +923,12 @@
                 <TextBlock Text="{Binding WebcamBorderWidth, StringFormat={x:Static r:OverlaysText.WholePixelsFormat}}" VerticalAlignment="Center" Margin="8,0,0,0" />
               </StackPanel>
               <CheckBox Grid.Row="5" Grid.Column="1" Margin="0,8,0,0" Content="{x:Static r:OverlaysText.Mirror}" IsChecked="{Binding WebcamMirror}" />
+              <TextBlock Grid.Row="6" Text="{x:Static r:OverlaysText.LiveBackgroundLabel}" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <ComboBox Grid.Row="6" Grid.Column="1" ItemsSource="{Binding LiveBackgrounds, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding WebcamLiveBackground}"
+                        HorizontalAlignment="Left" MinWidth="200" Margin="0,8,0,0" AutomationProperties.Name="{x:Static r:OverlaysText.LiveBackgroundLabel}" />
+              <TextBlock Grid.Row="7" Text="{x:Static r:OverlaysText.SecondCameraLabel}" VerticalAlignment="Center" Margin="0,6,0,0" />
+              <ComboBox Grid.Row="7" Grid.Column="1" ItemsSource="{Binding SecondCameras}" SelectedItem="{Binding SecondCamera}"
+                        HorizontalAlignment="Left" MinWidth="240" MaxWidth="340" Margin="0,6,0,0" AutomationProperties.Name="{x:Static r:OverlaysText.SecondCameraLabel}" />
             </Grid>
             <TextBlock Style="{StaticResource Hint}" Text="{Binding WebcamStatus}" />
             <!-- Focusable: the arrows move the webcam (Shift: ten times as far). -->

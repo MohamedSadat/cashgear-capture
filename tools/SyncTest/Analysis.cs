@@ -102,10 +102,11 @@ internal static class Analysis
     /// </summary>
     private const float BeepThreshold = 0.3f;
 
-    public static SyncReport Analyze(string file, int x, int y, int width, int height)
+    /// <param name="stream">The video track to look at (-1: the main one).</param>
+    public static SyncReport Analyze(string file, int x, int y, int width, int height, int stream = -1)
     {
         using var reader = new MediaReader(file);
-        var frames = reader.VideoLuma(x, y, width, height);
+        var frames = reader.VideoLuma(x, y, width, height, stream);
         var flashes = frames.Where((f, i) => f.Luma > FlashLuma && (i == 0 || frames[i - 1].Luma <= FlashLuma)).Select(f => f.Time).ToList();
 
         var beeps = new List<double>();

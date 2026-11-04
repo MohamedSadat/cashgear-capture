@@ -321,4 +321,22 @@
   <data name="WebcamPlacementHelp" xml:space="preserve">
     <value>تحرّكها مفاتيح الأسهم (مع Shift، أبعد بعشر مرات).</value>
   </data>
+  <data name="LiveBackgroundNone" xml:space="preserve">
+    <value>كما هي</value>
+  </data>
+  <data name="LiveBackgroundBlur" xml:space="preserve">
+    <value>مموهة</value>
+  </data>
+  <data name="LiveBackgroundRemove" xml:space="preserve">
+    <value>مزالة</value>
+  </data>
+  <data name="LiveBackgroundLabel" xml:space="preserve">
+    <value>خلف الشخص أثناء التسجيل</value>
+  </data>
+  <data name="SecondCameraLabel" xml:space="preserve">
+    <value>كاميرا ثانية في مسار خاص بها</value>
+  </data>
+  <data name="NoSecondCamera" xml:space="preserve">
+    <value>لا شيء</value>
+  </data>
 </root>

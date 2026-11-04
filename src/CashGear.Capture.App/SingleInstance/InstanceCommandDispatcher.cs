@@ -11,7 +11,7 @@ internal sealed class InstanceCommandDispatcher(
     ITrayNotifier notifier,
     TrayViewModel tray)
 {
-    public Task DispatchAsync(InstanceCommand command)
+    public Task DispatchAsync(InstanceCommand command, IReadOnlyList<string>? arguments = null)
     {
         switch (command)
         {
@@ -34,6 +34,9 @@ internal sealed class InstanceCommandDispatcher(
 
             case InstanceCommand.CaptureScrolling:
                 return ui.InvokeAsync(() => tray.CaptureScrollingCommand.ExecuteAsync(null));
+
+            case InstanceCommand.Record when arguments is { Count: > 0 }:
+                return ui.InvokeAsync(() => tray.RecordFromCommandLineAsync(arguments));
 
             case InstanceCommand.Record:
                 return ui.InvokeAsync(() => tray.ToggleRecordingCommand.ExecuteAsync(null));

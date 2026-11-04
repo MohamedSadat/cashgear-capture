@@ -2978,4 +2978,16 @@
   <data name="ExportStagesMeasuring" xml:space="preserve">
     <value>Measuring the loudness…</value>
   </data>
+  <data name="CutToScreenMenu" xml:space="preserve">
+    <value>Cut to Screen</value>
+    <comment>Edit menu.</comment>
+  </data>
+  <data name="ScreenNumbered" xml:space="preserve">
+    <value>Screen {0}</value>
+    <comment>{0} a number.</comment>
+  </data>
+  <data name="UndoCutToScreen" xml:space="preserve">
+    <value>Cut to Screen {0}</value>
+    <comment>Undo. {0} a number.</comment>
+  </data>
 </root>

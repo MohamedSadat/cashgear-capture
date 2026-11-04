@@ -336,4 +336,220 @@
   <data name="MuteMicrophone" xml:space="preserve">
     <value>كتم الميكروفون</value>
   </data>
+  <data name="ScheduleTitle" xml:space="preserve">
+    <value>تسجيل مجدول</value>
+  </data>
+  <data name="ScheduleMissed" xml:space="preserve">
+    <value>لم يُجرَ التسجيل المحدد في {0}: لم يكن التطبيق أو الحاسوب يعمل حينها.</value>
+  </data>
+  <data name="ScheduleBusy" xml:space="preserve">
+    <value>كان هناك تسجيل جارٍ في الوقت المحدد، لذا لم يبدأ التسجيل المجدول.</value>
+  </data>
+  <data name="ScheduledFor" xml:space="preserve">
+    <value>سيبدأ التسجيل في {0}.</value>
+  </data>
+  <data name="CancelScheduled" xml:space="preserve">
+    <value>إلغاء التسجيل في {0}</value>
+  </data>
+  <data name="NoSuchProfile" xml:space="preserve">
+    <value>لا يوجد ملف تعريف تسجيل باسم «{0}».</value>
+  </data>
+  <data name="NoSuchWindow" xml:space="preserve">
+    <value>لا توجد نافذة مفتوحة باسم «{0}».</value>
+  </data>
+  <data name="WindowIsMinimized" xml:space="preserve">
+    <value>النافذة «{0}» مصغّرة: استعدها ثم سجّلها.</value>
+  </data>
+  <data name="AppNotRunningYet" xml:space="preserve">
+    <value>{0} لا يعمل بعد: يتوقف التسجيل بعد أن يعمل ثم يُغلق.</value>
+  </data>
+  <data name="TargetMonitor" xml:space="preserve">
+    <value>الشاشة {0} ({1})</value>
+  </data>
+  <data name="TargetAllMonitors" xml:space="preserve">
+    <value>كل الشاشات</value>
+  </data>
+  <data name="TargetWindow" xml:space="preserve">
+    <value>نافذة: {0}</value>
+  </data>
+  <data name="AsSettingsAre" xml:space="preserve">
+    <value>كما في الإعدادات</value>
+  </data>
+  <data name="ScheduleButton" xml:space="preserve">
+    <value>_جدولة</value>
+  </data>
+  <data name="RecordNowButton" xml:space="preserve">
+    <value>_تسجيل الآن</value>
+  </data>
+  <data name="BadTime" xml:space="preserve">
+    <value>«{0}» ليس وقتًا. اكتبه هكذا: 14:30.</value>
+  </data>
+  <data name="BadLength" xml:space="preserve">
+    <value>«{0}» ليس مدة. اكتبها هكذا: 00:30:00 للساعات والدقائق والثواني.</value>
+  </data>
+  <data name="NoAppGiven" xml:space="preserve">
+    <value>اكتب البرنامج الذي يوقف إغلاقه التسجيل، مثل notepad.exe.</value>
+  </data>
+  <data name="ScheduleWindowTitle" xml:space="preserve">
+    <value>جدولة تسجيل</value>
+  </data>
+  <data name="ScheduleWhat" xml:space="preserve">
+    <value>_ما يُسجَّل:</value>
+  </data>
+  <data name="ScheduleWhatName" xml:space="preserve">
+    <value>ما يُسجَّل</value>
+  </data>
+  <data name="ScheduleProfile" xml:space="preserve">
+    <value>_ملف التعريف:</value>
+  </data>
+  <data name="ScheduleProfileName" xml:space="preserve">
+    <value>ملف التعريف</value>
+  </data>
+  <data name="ScheduleStartAt" xml:space="preserve">
+    <value>البدء _في:</value>
+  </data>
+  <data name="ScheduleStartTimeName" xml:space="preserve">
+    <value>وقت البدء</value>
+  </data>
+  <data name="ScheduleStop" xml:space="preserve">
+    <value>الإي_قاف:</value>
+  </data>
+  <data name="ScheduleStopName" xml:space="preserve">
+    <value>طريقة الإيقاف</value>
+  </data>
+  <data name="ScheduleLengthName" xml:space="preserve">
+    <value>المدة بالساعات والدقائق والثواني</value>
+  </data>
+  <data name="ScheduleStopTimeName" xml:space="preserve">
+    <value>وقت الإيقاف</value>
+  </data>
+  <data name="ScheduleAppName" xml:space="preserve">
+    <value>البرنامج الذي يوقف إغلاقه التسجيل</value>
+  </data>
+  <data name="ScheduleAppHelp" xml:space="preserve">
+    <value>اسم ملفه، مثل notepad.exe.</value>
+  </data>
+  <data name="ScheduleHint" xml:space="preserve">
+    <value>يجب أن يكون الحاسوب والتطبيق قيد التشغيل في ذلك الوقت. يُعتمد أقرب وقت قادم.</value>
+  </data>
+  <data name="StopByHand" xml:space="preserve">
+    <value>عندما أوقفه</value>
+  </data>
+  <data name="StopAfterLength" xml:space="preserve">
+    <value>بعد مدة</value>
+  </data>
+  <data name="StopAtTime" xml:space="preserve">
+    <value>في وقت محدد</value>
+  </data>
+  <data name="StopWhenAppCloses" xml:space="preserve">
+    <value>عند إغلاق برنامج</value>
+  </data>
+  <data name="AreaAsk" xml:space="preserve">
+    <value>السؤال في كل مرة</value>
+  </data>
+  <data name="AreaMonitor" xml:space="preserve">
+    <value>الشاشة الرئيسية</value>
+  </data>
+  <data name="AreaAllMonitors" xml:space="preserve">
+    <value>كل الشاشات</value>
+  </data>
+  <data name="AreaWindow" xml:space="preserve">
+    <value>نافذة</value>
+  </data>
+  <data name="LookAsEditor" xml:space="preserve">
+    <value>كما في المحرر</value>
+  </data>
+  <data name="NewProfileName" xml:space="preserve">
+    <value>ملف تعريف جديد</value>
+  </data>
+  <data name="ProfileCopyName" xml:space="preserve">
+    <value>{0} (نسخة)</value>
+  </data>
+  <data name="ProfilesWindowTitle" xml:space="preserve">
+    <value>ملفات تعريف التسجيل</value>
+  </data>
+  <data name="ProfilesListName" xml:space="preserve">
+    <value>ملفات التعريف</value>
+  </data>
+  <data name="ProfileAdd" xml:space="preserve">
+    <value>إ_ضافة</value>
+  </data>
+  <data name="ProfileDuplicate" xml:space="preserve">
+    <value>ت_كرار</value>
+  </data>
+  <data name="ProfileDelete" xml:space="preserve">
+    <value>_حذف</value>
+  </data>
+  <data name="ProfileName" xml:space="preserve">
+    <value>الا_سم:</value>
+  </data>
+  <data name="ProfileNameName" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="ProfileArea" xml:space="preserve">
+    <value>ي_سجّل:</value>
+  </data>
+  <data name="ProfileAreaName" xml:space="preserve">
+    <value>ما يسجّله</value>
+  </data>
+  <data name="ProfileFps" xml:space="preserve">
+    <value>معدل الإ_طارات:</value>
+  </data>
+  <data name="ProfileFpsName" xml:space="preserve">
+    <value>معدل الإطارات</value>
+  </data>
+  <data name="ProfileQuality" xml:space="preserve">
+    <value>ال_جودة:</value>
+  </data>
+  <data name="ProfileQualityName" xml:space="preserve">
+    <value>الجودة</value>
+  </data>
+  <data name="ProfileTracks" xml:space="preserve">
+    <value>م_سارات الصوت:</value>
+  </data>
+  <data name="ProfileTracksName" xml:space="preserve">
+    <value>مسارات الصوت</value>
+  </data>
+  <data name="ProfileKeys" xml:space="preserve">
+    <value>الم_فاتيح المعروضة:</value>
+  </data>
+  <data name="ProfileKeysName" xml:space="preserve">
+    <value>المفاتيح المعروضة</value>
+  </data>
+  <data name="ProfileBackground" xml:space="preserve">
+    <value>خلف ال_شخص:</value>
+  </data>
+  <data name="ProfileBackgroundName" xml:space="preserve">
+    <value>خلف الشخص في كاميرا الويب</value>
+  </data>
+  <data name="ProfileLook" xml:space="preserve">
+    <value>الم_ظهر في المحرر:</value>
+  </data>
+  <data name="ProfileLookName" xml:space="preserve">
+    <value>المظهر في المحرر</value>
+  </data>
+  <data name="ProfilePointer" xml:space="preserve">
+    <value>المؤ_شر</value>
+  </data>
+  <data name="ProfileSystemAudio" xml:space="preserve">
+    <value>صوت ال_نظام</value>
+  </data>
+  <data name="ProfileMicrophone" xml:space="preserve">
+    <value>المي_كروفون</value>
+  </data>
+  <data name="ProfileBurnIn" xml:space="preserve">
+    <value>رسم الإ_ضافات في الفيديو</value>
+  </data>
+  <data name="ProfileClicks" xml:space="preserve">
+    <value>الن_قرات</value>
+  </data>
+  <data name="ProfileWebcam" xml:space="preserve">
+    <value>كاميرا الوي_ب</value>
+  </data>
+  <data name="PersonFinderDownloading" xml:space="preserve">
+    <value>يجري تنزيل النموذج الذي يحدد الشخص للمرة القادمة</value>
+  </data>
+  <data name="PersonFinderNeedsCard" xml:space="preserve">
+    <value>لا تستطيع بطاقة الرسوميات في هذا الحاسوب تشغيل النموذج الذي يحدد الشخص</value>
+  </data>
 </root>

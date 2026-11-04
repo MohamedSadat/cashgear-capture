@@ -746,4 +746,44 @@
   <data name="PreviewWindowTitle" xml:space="preserve">
     <value>Untitled - Notepad</value>
   </data>
+  <data name="MonitorsOneCanvas" xml:space="preserve">
+    <value>One picture, in their layout</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="MonitorsTrackEach" xml:space="preserve">
+    <value>A video track for each</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="CanvasOwnSize" xml:space="preserve">
+    <value>Their own size</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="CanvasHeightOf" xml:space="preserve">
+    <value>{0} pixels high</value>
+    <comment>{0} a number.</comment>
+  </data>
+  <data name="SeveralMonitorsSection" xml:space="preserve">
+    <value>Several monitors and HDR</value>
+    <comment>Section.</comment>
+  </data>
+  <data name="SeveralMonitorsLabel" xml:space="preserve">
+    <value>Recording all monitors makes</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="CanvasHeightLabel" xml:space="preserve">
+    <value>That one picture's height</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="SeveralMonitorsHint" xml:space="preserve">
+    <value>Tray › More Recording › Record All Monitors. A track each encodes two videos at once; the video editor cuts between them.</value>
+    <comment>Hint.</comment>
+  </data>
+  <data name="RecordHdr" xml:space="preserve">
+    <value>Record a monitor in HDR mode as HDR</value>
+    <comment>Check box.</comment>
+  </data>
+  <data name="RecordHdrHint" xml:space="preserve">
+    <value>HEVC Main10 with PQ, when the graphics card offers 10-bit; otherwise it is tone-mapped to SDR, and the saved notification says so. The overlays are then kept for the video editor.</value>
+    <comment>Hint.</comment>
+  </data>
 </root>

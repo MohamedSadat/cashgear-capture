@@ -13,6 +13,33 @@ public static class ProjectFactory
     /// <summary>The webcam's place when its recording didn't say: a circle at the bottom right, a quarter of the height.</summary>
     public static Placement DefaultWebcam { get; } = new(0.86, 0.78, 0.25, PlacementShape.Circle, "#FFFFFF", 3);
 
+    /// <summary>What was done behind the person while recording, for the webcam's own track, which is as the camera saw it.</summary>
+    private static WebcamBackground? BackgroundOf(MetadataWebcam? webcam) => webcam?.Background switch
+    {
+        WebcamLiveBackground.Blur => new WebcamBackground(BackgroundEffect.Blur),
+        WebcamLiveBackground.Remove => new WebcamBackground(BackgroundEffect.Remove),
+        _ => null,
+    };
+
+    /// <summary>The look a recording's profile asked for, if it did.</summary>
+    public static string? LookOf(MediaAsset asset)
+    {
+        ArgumentNullException.ThrowIfNull(asset);
+        if (asset.MetadataPath is not { } path)
+        {
+            return null;
+        }
+
+        try
+        {
+            return RecordingMetadata.Load(path).Look;
+        }
+        catch (Exception e) when (e is InvalidDataException or IOException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>A second camera's place: as the first's, on the other side.</summary>
     public static Placement SecondWebcam { get; } = new(0.14, 0.78, 0.25, PlacementShape.Circle, "#FFFFFF", 3);
 
@@ -199,7 +226,7 @@ public static class ProjectFactory
                     recorded.BorderWidth * (metadata.Scale > 0 ? metadata.Scale : 1),
                     recorded.Mirror)
                 : DefaultWebcam;
-            var clip = ClipOf(webcam) with { Placement = placement };
+            var clip = ClipOf(webcam) with { Placement = placement, Background = BackgroundOf(metadata?.Webcam) };
             pictures.Add(new Track(Ids.New(), TrackKind.Webcam, VideoEditorStrings.TrackWebcam, [clip], Hidden: metadata?.OverlaysInVideo == true && metadata.Webcam is not null));
         }
 

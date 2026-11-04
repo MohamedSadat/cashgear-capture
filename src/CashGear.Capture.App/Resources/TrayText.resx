@@ -169,4 +169,28 @@
     <value>CashGear Capture is running, but Windows did not let it add its icon to the notification area.&#10;&#10;The capture hotkeys still work. This can happen when the taskbar isn't running, or when other copies of CashGear Capture, installed elsewhere, already hold its icon.&#10;&#10;Details are in the log: {0}</value>
     <comment>{0} is the log folder</comment>
   </data>
+  <data name="RecordMore" xml:space="preserve">
+    <value>More Recording</value>
+    <comment>Tray submenu.</comment>
+  </data>
+  <data name="RecordWindow" xml:space="preserve">
+    <value>Record a _Window…</value>
+    <comment>Tray item.</comment>
+  </data>
+  <data name="RecordAllMonitors" xml:space="preserve">
+    <value>Record _All Monitors</value>
+    <comment>Tray item.</comment>
+  </data>
+  <data name="ScheduleRecording" xml:space="preserve">
+    <value>_Schedule a Recording…</value>
+    <comment>Tray item.</comment>
+  </data>
+  <data name="ManageProfiles" xml:space="preserve">
+    <value>Recording _Profiles…</value>
+    <comment>Tray and toolbar item.</comment>
+  </data>
+  <data name="RecordProfile" xml:space="preserve">
+    <value>Record with a Profile</value>
+    <comment>Tray submenu.</comment>
+  </data>
 </root>

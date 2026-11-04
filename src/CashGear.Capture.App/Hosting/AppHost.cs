@@ -84,6 +84,10 @@ internal static class AppHost
         builder.Services.AddSingleton<IKeyboardState, Win32KeyboardState>();
         builder.Services.AddSingleton<CashGear.Capture.Core.Recording.IPowerEvents, WindowsPowerEvents>();
         builder.Services.AddSingleton<RecordingController>();
+        builder.Services.AddSingleton<RecordingScheduler>();
+        builder.Services.AddSingleton<ScheduleWindowService>();
+        builder.Services.AddSingleton<ProfilesWindowService>();
+        builder.Services.AddSingleton<CashGear.Capture.Recording.ILiveSegmenters, LiveSegmenters>();
         builder.Services.AddSingleton<IRecordingPicker, WpfRecordingPicker>();
         builder.Services.AddSingleton<AddOverlaysController>();
         builder.Services.AddSingleton<CashGear.Capture.VideoEditor.Export.ProjectExporter>();

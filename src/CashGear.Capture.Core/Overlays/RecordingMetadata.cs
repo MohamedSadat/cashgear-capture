@@ -32,7 +32,7 @@ public sealed record MetadataFocus(double T, string? App, string? Title);
 public sealed record MetadataToggle(double T, bool On);
 
 /// <summary>Where the webcam was drawn: its own video track's title, and its placement as the overlay settings had it.</summary>
-public sealed record MetadataWebcam(string Track, WebcamShape Shape, int Size, double CenterX, double CenterY, string BorderColor, int BorderWidth, bool Mirror, int Width, int Height);
+public sealed record MetadataWebcam(string Track, WebcamShape Shape, int Size, double CenterX, double CenterY, string BorderColor, int BorderWidth, bool Mirror, int Width, int Height, WebcamLiveBackground Background = WebcamLiveBackground.None);
 
 /// <summary>What a recording's metadata says about how it was made, written first so a cut-short journal still has it.</summary>
 /// <param name="CursorInVideo">The pointer is in the video's pictures (Windows drew it); false when the overlays draw it.</param>

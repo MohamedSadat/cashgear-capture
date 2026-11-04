@@ -21,7 +21,7 @@ namespace CashGear.Capture.SyncTest;
 /// through the speakers, then measures how far apart they are in the file and whether that changes over time.
 /// <code>
 /// SyncTest run [--minutes M | --seconds S] [--fps 30] [--encoder auto] [--pauses N] [--pause-seconds 5] [--out DIR]
-///              [--busy] [--microphone default|ID] [--tracks Mixed|Separate|Both]
+///              [--busy] [--microphone default|ID] [--tracks Mixed|Separate|Both] [--monitors tracks|canvas]
 /// SyncTest analyze FILE
 /// SyncTest recover [--out DIR]     (saves recordings a killed run left behind, then analyzes them)
 /// </code>
@@ -120,10 +120,19 @@ internal static class Program
         recorder.Warning += (_, message) => Console.WriteLine("WARNING " + message);
         recorder.Failed += (_, message) => Console.WriteLine("FAILED " + message);
 
+        // Two monitors: a square on each, flashing together with the beeps.
+        var other = options.Monitors is null ? null : services.GetRequiredService<IMonitorService>().GetMonitors().FirstOrDefault(m => !m.IsPrimary);
+        if (options.Monitors is not null && other is null)
+        {
+            Console.Error.WriteLine("--monitors needs a second monitor.");
+            return 3;
+        }
+
         using var stimulus = new Stimulus(
             new PixelRect(monitor.Bounds.X + Square.X, monitor.Bounds.Y + Square.Y, Square.Width, Square.Height),
             monitor.Scale.ScaleX,
-            TimeSpan.FromSeconds(options.Interval));
+            TimeSpan.FromSeconds(options.Interval),
+            other is null ? null : (new PixelRect(other.Bounds.X + Square.X, other.Bounds.Y + Square.Y, Square.Width, Square.Height), other.Scale.ScaleX));
         stimulus.Start();
         var busy = options.Busy ? Busy(new PixelRect(monitor.Bounds.X + 320, monitor.Bounds.Y + 40, 240, 240), monitor.Scale.ScaleX) : null;
         Console.WriteLine($"Beeps on {stimulus.DeviceName} every {options.Interval} s; recording {options.Duration} of {monitor.ShortName} {area} at {options.Fps} fps with '{options.Encoder}'");
@@ -132,7 +141,8 @@ internal static class Program
         var output = Path.Combine(options.Out, $"synctest-{DateTime.Now:yyyyMMdd-HHmmss}.mp4");
         var recording = new RecordingOptions(
             monitor, area, options.Fps, options.Quality, IncludeCursor: false, options.Encoder, output, SystemAudio: true,
-            Microphone: options.Microphone, Tracks: options.Tracks);
+            Microphone: options.Microphone, Tracks: options.Tracks,
+            Monitors: other is null ? null : new MonitorsTarget([other], options.Monitors == "canvas" ? SeveralMonitors.OneCanvas : SeveralMonitors.TrackEach));
         var process = Process.GetCurrentProcess();
         await recorder.StartAsync(recording);
         var cpuStart = process.TotalProcessorTime;
@@ -170,7 +180,28 @@ internal static class Program
         var framesText = $"Recording   {result.FramesWritten} frames, {result.FramesDropped} dropped, {result.FramesRepeated} repeated, {result.EncoderName}, {result.FileBytes / 1048576.0:0.0} MB";
         Console.WriteLine(cpuText);
         Console.WriteLine(framesText);
-        return Report(result.Path, cpuText + Environment.NewLine + framesText);
+        if (result.Note is { } note)
+        {
+            Console.WriteLine("NOTE " + note);
+        }
+
+        var code = Report(result.Path, cpuText + Environment.NewLine + framesText);
+        if (other is null)
+        {
+            return code;
+        }
+
+        // The other monitor: its own track, or its place on the canvas.
+        if (options.Monitors == "canvas")
+        {
+            var canvas = MonitorCanvas.Of([monitor.Bounds, other.Bounds]);
+            var place = canvas.Places[1];
+            return Math.Max(code, Report(result.Path, "The other monitor, on the canvas", place.X + Inside.X, place.Y + Inside.Y, -1, ".screen2"));
+        }
+
+        using var reader = new MediaReader(result.Path);
+        var track = reader.Streams.Single(s => s.IsVideo && s.Title == RecordedTracks.ScreenTitle(2));
+        return Math.Max(code, Report(result.Path, "The other monitor, its own track", Inside.X, Inside.Y, track.Index, ".screen2"));
     }
 
     /// <summary>
@@ -227,13 +258,15 @@ internal static class Program
         return Report(file, null);
     }
 
-    private static int Report(string file, string? extra)
+    private static int Report(string file, string? extra) => Report(file, extra, Inside.X, Inside.Y, -1, string.Empty);
+
+    private static int Report(string file, string? extra, int x, int y, int stream, string suffix)
     {
-        var report = Analysis.Analyze(file, Inside.X, Inside.Y, Inside.Width, Inside.Height);
+        var report = Analysis.Analyze(file, x, y, Inside.Width, Inside.Height, stream);
         var summary = report.Summary(extra);
         Console.WriteLine(summary);
-        File.WriteAllText(Path.ChangeExtension(file, ".report.txt"), summary);
-        report.WriteCsv(Path.ChangeExtension(file, ".offsets.csv"));
+        File.WriteAllText(Path.ChangeExtension(file, suffix + ".report.txt"), summary);
+        report.WriteCsv(Path.ChangeExtension(file, suffix + ".offsets.csv"));
         var pass = report.Claps.Count >= Math.Min(3, report.Flashes) && Math.Abs(report.FittedDriftMs) < DriftLimitMs && Math.Abs(report.FirstToLastMs) < DriftLimitMs;
         Console.WriteLine(pass ? $"PASS: drift under {DriftLimitMs} ms" : $"FAIL: drift of {DriftLimitMs} ms or more, or too few claps");
         return pass ? 0 : 2;
@@ -251,7 +284,8 @@ internal static class Program
         string? Positional,
         bool Busy,
         string? Microphone,
-        AudioTrackLayout Tracks)
+        AudioTrackLayout Tracks,
+        string? Monitors)
     {
         public static Options Parse(string[] args)
         {
@@ -267,6 +301,7 @@ internal static class Program
             var busy = false;
             string? microphone = null;
             var tracks = AudioTrackLayout.Mixed;
+            string? monitors = null;
             for (var i = 0; i < args.Length; i++)
             {
                 string Next() => args[++i];
@@ -284,11 +319,12 @@ internal static class Program
                     case "--busy": busy = true; break;
                     case "--microphone": microphone = Next(); break;
                     case "--tracks": tracks = Enum.Parse<AudioTrackLayout>(Next(), ignoreCase: true); break;
+                    case "--monitors": monitors = Next(); break;
                     default: positional = args[i]; break;
                 }
             }
 
-            return new Options(duration, fps, encoder, quality, pauses, pauseSeconds, interval, output, positional, busy, microphone, tracks);
+            return new Options(duration, fps, encoder, quality, pauses, pauseSeconds, interval, output, positional, busy, microphone, tracks, monitors);
         }
 
         private static string FindRepository()

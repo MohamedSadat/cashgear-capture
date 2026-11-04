@@ -52,6 +52,24 @@
         </MenuItem>
         <Separator />
         <MenuItem Header="{Binding RecordText}" Command="{Binding ToggleRecordingCommand}" InputGestureText="{Binding RecordHotkey}" />
+        <MenuItem Header="{x:Static r:TrayText.RecordMore}">
+          <MenuItem Header="{x:Static r:TrayText.RecordWindow}" Command="{Binding RecordWindowCommand}" />
+          <MenuItem Header="{x:Static r:TrayText.RecordAllMonitors}" Command="{Binding RecordAllMonitorsCommand}" Visibility="{Binding HasRecordingPro, Converter={StaticResource TrayVisible}}" />
+          <Separator />
+          <MenuItem Header="{x:Static r:TrayText.ScheduleRecording}" Command="{Binding ScheduleRecordingCommand}" />
+          <MenuItem Header="{Binding ScheduledText}" Command="{Binding CancelScheduleCommand}" Visibility="{Binding HasScheduled, Converter={StaticResource TrayVisible}}" />
+          <Separator Visibility="{Binding HasRecordingPro, Converter={StaticResource TrayVisible}}" />
+          <MenuItem Header="{x:Static r:TrayText.ManageProfiles}" Command="{Binding ManageProfilesCommand}" Visibility="{Binding HasRecordingPro, Converter={StaticResource TrayVisible}}" />
+        </MenuItem>
+        <MenuItem Header="{x:Static r:TrayText.RecordProfile}" ItemsSource="{Binding Profiles}" Visibility="{Binding HasRecordingPro, Converter={StaticResource TrayVisible}}">
+          <MenuItem.ItemContainerStyle>
+            <Style TargetType="MenuItem">
+              <Setter Property="Header" Value="{Binding Name}" />
+              <Setter Property="Command" Value="{Binding Record}" />
+              <Setter Property="CommandParameter" Value="{Binding Id}" />
+            </Style>
+          </MenuItem.ItemContainerStyle>
+        </MenuItem>
         <MenuItem Header="{x:Static r:TrayText.AddOverlays}" Command="{Binding AddOverlaysCommand}" />
         <MenuItem Header="{x:Static r:TrayText.VideoEditor}">
           <MenuItem Header="{x:Static r:TrayText.OpenRecordingOrProject}" Command="{Binding OpenVideoEditorCommand}" />

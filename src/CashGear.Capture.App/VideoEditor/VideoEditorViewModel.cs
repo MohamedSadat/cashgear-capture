@@ -211,15 +211,19 @@ public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Tra
     }
 }
 
+/// <summary>A monitor to cut to, in the Edit menu.</summary>
+public sealed record ScreenCutChoice(string Name, RecordedScreen Screen, System.Windows.Input.ICommand Command);
+
 /// <summary>The look a recording starts with when it opens in the editor.</summary>
 internal static class NewRecordingLook
 {
     /// <summary>The look's id or name: what was chosen, else the usual one.</summary>
     public static string IdOf(VideoEditorServices services) => services.State.Current.VideoEditor?.DefaultLook ?? Looks.DefaultId;
 
-    public static VideoProject Apply(VideoProject project, VideoEditorServices services)
+    /// <summary>The look its recording's profile asked for, else the usual one.</summary>
+    public static VideoProject Apply(VideoProject project, VideoEditorServices services, string? asked = null)
     {
-        var look = Looks.Find(IdOf(services), services.Presets?.Current.SavedLooks);
+        var look = Looks.Find(asked ?? IdOf(services), services.Presets?.Current.SavedLooks);
         if (look is null || look.Id == Looks.NoneId)
         {
             return project;
@@ -2503,8 +2507,40 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>The monitors of a recording with a track each, to cut between (Edit › Cut to Screen).</summary>
+    public IReadOnlyList<ScreenCutChoice> ScreenChoices { get; private set; } = [];
+
+    public bool HasScreens => ScreenChoices.Count > 0;
+
+    /// <summary>The chosen monitor shows from the playhead on.</summary>
+    [RelayCommand]
+    private void CutToScreen(RecordedScreen? screen)
+    {
+        if (screen is null)
+        {
+            return;
+        }
+
+        StopPlaying();
+        History.Apply(VideoEditorText.UndoCutToScreen(screen.Number), ScreenCuts.CutTo(Project, screen, Times.FrameStart(Timeline.Playhead, Project.Canvas.Fps)));
+    }
+
+    private void RefreshScreens()
+    {
+        var screens = ScreenCuts.Screens(Project);
+        if (screens.Count == ScreenChoices.Count && screens.Zip(ScreenChoices).All(p => p.First == p.Second.Screen))
+        {
+            return;
+        }
+
+        ScreenChoices = [.. screens.Select(s => new ScreenCutChoice(VideoEditorText.ScreenNumbered(s.Number), s, CutToScreenCommand))];
+        OnPropertyChanged(nameof(ScreenChoices));
+        OnPropertyChanged(nameof(HasScreens));
+    }
+
     private void OnProjectChanged()
     {
+        RefreshScreens();
         if (Timeline.SelectedId is { } id && Project.Find(id) is null)
         {
             Timeline.Select(null);

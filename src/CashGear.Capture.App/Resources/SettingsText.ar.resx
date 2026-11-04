@@ -750,4 +750,34 @@
   <data name="PreviewWindowTitle" xml:space="preserve">
     <value>بلا عنوان - المفكرة</value>
   </data>
+  <data name="MonitorsOneCanvas" xml:space="preserve">
+    <value>صورة واحدة بترتيبها على المكتب</value>
+  </data>
+  <data name="MonitorsTrackEach" xml:space="preserve">
+    <value>مسار فيديو لكل شاشة</value>
+  </data>
+  <data name="CanvasOwnSize" xml:space="preserve">
+    <value>حجمها الأصلي</value>
+  </data>
+  <data name="CanvasHeightOf" xml:space="preserve">
+    <value>بارتفاع {0} بكسل</value>
+  </data>
+  <data name="SeveralMonitorsSection" xml:space="preserve">
+    <value>عدة شاشات وHDR</value>
+  </data>
+  <data name="SeveralMonitorsLabel" xml:space="preserve">
+    <value>تسجيل كل الشاشات ينتج</value>
+  </data>
+  <data name="CanvasHeightLabel" xml:space="preserve">
+    <value>ارتفاع تلك الصورة الواحدة</value>
+  </data>
+  <data name="SeveralMonitorsHint" xml:space="preserve">
+    <value>القائمة › المزيد من التسجيل › تسجيل كل الشاشات. يرمّز المسار لكل شاشة فيديوين معًا، ويقصّ محرر الفيديو بينهما.</value>
+  </data>
+  <data name="RecordHdr" xml:space="preserve">
+    <value>تسجيل شاشة وضع HDR بصيغة HDR</value>
+  </data>
+  <data name="RecordHdrHint" xml:space="preserve">
+    <value>HEVC Main10 مع PQ إذا كانت بطاقة الرسوميات تدعم 10 بت؛ وإلا يُحوَّل إلى SDR ويذكر إشعار الحفظ ذلك. تبقى الإضافات حينها لمحرر الفيديو.</value>
+  </data>
 </root>

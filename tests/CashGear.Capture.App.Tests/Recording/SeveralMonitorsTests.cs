@@ -141,7 +141,7 @@ public sealed class SeveralMonitorsTests : IDisposable
             process.Refresh();
             var used = (process.TotalProcessorTime - cpu).TotalSeconds / watch.Elapsed.TotalSeconds / Environment.ProcessorCount * 100;
             var result = await recorder.StopAsync(ct);
-            TestContext.Current.SendDiagnosticMessage($"Encoder load: {name}: {result.EncoderName}, {used:0.0} % of the processor, {result.FramesWritten} frames written, {result.FramesDropped} dropped");
+            OverlayRecordingTests.Report($"Encoder load: {name}: {result.EncoderName}, {used:0.0} % of the processor, {result.FramesWritten} frames written, {result.FramesDropped} dropped");
             result.DropRate.Should().BeLessThan(0.05, $"{name} keeps up");
         }
     }

@@ -252,5 +252,5 @@ public sealed class WindowRecordingTests : IDisposable
         result.Note.Should().Contain("was closed");
     });
 
-    private static void Log(string line) => TestContext.Current.SendDiagnosticMessage(line);
+    private static void Log(string line) => OverlayRecordingTests.Report(line);
 }

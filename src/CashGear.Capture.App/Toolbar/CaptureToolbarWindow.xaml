@@ -61,6 +61,15 @@
         </Style>
       </ContextMenu.ItemContainerStyle>
     </ContextMenu>
+    <ContextMenu x:Key="ProfilesMenu" ItemsSource="{Binding ProfileEntries}">
+      <ContextMenu.ItemContainerStyle>
+        <Style TargetType="MenuItem">
+          <Setter Property="Header" Value="{Binding Name}" />
+          <Setter Property="Command" Value="{Binding Command}" />
+          <Setter Property="CommandParameter" Value="{Binding Parameter}" />
+        </Style>
+      </ContextMenu.ItemContainerStyle>
+    </ContextMenu>
     <Style x:Key="Glyph" TargetType="TextBlock">
       <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
       <Setter Property="FontSize" Value="15" />
@@ -131,7 +140,8 @@
     <Button Command="{Binding Tray.RepeatLastCaptureCommand}" ToolTip="{Binding RepeatTip}" AutomationProperties.Name="{x:Static r:ToolbarText.RepeatLastCapture}">
       <TextBlock Text="&#xE8EE;" Style="{StaticResource Glyph}" />
     </Button>
-    <Button Command="{Binding Tray.ToggleRecordingCommand}" ToolTip="{Binding RecordTip}" AutomationProperties.Name="{x:Static r:ToolbarText.RecordScreen}">
+    <Button x:Name="RecordButton" Command="{Binding Tray.ToggleRecordingCommand}" ToolTip="{Binding RecordTip}" AutomationProperties.Name="{x:Static r:ToolbarText.RecordScreen}"
+            AutomationProperties.HelpText="{x:Static r:ToolbarText.RecordProfilesHelp}" MouseRightButtonUp="OnProfiles">
       <Ellipse Width="13" Height="13" Fill="{p:Chrome Record}" />
     </Button>
     <Button x:Name="DelayButton" Click="OnDelay" ToolTip="{x:Static r:ToolbarText.CaptureDelay}" AutomationProperties.Name="{x:Static r:ToolbarText.CaptureDelay}">

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using CashGear.Capture.App.Hosting;
 using CashGear.Capture.App.Hotkeys;
@@ -14,6 +15,7 @@ using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Selection;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Licensing;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.App.Recording;
@@ -50,6 +52,8 @@ public sealed partial class RecordingController
     private readonly HotkeyRegistrar? _hotkeys;
     private readonly OutputWorkflow? _outputs;
     private readonly IAppStateStore? _state;
+    private readonly IFeatureGate _features;
+    private CancellationTokenSource? _stopWatch;
     private RecordingToolbarWindow? _toolbar;
     private DrawingViewModel? _drawing;
     private DrawingLayerWindow? _layer;
@@ -76,8 +80,10 @@ public sealed partial class RecordingController
         IKeyboardState? keyboard = null,
         HotkeyRegistrar? hotkeys = null,
         OutputWorkflow? outputs = null,
-        IAppStateStore? state = null)
+        IAppStateStore? state = null,
+        IFeatureGate? features = null)
     {
+        _features = features ?? FeatureGate.Open;
         _state = state;
         _hotkeys = hotkeys;
         _outputs = outputs;
@@ -116,6 +122,15 @@ public sealed partial class RecordingController
     /// <summary>Recording started, paused, resumed or stopped (raised on any thread).</summary>
     public event EventHandler? StateChanged;
 
+    /// <summary>Whether a program is running, by its file name (tests: one that closes on cue).</summary>
+    internal Func<string, bool> IsAppRunning { get; set; } = name =>
+    {
+        var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(name));
+        var running = processes.Length > 0;
+        Array.ForEach(processes, p => p.Dispose());
+        return running;
+    };
+
     /// <summary>Starts a recording, or stops the one running (the hotkey and the tray item do this).</summary>
     public Task ToggleAsync(CancellationToken ct = default) => _recorder.IsRecording ? StopAsync() : StartAsync(ct);
 
@@ -141,8 +156,12 @@ public sealed partial class RecordingController
         }
     }
 
-    public async Task StartAsync(CancellationToken ct = default)
+    public Task StartAsync(CancellationToken ct = default) => StartAsync(new RecordingPlan(), ct);
+
+    /// <summary>Starts a recording as <paramref name="plan"/> says; what it doesn't say comes from its profile and Settings.</summary>
+    public async Task StartAsync(RecordingPlan plan, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(plan);
         if (_recorder.IsRecording)
         {
             return;
@@ -161,14 +180,29 @@ public sealed partial class RecordingController
         }
 
         var current = _settings.Current;
+        var pro = _features.IsEnabled(ProFeature.RecordingPro);
+        var profile = pro ? current.RecordingProfiles.Find(plan.ProfileId) : null;
+        if (plan.ProfileId is { } asked && profile is null && pro)
+        {
+            _notifier.Notify(RecordingText.CouldNotStart, RecordingText.NoSuchProfile(asked), NotificationKind.Error);
+            return;
+        }
+
+        current = profile?.Apply(current) ?? current;
+        var kind = plan.Area ?? profile?.Area ?? RecordingAreaKind.Ask;
+        if (kind == RecordingAreaKind.AllMonitors && !pro)
+        {
+            kind = RecordingAreaKind.Ask;
+        }
+
         try
         {
-            if (await PickAreaAsync(current, ct).ConfigureAwait(false) is not { } target)
+            if (await PickTargetAsync(kind, plan, current, ct).ConfigureAwait(false) is not { } target)
             {
-                return; // cancelled
+                return; // cancelled, or said why
             }
 
-            var (monitor, area, title) = target;
+            var (monitor, area, title, window, others) = target;
             if (area.Width < MinSize || area.Height < MinSize)
             {
                 _notifier.Notify(RecordingText.Recording, RecordingText.TooSmall(area.Width, area.Height), NotificationKind.Warning);
@@ -176,6 +210,10 @@ public sealed partial class RecordingController
             }
 
             var recording = current.Recording;
+            var monitors = others.Count == 0
+                ? null
+                : new MonitorsTarget([.. others.Select(m => current.Capture.Hdr == HdrCapture.Auto ? m : m with { Hdr = null })], recording.Monitors, recording.CanvasHeight);
+            var stop = plan.Stop;
             var options = new RecordingOptions(
                 monitor,
                 area,
@@ -196,15 +234,25 @@ public sealed partial class RecordingController
                 recording.MicrophoneProcessing,
                 recording.NormalizeLoudness,
                 current.Overlays,
-                Hdr: current.Capture.Hdr == HdrCapture.Auto ? monitor.Hdr : null);
+                Hdr: current.Capture.Hdr == HdrCapture.Auto ? monitor.Hdr : null,
+                Window: window,
+                Monitors: monitors,
+                StartAt: plan.StartAt,
+                StopAfter: stop?.After,
+                HdrVideo: pro && recording.HdrVideo,
+                Look: profile?.Look);
             await _recorder.StartAsync(options, ct).ConfigureAwait(false);
+            WatchForStop(stop);
             if (recording.PushToTalk is { } talk && HotkeyGesture.TryParse(talk, out var key) && _recorder.Sound.HasFlag(RecordingSound.Microphone))
             {
                 _pushToTalk = new PushToTalk(_recorder, key, _keyboard, _time);
             }
 
-            await _ui.InvokeAsync(() => ShowToolbar(monitor, area, current)).ConfigureAwait(false);
-            WarnAboutHiddenWindows(area);
+            await _ui.InvokeAsync(() => ShowToolbar(monitor, area, current, drawingLayer: window is null)).ConfigureAwait(false);
+            if (window is null)
+            {
+                WarnAboutHiddenWindows(area);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -231,6 +279,59 @@ public sealed partial class RecordingController
         }
     }
 
+    /// <summary>
+    /// Until the recording ends: looks at its length, the clock and the app it waits for, and stops it. The length is
+    /// looked at often, and the recorder cuts the video at exactly that length however late the stop comes.
+    /// </summary>
+    private void WatchForStop(RecordingStop? stop)
+    {
+        _stopWatch?.Cancel();
+        _stopWatch = null;
+        if (stop is null)
+        {
+            return;
+        }
+
+        var watch = new CancellationTokenSource();
+        _stopWatch = watch;
+        if (stop.AppClosed is { } app && !IsAppRunning(app))
+        {
+            _notifier.Notify(RecordingText.Recording, RecordingText.AppNotRunningYet(app), NotificationKind.Info);
+        }
+
+        _ = Task.Run(async () =>
+        {
+            var seen = stop.AppClosed is { } name && IsAppRunning(name);
+            var nextAppCheck = _time.GetTimestamp();
+            try
+            {
+                while (_recorder.IsRecording)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(20), _time, watch.Token).ConfigureAwait(false);
+                    var due = (stop.After is { } after && _recorder.Elapsed >= after)
+                        || (stop.At is { } at && _time.GetLocalNow() >= at);
+                    if (!due && stop.AppClosed is { } appName && _time.GetElapsedTime(nextAppCheck) >= TimeSpan.FromSeconds(1))
+                    {
+                        nextAppCheck = _time.GetTimestamp();
+                        var running = IsAppRunning(appName);
+                        due = seen && !running;
+                        seen |= running;
+                    }
+
+                    if (due)
+                    {
+                        await StopAsync().ConfigureAwait(false);
+                        return;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // it was stopped by hand
+            }
+        });
+    }
+
     /// <summary>Stops the recording (if any), saves it and tells the user.</summary>
     public async Task StopAsync()
     {
@@ -240,6 +341,8 @@ public sealed partial class RecordingController
         }
 
         _stopping = true;
+        _stopWatch?.Cancel();
+        _stopWatch = null;
         try
         {
             await _ui.InvokeAsync(CloseToolbar).ConfigureAwait(false);
@@ -364,27 +467,86 @@ public sealed partial class RecordingController
         duration.TotalHours >= 1 ? duration.ToString(@"h\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture)
             : duration.ToString(@"m\:ss", System.Globalization.CultureInfo.InvariantCulture);
 
+    /// <summary>What a recording records: its monitor, the area (a window: the recording's size), a title for its name, and what else is in it.</summary>
+    private readonly record struct RecordingTarget(MonitorInfo Monitor, PixelRect Area, string? Title, WindowTarget? Window, IReadOnlyList<MonitorInfo> Others);
+
+    /// <summary>What to record, as <paramref name="kind"/> says: asked for, or found without asking.</summary>
+    private async Task<RecordingTarget?> PickTargetAsync(RecordingAreaKind kind, RecordingPlan plan, AppSettings current, CancellationToken ct)
+    {
+        var displays = _monitors.GetMonitors();
+        var primary = displays.FirstOrDefault(m => m.IsPrimary) ?? displays[0];
+        switch (kind)
+        {
+            case RecordingAreaKind.Monitor:
+                var monitor = displays.FirstOrDefault(m => string.Equals(m.DeviceName, plan.Monitor, StringComparison.OrdinalIgnoreCase)) ?? primary;
+                return Whole(monitor, []);
+
+            case RecordingAreaKind.AllMonitors:
+                return Whole(primary, [.. displays.Where(m => m != primary)]);
+
+            case RecordingAreaKind.Window when plan.WindowHandle != 0 || plan.WindowTitle is not null:
+                var windows = _windows.GetVisibleWindows();
+                var found = windows.FirstOrDefault(w => w.Handle == (nint)plan.WindowHandle)
+                    ?? windows.FirstOrDefault(w => string.Equals(w.Title, plan.WindowTitle, StringComparison.CurrentCultureIgnoreCase))
+                    ?? windows.FirstOrDefault(w => plan.WindowTitle is { } title && w.Title.Contains(title, StringComparison.CurrentCultureIgnoreCase));
+                if (found is null)
+                {
+                    _notifier.Notify(RecordingText.CouldNotStart, RecordingText.NoSuchWindow(plan.WindowTitle ?? string.Empty), NotificationKind.Error);
+                    return null;
+                }
+
+                return OfWindow(found, displays);
+        }
+
+        return await PickAreaAsync(kind == RecordingAreaKind.Window ? SelectionMode.WindowOnly : SelectionMode.RegionOrWindow, current, displays, ct).ConfigureAwait(false);
+
+        static RecordingTarget Whole(MonitorInfo monitor, IReadOnlyList<MonitorInfo> others)
+        {
+            var (width, height) = EncoderPresets.EvenSize(monitor.Bounds.Width, monitor.Bounds.Height);
+            return new RecordingTarget(monitor, monitor.Bounds with { Width = width, Height = height }, null, null, others);
+        }
+    }
+
+    private RecordingTarget? OfWindow(WindowInfo window, IReadOnlyList<MonitorInfo> displays)
+    {
+        if (window.IsMinimized)
+        {
+            _notifier.Notify(RecordingText.CouldNotStart, RecordingText.WindowIsMinimized(window.Title), NotificationKind.Warning);
+            return null;
+        }
+
+        var bounds = window.Bounds;
+        var centre = new PixelPoint(bounds.X + (bounds.Width / 2), bounds.Y + (bounds.Height / 2));
+        var monitor = displays.FirstOrDefault(m => m.Bounds.Contains(centre)) ?? displays.MaxBy(m => m.Bounds.Intersect(bounds).Area) ?? displays[0];
+        var (width, height) = EncoderPresets.EvenSize(bounds.Width, bounds.Height);
+        return new RecordingTarget(monitor, bounds with { Width = width, Height = height }, window.Title, new WindowTarget(window.Handle, window.Title), []);
+    }
+
     /// <summary>
-    /// The area to record and its monitor. The overlay's rectangle (or clicked window or monitor) is limited to the
-    /// monitor holding its centre, since Windows.Graphics.Capture records one monitor at a time.
+    /// The area to record and its monitor, picked on the frozen screen. A rectangle (or a clicked monitor) is limited to
+    /// the monitor holding its centre, since an area is of one monitor; a clicked window is recorded by itself.
     /// </summary>
-    private async Task<(MonitorInfo Monitor, PixelRect Area, string? Title)?> PickAreaAsync(AppSettings current, CancellationToken ct)
+    private async Task<RecordingTarget?> PickAreaAsync(SelectionMode mode, AppSettings current, IReadOnlyList<MonitorInfo> displays, CancellationToken ct)
     {
         using var hidden = await _ownWindows.HideAsync().ConfigureAwait(false);
         await Task.Delay(TimeSpan.FromMilliseconds(current.Capture.HideDelayMs), _time, ct).ConfigureAwait(false);
 
-        var displays = _monitors.GetMonitors();
         var windows = _windows.GetVisibleWindows();
         RegionSelectionResult? selection;
         using (var frozen = await _capture.CaptureAllMonitorsAsync(ct).ConfigureAwait(false))
         {
             selection = await _ui.InvokeAsync(
-                () => _regionSelector.SelectAsync(frozen, displays, windows, SelectionMode.RegionOrWindow, ct)).ConfigureAwait(false);
+                () => _regionSelector.SelectAsync(frozen, displays, windows, mode, ct)).ConfigureAwait(false);
         }
 
         if (selection is null)
         {
             return null;
+        }
+
+        if (selection.Window is { } window)
+        {
+            return OfWindow(window, displays);
         }
 
         var bounds = selection.Bounds;
@@ -394,7 +556,7 @@ public sealed partial class RecordingController
             ?? displays[0];
         var area = bounds.Intersect(monitor.Bounds);
         var (width, height) = EncoderPresets.EvenSize(area.Width, area.Height);
-        return (monitor, area with { Width = width, Height = height }, selection.Window?.Title);
+        return new RecordingTarget(monitor, area with { Width = width, Height = height }, null, null, []);
     }
 
     /// <summary>The capture folder and file-name template (kind "recording"), made unique, with .mp4.</summary>
@@ -413,16 +575,22 @@ public sealed partial class RecordingController
         return path;
     }
 
-    private void ShowToolbar(MonitorInfo monitor, PixelRect area, AppSettings current)
+    private void ShowToolbar(MonitorInfo monitor, PixelRect area, AppSettings current, bool drawingLayer = true)
     {
         CloseToolbar();
 
-        // The drawing layer covers the recorded area for the whole recording (letting the mouse through until the pen is on).
-        var drawing = new DrawingViewModel(current.Overlays.DrawingSettings);
-        drawing.PropertyChanged += OnDrawingChanged;
-        _drawing = drawing;
-        _layer = new DrawingLayerWindow(drawing, area);
-        _layer.Show();
+        // The drawing layer covers the recorded area for the whole recording (letting the mouse through until the pen is
+        // on). A window's recording has none: another window isn't in its pictures.
+        DrawingViewModel? drawing = null;
+        if (drawingLayer)
+        {
+            drawing = new DrawingViewModel(current.Overlays.DrawingSettings);
+            drawing.PropertyChanged += OnDrawingChanged;
+            _drawing = drawing;
+            _layer = new DrawingLayerWindow(drawing, area);
+            _layer.Show();
+        }
+
         var viewModel = new RecordingToolbarViewModel(_recorder, TogglePause, () => _ = StopAsync(), _pushToTalk, drawing);
         _toolbar = new RecordingToolbarWindow(viewModel, current.Appearance.Theme, monitor.WorkArea);
         _toolbar.Show();

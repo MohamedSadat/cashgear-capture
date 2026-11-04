@@ -114,6 +114,12 @@ public sealed class EnumChoicesConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
 }
 
+/// <summary>A canvas height offered: 0 keeps the monitors' own size.</summary>
+public sealed record CanvasHeightChoice(int Value, string Label)
+{
+    public override string ToString() => Label;
+}
+
 /// <summary>Friendly names for the enums shown in the settings window.</summary>
 public sealed class EnumLabelConverter : IValueConverter
 {
@@ -135,6 +141,19 @@ public sealed class EnumLabelConverter : IValueConverter
         CaptureBackend.Auto => SettingsText.BackendAuto,
         CaptureBackend.Wgc => "Windows.Graphics.Capture",
         CaptureBackend.Gdi => SettingsText.BackendGdi,
+        Core.Recording.SeveralMonitors.OneCanvas => SettingsText.MonitorsOneCanvas,
+        Core.Recording.SeveralMonitors.TrackEach => SettingsText.MonitorsTrackEach,
+        Core.Recording.RecordingAreaKind.Ask => RecordingText.AreaAsk,
+        Core.Recording.RecordingAreaKind.Monitor => RecordingText.AreaMonitor,
+        Core.Recording.RecordingAreaKind.AllMonitors => RecordingText.AreaAllMonitors,
+        Core.Recording.RecordingAreaKind.Window => RecordingText.AreaWindow,
+        CashGear.Capture.App.Recording.ScheduleStop.ByHand => RecordingText.StopByHand,
+        CashGear.Capture.App.Recording.ScheduleStop.AfterLength => RecordingText.StopAfterLength,
+        CashGear.Capture.App.Recording.ScheduleStop.AtTime => RecordingText.StopAtTime,
+        CashGear.Capture.App.Recording.ScheduleStop.WhenAppCloses => RecordingText.StopWhenAppCloses,
+        WebcamLiveBackground.None => OverlaysText.LiveBackgroundNone,
+        WebcamLiveBackground.Blur => OverlaysText.LiveBackgroundBlur,
+        WebcamLiveBackground.Remove => OverlaysText.LiveBackgroundRemove,
         HdrCapture.Auto => SettingsText.HdrAuto,
         HdrCapture.Off => SettingsText.HdrOff,
         FullScreenOutput.AllMonitors => SettingsText.FullScreenAll,

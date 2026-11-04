@@ -159,4 +159,10 @@
   <data name="HdrKeepsOverlaysApart" xml:space="preserve">
     <value>يُبقي تسجيل HDR هذا النقرات والمفاتيح وكاميرا الويب منفصلة ليستخدمها محرر الفيديو، لأنها تُرسم بنطاق SDR.</value>
   </data>
+  <data name="WebcamBackgroundNotLive" xml:space="preserve">
+    <value>لم تُعالج خلفية كاميرا الويب في هذا التسجيل ({0}). يمكن لمحرر الفيديو أن يعالجها لاحقًا.</value>
+  </data>
+  <data name="WebcamBackgroundFellBehind" xml:space="preserve">
+    <value>لا تستطيع بطاقة الرسوميات مواكبة خلفية كاميرا الويب، لذا تظهر الكاميرا الآن كما هي. يمكن لمحرر الفيديو أن يعالجها لاحقًا.</value>
+  </data>
 </root>

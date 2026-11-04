@@ -15,7 +15,8 @@ using AlphaMode = Vortice.DCommon.AlphaMode;
 namespace CashGear.Capture.Overlays.Rendering;
 
 /// <summary>A webcam picture to draw: top-down BGRA rows of <c>Width * 4</c> bytes; a new <see cref="Version"/> means new pixels.</summary>
-public sealed record WebcamPicture(int Width, int Height, byte[] Pixels, long Version);
+/// <param name="Premultiplied">Its alpha means something: what is behind the person was removed. A camera's own leaves alpha undefined.</param>
+public sealed record WebcamPicture(int Width, int Height, byte[] Pixels, long Version, bool Premultiplied = false);
 
 /// <summary>
 /// Draws the overlays onto captured pictures on the GPU with Direct2D, on the same D3D11 device that captured them:
@@ -45,6 +46,7 @@ public sealed class OverlayCompositor : IDisposable
     private ID2D1Geometry? _webcamShape;
     private (bool Circle, System.Drawing.RectangleF Bounds, float Corner) _webcamShapeOf;
     private ID2D1Bitmap1? _webcam;
+    private bool _webcamPremultiplied;
     private long _webcamVersion = -1;
     private readonly GradientStop[] _stops = new GradientStop[3];
     private CachedGradient? _halo;
@@ -298,10 +300,11 @@ public sealed class OverlayCompositor : IDisposable
     {
         if (picture.Version != _webcamVersion || _webcam is null)
         {
-            if (_webcam is null || _webcam.PixelSize.Width != picture.Width || _webcam.PixelSize.Height != picture.Height)
+            if (_webcam is null || _webcam.PixelSize.Width != picture.Width || _webcam.PixelSize.Height != picture.Height || _webcamPremultiplied != picture.Premultiplied)
             {
                 _webcam?.Dispose();
-                _webcam = Upload(picture.Width, picture.Height, picture.Pixels, AlphaMode.Ignore); // cameras leave alpha undefined
+                _webcam = Upload(picture.Width, picture.Height, picture.Pixels, picture.Premultiplied ? AlphaMode.Premultiplied : AlphaMode.Ignore); // cameras leave alpha undefined
+                _webcamPremultiplied = picture.Premultiplied;
             }
             else
             {

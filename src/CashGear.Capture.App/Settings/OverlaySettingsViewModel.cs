@@ -50,6 +50,17 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
 
     public ObservableCollection<CameraChoice> Cameras { get; } = [new CameraChoice(null, OverlaysText.FirstCamera)];
 
+    /// <summary>A second camera to record as its own track: none, or one of the cameras.</summary>
+    public ObservableCollection<CameraChoice> SecondCameras { get; } = [new CameraChoice(null, OverlaysText.NoSecondCamera)];
+
+    public IReadOnlyList<WebcamLiveBackground> LiveBackgrounds { get; } = Enum.GetValues<WebcamLiveBackground>();
+
+    [ObservableProperty]
+    private WebcamLiveBackground _webcamLiveBackground;
+
+    [ObservableProperty]
+    private CameraChoice? _secondCamera;
+
     public IReadOnlyList<SizeChoice> WebcamSizes { get; } = [new(640, 360), new(640, 480), new(1280, 720), new(1920, 1080)];
 
     public IReadOnlyList<int> WebcamRates { get; } = [15, 24, 30, 60];
@@ -125,6 +136,10 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
         foreach (var camera in found)
         {
             Cameras.Add(new CameraChoice(camera.Id, camera.Name));
+            if (SecondCameras.All(c => c.Id != camera.Id))
+            {
+                SecondCameras.Add(new CameraChoice(camera.Id, camera.Name));
+            }
         }
 
         Camera = CameraFor(chosen);
@@ -166,6 +181,23 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
         {
             known = new CameraChoice(id, OverlaysText.CameraNotConnected);
             Cameras.Add(known);
+        }
+
+        return known;
+    }
+
+    private CameraChoice SecondChoice(string? id)
+    {
+        if (id is null)
+        {
+            return SecondCameras[0];
+        }
+
+        var known = SecondCameras.FirstOrDefault(c => c.Id == id);
+        if (known is null)
+        {
+            known = new CameraChoice(id, OverlaysText.CameraNotConnected);
+            SecondCameras.Add(known);
         }
 
         return known;
@@ -323,6 +355,8 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
         WebcamBorderColor = Choice(webcam.BorderColor);
         WebcamBorderWidth = webcam.BorderWidth;
         WebcamMirror = webcam.Mirror;
+        WebcamLiveBackground = webcam.LiveBackground;
+        SecondCamera = SecondChoice(webcam.SecondDevice);
         var pen = s.DrawingSettings;
         PenColor = Choice(pen.Color);
         PenWidth = pen.Width;
@@ -379,6 +413,8 @@ public sealed partial class OverlaySettingsViewModel : ObservableObject
                 BorderColor = WebcamBorderColor?.Value ?? WebcamSettings.DefaultBorderColor,
                 BorderWidth = (int)Math.Round(WebcamBorderWidth),
                 Mirror = WebcamMirror,
+                LiveBackground = WebcamLiveBackground,
+                SecondDevice = SecondCamera?.Id,
             },
             Drawing = new DrawingSettings(PenColor?.Value ?? DrawingSettings.DefaultColor, (int)Math.Round(PenWidth), Math.Round(PenFade)),
         };

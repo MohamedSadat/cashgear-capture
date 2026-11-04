@@ -202,4 +202,11 @@
     <value>This HDR recording keeps the clicks, the keys and the webcam apart, for the video editor: they are drawn in SDR.</value>
     <comment>Saved notification.</comment>
   </data>
+  <data name="WebcamBackgroundNotLive" xml:space="preserve">
+    <value>The webcam's background isn't done in this recording ({0}). The video editor can still do it.</value>
+    <comment>{0} the reason.</comment>
+  </data>
+  <data name="WebcamBackgroundFellBehind" xml:space="preserve">
+    <value>The graphics card can't keep up with the webcam's background, so the webcam now shows as it is. The video editor can still do it.</value>
+  </data>
 </root>

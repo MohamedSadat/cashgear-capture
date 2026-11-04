@@ -281,4 +281,24 @@
     <value>AMD (HEVC)</value>
     <comment>An encoder's name.</comment>
   </data>
+  <data name="ProfileTutorial" xml:space="preserve">
+    <value>Tutorial</value>
+    <comment>A built-in recording profile.</comment>
+  </data>
+  <data name="ProfileMeeting" xml:space="preserve">
+    <value>Meeting</value>
+    <comment>A built-in recording profile.</comment>
+  </data>
+  <data name="ProfileBugReport" xml:space="preserve">
+    <value>Bug report</value>
+    <comment>A built-in recording profile.</comment>
+  </data>
+  <data name="RecordingOptionNeedsValue" xml:space="preserve">
+    <value>{0} needs a value.</value>
+    <comment>Command line. {0} an option such as --duration.</comment>
+  </data>
+  <data name="RecordingOptionBad" xml:space="preserve">
+    <value>{0} can't be "{1}".</value>
+    <comment>Command line. {0} an option, {1} what was given.</comment>
+  </data>
 </root>

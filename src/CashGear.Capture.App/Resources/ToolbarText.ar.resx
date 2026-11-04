@@ -135,4 +135,7 @@
   <data name="WithHotkey" xml:space="preserve">
     <value>{0} ({1})</value>
   </data>
+  <data name="RecordProfilesHelp" xml:space="preserve">
+    <value>يعرض Shift+F10 أو النقر بالزر الأيمن ملفات تعريف التسجيل.</value>
+  </data>
 </root>

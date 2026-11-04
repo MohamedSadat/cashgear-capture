@@ -323,4 +323,28 @@
     <value>The arrow keys move it (with Shift, ten times as far).</value>
     <comment>help text of the webcam placement preview</comment>
   </data>
+  <data name="LiveBackgroundNone" xml:space="preserve">
+    <value>As it is</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="LiveBackgroundBlur" xml:space="preserve">
+    <value>Blurred</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="LiveBackgroundRemove" xml:space="preserve">
+    <value>Removed</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="LiveBackgroundLabel" xml:space="preserve">
+    <value>Behind the person, while recording</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="SecondCameraLabel" xml:space="preserve">
+    <value>A second camera, as its own track</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="NoSecondCamera" xml:space="preserve">
+    <value>None</value>
+    <comment>Choice.</comment>
+  </data>
 </root>

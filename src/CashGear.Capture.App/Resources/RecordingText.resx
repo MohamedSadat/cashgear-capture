@@ -326,4 +326,282 @@
     <value>Mute microphone</value>
     <comment>screen reader: the Mute box next to Microphone in the Sound panel</comment>
   </data>
+  <data name="ScheduleTitle" xml:space="preserve">
+    <value>Scheduled recording</value>
+    <comment>Notification title.</comment>
+  </data>
+  <data name="ScheduleMissed" xml:space="preserve">
+    <value>The recording set for {0} wasn't made: the app or the PC wasn't running then.</value>
+    <comment>{0} a date and time.</comment>
+  </data>
+  <data name="ScheduleBusy" xml:space="preserve">
+    <value>A recording was running at the time set, so the scheduled one wasn't started.</value>
+  </data>
+  <data name="ScheduledFor" xml:space="preserve">
+    <value>A recording will start at {0}.</value>
+    <comment>{0} a date and time.</comment>
+  </data>
+  <data name="CancelScheduled" xml:space="preserve">
+    <value>Cancel the Recording at {0}</value>
+    <comment>Tray item. {0} a time.</comment>
+  </data>
+  <data name="NoSuchProfile" xml:space="preserve">
+    <value>There is no recording profile called "{0}".</value>
+  </data>
+  <data name="NoSuchWindow" xml:space="preserve">
+    <value>No open window is called "{0}".</value>
+  </data>
+  <data name="WindowIsMinimized" xml:space="preserve">
+    <value>"{0}" is minimized: restore it, then record it.</value>
+  </data>
+  <data name="AppNotRunningYet" xml:space="preserve">
+    <value>{0} isn't running yet: the recording stops once it has run and closed.</value>
+    <comment>{0} a program file.</comment>
+  </data>
+  <data name="TargetMonitor" xml:space="preserve">
+    <value>Monitor {0} ({1})</value>
+    <comment>{0} a number, {1} its name.</comment>
+  </data>
+  <data name="TargetAllMonitors" xml:space="preserve">
+    <value>All monitors</value>
+  </data>
+  <data name="TargetWindow" xml:space="preserve">
+    <value>Window: {0}</value>
+    <comment>{0} a window title.</comment>
+  </data>
+  <data name="AsSettingsAre" xml:space="preserve">
+    <value>As in Settings</value>
+    <comment>Not a profile: the settings as they are.</comment>
+  </data>
+  <data name="ScheduleButton" xml:space="preserve">
+    <value>_Schedule</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="RecordNowButton" xml:space="preserve">
+    <value>_Record Now</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="BadTime" xml:space="preserve">
+    <value>"{0}" isn't a time. Type it as 14:30.</value>
+  </data>
+  <data name="BadLength" xml:space="preserve">
+    <value>"{0}" isn't a length. Type it as 00:30:00, for hours, minutes and seconds.</value>
+  </data>
+  <data name="NoAppGiven" xml:space="preserve">
+    <value>Type the program whose closing stops the recording, such as notepad.exe.</value>
+  </data>
+  <data name="ScheduleWindowTitle" xml:space="preserve">
+    <value>Schedule a Recording</value>
+    <comment>Window title.</comment>
+  </data>
+  <data name="ScheduleWhat" xml:space="preserve">
+    <value>_What to record:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ScheduleWhatName" xml:space="preserve">
+    <value>What to record</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ScheduleProfile" xml:space="preserve">
+    <value>_Profile:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ScheduleProfileName" xml:space="preserve">
+    <value>Profile</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ScheduleStartAt" xml:space="preserve">
+    <value>Start _at:</value>
+    <comment>Check box.</comment>
+  </data>
+  <data name="ScheduleStartTimeName" xml:space="preserve">
+    <value>Start time</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ScheduleStop" xml:space="preserve">
+    <value>S_top:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ScheduleStopName" xml:space="preserve">
+    <value>How it stops</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ScheduleLengthName" xml:space="preserve">
+    <value>Length, as hours, minutes and seconds</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ScheduleStopTimeName" xml:space="preserve">
+    <value>Stop time</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ScheduleAppName" xml:space="preserve">
+    <value>The program whose closing stops it</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ScheduleAppHelp" xml:space="preserve">
+    <value>Its file name, such as notepad.exe.</value>
+    <comment>Tooltip.</comment>
+  </data>
+  <data name="ScheduleHint" xml:space="preserve">
+    <value>The PC has to be on and the app running at that time. Times are read as the next one to come.</value>
+  </data>
+  <data name="StopByHand" xml:space="preserve">
+    <value>When I stop it</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="StopAfterLength" xml:space="preserve">
+    <value>After a length</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="StopAtTime" xml:space="preserve">
+    <value>At a time</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="StopWhenAppCloses" xml:space="preserve">
+    <value>When a program closes</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="AreaAsk" xml:space="preserve">
+    <value>Ask each time</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="AreaMonitor" xml:space="preserve">
+    <value>The primary monitor</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="AreaAllMonitors" xml:space="preserve">
+    <value>All monitors</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="AreaWindow" xml:space="preserve">
+    <value>A window</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="LookAsEditor" xml:space="preserve">
+    <value>As the editor has it</value>
+    <comment>Not a look: the editor's own default.</comment>
+  </data>
+  <data name="NewProfileName" xml:space="preserve">
+    <value>New profile</value>
+  </data>
+  <data name="ProfileCopyName" xml:space="preserve">
+    <value>{0} (copy)</value>
+    <comment>{0} a profile's name.</comment>
+  </data>
+  <data name="ProfilesWindowTitle" xml:space="preserve">
+    <value>Recording Profiles</value>
+    <comment>Window title.</comment>
+  </data>
+  <data name="ProfilesListName" xml:space="preserve">
+    <value>Profiles</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ProfileAdd" xml:space="preserve">
+    <value>_Add</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="ProfileDuplicate" xml:space="preserve">
+    <value>D_uplicate</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="ProfileDelete" xml:space="preserve">
+    <value>_Delete</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="ProfileName" xml:space="preserve">
+    <value>_Name:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ProfileNameName" xml:space="preserve">
+    <value>Name</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ProfileArea" xml:space="preserve">
+    <value>_Records:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ProfileAreaName" xml:space="preserve">
+    <value>What it records</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ProfileFps" xml:space="preserve">
+    <value>_Frame rate:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ProfileFpsName" xml:space="preserve">
+    <value>Frame rate</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ProfileQuality" xml:space="preserve">
+    <value>_Quality:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ProfileQualityName" xml:space="preserve">
+    <value>Quality</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ProfileTracks" xml:space="preserve">
+    <value>Sound _tracks:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ProfileTracksName" xml:space="preserve">
+    <value>Sound tracks</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ProfileKeys" xml:space="preserve">
+    <value>_Keys shown:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ProfileKeysName" xml:space="preserve">
+    <value>Keys shown</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ProfileBackground" xml:space="preserve">
+    <value>Behind the _person:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ProfileBackgroundName" xml:space="preserve">
+    <value>Behind the person, in the webcam</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ProfileLook" xml:space="preserve">
+    <value>_Look in the editor:</value>
+    <comment>Label.</comment>
+  </data>
+  <data name="ProfileLookName" xml:space="preserve">
+    <value>Look in the editor</value>
+    <comment>Screen reader name.</comment>
+  </data>
+  <data name="ProfilePointer" xml:space="preserve">
+    <value>The _pointer</value>
+    <comment>Check box.</comment>
+  </data>
+  <data name="ProfileSystemAudio" xml:space="preserve">
+    <value>S_ystem audio</value>
+    <comment>Check box.</comment>
+  </data>
+  <data name="ProfileMicrophone" xml:space="preserve">
+    <value>_Microphone</value>
+    <comment>Check box.</comment>
+  </data>
+  <data name="ProfileBurnIn" xml:space="preserve">
+    <value>Draw _overlays into the video</value>
+    <comment>Check box.</comment>
+  </data>
+  <data name="ProfileClicks" xml:space="preserve">
+    <value>_Clicks</value>
+    <comment>Check box.</comment>
+  </data>
+  <data name="ProfileWebcam" xml:space="preserve">
+    <value>_Webcam</value>
+    <comment>Check box.</comment>
+  </data>
+  <data name="PersonFinderDownloading" xml:space="preserve">
+    <value>the model that finds the person is being downloaded for next time</value>
+    <comment>The reason in WebcamBackgroundNotLive.</comment>
+  </data>
+  <data name="PersonFinderNeedsCard" xml:space="preserve">
+    <value>this PC's graphics card can't run the model that finds the person</value>
+    <comment>The reason in WebcamBackgroundNotLive.</comment>
+  </data>
 </root>

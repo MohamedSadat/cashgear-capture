@@ -21,6 +21,9 @@ public sealed class FixedSizeChoice(PixelSize size, IAsyncRelayCommand<PixelSize
     public IAsyncRelayCommand<PixelSize> Capture => capture;
 }
 
+/// <summary>An entry of the record button's menu: a profile to record with, or the way to change them.</summary>
+public sealed record ToolbarProfileEntry(string Name, System.Windows.Input.ICommand Command, object? Parameter);
+
 /// <summary>A step of the after-capture workflow in the toolbar's menu (switched on or off there), or the menu's way to Settings.</summary>
 public sealed class AfterStepChoice(string name, bool isCheckable, bool isChecked, Action<bool>? set, System.Windows.Input.ICommand? command) : ObservableObject
 {
@@ -72,6 +75,13 @@ public sealed partial class CaptureToolbarViewModel : ObservableObject
 
     /// <summary>The tray's commands, which the buttons run.</summary>
     public TrayViewModel Tray { get; }
+
+    /// <summary>The record button's menu: the profiles, and the way to change them.</summary>
+    public IReadOnlyList<ToolbarProfileEntry> ProfileEntries =>
+    [
+        .. Tray.Profiles.Select(p => new ToolbarProfileEntry(p.Name, p.Record, p.Id)),
+        new ToolbarProfileEntry(TrayText.ManageProfiles, Tray.ManageProfilesCommand, null),
+    ];
 
     /// <summary>Called by the Hide button.</summary>
     public Action? Hide { get; set; }
@@ -144,7 +154,7 @@ public sealed partial class CaptureToolbarViewModel : ObservableObject
 
     private void OnTrayChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName?.EndsWith("Hotkey", StringComparison.Ordinal) == true || e.PropertyName == nameof(TrayViewModel.RecordText))
+        if (e.PropertyName?.EndsWith("Hotkey", StringComparison.Ordinal) == true || e.PropertyName is nameof(TrayViewModel.RecordText) or nameof(TrayViewModel.Profiles))
         {
             OnPropertyChanged(string.Empty); // the tooltips
         }

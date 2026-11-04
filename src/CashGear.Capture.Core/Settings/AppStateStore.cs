@@ -30,6 +30,9 @@ public sealed record AppState
     /// <summary>The video editor's last export choices, recent projects and the last recording.</summary>
     public VideoEditorState? VideoEditor { get; init; }
 
+    /// <summary>The recording waiting for its time, so a restart keeps it.</summary>
+    public Recording.RecordingPlan? ScheduledRecording { get; init; }
+
     public const int MaxColors = 16;
 
     /// <summary>A copy with <paramref name="hex"/> first in the colour history (once).</summary>

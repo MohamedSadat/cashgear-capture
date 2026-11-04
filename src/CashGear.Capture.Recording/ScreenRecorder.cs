@@ -10,6 +10,7 @@ using CashGear.Capture.Core.Overlays;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Engine.Capture.Wgc;
+using CashGear.Capture.Inference;
 using CashGear.Capture.Interop.Native;
 using CashGear.Capture.Media;
 using CashGear.Capture.Overlays.Input;
@@ -37,7 +38,8 @@ internal sealed partial class ScreenRecorder(
     MicrophoneProcessors? processors = null,
     IWebcams? webcams = null,
     IDesktopState? desktop = null,
-    IPowerEvents? power = null) : IScreenRecorder
+    IPowerEvents? power = null,
+    ILiveSegmenters? segmenters = null) : IScreenRecorder
 {
     /// <summary>The note a recording made over Remote Desktop gets.</summary>
     public static string RemoteNote => RecordingStrings.RemoteNote;
@@ -279,8 +281,17 @@ internal sealed partial class ScreenRecorder(
                 if (camera is not null)
                 {
                     var candidates = usable.ToList();
+                    var liveBackground = overlays!.BurnIn ? overlays.WebcamSettings.LiveBackground : WebcamLiveBackground.None;
+                    Inference.IPersonSegmenter? segmenter = null;
+                    if (liveBackground != WebcamLiveBackground.None)
+                    {
+                        segmenter = segmenters?.Open(out webcamNote);
+                        webcamNote = segmenter is null ? RecordingStrings.WebcamBackgroundNotLive(webcamNote ?? RecordingStrings.WebcamsUnavailable) : webcamNote;
+                    }
+
                     parts.Webcam = new WebcamFeed(
-                        camera, clock, options.Fps, parts.Folder.Directory, format => OpenFirst(new Queue<(EncoderCandidate, EncoderProbe)>(candidates), format, options.Quality, _logger), OnWarning, loggers);
+                        camera, clock, options.Fps, parts.Folder.Directory, format => OpenFirst(new Queue<(EncoderCandidate, EncoderProbe)>(candidates), format, options.Quality, _logger), OnWarning, loggers, segmenter: segmenter, background: liveBackground);
+                    parts.Webcam.BackgroundFellBehind += (_, _) => OnWarning(RecordingStrings.WebcamBackgroundFellBehind);
                     try
                     {
                         await parts.Webcam.StartAsync(ct).ConfigureAwait(false);
@@ -292,6 +303,30 @@ internal sealed partial class ScreenRecorder(
                         parts.Webcam = null;
                         manifest = manifest with { Webcam = null };
                         parts.Folder.Save(manifest);
+                    }
+
+                    // A second camera is a track of its own, not drawn into the pictures.
+                    if (parts.Webcam is not null && overlays!.WebcamSettings.SecondDevice is { } second && webcams is not null)
+                    {
+                        var settings = overlays.WebcamSettings;
+                        var opened = await webcams.OpenAsync(second, settings.Width, settings.Height, settings.Fps, ct).ConfigureAwait(false);
+                        webcamNote = opened.Note is null ? webcamNote : string.Join(" ", new[] { webcamNote, opened.Note }.Where(n => n is not null));
+                        if (opened.Source is { } secondSource)
+                        {
+                            var feed = new WebcamFeed(secondSource, clock, options.Fps, parts.Folder.Directory, format => OpenFirst(new Queue<(EncoderCandidate, EncoderProbe)>(candidates), format, options.Quality, _logger), OnWarning, loggers, SecondWebcamFile);
+                            try
+                            {
+                                await feed.StartAsync(ct).ConfigureAwait(false);
+                                parts.SecondWebcam = feed;
+                                manifest = manifest with { ExtraVideos = [new RecordedVideo(SecondWebcamFile, RecordedTracks.SecondWebcam)] };
+                                parts.Folder.Save(manifest);
+                            }
+                            catch (Exception e) when (e is TimeoutException or InvalidOperationException or System.Runtime.InteropServices.COMException)
+                            {
+                                feed.Dispose();
+                                webcamNote = string.Join(" ", new[] { webcamNote, RecordingStrings.WebcamSentNoPicture(secondSource.Name, e.Message) }.Where(n => n is not null));
+                            }
+                        }
                     }
                 }
 
@@ -431,6 +466,9 @@ internal sealed partial class ScreenRecorder(
         }
     }
 
+    [Localizable(false)] // a file in the recording's temporary folder
+    private const string SecondWebcamFile = "webcam-2.mp4";
+
     /// <summary>The first 10-bit encoder that opens at the recording's size; null when none does.</summary>
     private VideoEncoder? OpenHdr(VideoFormat format, QualityPreset quality)
     {
@@ -514,7 +552,7 @@ internal sealed partial class ScreenRecorder(
 
     /// <summary>Where the webcam was drawn, for the metadata (an editor can place it again from its own track).</summary>
     private static MetadataWebcam Placement(WebcamSettings settings, WebcamFeed feed) => new(
-        WebcamFeed.TrackTitle, settings.Shape, settings.Size, settings.CenterX, settings.CenterY, settings.BorderColor, settings.BorderWidth, settings.Mirror, feed.Width, feed.Height);
+        WebcamFeed.TrackTitle, settings.Shape, settings.Size, settings.CenterX, settings.CenterY, settings.BorderColor, settings.BorderWidth, settings.Mirror, feed.Width, feed.Height, settings.LiveBackground);
 
     /// <summary>A track's title: "Microphone", "System audio", or the app's name when only its sound is recorded.</summary>
     [Localizable(false)] // stored in the MP4 in English: the video editor matches these titles
@@ -628,6 +666,9 @@ internal sealed partial class ScreenRecorder(
 
         public WebcamFeed? Webcam { get; set; }
 
+        /// <summary>A second camera, a track of its own.</summary>
+        public WebcamFeed? SecondWebcam { get; set; }
+
         /// <summary>The other monitors, a track each.</summary>
         public List<ScreenFeed> Screens { get; } = [];
 
@@ -640,6 +681,7 @@ internal sealed partial class ScreenRecorder(
         {
             Stream?.Dispose();
             Webcam?.Dispose();
+            SecondWebcam?.Dispose();
             Screens.ForEach(s => s.Dispose());
             Journal?.Dispose();
             Sources.ForEach(s => s.Dispose());
@@ -879,6 +921,7 @@ internal sealed partial class ScreenRecorder(
             Clock.Start();
             StartInput();
             _webcam?.StartTrack();
+            _parts.SecondWebcam?.StartTrack();
             _parts.Screens.ForEach(s => s.StartTrack());
             _videoThread = new Thread(WriteVideo) { IsBackground = true, Name = VideoThreadName, Priority = ThreadPriority.AboveNormal };
             _videoThread.Start();
@@ -1000,6 +1043,13 @@ internal sealed partial class ScreenRecorder(
                 webcam.Finish(end, timeout);
                 webcam.Dispose();
                 LogStopStep($"webcam done, {webcam.Written} frames");
+            }
+
+            if (_parts.SecondWebcam is { } secondWebcam)
+            {
+                secondWebcam.Finish(end, timeout);
+                secondWebcam.Dispose();
+                LogStopStep($"second webcam done, {secondWebcam.Written} frames");
             }
 
             foreach (var screen in _parts.Screens)
@@ -1219,7 +1269,7 @@ internal sealed partial class ScreenRecorder(
                         else if (!scene.IsEmpty)
                         {
                             // Drawn over the picture on the GPU, then read back.
-                            var camera = _webcam?.Hold(time);
+                            var camera = _webcam?.HoldDrawn(time);
                             try
                             {
                                 _stream.Compose(current, _compositor!, scene, camera?.Picture, _picture);
@@ -1872,6 +1922,13 @@ public static class RecordingServiceCollectionExtensions
         services.AddSingleton<IWebcams, MediaCaptureWebcams>();
         return services;
     }
+}
+
+/// <summary>Where a recording gets what finds the person, for a webcam's background done live.</summary>
+public interface ILiveSegmenters
+{
+    /// <summary>One to use for this recording; null, saying why, when there can be none (no model yet, no graphics card to run it).</summary>
+    Inference.IPersonSegmenter? Open(out string? problem);
 }
 
 /// <summary>What a picture stream is asked to capture.</summary>
