@@ -2142,4 +2142,220 @@
   <data name="UndoTextAnimation" xml:space="preserve">
     <value>حركة</value>
   </data>
+  <data name="CalloutsMenu" xml:space="preserve">
+    <value>التعليقات البارزة (_U)</value>
+  </data>
+  <data name="InsertBubbleMenu" xml:space="preserve">
+    <value>فقاعة كلام (_S)</value>
+  </data>
+  <data name="InsertFreehandMenu" xml:space="preserve">
+    <value>رسم حر (_F)</value>
+  </data>
+  <data name="InsertFreehandTip" xml:space="preserve">
+    <value>ارسم على المعاينة بالفأرة؛ ويلغي Esc الرسم</value>
+  </data>
+  <data name="InsertStepMenu" xml:space="preserve">
+    <value>رقم خطوة (_N)</value>
+  </data>
+  <data name="InsertSpotlightMenu" xml:space="preserve">
+    <value>بقعة ضوء (_P)</value>
+  </data>
+  <data name="InsertMagnifyMenu" xml:space="preserve">
+    <value>مكبّر (_M)</value>
+  </data>
+  <data name="InsertTemplateMenu" xml:space="preserve">
+    <value>عنوان أو شريط سفلي (_T)</value>
+  </data>
+  <data name="InsertTemplateTip" xml:space="preserve">
+    <value>إظهار القوالب بجانب المعاينة</value>
+  </data>
+  <data name="DrawFreehandNow" xml:space="preserve">
+    <value>ارسم على المعاينة. يلغي Esc الرسم.</value>
+  </data>
+  <data name="ShapeSpeechBubble" xml:space="preserve">
+    <value>فقاعة كلام</value>
+  </data>
+  <data name="ShapeFreehand" xml:space="preserve">
+    <value>رسم حر</value>
+  </data>
+  <data name="ShapeStepNumber" xml:space="preserve">
+    <value>رقم خطوة</value>
+  </data>
+  <data name="ShapeSpotlight" xml:space="preserve">
+    <value>بقعة ضوء</value>
+  </data>
+  <data name="ShapeMagnify" xml:space="preserve">
+    <value>مكبّر</value>
+  </data>
+  <data name="ShapePicture" xml:space="preserve">
+    <value>صورة</value>
+  </data>
+  <data name="UndoAddCallout" xml:space="preserve">
+    <value>إضافة تعليق بارز</value>
+  </data>
+  <data name="StepNumberLabel" xml:space="preserve">
+    <value>الرقم</value>
+  </data>
+  <data name="UndoStepNumber" xml:space="preserve">
+    <value>رقم الخطوة</value>
+  </data>
+  <data name="MagnifyZoom" xml:space="preserve">
+    <value>التكبير</value>
+  </data>
+  <data name="SpotlightDim" xml:space="preserve">
+    <value>التعتيم</value>
+  </data>
+  <data name="TemplatesTab" xml:space="preserve">
+    <value>العناوين</value>
+  </data>
+  <data name="TemplatesNote" xml:space="preserve">
+    <value>اسحب قالبًا إلى المخطط الزمني أو اضغط Enter لوضعه عند مؤشر التشغيل. تأتي ألوانها وخطوطها من هوية العلامة.</value>
+  </data>
+  <data name="TemplatesListName" xml:space="preserve">
+    <value>القوالب</value>
+  </data>
+  <data name="InsertTemplateButton" xml:space="preserve">
+    <value>إدراج</value>
+  </data>
+  <data name="InsertTemplateButtonTip" xml:space="preserve">
+    <value>وضع القالب المختار عند مؤشر التشغيل (Enter)</value>
+  </data>
+  <data name="SaveTemplateButton" xml:space="preserve">
+    <value>حفظ المحدد…</value>
+  </data>
+  <data name="SaveTemplateTip" xml:space="preserve">
+    <value>حفظ التعليقات أو القالب المحدد في مكتبتك</value>
+  </data>
+  <data name="SaveTemplateTitle" xml:space="preserve">
+    <value>حفظ كقالب</value>
+  </data>
+  <data name="MyTemplate" xml:space="preserve">
+    <value>قالبي</value>
+  </data>
+  <data name="SaveTemplateNeedsSelection" xml:space="preserve">
+    <value>حدد أولًا تعليقًا أو قالبًا على المخطط الزمني.</value>
+  </data>
+  <data name="DeleteTemplateButton" xml:space="preserve">
+    <value>حذف</value>
+  </data>
+  <data name="DeleteTemplateTip" xml:space="preserve">
+    <value>إخراج القالب المختار من مكتبتك (Delete)</value>
+  </data>
+  <data name="ExportPackButton" xml:space="preserve">
+    <value>تصدير حزمة…</value>
+  </data>
+  <data name="ExportPackTip" xml:space="preserve">
+    <value>حفظ قوالبك وملفاتها وهوية علامتك في ملف .cgpack واحد لمشاركته</value>
+  </data>
+  <data name="ImportPackButton" xml:space="preserve">
+    <value>استيراد حزمة…</value>
+  </data>
+  <data name="ImportPackTip" xml:space="preserve">
+    <value>إضافة قوالب وملفات حزمة .cgpack إلى مكتبتك</value>
+  </data>
+  <data name="PackFilter" xml:space="preserve">
+    <value>حزم القوالب|*.cgpack|كل الملفات|*.*</value>
+  </data>
+  <data name="ExportPackTitle" xml:space="preserve">
+    <value>تصدير حزمة قوالب</value>
+  </data>
+  <data name="ImportPackTitle" xml:space="preserve">
+    <value>استيراد حزمة قوالب</value>
+  </data>
+  <data name="PackName" xml:space="preserve">
+    <value>قوالبي</value>
+  </data>
+  <data name="PackFailed" xml:space="preserve">
+    <value>تعذرت قراءة الحزمة أو كتابتها: {0}</value>
+  </data>
+  <data name="TemplateSaved" xml:space="preserve">
+    <value>محفوظ</value>
+  </data>
+  <data name="TemplateBuiltIn" xml:space="preserve">
+    <value>مدمج</value>
+  </data>
+  <data name="TemplateItemName" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="TemplateTitleKind" xml:space="preserve">
+    <value>قالب</value>
+  </data>
+  <data name="UndoAddTemplate" xml:space="preserve">
+    <value>إضافة قالب</value>
+  </data>
+  <data name="UndoTemplate" xml:space="preserve">
+    <value>قالب</value>
+  </data>
+  <data name="UndoMoveTemplate" xml:space="preserve">
+    <value>نقل القالب</value>
+  </data>
+  <data name="BrandTab" xml:space="preserve">
+    <value>الهوية</value>
+  </data>
+  <data name="BrandNote" xml:space="preserve">
+    <value>الألوان والخطوط التي تأخذها كل القوالب. تغيير أحدها يغيرها جميعًا.</value>
+  </data>
+  <data name="BrandPrimary" xml:space="preserve">
+    <value>اللون الرئيسي</value>
+  </data>
+  <data name="BrandSecondary" xml:space="preserve">
+    <value>اللون الثاني</value>
+  </data>
+  <data name="BrandAccent" xml:space="preserve">
+    <value>لون التمييز</value>
+  </data>
+  <data name="BrandText" xml:space="preserve">
+    <value>لون النص</value>
+  </data>
+  <data name="BrandHeadingFont" xml:space="preserve">
+    <value>خط العناوين</value>
+  </data>
+  <data name="BrandBodyFont" xml:space="preserve">
+    <value>خط النصوص</value>
+  </data>
+  <data name="BrandLogo" xml:space="preserve">
+    <value>الشعار</value>
+  </data>
+  <data name="BrandIntro" xml:space="preserve">
+    <value>مقطع الافتتاح</value>
+  </data>
+  <data name="BrandOutro" xml:space="preserve">
+    <value>مقطع الختام</value>
+  </data>
+  <data name="BrandLook" xml:space="preserve">
+    <value>المظهر</value>
+  </data>
+  <data name="BrandUseLook" xml:space="preserve">
+    <value>استخدام مظهر الهوية</value>
+  </data>
+  <data name="BrandInsertLogo" xml:space="preserve">
+    <value>وضع الشعار عند مؤشر التشغيل</value>
+  </data>
+  <data name="BrandAddIntro" xml:space="preserve">
+    <value>إضافة الافتتاح في البداية</value>
+  </data>
+  <data name="BrandAddOutro" xml:space="preserve">
+    <value>إضافة الختام في النهاية</value>
+  </data>
+  <data name="BrandSave" xml:space="preserve">
+    <value>الاحتفاظ بها كهوية علامتي</value>
+  </data>
+  <data name="BrandUseSaved" xml:space="preserve">
+    <value>استخدام هوية علامتي</value>
+  </data>
+  <data name="BrandNoSaved" xml:space="preserve">
+    <value>لم يُحفظ بعد أي هوية علامة.</value>
+  </data>
+  <data name="BrandNoFile" xml:space="preserve">
+    <value>اختر هذا الملف للهوية أولًا.</value>
+  </data>
+  <data name="BrandPickFile" xml:space="preserve">
+    <value>اختيار ملف للهوية</value>
+  </data>
+  <data name="UndoBrand" xml:space="preserve">
+    <value>هوية العلامة</value>
+  </data>
+  <data name="UndoBrandClip" xml:space="preserve">
+    <value>إضافة من الهوية</value>
+  </data>
 </root>

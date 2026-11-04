@@ -1,5 +1,6 @@
 using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Editor.Rendering;
+using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.VideoEditor.Playback;
 using SkiaSharp;
@@ -49,6 +50,7 @@ public sealed class FrameCompositor
     private readonly Dictionary<string, PictureFile?> _stills = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, SKImage> _solids = [];
     private readonly Dictionary<string, CubeLut?> _luts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<(TemplateItem Item, BrandKit? Brand, ProjectCanvas Canvas, IReadOnlyList<AnnotationItem> Parts)> _templates = [];
     private readonly List<(object Key, SKMatrix Matrix, SKRectI Area, SKImage Image)> _kept = [];
     private (string? Clip, double Time, double Blur, SKImage? Image) _blurredScreen;
 
@@ -93,16 +95,7 @@ public sealed class FrameCompositor
         var color = place.Color ?? look.Color;
         var moment = TextAnimator.At(item, time);
         var level = (place.Opacity ?? look.Opacity) * (item.Motion?.At(time - item.Start).Opacity ?? 1) * moment.Opacity;
-        var style = new AnnotationStyle
-        {
-            Color = Color(color, EditorColors.Red),
-            StrokeWidth = (float)look.StrokeWidth,
-            Fill = look.Fill is null ? SKColors.Transparent : Color(look.Fill, SKColors.Transparent),
-            FontFamily = look.FontFamily,
-            FontSize = (float)look.FontSize,
-            Bold = look.Bold,
-            Strength = (float)look.Strength,
-        }.Normalize() with { Opacity = (float)Math.Clamp(level * item.Fade(time), 0, 1) };
+        var style = StyleFor(look with { Color = color }) with { Opacity = (float)Math.Clamp(level * item.Fade(time), 0, 1) };
         var id = new AnnotationId(0);
         var from = new SKPoint((float)place.X, (float)place.Y);
         var to = new SKPoint((float)(place.X + place.Width), (float)(place.Y + place.Height));
@@ -115,8 +108,47 @@ public sealed class FrameCompositor
             AnnotationShape.Rectangle => new RectangleAnnotation(id, style, box),
             AnnotationShape.Ellipse => new EllipseAnnotation(id, style, box),
             AnnotationShape.Highlight => new HighlightAnnotation(id, style with { Color = Color(color, EditorColors.Highlighter) }, box),
+            AnnotationShape.SpeechBubble => new SpeechBubbleAnnotation(id, style, box, new SKPoint(box.Left + (float)(item.CalloutX * box.Width), box.Top + (float)(item.CalloutY * box.Height)), item.Text.Length == 0 ? " " : item.Text),
+            AnnotationShape.Freehand => new FreehandAnnotation(id, style, FreehandPoints(item, place)),
+            AnnotationShape.StepNumber => new StepNumberAnnotation(id, style, from, item.Number),
+            AnnotationShape.Spotlight => new SpotlightAnnotation(id, style, box),
+            AnnotationShape.Magnify => Magnifier(id, style, box, item),
             _ => null,
         };
+    }
+
+    /// <summary>The style an annotation's look gives, at full opacity.</summary>
+    public static AnnotationStyle StyleFor(AnnotationLook look)
+    {
+        ArgumentNullException.ThrowIfNull(look);
+        return new AnnotationStyle
+        {
+            Color = Color(look.Color, EditorColors.Red),
+            StrokeWidth = (float)look.StrokeWidth,
+            Fill = look.Fill is null ? SKColors.Transparent : Color(look.Fill, SKColors.Transparent),
+            FontFamily = look.FontFamily,
+            FontSize = (float)look.FontSize,
+            Bold = look.Bold,
+            Strength = (float)look.Strength,
+        }.Normalize();
+    }
+
+    private static List<SKPoint> FreehandPoints(AnnotationItem item, AnnotationKeyframe place)
+    {
+        var points = new List<SKPoint>();
+        var given = item.Points ?? [];
+        for (var i = 0; i + 1 < given.Count; i += 2)
+        {
+            points.Add(new SKPoint((float)(place.X + (given[i] * place.Width)), (float)(place.Y + (given[i + 1] * place.Height))));
+        }
+
+        return points;
+    }
+
+    private static MagnifyAnnotation Magnifier(AnnotationId id, AnnotationStyle style, SKRect box, AnnotationItem item)
+    {
+        var source = new SKPoint(box.MidX, box.MidY);
+        return new MagnifyAnnotation(id, style, source, Math.Max(MagnifyAnnotation.MinRadius, Math.Min(box.Width, box.Height) / 2), new SKPoint(source.X + (float)item.CalloutX, source.Y + (float)item.CalloutY));
     }
 
     /// <summary>What an annotation covers at <paramref name="time"/> (canvas pixels): for picking it on the preview.</summary>
@@ -180,23 +212,18 @@ public sealed class FrameCompositor
             if (track.Kind == TrackKind.Annotation)
             {
                 var follows = track.MovesWithZoom && !camera.IsIdentity;
-                foreach (var item in track.Items.OfType<AnnotationItem>().Where(a => a.Covers(time)))
+                foreach (var item in track.Items.Where(a => a.Covers(time)))
                 {
-                    if (follows && AnnotationFor(item, time) is not null)
+                    if (item is TemplateItem template)
                     {
-                        canvas.Save();
-                        if (pass.Cell is { } part)
+                        foreach (var part in ExpandedOf(template, project).Where(p => p.Covers(time)))
                         {
-                            canvas.ClipRect(part);
+                            missing += DrawFollowing(canvas, project, index, part, time, pass, follows);
                         }
-
-                        canvas.Concat(in camera);
-                        missing += DrawAnnotation(canvas, project, index, item, time, pass);
-                        canvas.Restore();
                     }
-                    else
+                    else if (item is AnnotationItem annotation)
                     {
-                        missing += DrawAnnotation(canvas, project, index, item, time, pass, follows);
+                        missing += DrawFollowing(canvas, project, index, annotation, time, pass, follows);
                     }
                 }
 
@@ -562,6 +589,48 @@ public sealed class FrameCompositor
         canvas.Restore();
     }
 
+    /// <summary>An annotation, through the camera when its track moves with zooms.</summary>
+    private int DrawFollowing(SKCanvas canvas, VideoProject project, int index, AnnotationItem item, double time, Pass pass, bool follows)
+    {
+        if (!follows || AnnotationFor(item, time) is null)
+        {
+            return DrawAnnotation(canvas, project, index, item, time, pass, follows);
+        }
+
+        var camera = pass.Camera;
+        canvas.Save();
+        if (pass.Cell is { } part)
+        {
+            canvas.ClipRect(part);
+        }
+
+        canvas.Concat(in camera);
+        var missing = DrawAnnotation(canvas, project, index, item, time, pass);
+        canvas.Restore();
+        return missing;
+    }
+
+    /// <summary>What a template draws, kept while the template, the brand and the canvas stay the same.</summary>
+    private IReadOnlyList<AnnotationItem> ExpandedOf(TemplateItem item, VideoProject project)
+    {
+        foreach (var kept in _templates)
+        {
+            if (ReferenceEquals(kept.Item, item) && ReferenceEquals(kept.Brand, project.Brand) && ReferenceEquals(kept.Canvas, project.Canvas))
+            {
+                return kept.Parts;
+            }
+        }
+
+        var parts = TemplateEdits.Expand(item, project);
+        _templates.Add((item, project.Brand, project.Canvas, parts));
+        if (_templates.Count > 16)
+        {
+            _templates.RemoveAt(0);
+        }
+
+        return parts;
+    }
+
     private int DrawAnnotation(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, Pass pass, bool followsCamera = false)
     {
         var motion = item.Motion?.At(time - item.Start);
@@ -571,13 +640,28 @@ public sealed class FrameCompositor
             return 0;
         }
 
+        if (item.Shape == AnnotationShape.Picture)
+        {
+            DrawLogo(canvas, project, item, time, motion, moment);
+            return 0;
+        }
+
         if (AnnotationFor(item, time) is { } annotation)
         {
-            var context = new RenderContext(Blank, NoEffects, Sampling);
+            if (annotation is SpotlightAnnotation spotlight)
+            {
+                SpotlightAnnotation.DrawAll(canvas, [spotlight], SKRect.Create(project.Canvas.Width, project.Canvas.Height));
+                return 0;
+            }
+
+            var missing = 0;
+            using var effects = new EffectCache();
+            using var under = annotation is MagnifyAnnotation ? DrawUnder(project, trackIndex, time, pass, out missing) : null;
+            var context = new RenderContext(under ?? Blank, under is null ? NoEffects : effects, Sampling);
             if (motion is null && !moment.Moves)
             {
                 annotation.Render(canvas, context);
-                return 0;
+                return missing;
             }
 
             var bounds = annotation.Bounds;
@@ -600,10 +684,52 @@ public sealed class FrameCompositor
 
             annotation.Render(canvas, context);
             canvas.Restore();
-            return 0;
+            return missing;
         }
 
         return DrawHidden(canvas, project, trackIndex, item, time, pass, motion, followsCamera);
+    }
+
+    /// <summary>What the tracks below draw, as a picture of the canvas, for a magnifier to show (on the processor, so the preview and the export get the same).</summary>
+    private SKImage? DrawUnder(VideoProject project, int trackIndex, double time, Pass pass, out int missing)
+    {
+        missing = 0;
+        using var surface = SKSurface.Create(new SKImageInfo(project.Canvas.Width, project.Canvas.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
+        if (surface is null)
+        {
+            return null;
+        }
+
+        missing = DrawBackground(surface.Canvas, project, time, pass.Camera);
+        missing += RenderTracks(surface.Canvas, project, time, trackIndex, pass);
+        return surface.Snapshot();
+    }
+
+    /// <summary>A picture in an annotation's box, fitted, with what moves it.</summary>
+    private void DrawLogo(SKCanvas canvas, VideoProject project, AnnotationItem item, double time, MotionState? motion, TextMoment moment)
+    {
+        if (item.PictureAssetId is not { } id || project.Asset(id) is not { } asset || StillOf(asset) is not { } picture)
+        {
+            return;
+        }
+
+        var place = item.At(time);
+        var box = SKRect.Create((float)place.X, (float)place.Y, (float)place.Width, (float)place.Height);
+        var fits = Math.Min(box.Width / picture.Width, box.Height / picture.Height);
+        var (width, height) = (picture.Width * fits, picture.Height * fits);
+        var target = SKRect.Create(box.MidX - (width / 2), box.MidY - (height / 2), width, height);
+        canvas.Save();
+        if (motion is { } state)
+        {
+            canvas.Concat(MotionDrawing.Matrix(state, target, project.Canvas));
+        }
+
+        canvas.Translate(0, (float)(-moment.Lift * target.Height));
+        canvas.Scale((float)moment.Scale, (float)moment.Scale, target.MidX, target.MidY);
+        var level = (place.Opacity ?? item.Look.Opacity) * item.Fade(time) * (motion?.Opacity ?? 1) * moment.Opacity;
+        using var paint = new SKPaint { Color = SKColors.White.WithAlpha((byte)Math.Round(Math.Clamp(level, 0, 1) * 255)) };
+        canvas.DrawImage(picture.At(time - item.Start), target, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear), paint);
+        canvas.Restore();
     }
 
     /// <summary>

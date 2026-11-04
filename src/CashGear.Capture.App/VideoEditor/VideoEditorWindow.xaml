@@ -120,6 +120,7 @@
       <MenuItem Header="{x:Static r:VideoEditorText.MenuInsert}">
         <MenuItem Header="{x:Static r:VideoEditorText.InsertMediaMenu}" Command="{Binding InsertMediaCommand}" InputGestureText="Ctrl+I" ToolTip="{x:Static r:VideoEditorText.InsertMediaTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertColourMenu}" Command="{Binding InsertColourCommand}" ToolTip="{x:Static r:VideoEditorText.AddColourTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertTemplateMenu}" Command="{Binding ShowTemplatesCommand}" ToolTip="{x:Static r:VideoEditorText.InsertTemplateTip}" />
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertTextMenu}" Command="{Binding InsertTextCommand}" />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertArrowMenu}" Command="{Binding InsertArrowCommand}" />
@@ -127,6 +128,13 @@
         <MenuItem Header="{x:Static r:VideoEditorText.InsertRectangleMenu}" Command="{Binding InsertRectangleCommand}" />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertEllipseMenu}" Command="{Binding InsertEllipseCommand}" />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertHighlightMenu}" Command="{Binding InsertHighlightCommand}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.CalloutsMenu}">
+          <MenuItem Header="{x:Static r:VideoEditorText.InsertBubbleMenu}" Command="{Binding InsertBubbleCommand}" />
+          <MenuItem Header="{x:Static r:VideoEditorText.InsertFreehandMenu}" Command="{Binding InsertFreehandCommand}" ToolTip="{x:Static r:VideoEditorText.InsertFreehandTip}" />
+          <MenuItem Header="{x:Static r:VideoEditorText.InsertStepMenu}" Command="{Binding InsertStepCommand}" />
+          <MenuItem Header="{x:Static r:VideoEditorText.InsertSpotlightMenu}" Command="{Binding InsertSpotlightCommand}" />
+          <MenuItem Header="{x:Static r:VideoEditorText.InsertMagnifyMenu}" Command="{Binding InsertMagnifyCommand}" />
+        </MenuItem>
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertBlurMenu}" Command="{Binding InsertBlurCommand}" />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertPixelateMenu}" Command="{Binding InsertPixelateCommand}" />

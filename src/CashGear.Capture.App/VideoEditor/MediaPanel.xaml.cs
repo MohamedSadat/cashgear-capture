@@ -17,6 +17,10 @@ public partial class MediaPanel : UserControl
     [Localizable(false)]
     public const string TransitionFormat = "CashGear.Capture.Transition";
 
+    /// <summary>What a template's drag carries: its row (a format name, not text).</summary>
+    [Localizable(false)]
+    public const string TemplateFormat = "CashGear.Capture.Template";
+
     private Point? _pressed;
 
     public MediaPanel() => InitializeComponent();
@@ -102,6 +106,48 @@ public partial class MediaPanel : UserControl
         if (e.Key == Key.Enter && DataContext is MediaPanelViewModel panel && panel.ApplyTransitionCommand.CanExecute(null))
         {
             panel.ApplyTransitionCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private void OnTemplatePress(object sender, MouseButtonEventArgs e) =>
+        _pressed = RowAt(e.OriginalSource) is not null ? e.GetPosition(TemplateList) : null;
+
+    private void OnTemplateMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _pressed is not { } from)
+        {
+            return;
+        }
+
+        var moved = e.GetPosition(TemplateList) - from;
+        if (Math.Abs(moved.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(moved.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        _pressed = null;
+        if (RowAt(e.OriginalSource)?.DataContext is TemplateRow row)
+        {
+            DragDrop.DoDragDrop(TemplateList, new DataObject(TemplateFormat, row), DragDropEffects.Copy);
+        }
+    }
+
+    private void OnTemplateKey(object sender, KeyEventArgs e)
+    {
+        if (DataContext is not MediaPanelViewModel panel)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter && panel.InsertTemplateCommand.CanExecute(null))
+        {
+            panel.InsertTemplateCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Delete && panel.DeleteTemplateCommand.CanExecute(null))
+        {
+            panel.DeleteTemplateCommand.Execute(null);
             e.Handled = true;
         }
     }

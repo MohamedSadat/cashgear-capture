@@ -38,12 +38,16 @@ public enum ItemEdge
 [JsonDerivedType(typeof(ZoomItem), "zoom")]
 [JsonDerivedType(typeof(CaptionItem), "caption")]
 [JsonDerivedType(typeof(LayoutItem), "layout")]
+[JsonDerivedType(typeof(TemplateItem), "template")]
 public abstract record TimelineItem
 {
     public required string Id { get; init; }
 
     /// <summary>When it starts on the timeline, in seconds.</summary>
     public double Start { get; init; }
+
+    /// <summary>Items with the same group are selected, moved, cut and keyframed as one.</summary>
+    public string? Group { get; init; }
 
     [JsonIgnore]
     public abstract double Duration { get; }

@@ -76,11 +76,16 @@ public static class PlacementEdits
 
             if (track.Kind == TrackKind.Annotation)
             {
-                foreach (var item in track.Items.OfType<AnnotationItem>().Where(a => a.Covers(time)).Reverse())
+                foreach (var item in track.Items.Where(a => a.Covers(time)).Reverse())
                 {
-                    if (AnnotationEdits.HitTest(item, time, point, grip, project.Canvas) is { } on)
+                    if (item is AnnotationItem annotation && AnnotationEdits.HitTest(annotation, time, point, grip, project.Canvas) is { } on)
                     {
                         return new PreviewHit(item.Id, on);
+                    }
+
+                    if (item is TemplateItem template && TemplateEdits.Bounds(template, project, time).Contains(point))
+                    {
+                        return new PreviewHit(item.Id);
                     }
                 }
 
@@ -192,7 +197,7 @@ public static class TrackEdits
         return item switch
         {
             Clip clip => IsSound(project, clip) ? track.HasSound : track.HasPictures,
-            AnnotationItem => track.Kind == TrackKind.Annotation,
+            AnnotationItem or TemplateItem => track.Kind == TrackKind.Annotation,
             CaptionItem => track.Kind == TrackKind.Caption,
             LayoutItem => track.Kind == TrackKind.Layout,
             ZoomItem => track.Kind == TrackKind.Effect && track.Items.All(i => i is ZoomItem),

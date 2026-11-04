@@ -257,6 +257,8 @@ public static class CanvasEdits
                 {
                     Keyframes = [.. annotation.Keyframes.Select(k => k with { X = k.X * scaleX, Y = k.Y * scaleY, Width = k.Width * scaleX, Height = k.Height * scaleY })],
                     Look = annotation.Look with { FontSize = Math.Round(annotation.Look.FontSize * look, 1), StrokeWidth = Math.Round(annotation.Look.StrokeWidth * look, 2) },
+                    CalloutX = annotation.Shape == AnnotationShape.Magnify ? annotation.CalloutX * scaleX : annotation.CalloutX,
+                    CalloutY = annotation.Shape == AnnotationShape.Magnify ? annotation.CalloutY * scaleY : annotation.CalloutY,
                 },
                 Clip { Placement: { } placement } clip when height != old.Height => clip with { Placement = Scaled(placement, (double)height / old.Height) },
                 _ => item,

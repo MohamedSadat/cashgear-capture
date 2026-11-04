@@ -75,6 +75,9 @@ public static class ItemProperties
     /// </summary>
     public sealed record MotionActions(Func<double> Playhead, Action<double> Seek, Action<string, bool> SetMovesWithZoom, int Fps);
 
+    /// <summary>The installed fonts, for lists of them.</summary>
+    internal static IReadOnlyList<string> Fonts => FontFamilies.Value;
+
     private static readonly Lazy<IReadOnlyList<string>> FontFamilies =
         new(() => [.. System.Windows.Media.Fonts.SystemFontFamilies.Select(f => f.Source).Order(StringComparer.CurrentCultureIgnoreCase)]);
 
@@ -88,6 +91,12 @@ public static class ItemProperties
         AnnotationShape.Highlight => VideoEditorText.ShapeHighlight,
         AnnotationShape.Blur => VideoEditorText.ShapeBlurredArea,
         AnnotationShape.Pixelate => VideoEditorText.ShapePixelatedArea,
+        AnnotationShape.SpeechBubble => VideoEditorText.ShapeSpeechBubble,
+        AnnotationShape.Freehand => VideoEditorText.ShapeFreehand,
+        AnnotationShape.StepNumber => VideoEditorText.ShapeStepNumber,
+        AnnotationShape.Spotlight => VideoEditorText.ShapeSpotlight,
+        AnnotationShape.Magnify => VideoEditorText.ShapeMagnify,
+        AnnotationShape.Picture => VideoEditorText.ShapePicture,
         _ => shape.ToString(),
     };
 
@@ -111,6 +120,7 @@ public static class ItemProperties
             ZoomItem => VideoEditorText.ZoomTitle,
             CaptionItem => VideoEditorText.CaptionTitle,
             LayoutItem => VideoEditorText.LayoutTitle,
+            TemplateItem template => VideoEditorText.TemplateItemName(VideoEditorText.TemplateTitleKind, template.Template.Name),
             _ => VideoEditorText.ItemTitle,
         };
     }
@@ -125,6 +135,11 @@ public static class ItemProperties
         if (item is LayoutItem layout)
         {
             return ForLayout(layout, current, apply);
+        }
+
+        if (item is TemplateItem template)
+        {
+            return ForTemplate(template, current, apply);
         }
 
         if (item is AnnotationItem annotation)
@@ -612,6 +627,48 @@ public static class ItemProperties
         list.Add(new NoteParameter(VideoEditorText.BackdropNote));
     }
 
+    /// <summary>What a template's fields say, how long it lasts, and where it is.</summary>
+    private static List<EditParameter> ForTemplate(TemplateItem template, Func<VideoProject> current, Apply apply)
+    {
+        var list = new List<EditParameter>();
+        void Change<T>(T parameter, [Localizable(false)] string key, Func<TemplateItem, TemplateItem> update)
+            where T : EditParameter
+        {
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Value" && current().Find(template.Id)?.Item is TemplateItem now)
+                {
+                    apply(update(now), VideoEditorText.UndoTemplate, $"property {template.Id} {key}");
+                }
+            };
+            list.Add(parameter);
+        }
+
+        foreach (var field in template.Template.Fields ?? [])
+        {
+            var text = new TextParameter(field.Label, template.Text(field), multiline: true);
+            Change(text, field.Key, t =>
+            {
+                var values = t.Values is null ? new Dictionary<string, string>() : new Dictionary<string, string>(t.Values);
+                values[field.Key] = text.Value;
+                return t with { Values = values };
+            });
+        }
+
+        var length = new NumberParameter(VideoEditorText.ClipLength, 0.5, Math.Max(60, template.FullLength), template.Length, 0.1, VideoEditorText.SecondsUnit);
+        Change(length, "length", t =>
+        {
+            var room = current().Find(t.Id) is { Track: var track } ? track.Items.Where(i => i.Id != t.Id && i.Start >= t.End - Times.Epsilon).Select(i => i.Start - t.Start).DefaultIfEmpty(double.MaxValue).Min() : double.MaxValue;
+            var wanted = Times.Round(Math.Min(length.Value, room));
+            return t with { Length = wanted, FullLength = Times.Round(t.Offset + wanted) };
+        });
+        var across = new NumberParameter(VideoEditorText.Across, -100, 100, template.MoveX * 100, 1, " %");
+        Change(across, "across", t => t with { MoveX = across.Value / 100 });
+        var down = new NumberParameter(VideoEditorText.Down, -100, 100, template.MoveY * 100, 1, " %");
+        Change(down, "down", t => t with { MoveY = down.Value / 100 });
+        return list;
+    }
+
     /// <summary>A layout's kind and how long the change into it takes.</summary>
     private static IReadOnlyList<EditParameter> ForLayout(LayoutItem layout, Func<VideoProject> current, Apply apply)
     {
@@ -848,7 +905,19 @@ public static class ItemProperties
         var look = annotation.Look;
         var shape = annotation.Shape;
         var hidden = shape is AnnotationShape.Blur or AnnotationShape.Pixelate;
-        if (shape == AnnotationShape.Text)
+        if (shape == AnnotationShape.StepNumber)
+        {
+            var number = new NumberParameter(VideoEditorText.StepNumberLabel, 1, 99, annotation.Number, 1);
+            Change(number, "step", VideoEditorText.UndoStepNumber, a => a with { Number = number.IntValue });
+        }
+
+        if (shape == AnnotationShape.Magnify)
+        {
+            var zoom = new NumberParameter(VideoEditorText.MagnifyZoom, 2, 8, look.Strength, 0.5, "×");
+            Change(zoom, "magnify", VideoEditorText.UndoStrength, a => a with { Look = a.Look with { Strength = zoom.Value } });
+        }
+
+        if (shape is AnnotationShape.Text or AnnotationShape.SpeechBubble)
         {
             var text = new TextParameter(VideoEditorText.Text, annotation.Text, multiline: true);
             Change(text, "text", VideoEditorText.UndoEditText, a => a with { Text = text.Value });
@@ -860,19 +929,19 @@ public static class ItemProperties
             Change(bold, "bold", VideoEditorText.UndoBold, a => a with { Look = a.Look with { Bold = bold.Value } });
         }
 
-        if (!hidden)
+        if (!hidden && shape != AnnotationShape.Picture)
         {
-            var color = new ColorParameter(shape == AnnotationShape.Text ? VideoEditorText.TextColour : VideoEditorText.Colour, FrameCompositor.Color(look.Color, SKColors.Red));
+            var color = new ColorParameter(shape is AnnotationShape.Text or AnnotationShape.SpeechBubble ? VideoEditorText.TextColour : VideoEditorText.Colour, FrameCompositor.Color(look.Color, SKColors.Red));
             Change(color, "colour", VideoEditorText.UndoColour, a => a with { Look = a.Look with { Color = Hex(color.Value.Value) } });
         }
 
-        if (shape is AnnotationShape.Text or AnnotationShape.Rectangle or AnnotationShape.Ellipse)
+        if (shape is AnnotationShape.Text or AnnotationShape.Rectangle or AnnotationShape.Ellipse or AnnotationShape.SpeechBubble)
         {
             var fill = new ColorParameter(shape == AnnotationShape.Text ? VideoEditorText.Background : VideoEditorText.Fill, look.Fill is null ? SKColors.Transparent : FrameCompositor.Color(look.Fill, SKColors.Transparent), allowTransparent: true);
             Change(fill, "fill", VideoEditorText.UndoFill, a => a with { Look = a.Look with { Fill = fill.IsTransparent ? null : HexWithAlpha(fill.Value.Value, shape == AnnotationShape.Text ? (byte)0xB0 : (byte)0xFF) } });
         }
 
-        if (shape is AnnotationShape.Arrow or AnnotationShape.Line or AnnotationShape.Rectangle or AnnotationShape.Ellipse)
+        if (shape is AnnotationShape.Arrow or AnnotationShape.Line or AnnotationShape.Rectangle or AnnotationShape.Ellipse or AnnotationShape.Freehand or AnnotationShape.Magnify)
         {
             var width = new NumberParameter(VideoEditorText.LineWidth, 1, 40, look.StrokeWidth, 1, " px");
             Change(width, "line width", VideoEditorText.UndoLineWidth, a => a with { Look = a.Look with { StrokeWidth = width.Value } });
@@ -884,7 +953,7 @@ public static class ItemProperties
             Change(strength, "strength", VideoEditorText.UndoStrength, a => a with { Look = a.Look with { Strength = strength.Value } });
         }
 
-        var opacity = new NumberParameter(VideoEditorText.Opacity, 5, 100, look.Opacity * 100, 1, " %");
+        var opacity = new NumberParameter(shape == AnnotationShape.Spotlight ? VideoEditorText.SpotlightDim : VideoEditorText.Opacity, 5, 100, look.Opacity * 100, 1, " %");
         Change(opacity, "opacity", VideoEditorText.UndoOpacity, a => a with { Look = a.Look with { Opacity = opacity.Value / 100 } });
         var fadeIn = new NumberParameter(VideoEditorText.FadeIn, 0, Math.Min(5, annotation.Length), annotation.FadeIn, 0.1, VideoEditorText.SecondsUnit);
         Change(fadeIn, "fade in", VideoEditorText.UndoFadeIn, a => a with { FadeIn = Math.Round(fadeIn.Value, 2) });
@@ -896,7 +965,7 @@ public static class ItemProperties
         Change(fadeOutCurve, "fade out curve", VideoEditorText.UndoFadeCurve, a => a with { FadeOutCurve = fadeOutCurve.As<MotionEasing>() });
         var easing = new ChoiceParameter(VideoEditorText.Movement, [new(Easing.Smooth, VideoEditorText.Smooth), new(Easing.Linear, VideoEditorText.Even)], annotation.Easing);
         Change(easing, "movement", VideoEditorText.UndoMovement, a => a with { Easing = easing.As<Easing>() });
-        if (!hidden && (features ?? FeatureGate.Open).IsEnabled(ProFeature.MotionEffects))
+        if (!hidden && shape != AnnotationShape.Spotlight && (features ?? FeatureGate.Open).IsEnabled(ProFeature.MotionEffects))
         {
             IReadOnlyList<Choice> kinds = shape == AnnotationShape.Text
                 ? [new(TextAnimationKind.None, VideoEditorText.AnimationNone), new(TextAnimationKind.Fade, VideoEditorText.AnimationFade), new(TextAnimationKind.Slide, VideoEditorText.AnimationSlide), new(TextAnimationKind.Pop, VideoEditorText.AnimationPop), new(TextAnimationKind.Typewriter, VideoEditorText.AnimationTypewriter)]

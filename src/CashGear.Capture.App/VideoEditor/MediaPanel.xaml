@@ -11,7 +11,7 @@
   <UserControl.Resources>
     <BooleanToVisibilityConverter x:Key="Visible" />
   </UserControl.Resources>
-  <TabControl x:Name="Tabs" BorderThickness="0" Padding="0">
+  <TabControl x:Name="Tabs" BorderThickness="0" Padding="0" SelectedIndex="{Binding ShownTab}">
     <TabItem Header="{x:Static r:VideoEditorText.MediaTab}">
   <DockPanel Margin="6,6,6,6">
     <WrapPanel DockPanel.Dock="Top">
@@ -63,6 +63,35 @@
           </ListBox.ItemContainerStyle>
         </ListBox>
       </DockPanel>
+    </TabItem>
+    <TabItem Header="{x:Static r:VideoEditorText.TemplatesTab}">
+      <DockPanel Margin="6,6,6,6">
+        <TextBlock DockPanel.Dock="Top" Text="{x:Static r:VideoEditorText.TemplatesNote}" TextWrapping="Wrap" FontSize="11" Opacity="0.8" Margin="0,0,0,6" />
+        <WrapPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+          <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.InsertTemplateButton}" Command="{Binding InsertTemplateCommand}" ToolTip="{x:Static r:VideoEditorText.InsertTemplateButtonTip}" />
+          <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.SaveTemplateButton}" Command="{Binding SaveTemplateCommand}" ToolTip="{x:Static r:VideoEditorText.SaveTemplateTip}" />
+          <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.DeleteTemplateButton}" Command="{Binding DeleteTemplateCommand}" ToolTip="{x:Static r:VideoEditorText.DeleteTemplateTip}" />
+          <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.ExportPackButton}" Command="{Binding ExportPackCommand}" ToolTip="{x:Static r:VideoEditorText.ExportPackTip}" />
+          <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.ImportPackButton}" Command="{Binding ImportPackCommand}" ToolTip="{x:Static r:VideoEditorText.ImportPackTip}" />
+        </WrapPanel>
+        <ListBox x:Name="TemplateList" ItemsSource="{Binding Templates}" SelectedItem="{Binding SelectedTemplate}" DisplayMemberPath="Name"
+                 AutomationProperties.Name="{x:Static r:VideoEditorText.TemplatesListName}"
+                 PreviewMouseLeftButtonDown="OnTemplatePress" PreviewMouseMove="OnTemplateMove" PreviewKeyDown="OnTemplateKey">
+          <ListBox.ItemContainerStyle>
+            <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+              <Setter Property="AutomationProperties.Name" Value="{Binding AccessibleName}" />
+            </Style>
+          </ListBox.ItemContainerStyle>
+        </ListBox>
+      </DockPanel>
+    </TabItem>
+    <TabItem Header="{x:Static r:VideoEditorText.BrandTab}">
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="6,6,6,6">
+          <TextBlock Text="{x:Static r:VideoEditorText.BrandNote}" TextWrapping="Wrap" FontSize="11" Opacity="0.8" Margin="0,0,0,6" />
+          <ItemsControl ItemsSource="{Binding BrandProperties}" Focusable="False" />
+        </StackPanel>
+      </ScrollViewer>
     </TabItem>
   </TabControl>
 </UserControl>

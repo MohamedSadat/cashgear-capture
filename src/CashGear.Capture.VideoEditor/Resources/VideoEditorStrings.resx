@@ -306,4 +306,79 @@
   <data name="NotACube" xml:space="preserve">
     <value>{0} isn't a look-up table this app can read (a .cube file).</value>
   </data>
+  <data name="ShapeSpeechBubble" xml:space="preserve">
+    <value>Speech bubble</value>
+  </data>
+  <data name="ShapeFreehand" xml:space="preserve">
+    <value>Freehand</value>
+  </data>
+  <data name="ShapeStepNumber" xml:space="preserve">
+    <value>Step number</value>
+  </data>
+  <data name="ShapeSpotlight" xml:space="preserve">
+    <value>Spotlight</value>
+  </data>
+  <data name="ShapeMagnify" xml:space="preserve">
+    <value>Magnifier</value>
+  </data>
+  <data name="ShapePicture" xml:space="preserve">
+    <value>Picture</value>
+  </data>
+  <data name="FieldTitle" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="FieldSubtitle" xml:space="preserve">
+    <value>Subtitle</value>
+  </data>
+  <data name="FieldName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="FieldRole" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="FieldNumbered" xml:space="preserve">
+    <value>Text {0}</value>
+  </data>
+  <data name="DefaultTitle" xml:space="preserve">
+    <value>Your Title Here</value>
+  </data>
+  <data name="DefaultSubtitle" xml:space="preserve">
+    <value>A line about it</value>
+  </data>
+  <data name="DefaultName" xml:space="preserve">
+    <value>Your Name</value>
+  </data>
+  <data name="DefaultRole" xml:space="preserve">
+    <value>What you do</value>
+  </data>
+  <data name="DefaultEndTitle" xml:space="preserve">
+    <value>Thanks for watching</value>
+  </data>
+  <data name="TemplateTitleCentered" xml:space="preserve">
+    <value>Title card, centred</value>
+  </data>
+  <data name="TemplateTitleBand" xml:space="preserve">
+    <value>Title on a band</value>
+  </data>
+  <data name="TemplateTitleTyped" xml:space="preserve">
+    <value>Title being typed</value>
+  </data>
+  <data name="TemplateThirdBar" xml:space="preserve">
+    <value>Lower third, a bar</value>
+  </data>
+  <data name="TemplateThirdLine" xml:space="preserve">
+    <value>Lower third, a line</value>
+  </data>
+  <data name="TemplateThirdTab" xml:space="preserve">
+    <value>Lower third, a tab</value>
+  </data>
+  <data name="TemplateEndCard" xml:space="preserve">
+    <value>End card with the logo</value>
+  </data>
+  <data name="NotAPack" xml:space="preserve">
+    <value>{0} isn't a template pack.</value>
+  </data>
+  <data name="NewerPack" xml:space="preserve">
+    <value>{0} was made by a newer version of this app.</value>
+  </data>
 </root>

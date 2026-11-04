@@ -68,8 +68,12 @@ public sealed record VideoEditorServices(
     IPresetStore? Presets = null,
     WebcamMasks? Masks = null,
     SoundLevelStore? Levels = null,
-    CashGear.Capture.Inference.ITranslators? Translators = null)
+    CashGear.Capture.Inference.ITranslators? Translators = null,
+    TemplateLibrary? TemplateStore = null)
 {
+    /// <summary>Saved templates and media on this PC, in <c>%AppData%\CashGear\Capture\Library</c>.</summary>
+    public TemplateLibrary Library => TemplateStore ?? new TemplateLibrary(Path.Combine(Paths.SettingsDirectory, "Library"));
+
     /// <summary>Which Pro features may be used (all of them in this version).</summary>
     public IFeatureGate Gate => Features ?? FeatureGate.Open;
 
@@ -184,6 +188,8 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     private readonly CancellationTokenSource _closing = new();
     private readonly HashSet<string> _masksAsked = [];
     private double? _stopAt;
+    private List<SKPoint>? _freehand;
+    private bool _awaitingFreehand;
 
     /// <summary>Motion blur's samples in a preview on the graphics card, and in one drawn in memory, where they cost far more.</summary>
     public const int GpuMotionSamples = 16;
@@ -401,6 +407,10 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
                 moved = AnnotationEdits.Drag(annotation, Timeline.Playhead, PreviewGrip.None, SKPoint.Empty, new SKPoint((float)dx, (float)dy), Project.Canvas.Fps);
                 name = VideoEditorText.UndoMoveAnnotation;
                 break;
+            case TemplateItem template:
+                moved = template with { MoveX = Math.Round(template.MoveX + (dx / Project.Canvas.Width), 5), MoveY = Math.Round(template.MoveY + (dy / Project.Canvas.Height), 5) };
+                name = VideoEditorText.UndoMoveTemplate;
+                break;
             case Clip clip when track.HasPictures:
                 moved = clip with { Placement = PlacementEdits.Move(clip.Placement ?? Placement.Fit, Project.Canvas, dx, dy) };
                 name = VideoEditorText.UndoMovePicture;
@@ -505,6 +515,15 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         canvas.ClipRect(SKRect.Create(size.Width, size.Height));
         var zoomShown = SelectedZoom();
         var result = Compositor.Render(canvas, zoomShown is null ? Project : WithoutZooms(Project), Timeline.Playhead);
+        if (_freehand is { Count: > 1 } stroke)
+        {
+            using var pen = new SKPaint { Color = SelectionColor, Style = SKPaintStyle.Stroke, StrokeWidth = 3 / scale, IsAntialias = true };
+            for (var i = 1; i < stroke.Count; i++)
+            {
+                canvas.DrawLine(stroke[i - 1], stroke[i], pen);
+            }
+        }
+
         if (zoomShown is not null)
         {
             DrawSelection(canvas, ZoomFrame(zoomShown), scale, corner: true, SelectionColor);
@@ -514,6 +533,10 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             if (selected is Clip clip && Project.Find(clip.Id)?.Track is { HasPictures: true })
             {
                 DrawSelection(canvas, PlacementEdits.Area(Project, clip, Timeline.Playhead), scale, corner: true, SelectionColor);
+            }
+            else if (selected is TemplateItem template)
+            {
+                DrawSelection(canvas, TemplateEdits.Bounds(template, Project, Timeline.Playhead), scale, corner: false, SelectionColor);
             }
             else if (selected is AnnotationItem annotation)
             {
@@ -534,6 +557,12 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     public void PreviewPointerDown(double x, double y)
     {
         StopPlaying();
+        if (_awaitingFreehand)
+        {
+            _freehand = [ToCanvas(x, y)];
+            return;
+        }
+
         if (SelectedZoom() is { } zoom && ZoomFrame(zoom) is var frame && ZoomGrip(frame, ToCanvas(x, y)) is { } zoomGrip)
         {
             _drag = new PreviewDrag(Project, zoom, ToCanvas(x, y), frame, zoomGrip, ++_drags);
@@ -554,6 +583,18 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
     public void PreviewPointerMove(double x, double y)
     {
+        if (_freehand is { } stroke)
+        {
+            var at = ToCanvas(x, y);
+            if (SKPoint.Distance(stroke[^1], at) >= 2)
+            {
+                stroke.Add(at);
+                PreviewInvalidated?.Invoke(this, EventArgs.Empty);
+            }
+
+            return;
+        }
+
         if (_drag is not { } drag)
         {
             return;
@@ -595,6 +636,15 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             }
 
         }
+        else if (drag.Item is TemplateItem template)
+        {
+            item = template with
+            {
+                MoveX = Math.Round(template.MoveX + ((point.X - drag.Start.X) / Project.Canvas.Width), 5),
+                MoveY = Math.Round(template.MoveY + ((point.Y - drag.Start.Y) / Project.Canvas.Height), 5),
+            };
+            name = VideoEditorText.UndoMoveTemplate;
+        }
         else if (drag.Item is ZoomItem zoom)
         {
             item = PlacementEdits.DragZoom(zoom, Project.Canvas, drag.Area, drag.Grip, point.X - drag.Start.X, point.Y - drag.Start.Y);
@@ -609,7 +659,35 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         History.Apply(name, drag.Base.WithItem(item), $"preview {drag.Number}");
     }
 
-    public void PreviewPointerUp() => _drag = null;
+    public void PreviewPointerUp()
+    {
+        _drag = null;
+        if (_freehand is { } stroke)
+        {
+            _freehand = null;
+            CancelFreehand();
+            if (stroke.Count >= 2)
+            {
+                var (project, id) = AnnotationEdits.AddFreehand(Project, stroke, Timeline.Playhead);
+                History.Apply(VideoEditorText.UndoAddCallout, project);
+                Timeline.Select(id);
+            }
+
+            PreviewInvalidated?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Esc while waiting to draw a stroke: not any more.</summary>
+    private void CancelFreehand()
+    {
+        if (_awaitingFreehand)
+        {
+            _awaitingFreehand = false;
+            _freehand = null;
+            WorkText = "";
+            PreviewInvalidated?.Invoke(this, EventArgs.Empty);
+        }
+    }
 
     /// <summary>Changes a track (mute, solo, lock, show, volume) as one undo step (merged with others of the same key).</summary>
     public void ChangeTrack(Track track, Func<Track, Track> change, string name, string? mergeKey = null)
@@ -746,6 +824,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ClearSelection()
     {
+        CancelFreehand();
         Timeline.SetRange(null);
         Timeline.Select(null);
     }
@@ -917,6 +996,313 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
 
         History.Apply(VideoEditorText.UndoRemoveMedia, MediaEdits.RemoveAsset(Project, assetId));
+    }
+
+    /// <summary>A template from the panel at <paramref name="at"/> (a row dragged there, or Enter at the playhead), selected so its texts can be typed.</summary>
+    public string? InsertTemplate(TitleTemplate template, double at)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        if (!Allowed(ProFeature.Templates))
+        {
+            return null;
+        }
+
+        StopPlaying();
+        var (project, id) = TemplateEdits.Insert(Project, template, at, _services.Library.AssetsFolder);
+        History.Apply(VideoEditorText.UndoAddTemplate, project);
+        Timeline.Select(id);
+        if (!Timeline.Selected!.Covers(Timeline.Playhead))
+        {
+            Seek(Timeline.Selected.Start);
+        }
+
+        return id;
+    }
+
+    /// <summary>The library the panel shows.</summary>
+    internal TemplateLibrary Library => _services.Library;
+
+    /// <summary>Whether <paramref name="feature"/> may be used, without saying anything.</summary>
+    internal bool Enabled(ProFeature feature) => _services.Gate.IsEnabled(feature);
+
+    /// <summary>The selected annotation, the annotations grouped with it, or the selected template, saved in the library under a name; says why not when there is nothing to save.</summary>
+    public bool SaveSelectionAsTemplate()
+    {
+        if (!Allowed(ProFeature.Templates))
+        {
+            return false;
+        }
+
+        var chosen = SelectedForTemplate();
+        if (chosen.Count == 0 && Timeline.Selected is not TemplateItem)
+        {
+            _dialogs.ShowError(VideoEditorText.SaveTemplateNeedsSelection);
+            return false;
+        }
+
+        if (_dialogs.AskName(VideoEditorText.SaveTemplateTitle, VideoEditorText.MyTemplate) is not { Length: > 0 } name)
+        {
+            return false;
+        }
+
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        TitleTemplate template;
+        if (Timeline.Selected is TemplateItem placed)
+        {
+            // As it is now: what its fields say becomes what they say at first.
+            var fields = placed.Template.Fields?.Select(f => f with { Default = placed.Text(f) }).ToList();
+            template = placed.Template with { Id = Ids.New(), Name = name, Kind = TemplateKind.Saved, Length = placed.FullLength, Fields = fields };
+            foreach (var (file, assetId) in placed.AssetIds ?? new Dictionary<string, string>())
+            {
+                if (Project.Asset(assetId) is { } asset)
+                {
+                    files[file] = asset.Path;
+                }
+            }
+        }
+        else
+        {
+            template = TemplateEdits.FromItems(Project, chosen, name);
+            foreach (var item in chosen)
+            {
+                if (item.PictureAssetId is { } id && Project.Asset(id) is { } asset)
+                {
+                    files[asset.Name] = asset.Path;
+                }
+            }
+        }
+
+        try
+        {
+            _services.Library.Save(template, files);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError(VideoEditorText.PackFailed(e.Message));
+            return false;
+        }
+
+        Media.RefreshTemplates();
+        return true;
+    }
+
+    private List<AnnotationItem> SelectedForTemplate()
+    {
+        if (Timeline.Selected is not AnnotationItem first)
+        {
+            return [];
+        }
+
+        return first.Group is { } group
+            ? [.. Project.Tracks.SelectMany(t => t.Items.OfType<AnnotationItem>()).Where(a => a.Group == group).OrderBy(a => a.Start)]
+            : [first];
+    }
+
+    /// <summary>A template out of the library.</summary>
+    internal void DeleteSavedTemplate(TitleTemplate template)
+    {
+        _services.Library.Delete(template.Id);
+        Media.RefreshTemplates();
+    }
+
+    /// <summary>The library's templates and brand kit as one file, where the user says.</summary>
+    internal void ExportPack()
+    {
+        if (!Allowed(ProFeature.Templates) || _dialogs.AskSavePath(VideoEditorText.ExportPackTitle, VideoEditorText.PackFilter, VideoEditorText.PackName + TemplateLibrary.PackExtension, Folder()) is not { } path)
+        {
+            return;
+        }
+
+        try
+        {
+            _services.Library.ExportPack(path, _services.Library.Templates(), _services.Library.Brand());
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError(VideoEditorText.PackFailed(e.Message));
+        }
+    }
+
+    /// <summary>A pack's templates and files into the library.</summary>
+    internal void ImportPack()
+    {
+        if (!Allowed(ProFeature.Templates) || _dialogs.PickMedia(VideoEditorText.ImportPackTitle, VideoEditorText.PackFilter, Folder()) is not { } path)
+        {
+            return;
+        }
+
+        try
+        {
+            _services.Library.ImportPack(path);
+            Media.RefreshTemplates();
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError(VideoEditorText.PackFailed(e.Message));
+        }
+    }
+
+    /// <summary>A change to the project's brand kit: one undo step, merged by its key. Every template follows.</summary>
+    internal void ChangeBrand(string key, Func<BrandKit, BrandKit> change)
+    {
+        if (Allowed(ProFeature.Templates))
+        {
+            History.Apply(VideoEditorText.UndoBrand, TemplateEdits.WithBrand(Project, change), $"brand {key}");
+        }
+    }
+
+    /// <summary>A file chosen for the brand joins the project's media; (its id, or null when none was chosen).</summary>
+    internal void PickBrandFile(string? path, string key, Func<BrandKit, string, BrandKit> set)
+    {
+        if (path is null || !Allowed(ProFeature.Templates))
+        {
+            return;
+        }
+
+        try
+        {
+            var asset = Project.Assets.FirstOrDefault(a => string.Equals(a.Path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase) && a.Streams.Count > 0) ?? ProjectFactory.ReadMedia(path);
+            History.Apply(VideoEditorText.UndoBrand, TemplateEdits.WithBrand(Project.WithAsset(asset), b => set(b, asset.Id)), $"brand {key} {asset.Id}");
+        }
+        catch (Exception e) when (e is FfmpegException or IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError(VideoEditorText.CantBeOpened(Path.GetFileName(path), e.Message));
+        }
+    }
+
+    /// <summary>A file for the brand, chosen by the user.</summary>
+    internal string? PickBrandPath() => _dialogs.PickMedia(VideoEditorText.BrandPickFile, VideoEditorText.AnyMediaFilter, Folder());
+
+    /// <summary>The logo on the timeline at the playhead, small in a corner, for what is left of the timeline.</summary>
+    internal void InsertBrandLogo()
+    {
+        if (Project.Brand?.LogoAssetId is not { } id || Project.Asset(id) is not { } asset)
+        {
+            _dialogs.ShowError(VideoEditorText.BrandNoFile);
+            return;
+        }
+
+        StopPlaying();
+        var (project, clipId) = MediaEdits.Add(Project, asset, Position);
+        if (clipId is not null && project.Find(clipId)?.Item is Clip { IsFreeze: true } clip)
+        {
+            project = project.WithItem(clip with { Placement = new Placement(0.9, 0.12, 0.15), FreezeLength = Project.Duration - Position >= TimelineEdits.ShortestItem ? Times.Round(Project.Duration - Position) : clip.FreezeLength });
+        }
+
+        History.Apply(VideoEditorText.UndoBrandClip, project);
+        Timeline.Select(clipId);
+    }
+
+    /// <summary>The intro at the start (what is there moves on), or the outro after the end.</summary>
+    internal void InsertBrandClip(bool intro)
+    {
+        var id = intro ? Project.Brand?.IntroAssetId : Project.Brand?.OutroAssetId;
+        if (id is null || Project.Asset(id) is not { } asset)
+        {
+            _dialogs.ShowError(VideoEditorText.BrandNoFile);
+            return;
+        }
+
+        StopPlaying();
+        var (project, clipId) = intro ? MediaEdits.InsertPushing(Project, asset, 0) : MediaEdits.Add(Project, asset, Project.Duration, Project.Tracks.FirstOrDefault(t => t.Kind == TrackKind.Video)?.Id);
+        History.Apply(VideoEditorText.UndoBrandClip, project);
+        Timeline.Select(clipId);
+    }
+
+    /// <summary>The brand's look on the project.</summary>
+    internal void UseBrandLook()
+    {
+        if (Project.Brand?.Look is { } name && AvailableLooks().FirstOrDefault(l => l.Id == name || l.Name == name) is { } look)
+        {
+            ApplyLook(look.Id);
+        }
+    }
+
+    /// <summary>The looks a brand can have.</summary>
+    internal IReadOnlyList<StudioLook> LooksToChoose() => AvailableLooks();
+
+    /// <summary>The project's kit kept in the library, its files with it, for other projects on this PC.</summary>
+    internal void SaveBrandToLibrary()
+    {
+        if (!Allowed(ProFeature.Templates))
+        {
+            return;
+        }
+
+        var kit = Project.Brand ?? BrandKit.Default;
+        string? Kept(string? assetId) => assetId is not null && Project.Asset(assetId) is { } asset && File.Exists(asset.Path) ? _services.Library.AddAsset(asset.Path) : null;
+        try
+        {
+            _services.Library.SaveBrand(new LibraryBrand(kit with { LogoAssetId = null, IntroAssetId = null, OutroAssetId = null }, Kept(kit.LogoAssetId), Kept(kit.IntroAssetId), Kept(kit.OutroAssetId)));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError(VideoEditorText.PackFailed(e.Message));
+        }
+    }
+
+    /// <summary>The kit kept in the library on this project.</summary>
+    internal void UseSavedBrand()
+    {
+        if (!Allowed(ProFeature.Templates))
+        {
+            return;
+        }
+
+        if (_services.Library.Brand() is not { } brand)
+        {
+            _dialogs.ShowError(VideoEditorText.BrandNoSaved);
+            return;
+        }
+
+        try
+        {
+            History.Apply(VideoEditorText.UndoBrand, _services.Library.ApplyBrand(Project, brand));
+        }
+        catch (Exception e) when (e is FfmpegException or IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError(VideoEditorText.PackFailed(e.Message));
+        }
+    }
+
+    [RelayCommand]
+    private void InsertBubble() => InsertCallout(AnnotationShape.SpeechBubble);
+
+    [RelayCommand]
+    private void InsertStep() => InsertCallout(AnnotationShape.StepNumber);
+
+    [RelayCommand]
+    private void InsertSpotlight() => InsertCallout(AnnotationShape.Spotlight);
+
+    [RelayCommand]
+    private void InsertMagnify() => InsertCallout(AnnotationShape.Magnify);
+
+    /// <summary>Insert › Title or Lower Third: the panel on its templates.</summary>
+    [RelayCommand]
+    private void ShowTemplates()
+    {
+        Media.IsShown = true;
+        Media.ShownTab = MediaPanelViewModel.TemplatesTabIndex;
+    }
+
+    /// <summary>Insert › Freehand: the next drag on the preview draws a stroke. Esc cancels.</summary>
+    [RelayCommand]
+    private void InsertFreehand()
+    {
+        if (Allowed(ProFeature.VideoEditorAnnotations))
+        {
+            StopPlaying();
+            _awaitingFreehand = true;
+            WorkText = VideoEditorText.DrawFreehandNow;
+        }
+    }
+
+    private void InsertCallout(AnnotationShape shape)
+    {
+        if (Allowed(ProFeature.VideoEditorAnnotations))
+        {
+            Insert(shape);
+        }
     }
 
     /// <summary>A plain colour over the marked range (else from the playhead for 5 s), selected so the panel shows it.</summary>
@@ -1897,6 +2283,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         AnnotationShape.Highlight => VideoEditorText.UndoAddHighlight,
         AnnotationShape.Blur => VideoEditorText.UndoAddBlurredArea,
         AnnotationShape.Pixelate => VideoEditorText.UndoAddPixelatedArea,
+        AnnotationShape.SpeechBubble or AnnotationShape.StepNumber or AnnotationShape.Spotlight or AnnotationShape.Magnify or AnnotationShape.Freehand => VideoEditorText.UndoAddCallout,
         _ => VideoEditorText.UndoAddText,
     };
 

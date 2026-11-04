@@ -182,7 +182,7 @@ internal sealed class TimelineControl : SKElement
     protected override void OnDragOver(DragEventArgs e)
     {
         base.OnDragOver(e);
-        var carries = e.Data.GetDataPresent(MediaPanel.DragFormat) || e.Data.GetDataPresent(MediaPanel.TransitionFormat) || e.Data.GetDataPresent(DataFormats.FileDrop);
+        var carries = e.Data.GetDataPresent(MediaPanel.DragFormat) || e.Data.GetDataPresent(MediaPanel.TransitionFormat) || e.Data.GetDataPresent(MediaPanel.TemplateFormat) || e.Data.GetDataPresent(DataFormats.FileDrop);
         e.Effects = carries ? DragDropEffects.Copy : DragDropEffects.None;
         if (_viewModel is not null && carries)
         {
@@ -215,7 +215,11 @@ internal sealed class TimelineControl : SKElement
         var at = e.GetPosition(this);
         var time = viewModel.View.Snap(viewModel.Project, Math.Max(0, viewModel.View.Time(at.X)), viewModel.Position);
         var track = viewModel.View.RowAt(viewModel.Project, at.Y)?.Track.Id;
-        if (e.Data.GetData(MediaPanel.TransitionFormat) is TransitionChoice transition)
+        if (e.Data.GetData(MediaPanel.TemplateFormat) is TemplateRow template)
+        {
+            viewModel.InsertTemplate(template.Template, time);
+        }
+        else if (e.Data.GetData(MediaPanel.TransitionFormat) is TransitionChoice transition)
         {
             viewModel.ApplyTransition(transition.Transition, track, viewModel.View.Time(at.X));
         }

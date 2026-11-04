@@ -1,13 +1,17 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Windows.Media;
 using System.Windows.Threading;
+using CashGear.Capture.App.Editor;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.Media;
 using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Model;
+using CashGear.Capture.VideoEditor.Rendering;
 using CashGear.Capture.VideoEditor.Timeline;
+using SkiaSharp;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SkiaSharp.Views.WPF;
@@ -39,6 +43,17 @@ public sealed partial class MediaItemViewModel(MediaAsset asset, string details)
     }
 }
 
+/// <summary>A row of the templates' library: built in, or saved in the library.</summary>
+public sealed record TemplateRow(TitleTemplate Template, bool IsSaved)
+{
+    public string Name => Template.Name;
+
+    /// <summary>What a screen reader says for the row.</summary>
+    public string AccessibleName => VideoEditorText.TemplateItemName(Template.Name, IsSaved ? VideoEditorText.TemplateSaved : VideoEditorText.TemplateBuiltIn);
+
+    public override string ToString() => Name;
+}
+
 /// <summary>A row of the transitions' library.</summary>
 public sealed record TransitionChoice(ClipTransition Transition, string Name)
 {
@@ -58,8 +73,170 @@ public sealed partial class MediaPanelViewModel : ObservableObject
     {
         _owner = owner;
         Refresh();
+        RefreshTemplates();
         _owner.Previews.Changed += OnPreviewsChanged;
     }
+
+    /// <summary>The Titles tab's place among the tabs.</summary>
+    public const int TemplatesTabIndex = 2;
+
+    /// <summary>The tab shown.</summary>
+    [ObservableProperty]
+    private int _shownTab;
+
+    /// <summary>The templates to drag onto the timeline: those that come with the app, then the saved ones.</summary>
+    public ObservableCollection<TemplateRow> Templates { get; } = [];
+
+    /// <summary>The project's brand kit, as settings.</summary>
+    public ObservableCollection<EditParameter> BrandProperties { get; } = [];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(InsertTemplateCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteTemplateCommand))]
+    private TemplateRow? _selectedTemplate;
+
+    private BrandKit? _brandShown;
+
+    /// <summary>The library's list, made again after saving or importing.</summary>
+    internal void RefreshTemplates()
+    {
+        var chosen = SelectedTemplate?.Template.Id;
+        Templates.Clear();
+        foreach (var template in BuiltInTemplates.All)
+        {
+            Templates.Add(new TemplateRow(template, false));
+        }
+
+        foreach (var template in _owner.Library.Templates())
+        {
+            Templates.Add(new TemplateRow(template, true));
+        }
+
+        SelectedTemplate = Templates.FirstOrDefault(t => t.Template.Id == chosen);
+    }
+
+    /// <summary>The brand's settings, made again when something else changed the kit (undo).</summary>
+    private void RefreshBrand()
+    {
+        var kit = _owner.Project.Brand ?? BrandKit.Default;
+        if (BrandProperties.Count > 0 && ReferenceEquals(_brandShown, kit))
+        {
+            return;
+        }
+
+        _brandShown = kit;
+        BrandProperties.Clear();
+        void Colour(string label, string value, [Localizable(false)] string key, Func<BrandKit, string, BrandKit> set)
+        {
+            var parameter = new ColorParameter(label, FrameCompositor.Color(value, SKColors.Black));
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Value")
+                {
+                    var swatch = parameter.Value.Value;
+                    _keepBrand = true;
+                    _owner.ChangeBrand(key, b => set(b, $"#{swatch.Red:X2}{swatch.Green:X2}{swatch.Blue:X2}"));
+                    _keepBrand = false;
+                }
+            };
+            BrandProperties.Add(parameter);
+        }
+
+        void Font(string label, string value, [Localizable(false)] string key, Func<BrandKit, string, BrandKit> set)
+        {
+            var parameter = new FontParameter(label, ItemProperties.Fonts, value);
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Value")
+                {
+                    _keepBrand = true;
+                    _owner.ChangeBrand(key, b => set(b, parameter.Value));
+                    _keepBrand = false;
+                }
+            };
+            BrandProperties.Add(parameter);
+        }
+
+        void File(string label, string? assetId, [Localizable(false)] string key, Func<BrandKit, string, BrandKit> set)
+        {
+            var parameter = new FileParameter(label, assetId is null ? null : _owner.Project.Asset(assetId)?.Path, _owner.PickBrandPath);
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Path")
+                {
+                    _owner.PickBrandFile(parameter.Path, key, set);
+                }
+            };
+            BrandProperties.Add(parameter);
+        }
+
+        Colour(VideoEditorText.BrandPrimary, kit.Primary, "primary", (b, c) => b with { Primary = c });
+        Colour(VideoEditorText.BrandSecondary, kit.Secondary, "secondary", (b, c) => b with { Secondary = c });
+        Colour(VideoEditorText.BrandAccent, kit.Accent, "accent", (b, c) => b with { Accent = c });
+        Colour(VideoEditorText.BrandText, kit.Text, "text", (b, c) => b with { Text = c });
+        Font(VideoEditorText.BrandHeadingFont, kit.HeadingFont, "heading", (b, f) => b with { HeadingFont = f });
+        Font(VideoEditorText.BrandBodyFont, kit.BodyFont, "body", (b, f) => b with { BodyFont = f });
+        File(VideoEditorText.BrandLogo, kit.LogoAssetId, "logo", (b, id) => b with { LogoAssetId = id });
+        File(VideoEditorText.BrandIntro, kit.IntroAssetId, "intro", (b, id) => b with { IntroAssetId = id });
+        File(VideoEditorText.BrandOutro, kit.OutroAssetId, "outro", (b, id) => b with { OutroAssetId = id });
+        var looks = _owner.LooksToChoose();
+        if (looks.Count > 0)
+        {
+            var look = new ChoiceParameter(VideoEditorText.BrandLook, [.. looks.Select(l => new Choice(l.Id, l.Name))], kit.Look ?? looks[0].Id);
+            look.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Selected")
+                {
+                    _keepBrand = true;
+                    _owner.ChangeBrand("look", b => b with { Look = look.As<string>() });
+                    _keepBrand = false;
+                }
+            };
+            BrandProperties.Add(look);
+            BrandProperties.Add(new ActionParameter(VideoEditorText.BrandUseLook, new RelayCommand(_owner.UseBrandLook)));
+        }
+
+        BrandProperties.Add(new ActionParameter(VideoEditorText.BrandInsertLogo, new RelayCommand(_owner.InsertBrandLogo)));
+        BrandProperties.Add(new ActionParameter(VideoEditorText.BrandAddIntro, new RelayCommand(() => _owner.InsertBrandClip(intro: true))));
+        BrandProperties.Add(new ActionParameter(VideoEditorText.BrandAddOutro, new RelayCommand(() => _owner.InsertBrandClip(intro: false))));
+        BrandProperties.Add(new ActionParameter(VideoEditorText.BrandSave, new RelayCommand(_owner.SaveBrandToLibrary)));
+        BrandProperties.Add(new ActionParameter(VideoEditorText.BrandUseSaved, new RelayCommand(_owner.UseSavedBrand)));
+    }
+
+    /// <summary>A change from the brand's own settings: they stay, so a colour being chosen isn't remade under the pointer.</summary>
+    private bool _keepBrand;
+
+    private bool HasTemplate() => SelectedTemplate is not null;
+
+    private bool HasSavedTemplate() => SelectedTemplate is { IsSaved: true };
+
+    /// <summary>Enter on a template: at the playhead.</summary>
+    [RelayCommand(CanExecute = nameof(HasTemplate))]
+    private void InsertTemplate()
+    {
+        if (SelectedTemplate is { } row)
+        {
+            _owner.InsertTemplate(row.Template, _owner.Position);
+        }
+    }
+
+    [RelayCommand]
+    private void SaveTemplate() => _owner.SaveSelectionAsTemplate();
+
+    [RelayCommand(CanExecute = nameof(HasSavedTemplate))]
+    private void DeleteTemplate()
+    {
+        if (SelectedTemplate is { IsSaved: true } row)
+        {
+            _owner.DeleteSavedTemplate(row.Template);
+        }
+    }
+
+    [RelayCommand]
+    private void ExportPack() => _owner.ExportPack();
+
+    [RelayCommand]
+    private void ImportPack() => _owner.ImportPack();
 
     public ObservableCollection<MediaItemViewModel> Items { get; } = [];
 
@@ -123,6 +300,15 @@ public sealed partial class MediaPanelViewModel : ObservableObject
         if (IsShown)
         {
             LoadThumbnails();
+        }
+
+        if (_keepBrand)
+        {
+            _brandShown = project.Brand ?? BrandKit.Default;
+        }
+        else
+        {
+            RefreshBrand();
         }
     }
 

@@ -240,4 +240,79 @@
   <data name="NotACube" xml:space="preserve">
     <value>{0} ليس جدول بحث يستطيع هذا التطبيق قراءته (ملف .cube).</value>
   </data>
+  <data name="ShapeSpeechBubble" xml:space="preserve">
+    <value>فقاعة كلام</value>
+  </data>
+  <data name="ShapeFreehand" xml:space="preserve">
+    <value>رسم حر</value>
+  </data>
+  <data name="ShapeStepNumber" xml:space="preserve">
+    <value>رقم خطوة</value>
+  </data>
+  <data name="ShapeSpotlight" xml:space="preserve">
+    <value>بقعة ضوء</value>
+  </data>
+  <data name="ShapeMagnify" xml:space="preserve">
+    <value>مكبّر</value>
+  </data>
+  <data name="ShapePicture" xml:space="preserve">
+    <value>صورة</value>
+  </data>
+  <data name="FieldTitle" xml:space="preserve">
+    <value>العنوان</value>
+  </data>
+  <data name="FieldSubtitle" xml:space="preserve">
+    <value>العنوان الفرعي</value>
+  </data>
+  <data name="FieldName" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="FieldRole" xml:space="preserve">
+    <value>الصفة</value>
+  </data>
+  <data name="FieldNumbered" xml:space="preserve">
+    <value>النص {0}</value>
+  </data>
+  <data name="DefaultTitle" xml:space="preserve">
+    <value>اكتب العنوان هنا</value>
+  </data>
+  <data name="DefaultSubtitle" xml:space="preserve">
+    <value>سطر عنه</value>
+  </data>
+  <data name="DefaultName" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="DefaultRole" xml:space="preserve">
+    <value>الصفة أو الوظيفة</value>
+  </data>
+  <data name="DefaultEndTitle" xml:space="preserve">
+    <value>شكرًا على المشاهدة</value>
+  </data>
+  <data name="TemplateTitleCentered" xml:space="preserve">
+    <value>بطاقة عنوان في الوسط</value>
+  </data>
+  <data name="TemplateTitleBand" xml:space="preserve">
+    <value>عنوان على شريط</value>
+  </data>
+  <data name="TemplateTitleTyped" xml:space="preserve">
+    <value>عنوان يُكتب حرفًا حرفًا</value>
+  </data>
+  <data name="TemplateThirdBar" xml:space="preserve">
+    <value>شريط سفلي</value>
+  </data>
+  <data name="TemplateThirdLine" xml:space="preserve">
+    <value>شريط سفلي بخط</value>
+  </data>
+  <data name="TemplateThirdTab" xml:space="preserve">
+    <value>شريط سفلي بلسان</value>
+  </data>
+  <data name="TemplateEndCard" xml:space="preserve">
+    <value>بطاقة ختام بالشعار</value>
+  </data>
+  <data name="NotAPack" xml:space="preserve">
+    <value>{0} ليس حزمة قوالب.</value>
+  </data>
+  <data name="NewerPack" xml:space="preserve">
+    <value>أنشأ إصدار أحدث من هذا التطبيق {0}.</value>
+  </data>
 </root>

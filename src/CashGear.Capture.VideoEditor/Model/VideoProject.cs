@@ -120,6 +120,12 @@ public sealed record VideoProject(int Version, ProjectCanvas Canvas, IReadOnlyLi
     /// <summary>1: to 1.1.1. 2: the canvas's background is a record (Phase 20). 3: media has transcripts (Phase 21). 4: any media, motion, transitions, templates, markers (Phase 22). See <see cref="ProjectJson"/>'s migrations.</summary>
     public const int CurrentVersion = 4;
 
+    /// <summary>The colours, fonts and files its templates take (null: none chosen yet).</summary>
+    public BrandKit? Brand { get; init; }
+
+    /// <summary>Named places on the timeline, in time order.</summary>
+    public IReadOnlyList<TimelineMarker>? Markers { get; init; }
+
     /// <summary>Where the last item ends.</summary>
     [JsonIgnore]
     public double Duration => Tracks.Count == 0 ? 0 : Tracks.Max(t => t.End);

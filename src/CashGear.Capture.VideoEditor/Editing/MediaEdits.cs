@@ -68,6 +68,25 @@ public static class MediaEdits
         return (PlacePicture(project, clip, trackId), clip.Id);
     }
 
+    /// <summary>
+    /// A clip put into the timeline at a time, on the screen's track when there is one: everything from there on, on every
+    /// unlocked track, moves on by its length. How an intro goes in at the start.
+    /// </summary>
+    public static (VideoProject Project, string? Id) InsertPushing(VideoProject project, MediaAsset asset, double at)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(asset);
+        at = Times.Round(Math.Max(0, at));
+        var length = Times.Round(asset.Duration > 0 ? asset.Duration : DefaultLength);
+        var split = TimelineEdits.Split(project, at);
+        var pushed = split with
+        {
+            Tracks = [.. split.Tracks.Select(t => t.Locked ? t : t.WithItems(t.Items.Select(i => i.Start >= at - Times.Epsilon ? i with { Start = Times.Round(i.Start + length) } : i)))],
+            Markers = split.Markers?.Select(m => m.Time >= at - Times.Epsilon ? m with { Time = Times.Round(m.Time + length) } : m).ToList(),
+        };
+        return Add(pushed, asset, at, pushed.Tracks.FirstOrDefault(t => t.Kind == TrackKind.Video)?.Id);
+    }
+
     /// <summary>Takes an asset out of the project, when no clip or background uses it.</summary>
     public static VideoProject RemoveAsset(VideoProject project, string assetId)
     {
@@ -80,7 +99,10 @@ public static class MediaEdits
     {
         ArgumentNullException.ThrowIfNull(project);
         return project.Canvas.Background.PictureAssetId == assetId
-            || project.Tracks.SelectMany(t => t.Clips).Any(c => c.AssetId == assetId || c.Background?.PictureAssetId == assetId || c.Effects?.LutAssetId == assetId);
+            || project.Brand is { } brand && (brand.LogoAssetId == assetId || brand.IntroAssetId == assetId || brand.OutroAssetId == assetId)
+            || project.Tracks.SelectMany(t => t.Clips).Any(c => c.AssetId == assetId || c.Background?.PictureAssetId == assetId || c.Effects?.LutAssetId == assetId)
+            || project.Tracks.SelectMany(t => t.Items.OfType<AnnotationItem>()).Any(a => a.PictureAssetId == assetId)
+            || project.Tracks.SelectMany(t => t.Items.OfType<TemplateItem>()).Any(i => i.AssetIds?.Values.Contains(assetId) == true);
     }
 
     /// <summary>A picture smaller than the canvas keeps its pixels; a larger one fits inside it.</summary>

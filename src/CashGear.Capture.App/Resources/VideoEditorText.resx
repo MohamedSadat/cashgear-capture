@@ -2411,4 +2411,220 @@
   <data name="UndoTextAnimation" xml:space="preserve">
     <value>Animation</value>
   </data>
+  <data name="CalloutsMenu" xml:space="preserve">
+    <value>Callo_uts</value>
+  </data>
+  <data name="InsertBubbleMenu" xml:space="preserve">
+    <value>_Speech Bubble</value>
+  </data>
+  <data name="InsertFreehandMenu" xml:space="preserve">
+    <value>_Freehand</value>
+  </data>
+  <data name="InsertFreehandTip" xml:space="preserve">
+    <value>Draw on the preview with the mouse; Esc cancels</value>
+  </data>
+  <data name="InsertStepMenu" xml:space="preserve">
+    <value>Step _Number</value>
+  </data>
+  <data name="InsertSpotlightMenu" xml:space="preserve">
+    <value>S_potlight</value>
+  </data>
+  <data name="InsertMagnifyMenu" xml:space="preserve">
+    <value>_Magnifier</value>
+  </data>
+  <data name="InsertTemplateMenu" xml:space="preserve">
+    <value>_Title or Lower Third</value>
+  </data>
+  <data name="InsertTemplateTip" xml:space="preserve">
+    <value>Show the templates beside the preview</value>
+  </data>
+  <data name="DrawFreehandNow" xml:space="preserve">
+    <value>Draw on the preview. Esc cancels.</value>
+  </data>
+  <data name="ShapeSpeechBubble" xml:space="preserve">
+    <value>Speech bubble</value>
+  </data>
+  <data name="ShapeFreehand" xml:space="preserve">
+    <value>Freehand</value>
+  </data>
+  <data name="ShapeStepNumber" xml:space="preserve">
+    <value>Step number</value>
+  </data>
+  <data name="ShapeSpotlight" xml:space="preserve">
+    <value>Spotlight</value>
+  </data>
+  <data name="ShapeMagnify" xml:space="preserve">
+    <value>Magnifier</value>
+  </data>
+  <data name="ShapePicture" xml:space="preserve">
+    <value>Picture</value>
+  </data>
+  <data name="UndoAddCallout" xml:space="preserve">
+    <value>Add a Callout</value>
+  </data>
+  <data name="StepNumberLabel" xml:space="preserve">
+    <value>Number</value>
+  </data>
+  <data name="UndoStepNumber" xml:space="preserve">
+    <value>Step Number</value>
+  </data>
+  <data name="MagnifyZoom" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="SpotlightDim" xml:space="preserve">
+    <value>Dim</value>
+  </data>
+  <data name="TemplatesTab" xml:space="preserve">
+    <value>Titles</value>
+  </data>
+  <data name="TemplatesNote" xml:space="preserve">
+    <value>Drag one onto the timeline, or press Enter to put it at the playhead. Their colours and fonts are the brand's.</value>
+  </data>
+  <data name="TemplatesListName" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="InsertTemplateButton" xml:space="preserve">
+    <value>Insert</value>
+  </data>
+  <data name="InsertTemplateButtonTip" xml:space="preserve">
+    <value>Put the chosen template at the playhead (Enter)</value>
+  </data>
+  <data name="SaveTemplateButton" xml:space="preserve">
+    <value>Save Selection…</value>
+  </data>
+  <data name="SaveTemplateTip" xml:space="preserve">
+    <value>Save the selected annotations, or template, in your library</value>
+  </data>
+  <data name="SaveTemplateTitle" xml:space="preserve">
+    <value>Save as a Template</value>
+  </data>
+  <data name="MyTemplate" xml:space="preserve">
+    <value>My template</value>
+  </data>
+  <data name="SaveTemplateNeedsSelection" xml:space="preserve">
+    <value>Select an annotation or a template on the timeline first.</value>
+  </data>
+  <data name="DeleteTemplateButton" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="DeleteTemplateTip" xml:space="preserve">
+    <value>Take the chosen template out of your library (Delete)</value>
+  </data>
+  <data name="ExportPackButton" xml:space="preserve">
+    <value>Export a Pack…</value>
+  </data>
+  <data name="ExportPackTip" xml:space="preserve">
+    <value>Save your templates, their files and your brand kit as one .cgpack file, to share</value>
+  </data>
+  <data name="ImportPackButton" xml:space="preserve">
+    <value>Import a Pack…</value>
+  </data>
+  <data name="ImportPackTip" xml:space="preserve">
+    <value>Add the templates and files of a .cgpack file to your library</value>
+  </data>
+  <data name="PackFilter" xml:space="preserve">
+    <value>Template packs|*.cgpack|All files|*.*</value>
+  </data>
+  <data name="ExportPackTitle" xml:space="preserve">
+    <value>Export a Template Pack</value>
+  </data>
+  <data name="ImportPackTitle" xml:space="preserve">
+    <value>Import a Template Pack</value>
+  </data>
+  <data name="PackName" xml:space="preserve">
+    <value>My templates</value>
+  </data>
+  <data name="PackFailed" xml:space="preserve">
+    <value>The pack couldn't be read or written: {0}</value>
+  </data>
+  <data name="TemplateSaved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="TemplateBuiltIn" xml:space="preserve">
+    <value>Built in</value>
+  </data>
+  <data name="TemplateItemName" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="TemplateTitleKind" xml:space="preserve">
+    <value>Template</value>
+  </data>
+  <data name="UndoAddTemplate" xml:space="preserve">
+    <value>Add a Template</value>
+  </data>
+  <data name="UndoTemplate" xml:space="preserve">
+    <value>Template</value>
+  </data>
+  <data name="UndoMoveTemplate" xml:space="preserve">
+    <value>Move the Template</value>
+  </data>
+  <data name="BrandTab" xml:space="preserve">
+    <value>Brand</value>
+  </data>
+  <data name="BrandNote" xml:space="preserve">
+    <value>Colours and fonts every template takes. Changing one changes them all.</value>
+  </data>
+  <data name="BrandPrimary" xml:space="preserve">
+    <value>Main colour</value>
+  </data>
+  <data name="BrandSecondary" xml:space="preserve">
+    <value>Second colour</value>
+  </data>
+  <data name="BrandAccent" xml:space="preserve">
+    <value>Accent colour</value>
+  </data>
+  <data name="BrandText" xml:space="preserve">
+    <value>Text colour</value>
+  </data>
+  <data name="BrandHeadingFont" xml:space="preserve">
+    <value>Heading font</value>
+  </data>
+  <data name="BrandBodyFont" xml:space="preserve">
+    <value>Body font</value>
+  </data>
+  <data name="BrandLogo" xml:space="preserve">
+    <value>Logo</value>
+  </data>
+  <data name="BrandIntro" xml:space="preserve">
+    <value>Intro clip</value>
+  </data>
+  <data name="BrandOutro" xml:space="preserve">
+    <value>Outro clip</value>
+  </data>
+  <data name="BrandLook" xml:space="preserve">
+    <value>Look</value>
+  </data>
+  <data name="BrandUseLook" xml:space="preserve">
+    <value>Use the Brand's Look</value>
+  </data>
+  <data name="BrandInsertLogo" xml:space="preserve">
+    <value>Put the Logo at the Playhead</value>
+  </data>
+  <data name="BrandAddIntro" xml:space="preserve">
+    <value>Add the Intro at the Start</value>
+  </data>
+  <data name="BrandAddOutro" xml:space="preserve">
+    <value>Add the Outro at the End</value>
+  </data>
+  <data name="BrandSave" xml:space="preserve">
+    <value>Keep as My Brand Kit</value>
+  </data>
+  <data name="BrandUseSaved" xml:space="preserve">
+    <value>Use My Brand Kit</value>
+  </data>
+  <data name="BrandNoSaved" xml:space="preserve">
+    <value>No brand kit has been kept yet.</value>
+  </data>
+  <data name="BrandNoFile" xml:space="preserve">
+    <value>Choose that file for the brand first.</value>
+  </data>
+  <data name="BrandPickFile" xml:space="preserve">
+    <value>Choose a File for the Brand</value>
+  </data>
+  <data name="UndoBrand" xml:space="preserve">
+    <value>Brand Kit</value>
+  </data>
+  <data name="UndoBrandClip" xml:space="preserve">
+    <value>Add from the Brand</value>
+  </data>
 </root>

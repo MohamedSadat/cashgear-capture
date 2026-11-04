@@ -12,6 +12,24 @@ public enum AnnotationShape
     Highlight,
     Blur,
     Pixelate,
+
+    /// <summary>A rounded box with a tail, and a text in it.</summary>
+    SpeechBubble,
+
+    /// <summary>A pen stroke through its <see cref="AnnotationItem.Points"/>.</summary>
+    Freehand,
+
+    /// <summary>A numbered badge.</summary>
+    StepNumber,
+
+    /// <summary>Everything outside its box dimmed.</summary>
+    Spotlight,
+
+    /// <summary>A circle of what is under it shown larger in a circle beside it.</summary>
+    Magnify,
+
+    /// <summary>A picture in its box: a template's logo.</summary>
+    Picture,
 }
 
 public enum Easing
@@ -76,6 +94,20 @@ public sealed record AnnotationItem : TimelineItem
     public double FadeIn { get; init; }
 
     public double FadeOut { get; init; }
+
+    /// <summary>A pen stroke's points, as parts of its box from the top-left (x, y, x, y…).</summary>
+    public IReadOnlyList<double>? Points { get; init; }
+
+    /// <summary>A step's number.</summary>
+    public int Number { get; init; } = 1;
+
+    /// <summary>A magnifier's circle, from the middle of what it shows, in canvas pixels; a speech bubble's tip, as parts of its box from the top-left.</summary>
+    public double CalloutX { get; init; }
+
+    public double CalloutY { get; init; }
+
+    /// <summary>A picture's file among the project's assets.</summary>
+    public string? PictureAssetId { get; init; }
 
     /// <summary>How its fade in goes.</summary>
     public MotionEasing FadeInCurve { get; init; }

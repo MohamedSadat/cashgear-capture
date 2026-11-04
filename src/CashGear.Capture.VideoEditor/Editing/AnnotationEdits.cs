@@ -27,6 +27,10 @@ public static class AnnotationEdits
             AnnotationShape.Arrow or AnnotationShape.Line => (new AnnotationKeyframe(0, w * 0.36, h * 0.62, w * 0.14, -h * 0.18), new AnnotationLook(StrokeWidth: line), ""),
             AnnotationShape.Highlight => (new AnnotationKeyframe(0, w * 0.35, h * 0.46, w * 0.3, h * 0.08), new AnnotationLook(Color: "#FFF100"), ""),
             AnnotationShape.Blur or AnnotationShape.Pixelate => (new AnnotationKeyframe(0, w * 0.375, h * 0.425, w * 0.25, h * 0.15), new AnnotationLook(Strength: Math.Max(4, Math.Round(h / 50.0))), ""),
+            AnnotationShape.SpeechBubble => (new AnnotationKeyframe(0, w * 0.35, h * 0.3, w * 0.3, h * 0.18), new AnnotationLook(Color: "#202020", Fill: "#FFFFFF", FontSize: Math.Round(h / 24.0)), VideoEditorStrings.DefaultAnnotationText),
+            AnnotationShape.StepNumber => (new AnnotationKeyframe(0, w * 0.5, h * 0.5, 0, 0), new AnnotationLook(FontSize: Math.Round(h / 18.0)), ""),
+            AnnotationShape.Spotlight => (new AnnotationKeyframe(0, w * 0.3, h * 0.3, w * 0.4, h * 0.4), new AnnotationLook(Color: "#000000", Opacity: 0.6), ""),
+            AnnotationShape.Magnify => (new AnnotationKeyframe(0, w * 0.2, h * 0.5, h * 0.12, h * 0.12), new AnnotationLook(StrokeWidth: line, Strength: 2), ""),
             _ => (new AnnotationKeyframe(0, w * 0.35, h * 0.35, w * 0.3, h * 0.3), new AnnotationLook(StrokeWidth: line), ""),
         };
         var item = new AnnotationItem
@@ -40,6 +44,9 @@ public static class AnnotationEdits
             Keyframes = [keyframe],
             FadeIn = 0.2,
             FadeOut = 0.2,
+            CalloutX = shape switch { AnnotationShape.SpeechBubble => 0.2, AnnotationShape.Magnify => h * 0.3, _ => 0 },
+            CalloutY = shape switch { AnnotationShape.SpeechBubble => 1.5, AnnotationShape.Magnify => -h * 0.15, _ => 0 },
+            Number = shape == AnnotationShape.StepNumber ? NextStep(project) : 1,
         };
 
         var free = project.Tracks.FirstOrDefault(t => t.Kind == TrackKind.Annotation && !t.Locked && !t.Items.Any(i => i.Overlaps(item.Start, item.End)));
@@ -51,6 +58,27 @@ public static class AnnotationEdits
         var count = project.Tracks.Count(t => t.Kind == TrackKind.Annotation);
         var track = new Track(Ids.New(), TrackKind.Annotation, count == 0 ? VideoEditorStrings.TrackAnnotations : VideoEditorStrings.TrackAnnotationsNumbered(count + 1), [item]);
         return (project with { Tracks = [.. project.Tracks, track] }, item.Id);
+    }
+
+    /// <summary>The number a new step gets: one past the highest.</summary>
+    private static int NextStep(VideoProject project) =>
+        project.Tracks.SelectMany(t => t.Items.OfType<AnnotationItem>()).Where(a => a.Shape == AnnotationShape.StepNumber).Select(a => a.Number).DefaultIfEmpty(0).Max() + 1;
+
+    /// <summary>A pen stroke through <paramref name="points"/> (canvas pixels), its box round them, on the first annotation track with room.</summary>
+    public static (VideoProject Project, string Id) AddFreehand(VideoProject project, IReadOnlyList<SKPoint> points, double at, double length = AnnotationItem.DefaultLength)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(points);
+        var (left, top) = (points.Min(p => p.X), points.Min(p => p.Y));
+        var (width, height) = (Math.Max(1f, points.Max(p => p.X) - left), Math.Max(1f, points.Max(p => p.Y) - top));
+        var (added, id) = Add(project, AnnotationShape.Freehand, at, length);
+        var item = (AnnotationItem)added.Find(id)!.Value.Item;
+        return (added.WithItem(item with
+        {
+            Keyframes = [new AnnotationKeyframe(0, Math.Round(left, 1), Math.Round(top, 1), Math.Round(width, 1), Math.Round(height, 1))],
+            Points = [.. points.SelectMany(p => new[] { Math.Round((p.X - left) / width, 4), Math.Round((p.Y - top) / height, 4) })],
+            Look = item.Look with { StrokeWidth = Math.Max(2, Math.Round(project.Canvas.Height / 120.0)) },
+        }), id);
     }
 
     /// <summary>
@@ -148,6 +176,7 @@ public static class AnnotationEdits
         var dy = to.Y - from.Y;
         var moved = grip switch
         {
+            PreviewGrip.Corner when item.Shape == AnnotationShape.Magnify => place with { Width = Math.Max(8, place.Width + Math.Max(dx, dy)), Height = Math.Max(8, place.Height + Math.Max(dx, dy)) },
             PreviewGrip.Corner => place with { Width = Math.Max(8, place.Width + dx), Height = Math.Max(8, place.Height + dy) },
             PreviewGrip.Start => place with { X = place.X + dx, Y = place.Y + dy, Width = place.Width - dx, Height = place.Height - dy },
             PreviewGrip.End => place with { Width = place.Width + dx, Height = place.Height + dy },

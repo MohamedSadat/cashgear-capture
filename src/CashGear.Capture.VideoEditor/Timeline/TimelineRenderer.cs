@@ -284,8 +284,9 @@ public sealed class TimelineRenderer : IDisposable
         {
             Clip { IsSolid: true } => VideoEditorStrings.SolidLabel,
             Clip clip => project.Asset(clip.AssetId)?.Name ?? VideoEditorStrings.MissingMedia,
-            AnnotationItem { Shape: AnnotationShape.Text } written => written.Text.ReplaceLineEndings(" "),
+            AnnotationItem { Shape: AnnotationShape.Text or AnnotationShape.SpeechBubble } written => written.Text.ReplaceLineEndings(" "),
             AnnotationItem annotation => ShapeLabel(annotation.Shape),
+            TemplateItem template => template.Template.Fields is { Count: > 0 } fields ? template.Text(fields[0]).ReplaceLineEndings(" ") : template.Template.Name,
             EffectItem { Kind: EffectKind.Clicks } => VideoEditorStrings.ClickHighlights,
             EffectItem { Kind: EffectKind.Keystrokes } => VideoEditorStrings.Keystrokes,
             EffectItem => VideoEditorStrings.Pointer,
@@ -376,6 +377,12 @@ public sealed class TimelineRenderer : IDisposable
         AnnotationShape.Highlight => VideoEditorStrings.ShapeHighlight,
         AnnotationShape.Blur => VideoEditorStrings.ShapeBlur,
         AnnotationShape.Pixelate => VideoEditorStrings.ShapePixelate,
+        AnnotationShape.SpeechBubble => VideoEditorStrings.ShapeSpeechBubble,
+        AnnotationShape.Freehand => VideoEditorStrings.ShapeFreehand,
+        AnnotationShape.StepNumber => VideoEditorStrings.ShapeStepNumber,
+        AnnotationShape.Spotlight => VideoEditorStrings.ShapeSpotlight,
+        AnnotationShape.Magnify => VideoEditorStrings.ShapeMagnify,
+        AnnotationShape.Picture => VideoEditorStrings.ShapePicture,
         _ => shape.ToString(),
     };
 
