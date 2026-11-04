@@ -178,16 +178,16 @@
     <value>المزيد من التسجيل</value>
   </data>
   <data name="RecordWindow" xml:space="preserve">
-    <value>تسجيل _نافذة…</value>
+    <value>تسجيل نافذة (_W)…</value>
   </data>
   <data name="RecordAllMonitors" xml:space="preserve">
-    <value>تسجيل _كل الشاشات</value>
+    <value>تسجيل كل الشاشات (_A)</value>
   </data>
   <data name="ScheduleRecording" xml:space="preserve">
-    <value>_جدولة تسجيل…</value>
+    <value>جدولة تسجيل (_S)…</value>
   </data>
   <data name="ManageProfiles" xml:space="preserve">
-    <value>_ملفات تعريف التسجيل…</value>
+    <value>ملفات تعريف التسجيل (_P)…</value>
   </data>
   <data name="RecordProfile" xml:space="preserve">
     <value>التسجيل بملف تعريف</value>

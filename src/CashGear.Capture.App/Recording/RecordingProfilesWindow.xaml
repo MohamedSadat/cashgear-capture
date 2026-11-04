@@ -93,14 +93,14 @@
       <ComboBox x:Name="LookBox" Grid.Row="7" Grid.Column="1" ItemsSource="{Binding DataContext.Looks, RelativeSource={RelativeSource AncestorType=Window}}" SelectedValuePath="Id" SelectedValue="{Binding Look}"
                 AutomationProperties.Name="{x:Static r:RecordingText.ProfileLookName}" />
 
-      <WrapPanel Grid.Row="8" Grid.Column="1" Orientation="Vertical" MaxHeight="96" Margin="0,4,0,0">
+      <StackPanel Grid.Row="8" Grid.Column="1" Margin="0,4,0,0">
         <CheckBox Content="{x:Static r:RecordingText.ProfilePointer}" IsChecked="{Binding IncludeCursor}" />
         <CheckBox Content="{x:Static r:RecordingText.ProfileSystemAudio}" IsChecked="{Binding SystemAudio}" />
         <CheckBox Content="{x:Static r:RecordingText.ProfileMicrophone}" IsChecked="{Binding Microphone}" />
-        <CheckBox Content="{x:Static r:RecordingText.ProfileBurnIn}" IsChecked="{Binding BurnIn}" Margin="16,2,0,4" />
-        <CheckBox Content="{x:Static r:RecordingText.ProfileClicks}" IsChecked="{Binding Clicks}" Margin="16,2,0,4" />
-        <CheckBox Content="{x:Static r:RecordingText.ProfileWebcam}" IsChecked="{Binding Webcam}" Margin="16,2,0,4" />
-      </WrapPanel>
+        <CheckBox Content="{x:Static r:RecordingText.ProfileClicks}" IsChecked="{Binding Clicks}" />
+        <CheckBox Content="{x:Static r:RecordingText.ProfileWebcam}" IsChecked="{Binding Webcam}" />
+        <CheckBox Content="{x:Static r:RecordingText.ProfileBurnIn}" IsChecked="{Binding BurnIn}" />
+      </StackPanel>
     </Grid>
 
     <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">

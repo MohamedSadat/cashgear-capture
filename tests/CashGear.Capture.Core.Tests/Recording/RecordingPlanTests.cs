@@ -40,6 +40,15 @@ public sealed class RecordingPlanTests
         length.Should().Be(TimeSpan.FromSeconds(seconds));
     }
 
+    [Fact]
+    public void Arabic_digits_are_read_too()
+    {
+        RecordingCommandLine.TryLength("٠٠:٣٠:٠٠", out var length).Should().BeTrue();
+        length.Should().Be(TimeSpan.FromMinutes(30));
+        RecordingCommandLine.TryMoment("١٤:٣٠", Now, out var moment).Should().BeTrue();
+        moment.Should().Be(Now.AddMinutes(30));
+    }
+
     [Theory]
     [InlineData("0")]
     [InlineData("")]

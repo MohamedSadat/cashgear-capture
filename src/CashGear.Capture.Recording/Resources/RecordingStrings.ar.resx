@@ -157,7 +157,7 @@
     <value>لا يوجد هنا مرمّز يقبل HEVC بعمق 10 بت، لذا سُجّلت شاشة HDR بعد تحويلها إلى SDR.</value>
   </data>
   <data name="HdrKeepsOverlaysApart" xml:space="preserve">
-    <value>يُبقي تسجيل HDR هذا النقرات والمفاتيح وكاميرا الويب منفصلة ليستخدمها محرر الفيديو، لأنها تُرسم بنطاق SDR.</value>
+    <value>يُبقي تسجيل HDR هذا النقرات والمفاتيح وكاميرا الويب منفصلة ليضيفها محرر الفيديو، لأنها تُرسم بنطاق SDR.</value>
   </data>
   <data name="WebcamBackgroundNotLive" xml:space="preserve">
     <value>لم تُعالج خلفية كاميرا الويب في هذا التسجيل ({0}). يمكن لمحرر الفيديو أن يعالجها لاحقًا.</value>

@@ -80,7 +80,12 @@ public sealed class ArabicUiTests : IDisposable
             "settings",
             leftToRight: () => [(FrameworkElement)window.FindName("WebcamArea")],
             data: text => text.Contains(paths.SettingsDirectory, StringComparison.OrdinalIgnoreCase) || text.Contains("Capture_", StringComparison.Ordinal),
-            pages: () => tabs.Items.Cast<TabItem>().Select((tab, i) => ($"{i + 1:00}", (Action)(() => tabs.SelectedItem = tab))).ToList());
+            pages: () =>
+            [
+                .. tabs.Items.Cast<TabItem>().Select((tab, i) => ($"{i + 1:00}", (Action)(() => tabs.SelectedItem = tab))),
+                ("recording-monitors", () => ShowSection(tabs, 3, SettingsText.SeveralMonitorsSection)),
+                ("overlays-webcam", () => ShowSection(tabs, 4, OverlaysText.LiveBackgroundLabel)),
+            ]);
 
         Pass("Settings", problems);
     });
@@ -214,6 +219,14 @@ public sealed class ArabicUiTests : IDisposable
 
         Pass("Toolbars", problems);
     });
+
+    /// <summary>A tab scrolled to the part of it that holds this text, to be looked at.</summary>
+    private static void ShowSection(TabControl tabs, int tab, string text)
+    {
+        tabs.SelectedIndex = tab;
+        tabs.UpdateLayout();
+        Descendants(((TabItem)tabs.Items[tab]).Content as DependencyObject ?? tabs).OfType<TextBlock>().FirstOrDefault(b => b.Text == text)?.BringIntoView();
+    }
 
     /// <summary>What comes from the PC, not the app: monitor names, window titles, times typed, a frame rate.</summary>
     private static bool IsData(string text) => text.Contains("DISPLAY", StringComparison.Ordinal) || text.All(c => c < 128) || text.Contains(':', StringComparison.Ordinal) || text.Contains('«', StringComparison.Ordinal);

@@ -42,6 +42,7 @@ internal static class DiagnosticsRedaction
     private static readonly HashSet<string> StatePaths = new(StringComparer.OrdinalIgnoreCase)
     {
         "lastCapture.windowTitle",
+        "scheduledRecording.windowTitle",
         "videoEditor.recentProjects[]",
         "videoEditor.lastRecording",
         "videoEditor.exportFolder",

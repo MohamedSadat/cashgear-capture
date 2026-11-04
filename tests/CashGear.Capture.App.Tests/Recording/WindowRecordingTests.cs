@@ -252,5 +252,72 @@ public sealed class WindowRecordingTests : IDisposable
         result.Note.Should().Contain("was closed");
     });
 
+    /// <summary>A lost graphics device: the picture holds, and a window goes on in the same file, as a monitor's area does.</summary>
+    [Fact(Timeout = 60_000)]
+    public Task A_lost_device_holds_the_picture_and_the_window_comes_back_in_the_same_file() => StaDispatcher.RunAsync(async () =>
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var recorder = new ScreenRecorder(TestFfmpeg.Encoders, _store, _interop, new FakeSound(), _loggers);
+        var window = Plain(Colors.Magenta, 200, 200, 400, 300, topmost: false);
+        WgcFittedStream? stream = null;
+        try
+        {
+            await Task.Delay(300, ct);
+            var scale = Scale(window);
+            var (width, height) = EncoderPresets.EvenSize((int)Math.Round(400 * scale), (int)Math.Round(300 * scale));
+            var options = Options(window, width, height, "lost.mp4");
+            recorder.StreamFactory = async (request, token) =>
+            {
+                stream = await WgcFittedStream.StartAsync(
+                    _interop,
+                    [new FittedSource(request.Window!.Title, i => i.CreateItemForWindow(request.Window.Handle), new PixelRect(0, 0, width, height), null, request.Window.Handle)],
+                    width,
+                    height,
+                    request.Area,
+                    false,
+                    _loggers,
+                    token,
+                    request.SlotOf);
+                return stream;
+            };
+
+            await recorder.StartAsync(options, ct);
+            await Task.Delay(800, ct);
+
+            // Where the window is on the picture follows it.
+            stream!.TryMovingMap(out var before).Should().BeTrue();
+            window.Left = 300;
+            await Task.Delay(300, ct);
+            stream.TryMovingMap(out var after).Should().BeTrue();
+            (after.OriginX - before.OriginX).Should().BeApproximately(100 * scale, 2);
+
+            stream.SimulateDeviceLoss();
+            window.Background = new SolidColorBrush(Color.FromRgb(240, 0, 240));
+            await Task.Delay(1500, ct);
+            window.Background = new SolidColorBrush(Colors.Magenta);
+            await Task.Delay(800, ct);
+            var generation = stream.Generation;
+            var result = await recorder.StopAsync(ct);
+
+            generation.Should().BeGreaterThan(0, "the capture was made again");
+            result.AllParts.Should().ContainSingle();
+            result.Note.Should().NotBeNullOrEmpty();
+            using var reader = new MediaReader(result.Path);
+            var wrong = 0;
+            reader.ReadVideo((_, w, h, bgra) =>
+            {
+                if (!Look(bgra, w, w / 2, h / 2).Magenta)
+                {
+                    wrong++;
+                }
+            });
+            wrong.Should().Be(0, "the picture holds while it is gone");
+        }
+        finally
+        {
+            window.Close();
+        }
+    });
+
     private static void Log(string line) => OverlayRecordingTests.Report(line);
 }

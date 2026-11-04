@@ -376,10 +376,10 @@
     <value>كما في الإعدادات</value>
   </data>
   <data name="ScheduleButton" xml:space="preserve">
-    <value>_جدولة</value>
+    <value>جدولة (_S)</value>
   </data>
   <data name="RecordNowButton" xml:space="preserve">
-    <value>_تسجيل الآن</value>
+    <value>تسجيل الآن (_R)</value>
   </data>
   <data name="BadTime" xml:space="preserve">
     <value>«{0}» ليس وقتًا. اكتبه هكذا: 14:30.</value>
@@ -394,25 +394,25 @@
     <value>جدولة تسجيل</value>
   </data>
   <data name="ScheduleWhat" xml:space="preserve">
-    <value>_ما يُسجَّل:</value>
+    <value>ما يُسجَّل (_W):</value>
   </data>
   <data name="ScheduleWhatName" xml:space="preserve">
     <value>ما يُسجَّل</value>
   </data>
   <data name="ScheduleProfile" xml:space="preserve">
-    <value>_ملف التعريف:</value>
+    <value>ملف التعريف (_P):</value>
   </data>
   <data name="ScheduleProfileName" xml:space="preserve">
     <value>ملف التعريف</value>
   </data>
   <data name="ScheduleStartAt" xml:space="preserve">
-    <value>البدء _في:</value>
+    <value>البدء في (_A):</value>
   </data>
   <data name="ScheduleStartTimeName" xml:space="preserve">
     <value>وقت البدء</value>
   </data>
   <data name="ScheduleStop" xml:space="preserve">
-    <value>الإي_قاف:</value>
+    <value>الإيقاف (_T):</value>
   </data>
   <data name="ScheduleStopName" xml:space="preserve">
     <value>طريقة الإيقاف</value>
@@ -472,79 +472,79 @@
     <value>ملفات التعريف</value>
   </data>
   <data name="ProfileAdd" xml:space="preserve">
-    <value>إ_ضافة</value>
+    <value>إضافة (_A)</value>
   </data>
   <data name="ProfileDuplicate" xml:space="preserve">
-    <value>ت_كرار</value>
+    <value>تكرار (_U)</value>
   </data>
   <data name="ProfileDelete" xml:space="preserve">
-    <value>_حذف</value>
+    <value>حذف (_D)</value>
   </data>
   <data name="ProfileName" xml:space="preserve">
-    <value>الا_سم:</value>
+    <value>الاسم (_N):</value>
   </data>
   <data name="ProfileNameName" xml:space="preserve">
     <value>الاسم</value>
   </data>
   <data name="ProfileArea" xml:space="preserve">
-    <value>ي_سجّل:</value>
+    <value>يسجّل (_R):</value>
   </data>
   <data name="ProfileAreaName" xml:space="preserve">
     <value>ما يسجّله</value>
   </data>
   <data name="ProfileFps" xml:space="preserve">
-    <value>معدل الإ_طارات:</value>
+    <value>معدل الإطارات (_F):</value>
   </data>
   <data name="ProfileFpsName" xml:space="preserve">
     <value>معدل الإطارات</value>
   </data>
   <data name="ProfileQuality" xml:space="preserve">
-    <value>ال_جودة:</value>
+    <value>الجودة (_Q):</value>
   </data>
   <data name="ProfileQualityName" xml:space="preserve">
     <value>الجودة</value>
   </data>
   <data name="ProfileTracks" xml:space="preserve">
-    <value>م_سارات الصوت:</value>
+    <value>مسارات الصوت (_T):</value>
   </data>
   <data name="ProfileTracksName" xml:space="preserve">
     <value>مسارات الصوت</value>
   </data>
   <data name="ProfileKeys" xml:space="preserve">
-    <value>الم_فاتيح المعروضة:</value>
+    <value>المفاتيح المعروضة (_K):</value>
   </data>
   <data name="ProfileKeysName" xml:space="preserve">
     <value>المفاتيح المعروضة</value>
   </data>
   <data name="ProfileBackground" xml:space="preserve">
-    <value>خلف ال_شخص:</value>
+    <value>خلف الشخص (_P):</value>
   </data>
   <data name="ProfileBackgroundName" xml:space="preserve">
     <value>خلف الشخص في كاميرا الويب</value>
   </data>
   <data name="ProfileLook" xml:space="preserve">
-    <value>الم_ظهر في المحرر:</value>
+    <value>المظهر في المحرر (_L):</value>
   </data>
   <data name="ProfileLookName" xml:space="preserve">
     <value>المظهر في المحرر</value>
   </data>
   <data name="ProfilePointer" xml:space="preserve">
-    <value>المؤ_شر</value>
+    <value>المؤشر (_P)</value>
   </data>
   <data name="ProfileSystemAudio" xml:space="preserve">
-    <value>صوت ال_نظام</value>
+    <value>صوت النظام (_Y)</value>
   </data>
   <data name="ProfileMicrophone" xml:space="preserve">
-    <value>المي_كروفون</value>
+    <value>الميكروفون (_M)</value>
   </data>
   <data name="ProfileBurnIn" xml:space="preserve">
-    <value>رسم الإ_ضافات في الفيديو</value>
+    <value>رسم التراكبات داخل الفيديو (_O)</value>
   </data>
   <data name="ProfileClicks" xml:space="preserve">
-    <value>الن_قرات</value>
+    <value>النقرات (_C)</value>
   </data>
   <data name="ProfileWebcam" xml:space="preserve">
-    <value>كاميرا الوي_ب</value>
+    <value>كاميرا الويب (_W)</value>
   </data>
   <data name="PersonFinderDownloading" xml:space="preserve">
     <value>يجري تنزيل النموذج الذي يحدد الشخص للمرة القادمة</value>

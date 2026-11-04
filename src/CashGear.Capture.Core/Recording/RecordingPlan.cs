@@ -189,11 +189,22 @@ public static class RecordingCommandLine
         return null;
     }
 
+    /// <summary>Arabic-Indic digits as 0 to 9: what an Arabic keyboard types.</summary>
+    private static string WesternDigits(string text) =>
+        string.Create(text.Length, text, static (span, from) =>
+        {
+            for (var i = 0; i < span.Length; i++)
+            {
+                var c = from[i];
+                span[i] = c is >= '\u0660' and <= '\u0669' ? (char)('0' + (c - '\u0660')) : c is >= '\u06F0' and <= '\u06F9' ? (char)('0' + (c - '\u06F0')) : c;
+            }
+        });
+
     /// <summary>A length: <c>00:30:00</c>, <c>30:00</c> (minutes and seconds), or <c>90</c> (seconds).</summary>
     public static bool TryLength(string text, out TimeSpan length)
     {
         length = default;
-        var parts = text.Split(':');
+        var parts = WesternDigits(text).Split(':');
         var numbers = new int[parts.Length];
         if (parts.Length > 3)
         {
@@ -217,6 +228,7 @@ public static class RecordingCommandLine
     public static bool TryMoment(string text, DateTimeOffset after, out DateTimeOffset moment)
     {
         moment = default;
+        text = WesternDigits(text);
         if (TimeOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var time))
         {
             moment = RecordingPlan.NextAt(time, after);
