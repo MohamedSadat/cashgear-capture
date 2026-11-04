@@ -40,6 +40,13 @@ public sealed class GoldenFrameTests : IDisposable
         { "Vertical", "vertical", 0.5 }, { "Vertical", "vertical", 6.0 }, { "Vertical", "vertical", 12.0 },
     };
 
+    /// <summary>
+    /// <c>Fixtures\phase-21</c> was written once by the Phase 21 code (tag <c>phase-21-done</c>) and never again: a project
+    /// (version 3) whose recording has a transcript, cut through it (a crossfading join on the sound), with a word corrected
+    /// nowhere, a speed change, a freeze, annotations, a zoom and captions. Its frames are what that code drew after opening it.
+    /// </summary>
+    public static TheoryData<double> Phase21Frames => new() { 0.4, 1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 11.0, 12.1, 14.5, 16.0, 17.5 };
+
     private VideoProject Open() => ProjectFile.Open(Path.Combine(Fixture, "Project.cgcap"), _cache).Project;
 
     internal static SKBitmap Render(VideoProject project, double time, double scale = 1)
@@ -99,5 +106,43 @@ public sealed class GoldenFrameTests : IDisposable
         }
 
         differing.Should().Be(0, "every pixel of {0} is as Phase 20 drew it", name);
+    }
+
+    [Theory]
+    [MemberData(nameof(Phase21Frames))]
+    public void A_phase_21_project_draws_the_same_pixels(double time)
+    {
+        using var turn = new CashGear.Capture.Tests.MachineTurn(); // a look's shadow and a blurred area
+        var folder = Path.Combine(AppContext.BaseDirectory, "Fixtures", "phase-21");
+        var name = FormattableString.Invariant($"frame-{time:00.00}.png");
+        using var golden = SKBitmap.Decode(Path.Combine(folder, name)).Copy(SKColorType.Bgra8888);
+        using var drawn = Render(ProjectFile.Open(Path.Combine(folder, "Project.cgcap"), _cache).Project, time);
+        (drawn.Width, drawn.Height).Should().Be((golden.Width, golden.Height));
+        var differing = 0;
+        for (var y = 0; y < golden.Height; y++)
+        {
+            for (var x = 0; x < golden.Width; x++)
+            {
+                if (golden.GetPixel(x, y) != drawn.GetPixel(x, y))
+                {
+                    differing++;
+                }
+            }
+        }
+
+        differing.Should().Be(0, "every pixel of {0} is as Phase 21 drew it", name);
+    }
+
+    [Fact]
+    public void A_phase_21_project_keeps_its_transcript_and_its_cut()
+    {
+        var folder = Path.Combine(AppContext.BaseDirectory, "Fixtures", "phase-21");
+        var project = ProjectFile.Open(Path.Combine(folder, "Project.cgcap"), _cache).Project;
+        project.Asset("rec")!.Transcript!.Words.Should().HaveCount(20);
+        var view = CashGear.Capture.VideoEditor.Editing.TranscriptView.Build(project);
+        view.Words.Where(w => w.IsCut).Select(w => w.Word.Text).Should().Contain("um");
+        var sound = project.Tracks.First(t => t.HasSound).Clips.ToList();
+        var pictures = project.Tracks.First(t => t.Kind == TrackKind.Video).Clips.ToList();
+        (sound[0].SourceOut - pictures[0].SourceOut).Should().BeApproximately(CashGear.Capture.VideoEditor.Editing.TranscriptEdits.JoinLength / 2, 1e-3, "the sound goes on by half a join into what was cut");
     }
 }
