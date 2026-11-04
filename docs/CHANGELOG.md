@@ -1917,3 +1917,89 @@ A recording now looks finished before any editing. The screen sits on a backgrou
 - **Export:** at 1080p a look adds about 17 ms a frame, most of it scaling the picture to its place. On the processor each frame the camera moves also works its shadow out again (about 390 ms when all of it is in view) and blurs (130 to 390 ms), so zooms take longer to export than to play.
 - **Downloads:** ONNX Runtime and DirectML add 34 MB to the app.
 - **A caption track's "no box" isn't kept (since Phase 17):** a style without a box is saved without the field, and reads back with the default box. Left as it is here: 1.1.1's projects must keep drawing what they drew.
+
+## Phase 21 — Editing by Transcript (2026-11-04)
+
+A talk-over can now be edited by editing its text. The transcript belongs to the recording, so it stays right through any cut. Deleting words makes a real cut in the silence between them that doesn't click; typing only corrects the text. Long pauses get shortened and filler words removed from review lists, in English and Arabic. Arabic has word times now, and captions can be translated between English and Arabic on this PC.
+
+### Added
+- **The transcript belongs to the media** (`MediaAsset.Transcript`, `MediaTranscript`, `SpokenWord`): words on the sound stream's own clock. `TranscriptView` shows them through the clips, source time to timeline time, in timeline order and with the words no clip plays between their neighbours. It is a pure function of the project, so a cut on the timeline shows at once, the reverse too, and undo restores both. It survives cuts, speed changes (ramps too) and freezes.
+- **Making one:** the panel's **Make the Transcript…** (the Captions from Speech window in another mode) hears each media file on the chosen sound track on its own clock, whatever the timeline does with it.
+- **From captions:** a caption track with words is offered as the transcript when a project has none; a caption without words becomes a sentence. Going the other way, **Make Captions** (Insert › Captions from the Transcript) makes a caption track of the words as this cut plays them, with the look of the captions there are.
+- **The transcript panel** (View › Transcript, `Ctrl+T`, a button in the transport), beside the preview:
+  - paragraphs split at pauses of 0.8 s in the speech (and stay put when a pause is cut), each with its time, the current word marked while playing, a click seeking;
+  - each paragraph runs in its own language's direction, whatever the window's;
+  - **Delete** (`TranscriptEdits`) makes a ripple cut on every unlocked track with the existing range delete, in the middle of the longest quiet stretch between the words;
+  - a **16 ms crossfade** on the sound at each cut: the two sound clips go on by 8 ms each into what was cut and overlap, so the mixer's own crossfade does it, in the preview and the export alike, the pictures untouched and the timeline no longer;
+  - **typing corrects** (or `F2`, or a double click): the box sits on the word and a note says the video stays as it is; the transcript and the captions saying that word change, and nothing else. A corrected word has a dotted line and remembers what was heard;
+  - **cut words** are struck through and can be hidden; `Ctrl+R` puts them back, as one clip again when nothing else is cut there, and into the captions over that place;
+  - undo covers everything, each edit being a project;
+  - drawn by the control itself (`TranscriptControl`), only what is in view; `TranscriptAutomationPeer` gives screen readers paragraphs of words to select and invoke; keyboard throughout; system colours under high contrast.
+- **Silences** (`SilenceFinder`): the voice track's pauses longer than 0.75 s (a slider), from the sound's levels and the words, listed to play, keep or shorten to 0.3 s (a slider), or Shorten All. A pause across a cut counts whole.
+- **Filler words** (`FillerFinder`): um, uh, er, ah, hmm and how they get written; اممم, إممم, آه; "يعني" only when asked; the first of a word said twice ("the the"); and **voiced sound between words that has no word** (a pitch, so a click doesn't count). Listed to play, keep or remove, or Remove All. `FillerPrompts` asks Whisper to write them down.
+- **Word times:**
+  - `WhisperTranscriber` uses whisper.cpp's alignment heads (DTW);
+  - `SoundLevels` measures each stream once (level, a sharper level for finding gaps, voicing, every 10 ms), kept with the waveforms by `SoundLevelStore`;
+  - `TranscriptBuilder.Refine` moves each boundary to the quiet moment nearest it.
+  - Captions from speech get the better times too.
+- **Arabic word times:** tokens that split a letter between them are put together from the segment's text (`WhisperTranscriber.Spell`), which is why Arabic had no words. Whatever still comes without them is cut by the sentence, and the panel says so.
+- **Translation** (Insert › Translate…, `TranslateViewModel`): English captions into Arabic with Opus-MT `en-ar` through `CashGear.Capture.Inference` (`MarianTranslator`, `SentencePieces`, 113 MB, pinned and checked), and Arabic speech into English with Whisper's translate task. A caption track per language; the export window asks which to burn in (`ExportRequest.BurnTrack`) and saves SRT and WebVTT for each (`name.Track.srt`).
+- **Pro features:** `ProFeature.TranscriptEditing` (cutting, correcting, silences, fillers) and `ProFeature.Translation`, behind `IFeatureGate`. Reading and seeking are free, and everything stays free in this version.
+- **Project version 3**, with a step in `ProjectJson.Migrate`: a transcript is new and optional, so there is nothing to change. Since this version a caption style's "no box" is written as null and stays (older files keep reading as they always did: a missing box is the default box).
+- **Tests:** a Phase 20 project written by the Phase 20 code before anything changed (`Fixtures\phase-20`, 18 golden frames); `TranscriptTests`, `TranscriptAcceptanceTests`, `TranscriptEditorTests`, `TranscriptWindowTests`, `TranslationTests`, `ArabicSpeechMeasurement`; `Speech.SayWithWordsAsync` has the voice's own word marks; `StampedRecording.SoundAt` puts any sound in a recording; `MachineTurn.RunAsync` holds the turn across asynchronous work.
+
+### Deviations from the spec
+- **Word times are from DTW in chunks, then the sound.** Whisper.net 1.9.1 hands back only the first thirty-second window of a run with alignment on, with no error. So the sound goes in chunks of at most 27 s, each ending at the quietest moment of its last 5 s. Measured against a voice's own word marks, the error fell from about 180 ms (token times) to about 30 ms.
+- **"Exactly those words" is checked by hearing it again.** The test re-transcribes the cut recording and compares, besides checking each cut against the voice's word marks. The speech is Windows' voice, whose word marks are the truth to check against, since this PC has no real talk-over with known word times. A real voice is by ear (TESTING.md).
+- **The hand-labelled filler clip is written, not recorded:** a script the voice reads, with 26 um and uh at known places.
+- **Arabic is cut by the word, not by the sentence:** the plan's fallback applies only where Whisper gives no word times. It was measured on 43 real Arabic clips (TESTING.md), with the user's go-ahead: the first 25 MB of FLEURS `ar_eg` (CC-BY 4.0), kept in a temporary folder and not in the repository.
+- **One transcript per media file:** of one sound stream. The window offers one sound track at a time for a transcript.
+- **Restoring brings back the media and captions:** annotations, zooms and the like cut with the words stay cut (they aren't in the transcript); undo brings them back.
+- **The filler prompt is on by default for transcripts, and never for captions from speech:** a caption shouldn't say "um" unless asked.
+- **A timeline range delete has no crossfade:** only transcript edits do. A cut on the timeline is exactly what was marked. Equal-power crossfades are Phase 23.
+- **Opus-MT is greedy and without a cache of the decoder's past:** one token at a time, the likeliest, on the processor. 160 to 300 ms a short sentence here, and captions are short. The translation is said to need reading, in the window itself.
+- **Translated captions have no word times.**
+- **Xenova's conversion of Opus-MT is used** rather than onnx-community's: 113 MB against 239 MB, the same weights. It states no licence of its own; the weights' CC-BY 4.0 is credited (`docs/LICENSES.md`, which marks this for the owner's look).
+
+### Fixed during development
+- **Word times were far off for cutting:** token times were 170 to 200 ms from the true boundaries on average and up to a second, fine for captions and not for cuts. See above.
+- **Valleys in the wrong place:** an "s" looks like a quiet moment in plain loudness, so cuts landed before it. The search for a boundary uses the sound with its high frequencies made more of. The Small model's alignment ends words about 50 ms early and Base's about 20 ms: `WhisperTranscriber.Lag`.
+- **A sound before a word counted as that word:** an unwritten "um" between two words became the start of the next one, whose middle then fell inside it, so taking the sound out marked the word as cut. A word now starts at the last sound before its end.
+- **A constant level counted as silence:** with no dynamic range, the threshold above the noise sat above everything.
+- **A cut's join left a sliver:** cutting next to an earlier cut kept 8 ms of the sound clip's overlap as a clip of its own. Joins are taken out first.
+- **A cut word's place** was the sound clip's end, 8 ms past the real cut, so restoring shifted the timeline by that much.
+- **The panel's first look** didn't see an offer of caption words.
+- **A filler kept** came back after any edit (it was remembered by its time on the timeline, which had moved). It is remembered by its place in the media.
+- **The view jumped** to the word being said whenever the selection changed.
+- **The panel's buttons ignored the dark theme** (a style based on the default one, read before the window's theme applied).
+- **`[BLANK_AUDIO]` and the like** came back as captions from silent stretches. They aren't speech.
+- **This phase's own tests made timed tests miss:** a recording's sound 57 ms late, a preview a picture short (296 of 300), a different one each time, in two of the first three full runs. The cause was speech tests (now that the models are on this PC), a 10-minute recording being made and measured, and the 20-minute export, all working every core outside the desktop tests' lock. They take it now (`MachineTurn.RunAsync`), for the whole of each test.
+
+### Tested
+- **Automated tests:** with the desktop (the user's go-ahead) 1864 tests: 1845 pass, 19 skipped, 0 failed (12 min). The last two full runs are clean; two of the three before the fix below each had one timed test miss. The skips: 6 need RNNoise, and 13 run only when asked for. Phase 20 had 1738.
+- **Acceptance:**
+  - **Ten words of a five-minute recording:** 301.7 s of speech, 853 words said, heard by Small on the GTX 1650; ten words, evenly spaced, with both neighbours heard right. The furthest a cut goes into a neighbour is 49 ms (the true gaps from the voice's marks). Heard again, 839 of the 846 words that should be there are, and none of the ten is. The most left of a cut word is 130 ms: the end of "exactly", which Whisper then hears as "lee". So one of the ten left a sound behind.
+  - **No click:** the test's tone cut across its phase: a step of 0.2116 without the crossfade and 0.0117 with it, against the tone's own 0.0115. On speech, every cut's biggest step is under the sound's around it.
+  - **A cut on the timeline shows in the transcript at once, and the reverse; undo restores both:** `TranscriptEditorTests`.
+  - **Ten minutes of silences:** 300 pauses shortened, 600 s to 111.5 s, exported and read back: every flash with its beep within a frame, −29.9 to 0.1 ms over 300 pairs, the last −3.3 ms.
+  - **Filler words:** 26 of 26 um and uh found with the prompt, 1 false of 27 (4 %). Without the prompt Whisper writes only 10 of them, which is the effect the plan asked to measure.
+  - **Arabic, measured without a bound:** 43 clips of real Arabic speech (526 s), Small on the GTX 1650: every segment (62 of 62) has word times, where Phase 17 usually had none. 75 % of the words are right in order, on these speakers. 98 % of 674 boundaries inside speech are in a dip of the sound. Ten words cut and heard again: 676 of 751 words there, against 699 with nothing cut; 6 of the ten cuts have their neighbours heard side by side.
+  - **Old projects:** 1.1.1 and Phase 20 projects open, draw byte for byte what they drew (34 golden frames), and their caption words become the transcript when the offer is taken.
+- **Word times on a voice's own marks** (47 s of English, 132 boundaries, the distance from the true gap): token start times 197 ms on average with Base and 167 ms with Small; DTW with the valley search 24 ms and 34 ms, half within 9 to 10 ms, 81 % and 73 % within 30 ms.
+- **Whisper on the graphics card:** alignment works through Vulkan on the GTX 1650, the same as on the processor.
+- **Translation:** short English sentences come out as natural Arabic. `TranslationTests` checks their meanings.
+- **The desktop tests** ran with the panel in the real window, with real keys and a click, in Arabic and right to left, with the user's go-ahead.
+- **Build:** `dotnet build --no-incremental` without warnings.
+- **Not run** (pending in TESTING.md): a real voice by ear, Narrator and a real high-contrast switch on the panel, the first download of the translator in the installed app, Vulkan on AMD and Intel, native Arabic listeners' view of the cuts.
+
+### Known limitations
+- **Word times are close, not exact:** on the voice's marks, 73 to 81 % of boundaries are within 30 ms and the worst 300 to 400 ms off. A cut can leave the tail of a word or take the very start of the next. Listen to what you cut; undo or Restore puts it back.
+- **Arabic:** measured on read sentences, with no truth for each word and no native listener yet. Whisper's own text is the weaker part (75 % right in order with Small on these speakers; use Medium when you can). A clip's last word often ended well before its sound did (half within 140 ms, 90 % within 1.2 s), partly the clips' own noise, so the last word of a sentence can leave something behind. Listen to Arabic cuts.
+- **The transcript hears one sound stream of each media file.** A stream's transcript isn't heard through another's clips: delete the microphone's clip and its words count as cut, even with the screen still there.
+- **Fillers:** a real voice's um and uh may be written less readily than the voice's reading of them. Voiced sound without a word is only "possibly" a filler: someone else talking is flagged too. Sentence-only stretches can't lose a word.
+- **Restoring** brings back the time at the clips' places; if the clips around it were moved apart, it goes after the first.
+- **Silences** are measured on one track: music under the voice hides them unless it is on a track of its own. Levels are measured for all of a stream, once, on first use (seconds per minute of sound).
+- **Captions after a cut** keep the words said on each side, as before; Make Captions rebuilds them.
+- **Translation:** English into Arabic, and Arabic into English from speech, not from text. A caption is translated a sentence at a time, without context. Whisper's English gives the gist with Small and gets things wrong: on the test clips "the phone that works by satellites" came out as "the goal that is connected with the artificial clouds". It has segment times only.
+- **Downloads:** the translator is 113 MB on first use.
+- **The panel:** a screen reader's list of a long transcript is long. The view is worked out again on each edit, 13.5 ms for 7,200 words through 301 clips in a Debug build, which a drag on the timeline does often.

@@ -48,7 +48,7 @@ The video editor's tests write their own recordings (`StampedRecording`, with th
 
 The transcription tests use the Whisper models in `tools\whisper` and skip without them; download them once with `tools\get-whisper-models.ps1` (about 250 MB, checksum-verified). Their speech is made by Windows' own English voices in memory (nothing is played), and one test runs on the graphics card (Vulkan) when it can. The Arabic caption test reads its export back with Windows OCR and needs the Arabic OCR language.
 
-The webcam background tests use the person finder in `tools\inference` and skip without it; download it once with `tools\get-inference-models.ps1` (462 KB, checksum-verified). One test runs on the graphics card (DirectML) and fails if it falls back to the processor. The 30-pictures-a-second budget is timed on its own, since other test assemblies compete for the card:
+The webcam background and translation tests use the person finder and the translator in `tools\inference` and skip without them; download them once with `tools\get-inference-models.ps1` (114 MB, checksum-verified). One test runs on the graphics card (DirectML) and fails if it falls back to the processor. The 30-pictures-a-second budget is timed on its own, since other test assemblies compete for the card:
 
 ```powershell
 dotnet test --project tests/CashGear.Capture.Inference.Tests --filter-method "*keeps_up*" --explicit only --output Detailed
@@ -892,3 +892,90 @@ So the shadow and the background are kept between frames on the processor, and w
 - **The new features in the installed app:** a real recording opening with the Soft look; zooms with motion blur and the spring at 60 fps, by eye; a sharp pointer in a zoom; a look with a picture; 9:16, 1:1 and 4:5 exports in a player and on a phone; the panel in Arabic with an Arabic keyboard; a saved look after a restart.
 - **Other graphics cards:** the SkSL looks on AMD and Intel in OpenGL; DirectML on them, and the fallback to the processor where Direct3D 12 is missing.
 - **Narrator and real high contrast** on the look panel.
+
+## Phase 21 results (2026-11-04)
+
+The reference PC of Phase 18. The desktop tests had the user's go-ahead for this phase. **How it was tested:**
+- **Old projects:** `Fixtures\phase-20` was written once by the code at `phase-20-done`, before this phase changed anything: a project with a gradient, a framed picture, zooms with motion blur and a spring, layouts, a webcam background and captions, a vertical one over the blurred screen, and the 18 frames they drew after opening. `Fixtures\v1.1.1` stays as it was.
+- **Speech with its truth:** Windows' voice reads a script (made in memory, never played), and it marks when each word starts (`Speech.SayWithWordsAsync`). The script goes into a real recording (`StampedRecording.SoundAt`), which Whisper hears through the app's own path. The voice's marks have no ends, so a word's end is taken from the silence before the next word's mark, when there is one.
+- **Hearing it again:** after a cut the sound is mixed as the timeline plays it and transcribed again, an independent check that the words cut are gone and their neighbours are there.
+- **Arabic:** this PC has no Arabic voice. `ArabicSpeechMeasurement` (explicit, `CASHGEAR_ARABIC_CLIPS`) ran on 43 clips of real Arabic speech, 526 s with a second of silence between them, from the first 25 MB of [FLEURS](https://huggingface.co/datasets/google/fleurs) `ar_eg` dev (CC-BY 4.0), with the user's go-ahead. They stayed in a temporary folder and aren't in the repository.
+
+```bash
+dotnet test --project tests/CashGear.Capture.VideoEditor.Tests --filter-method "*Word_times_on_real_arabic_speech" --explicit only --output Detailed
+```
+
+### Acceptance
+
+| Item | Automated (result) | By hand |
+|---|---|---|
+| Deleting 10 words of a 5-minute English recording cuts exactly those words | `TranscriptAcceptanceTests.Deleting_ten_words…`: pass. 301.7 s of speech, 853 words said, heard by Small on the GTX 1650; ten words, evenly spaced, with both neighbours heard right. The furthest a cut goes into a neighbour is 49 ms (the true gaps from the voice's marks). Heard again, 839 of the 846 words that should be there are, and none of the ten is. The most left of a cut word is 130 ms: the end of "exactly", which Whisper then hears as "lee". So one of the ten left a sound behind. With Small; on the voice's marks Base is a little nearer (below). | A real voice, by ear |
+| No click at any cut | Same test: at every cut the biggest step between samples is under the sound's around it. `A_cut_through_a_loud_tone…`: pass. A tone cut a quarter of a cycle out of phase: 0.2116 without the crossfade, **0.0117 with it**, its own 0.0115 | By ear |
+| A cut on the timeline shows in the transcript at once, and the reverse; undo restores both | `TranscriptEditorTests.A_cut_on_the_timeline…`: pass | |
+| Shortening the silences of a 10-minute talk keeps sound and picture together (< 1 frame) | `Shortening_the_silences_of_ten_minutes…`: pass. A flash with a beep every 2 s; 300 pauses shortened, 600 s to 111.5 s; exported and read back: **−29.9 to 0.1 ms over 300 pairs, the last −3.3 ms** | |
+| Filler words: ≥ 80 % of um/uh found with ≤ 10 % false | `Filler_words_are_found…`: pass. 26 um and uh said by the voice: **26 found (100 %), 1 false of 27 (4 %)**. Windows' voice, not a person | A real voice |
+| Arabic fillers, measured without a bound | `ArabicSpeechMeasurement`: 43 read clips (526 s) with no fillers in them, with the prompt: **1 written, 9 sounds without a word flagged**, about one a minute, all false. 72 % of words right in order, against 75 % without the prompt. How many real ones it finds needs a person saying them | A real voice saying them |
+| Projects from 1.1.1 and Phase 20 open; their caption words become the transcript | `GoldenFrameTests`: pass, all 34 frames byte for byte. `TranscriptTests.Old_projects_open…`: pass | |
+| Arabic word times | `ArabicSpeechMeasurement`: 100 % of segments have word times after putting split letters together. See below. **Cut by the word; the sentence fallback remains for segments without them** | A native listener |
+| Panel: right to left, keyboard, UI Automation, high contrast | `TranscriptWindowTests` with real keys and a click; `ArabicVideoEditorUiTests.The_transcript_panel…`; `TranscriptEditorTests`: peers, keys, high-contrast colours in a drawn picture: pass | Narrator, a real high-contrast switch |
+| Translation | `TranslationTests`: pass, the model's own pieces and meanings; `TranscriptEditorTests`, `An_export_with_two_languages…`: pass | Quality, by a reader |
+| The whole suite | with the desktop (the user's go-ahead) 1864 tests: 1845 pass, 19 skipped, 0 failed (12 min). The last two full runs are clean; two of the three before the fix below each had one timed test miss. The skips: 6 need RNNoise, and 13 run only when asked for. Phase 20 had 1738. | |
+
+### What the prompt does for fillers
+
+The clip's 26 um and uh, Small on the GTX 1650:
+
+| | Written by Whisper | Found (with sound without a word) | False |
+|---|---|---|---|
+| No prompt | 10 | 10 of 26 | 1 |
+| `FillerPrompts.For("en")` | 27 | **26 of 26** | 1 |
+
+So the transcript window asks for fillers by default. On the voice's clearly said um and uh, voiced sound without a word adds little, as Whisper hears them with the prompt.
+
+### What word times are worth
+
+47 s of English read by the voice, 132 boundaries between words, on the distance from each true gap between words:
+
+| Boundary from | Mean, Base | Mean, Small | Half within | Within 30 ms | Within 100 ms | Worst |
+|---|---|---|---|---|---|---|
+| Whisper's token start times (Phase 17) | 197 ms | 167 ms | 124, 94 ms | 20, 23 % | | 959, 1009 ms |
+| DTW alone | 42 ms | 55 ms | 30, 30 ms | 50, 46 % | | 234, 410 ms |
+| DTW, then the quiet moment near it (this phase) | **24 ms** | **34 ms** | 9, 10 ms | 81, 73 % | 95, 87 % | 294, 380 ms |
+
+Costs no more than token times: 4.3 s against 4.3 s for the 47 s on Base. Why DTW runs in chunks: Whisper.net 1.9.1 hands back only the first window of a run with alignment on (5 of 9 segments here), with no error.
+
+### Arabic
+
+Small on the GTX 1650, 43 clips with a second of silence between them, 526 s (`ArabicSpeechMeasurement`):
+
+| Measure | Result |
+|---|---|
+| Segments with word times | **62 of 62** (Phase 17: usually none) |
+| Words said, heard, the same in order | 794, 761, 595 (75 %) |
+| With the fillers' prompt | 575 of 794 (72 %) |
+| First word's start against the clip's sound | half within 10 ms, 90 % within 570 ms, mean 201 ms, worst 1440 ms |
+| Last word's end against the clip's sound | half within 140 ms, 90 % within 1160 ms, mean 415 ms, worst 2200 ms |
+| Boundaries inside speech in a dip of at least 6 dB | 662 of 674 (98 %) |
+| Ten words cut, then heard again | 676 of the 751 that should be there, against 699 with nothing cut; 6 of 10 cuts have their neighbours heard side by side; one word (في) is still heard in its place |
+| Into English with Whisper's translate task | 46 segments, the gist with mistakes: "the phone that works by satellites" came out as "the goal that is connected with the artificial clouds" |
+
+There is no truth for each Arabic word here, and the clips are read sentences, not a talk-over. That is why it is cut by the word with a warning in Known limitations rather than held to a bound, as the plan asks, and why a native listener's check is pending.
+
+### Export time
+
+| Project | Before (Phase 20) | After |
+|---|---|---|
+| **The reference project:** three cuts out of a 20-minute recording, 320 × 180, 30,885 frames, nothing of this phase in it (`ExportAcceptanceTests`) | 68 s | 69 s |
+
+Drawing wasn't changed. A cut's crossfade is two sound clips overlapping by 16 ms, so it costs nothing a mix didn't already pay, plus opening the next clip's reader, which already happened. The preview draws as it did; the panel draws on its own when the word being said changes.
+
+### An exit crash seen once
+
+The first desktop run of `TranscriptWindowTests` ended with a fatal access violation (0xC0000005) in the test process, after its tests had finished. That test had just failed and closed the window while playing. It didn't come back: `Closing_the_window_while_it_plays_is_safe` closes five windows at different moments of playing, three runs clean, and the full runs after it. If it comes back, closing while playing is where to look.
+
+### Pending: by hand
+- **A real voice, by ear:** a talk-over recorded by a person: cut ten words and listen at each cut; shorten its silences; its um and uh with their own room tone. Whether anything is audible at a crossfade.
+- **Arabic by a native listener:** words cut from real speech, in a dialect and in Modern Standard Arabic; fillers said by a person.
+- **The panel in the installed app:** a long recording, playing with the word following; Narrator reading the words; a real high-contrast switch.
+- **The first download of the translator** in the installed app.
+- **Vulkan on AMD and Intel** with alignment on.

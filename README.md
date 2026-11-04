@@ -48,7 +48,7 @@ Run `CashGear.Capture-stable-Setup.exe`. No administrator rights are needed: the
 - For screen recording: FFmpeg's libraries. Run `tools\get-ffmpeg.ps1` once (it downloads a pinned, checksum-verified LGPL build into the git-ignored `tools\ffmpeg`); the build copies the six libraries the app uses next to it as `ffmpeg\`. Without them everything else works and recording says what is missing. See [docs/LICENSES.md](docs/LICENSES.md).
 - For microphone noise suppression: RNNoise. Run `tools\get-rnnoise.ps1` once; it needs Visual Studio's C++ compiler ("Desktop development with C++"). It builds `rnnoise.dll` from the pinned, checksum-verified RNNoise 0.2 source into the git-ignored `tools\rnnoise`, and the build copies it next to the app as `rnnoise\`. Without it Settings doesn't offer noise suppression.
 - For the transcription tests: Whisper models. Run `tools\get-whisper-models.ps1` once (about 250 MB: the base and small models, checksum-verified, into the git-ignored `tools\whisper`); without them those tests skip. The app itself downloads the model a user picks the first time it is needed.
-- For the webcam background tests: the person finder. Run `tools\get-inference-models.ps1` once (462 KB, checksum-verified, into the git-ignored `tools\inference`); without it those tests skip. The app itself downloads it the first time a webcam's background is changed.
+- For the webcam background and translation tests: the person finder and the translator. Run `tools\get-inference-models.ps1` once (114 MB, checksum-verified, into the git-ignored `tools\inference`); without it those tests skip. The app itself downloads it the first time a webcam's background is changed.
 
 ## Build, test, run
 
@@ -392,14 +392,14 @@ src/CashGear.Capture.Audio      Sound devices: WASAPI capture with Windows' time
 src/CashGear.Capture.Overlays   Recording overlays: input hooks + keystroke privacy (UI Automation), pointer shapes, Direct2D compositor, webcam (Windows.Media.Capture)
 src/CashGear.Capture.Recording  Screen recording: timestamped WGC pictures + sound -> overlays on the GPU -> encoders -> temp file -> MP4; webcam track; recovery; adding overlays later
 src/CashGear.Capture.VideoEditor  Video editor core: projects (.cgcap), undo, timeline edits, decoding for the preview, the sound mixer and playback, the Skia compositor (preview and export), metadata effects, zooms and auto-zoom, captions (SRT/WebVTT), export (GIF too)
-src/CashGear.Capture.Transcription  Speech to text: Whisper (whisper.cpp through Whisper.net) on the processor or the graphics card (Vulkan), models downloaded and checked
-src/CashGear.Capture.Inference  ONNX Runtime on DirectML or the processor: models downloaded and checked, the person in a webcam's pictures found and smoothed
+src/CashGear.Capture.Transcription  Speech to text: Whisper (whisper.cpp through Whisper.net) on the processor or the graphics card (Vulkan), word times from its alignment heads, models downloaded and checked
+src/CashGear.Capture.Inference  ONNX Runtime on DirectML or the processor: models downloaded and checked, the person in a webcam's pictures found and smoothed, English translated into Arabic (Opus-MT)
 src/CashGear.Capture.Licensing  Licences and activation tokens (Ed25519, BouncyCastle), the machine id, the activation client, grace period, Pro features (net10.0)
 src/CashGear.Capture.Analyzers  Build-time only: .resx files into string classes (plurals, placeholders), and the checks for text outside them (CG0001-CG0007)
 tools/get-ffmpeg.ps1            Downloads the pinned LGPL FFmpeg build into tools/ffmpeg (not committed)
 tools/get-rnnoise.ps1           Builds rnnoise.dll from the pinned RNNoise source into tools/rnnoise (not committed; needs MSVC)
 tools/get-whisper-models.ps1    Downloads the Whisper models the transcription tests use into tools/whisper (not committed)
-tools/get-inference-models.ps1  Downloads the person finder the inference tests use into tools/inference (not committed)
+tools/get-inference-models.ps1  Downloads the person finder and the translator the inference tests use into tools/inference (not committed)
 tools/SyncTest                  Recording acceptance test: flashes + beeps, then sync, drift, CPU (docs/TESTING.md)
 tools/Bench                     Performance budgets: cold start, idle CPU/memory, hotkey to overlay; by hand a long recording and per-frame allocations
 tools/licenses                  License texts shipped with FFmpeg

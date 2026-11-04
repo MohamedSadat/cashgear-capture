@@ -124,6 +124,7 @@ The messages of .NET's own exceptions (`ArgumentException`, `InvalidOperationExc
 | microphone / system audio / webcam | الميكروفون / صوت النظام / كاميرا الويب |
 | noise suppression | منع الضوضاء |
 | captions / transcribe | التسميات التوضيحية / تحويل الكلام إلى نص |
+| transcript / filler words / silences / cut (a word) / restore | نص الكلام / كلمات الحشو / فترات الصمت / اقتطاع / استعادة |
 | encoder / quality / frames per second | المرمّز / الجودة / إطارات في الثانية |
 | upload / server / link | رفع / خادم / رابط |
 | exit | خروج |
