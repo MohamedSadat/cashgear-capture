@@ -49,6 +49,7 @@ Change them in Settings › Hotkeys. The ones with "—" have no key until you s
 | Arrows (`Shift`: 10 px) | Move the selected annotation or the crop frame; with nothing selected, scroll |
 | `Ctrl+Shift+`arrows | Resize the selected annotation by a pixel |
 | `Delete` | Delete it |
+| `Ctrl+C` / `Ctrl+V` | Copy the image, and the selected annotation with it / paste that annotation, also in another editor window |
 | `Enter` / `Esc` (cropping) | Crop / cancel |
 | `Ctrl+Z`, `Ctrl+Y` | Undo, redo |
 | `Ctrl+S`, `Ctrl+Shift+S` | Save, save as |
@@ -77,6 +78,15 @@ Change them in Settings › Hotkeys. The ones with "—" have no key until you s
 | `Ctrl+E` | Export |
 | `Ctrl++`, `Ctrl+-`, `Ctrl+0` | Zoom the timeline in, out, to fit |
 | `Ctrl+T` | Show or hide the transcript |
+| `Ctrl+M` | Show or hide the media panel (media, transitions, titles, markers, brand) |
+| `Ctrl+I` | Add a picture, video or sound at the playhead |
+| `Enter` / `Delete` (in the media panel's lists) | Use the chosen row / remove it (`F2`: rename a marker) |
+| `Ctrl+C` / `Ctrl+X` / `Ctrl+V` | Copy / cut the selected items, paste at the playhead |
+| `Ctrl`+click | Choose several items |
+| `Ctrl+G` / `Ctrl+Shift+G` | Group / ungroup them |
+| `M` | Add a marker at the playhead |
+| `Ctrl+←` / `Ctrl+→` | Go to the previous / next marker |
+| `Alt+↑` / `Alt+↓` | Move the selected item's track up / down |
 
 In the transcript's words:
 

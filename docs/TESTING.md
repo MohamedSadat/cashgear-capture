@@ -61,6 +61,8 @@ dotnet test --project tests/CashGear.Capture.VideoEditor.Tests --filter-method "
 dotnet test --project tests/CashGear.Capture.VideoEditor.Tests --filter-method "*Export_times_of_a_look_measured*" --explicit only --output Detailed
 ```
 
+Two more timed acceptance tests run on their own with those (`ProxyAcceptanceTests`, about four minutes): a minute of 4K is made, its proxy made, and it is played and exported. What this phase's drawing costs an export prints its numbers when asked for (Phase 22's results).
+
 The noise-suppression tests use the real RNNoise from `tools\rnnoise` and skip without it. Build it once with `tools\get-rnnoise.ps1`, which needs Visual Studio's C++ compiler ("Desktop development with C++").
 
 The other recording tests with sound use a generated tone (no sound is played) or real system audio with whatever is playing.
@@ -979,3 +981,68 @@ The first desktop run of `TranscriptWindowTests` ended with a fatal access viola
 - **The panel in the installed app:** a long recording, playing with the word following; Narrator reading the words; a real high-contrast switch.
 - **The first download of the translator** in the installed app.
 - **Vulkan on AMD and Intel** with alignment on.
+
+## Phase 22 results (2026-11-04)
+
+The reference PC of Phase 18. The desktop tests had the user's go-ahead for this phase. **How it was tested:**
+- **Old projects:** `Fixtures\phase-21` was written once by the code at `phase-21-done`, before this phase changed anything: a recording with a transcript, cut through it, a speed change, a freeze, annotations, a zoom and captions, and the 15 frames it drew after opening. `Fixtures\v1.1.1` and `phase-20` stay as they were.
+- **Preview against export:** the same project drawn on the GTX 1650 through the hidden OpenGL context and in memory, as in Phase 20.
+- **Media with its truth:** stamped recordings, whose every picture carries its number, and pictures written by the tests, a two-frame GIF written byte by byte among them.
+- **What these pictures aren't:** the stamped recordings are flat grey with a stamp, so they decode and encode more easily than a real screen. A real 4K recording is by hand, below.
+
+```bash
+dotnet test --project tests/CashGear.Capture.VideoEditor.Tests --filter-method "*What_this_phases_drawing_costs_an_export" --explicit only --output Detailed
+```
+
+### Acceptance
+
+| Item | Automated (result) | By hand |
+|---|---|---|
+| **M1:** the screen, the webcam, two pictures and another video export where the preview showed them | `MediaTests.Screen_webcam_two_pictures…`: pass. A 640 × 360 project read back from its MP4 every tenth frame and compared with the compositor's frame: under 3 levels at worst, the encoder's loss | With real footage |
+| **M2:** keyframed scale, rotation and opacity match between preview and export | `MotionKeyframeTests.Keyframed_scale…`: pass at three moments, under 1 level. Pixels of each lane checked in memory | |
+| **M2:** easing curves are unit-tested | `An_easing_goes_from_0_to_1…`, `Each_easing_has_its_own_shape`: pass, CSS's ease-in-out against its known values | |
+| **M3:** each transition matches between preview and export, at both clip edges, at 60 fps | `ClipEffectTests.Each_transition_matches…`: pass for all 11, over the way in from nothing, the cut and the way out to nothing. Worst of 11 moments: **dip 0.333 levels, blur 0.021, the others 0.002 or less** | |
+| **M3:** chroma key without a green fringe above a set level | `A_chroma_key_removes…`: pass on a synthetic clip (an uneven, noisy screen, a soft-edged subject). The screen goes altogether (exactly the colour behind), the subject keeps its colours, and the fringe's greenest pixel is **0 levels above red and blue, against a set level of 8 of 255** | A camera's green screen |
+| **M3:** Arabic typewriter text shows joined letters at every step | `Arabic_typewriter_text_shows_joined_letters…`: pass. At every grapheme, no pixel has more ink than the whole sentence has there, which a letter in another form would. `Arabic_typewriter_golden_frames`: three frames, identical | A native reader |
+| **M4:** a template exported as `.cgpack` and imported on a clean profile draws the same frames | `A_template_exported_as_a_pack…`: pass, 0 levels at four moments, a picture of its own and Arabic text among its parts | Between two PCs |
+| **M4:** changing the brand's colour changes every template that uses it | `Changing_the_brands_colour…`: pass, exact colours on a title and a lower third | |
+| **M5:** a 30-minute 4K project previews at full rate with proxies | `ProxyAcceptanceTests`: pass. A minute of 4K laid out thirty times, 10 s played in all from three places of the timeline, 720p proxies: **297 to 300 of 300 pictures over three runs, no draw waited, 1.9 to 2.5 ms a draw**. Without proxies, on the same flat pictures: **4 to 7 of 300, about 590 draws waited**. The bound is 297, so the lowest run only just met it. The proxy of the minute took 65 s | A real 4K recording, 30 minutes long |
+| **M5:** its export is 4K and matches a direct decode of the original | Same test: 90 frames of a range at 3840 × 2160, each stamped with the original's number, 0.00 levels from a direct decode on these flat pictures | |
+| A 1080p30 project using the phase's features previews at full rate | `Acceptance_a_1080p_project_with_this_phases_features…`: pass. A look, colour effects, a transition every 2 s, a keyed picture rotating, a lower third, a typewriter: **356 to 360 of 360 pictures over four runs, no draw waited, 8.4 to 8.7 ms a draw on average** | |
+| Projects from 1.1.1, Phase 20 and Phase 21 still open | `GoldenFrameTests`: pass, all 49 frames byte for byte | |
+| Panels: right to left, keyboard, UI Automation, high contrast | `ArabicVideoEditorUiTests.The_media_panel_on_each_of_its_tabs`, `MediaPanelWindowTests` with real keys: pass | Narrator, a real high-contrast switch, dragging a row with a real mouse |
+| The whole suite | with the desktop (the user's go-ahead) 2006 tests: 1987 pass, 19 skipped, 0 failed (16 min) in the last full run. The skips: 6 need RNNoise, and 13 run only when asked for. Phase 21 had 1864. The full run before it had 2 failures: this phase's own Arabic check taking a font's name for English text (fixed), and `The_capture_callback_allocates_nothing_per_picture` once, 0.9 B a picture, which is unexplained. Nothing in this phase touches recording; alone it then passed five times of five at 0.0 B | |
+
+### What the drawing costs an export
+
+At 1080p on the processor, over a picture alone (`MotionCostMeasurement`, a Debug build, 58 ms of which is the test's pattern being made):
+
+| What | Added to a frame |
+|---|---|
+| Colour effects | 24 ms |
+| A look-up table | 36 ms |
+| Chroma key | 44 ms |
+| A rotating, scaling picture | 3 ms |
+| A lower third | nothing to measure |
+| A magnifier | 44 ms |
+| A transition: dissolve, wipe, circle | 76 to 78 ms while it lasts (of which about 58 ms is the second clip's picture here) |
+| A transition: zoom, push | 90 to 94 ms |
+| A transition: blur | 406 ms |
+
+On the graphics card a frame with all of the phase's features but a blur took 8 to 9 ms on average.
+
+### Export time
+
+| Project | Before (Phase 21) | After |
+|---|---|---|
+| **The reference project:** three cuts out of a 20-minute recording, 320 × 180, 30,885 frames, nothing of this phase in it (`ExportAcceptanceTests`) | 69 s | 67 to 72 s over three full runs |
+
+Without anything of this phase in a project, a frame takes the paths it took: the golden frames are byte for byte.
+
+### Pending: by hand
+- **The whole of this phase in the installed app:** dragging media, transitions and templates with a real mouse; a real drop from Explorer; dragging a track's header.
+- **A real 4K recording of 30 minutes** with proxies, since the test's pictures are flat: how long the copy takes, and the preview at full rate.
+- **Real footage:** a camera's green screen for the key; other videos' frame rates, rotated phone videos.
+- **Arabic:** a native reader's look at the typewriter and at titles and lower thirds.
+- **Narrator and a real high-contrast switch** on the media panel.
+- **A `.cgpack` between two PCs**, and copy and paste between two windows of the installed app on the real clipboard.

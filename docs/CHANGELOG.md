@@ -2003,3 +2003,92 @@ A talk-over can now be edited by editing its text. The transcript belongs to the
 - **Translation:** English into Arabic, and Arabic into English from speech, not from text. A caption is translated a sentence at a time, without context. Whisper's English gives the gist with Small and gets things wrong: on the test clips "the phone that works by satellites" came out as "the goal that is connected with the artificial clouds". It has segment times only.
 - **Downloads:** the translator is 113 MB on first use.
 - **The panel:** a screen reader's list of a long transcript is long. The view is worked out again on each edit, 13.5 ms for 7,200 words through 301 clips in a Debug build, which a drag on the timeline does often.
+
+## Phase 22 — Media and Motion in the Editor (2026-11-04)
+
+The editor now takes any media, and everything in it can move. Pictures, colours and other videos go on as many tracks as they need. Every picture and annotation has keyframes for its position, scale, rotation, opacity and crop. Eleven transitions are dragged onto a cut, clips have colour effects and a chroma key, and text comes in letter by letter with Arabic letters joined. Titles and lower thirds take a brand's colours and fonts, and are shared as one file. Long projects get groups, markers, copy and paste, a ripple mode and proxies for 4K. The phase came in five milestones, each tagged (`phase-22-m1-done` … `phase-22-m5-done`).
+
+### Added
+- **M1 — Any media:**
+  - **Pictures** (`MediaAsset.IsPicture`, `PictureFile`): PNG, JPEG, WebP, BMP and GIF, read by Skia so their transparency, a camera's EXIF turn and a GIF's frames stay right. A clip has a length, and an animated picture goes round and round. A picture smaller than the canvas keeps its size.
+  - **Any video FFmpeg reads**, with its sound linked, and **colour solids** (`Clip.Solid`).
+  - **Media tracks** (`TrackKind.Media`): as many as needed. They aren't the screen, so zooms and layouts leave them where they are placed.
+  - **The Media panel** (View › Media, `Ctrl+M`, `MediaPanelViewModel`): the project's files with thumbnails and what each is, dragged onto the timeline, added with `Enter`, removed with `Delete` when nothing uses them. Files drop on the timeline from Explorer. A line shows where a drag would land. Insert › Picture, Video or Sound… (`Ctrl+I`).
+  - Moved media is found by its path or next to the project, as all media is.
+- **M2 — Transforms and keyframes:**
+  - **`ItemMotion`** on picture clips and annotations: position, scale, rotation, opacity and crop, each lane with its own keys, on top of where the item is placed, its times on the timeline. A split keeps every picture of a curve: a part of a curve is kept in short straight lines.
+  - **Easing per keyframe** (`MotionCurves`): linear, ease in, ease out, ease in and out, spring, custom Bézier.
+  - **The panel** shows the values at the playhead. With **Changes make keyframes** off, a value holds for the whole item; on, a change or a drag on the preview makes a keyframe there. Buttons add and remove keyframes and go to the next or previous one.
+  - **A keyframe lane** under the row (`TrackRow.Lane`): diamonds to click and drag; a drag is one undo step.
+  - **Annotation keyframes** have a colour, an opacity and an easing of their own (a Phase 16 limitation).
+  - **Zooms and the other tracks, decided:** a track stays where it is on the canvas by default, so no old project changes and a title doesn't fly off. **Moves with zooms** (`Track.MovesWithZoom`) puts a webcam, media or annotation track through the camera, and a blurred area on it follows the pictures it hides (a Phase 17 limitation).
+- **M3 — Transitions, clip effects, text animations:**
+  - **Eleven transitions** (`ClipTransition`, `TransitionShaders`), each an SkSL shader reading two layers: dissolve, dip to colour, wipe in four directions, slide, push (with a direction), zoom, blur, circle, with a length and a pace. Dragged from a library onto a cut or a clip's edge, or `Enter` on a chosen clip. At a cut the clips overlap by its length and what follows moves back; at a free edge the clip comes from or goes to nothing.
+  - **Fades with curves** in the picture and the sound (a Phase 16 limitation). An overlap's crossfade stays a straight line; equal power is Phase 23.
+  - **Clip effects** (`ClipEffects`) per pixel in SkSL: brightness, contrast, saturation, temperature; `.cube` look-up tables, 3D and 1D (`CubeLut`), kept with the media; chroma key with spill removal. On the processor they are drawn in strips side by side, one per core. Drop shadow, border and corners are the placement's, and a see-through picture's or keyed clip's shadow now follows its shape.
+  - **Text animations** in, during and out (`TextAnimator`): fade, slide, pop, typewriter. The typewriter counts grapheme clusters and draws the first ones of the shaped line (`ShapedLine.DrawFirst`), so each letter is where and as the whole line has it.
+- **M4 — Titles, callouts, templates, brand kit:**
+  - **Templates** (`TitleTemplate`, `TemplateItem`, `TemplateEdits`, `BuiltInTemplates`): seven drawn in code (three title cards, three lower thirds, an end card with the logo), as lists of annotations on a 1920 × 1080 canvas, so they fit any canvas. Their texts are typed in the panel. A lower third whose text is right to left goes on the other side. An item keeps a copy of its template, so a project needs nothing else.
+  - **Callouts:** speech bubbles, freehand drawn on the preview, step numbers counting up, spotlights, magnifiers, the last three being the image editor's own.
+  - **Brand kit** (`BrandKit`, `VideoProject.Brand`): four colours, heading and body fonts, a logo, intro and outro clips, a look. Templates read it when drawn, so changing it changes them all.
+  - **Library** (`TemplateLibrary`, `%AppData%\CashGear\Capture\Library`): saved templates, their files and a brand kit, exported and imported as one `.cgpack`. A name in a pack can't reach outside the library.
+- **M5 — Timeline at scale:**
+  - **Groups** (`TimelineItem.Group`, `GroupEdits`): `Ctrl`+click, `Ctrl+G`, moved, cut, deleted and keyframed as one. A cut leaves two groups.
+  - **Markers** (`VideoProject.Markers`, `MarkerEdits`): `M`, named, in their own tab, flags on the ruler, `Ctrl+←/→`. Cuts, speed changes and freezes carry them along, and a range keeps those in it.
+  - **Copy and paste** (`ClipboardEdits`): clips, annotations and templates, as a small project's JSON in a clipboard format of the app's own, so also from one window to another. In the image editor too: `Ctrl+C` with an annotation selected copies it, `Ctrl+V` pastes it (a Phase 5 limitation).
+  - **Track reordering:** a header dragged, its menu, or `Alt+↑/↓`.
+  - **Ripple mode** (`MagneticEdits`, View › Ripple Mode, a button, remembered): deleting and trimming close the gap on every unlocked track, lengthening makes room, a dragged clip goes between the others.
+  - **Proxies** (`ProxyStore`, View › Smaller Copies for the Preview): a 1080p or 720p copy of taller media, made in the background with a keyframe a second. The preview reads it and the export reads the original (a Phase 16 limitation).
+- **Pro features:** `ProFeature.MotionEffects` (every transition but dissolve and dip, clip effects, text animations) and `ProFeature.Templates` (templates, brand kit, library), behind `IFeatureGate`. Everything stays free in this version.
+- **Project version 4**, with a step in `ProjectJson.Migrate`: everything new is optional and draws nothing when absent, so there is nothing to change.
+- **Tests:** a Phase 21 project written by the Phase 21 code before anything changed (`Fixtures\phase-21`, 15 golden frames); `Fixtures\phase-22` (the Arabic typewriter); `MediaTests`, `MotionKeyframeTests`, `ClipEffectTests`, `TemplateTests`, `TimelineScaleTests`, `ProxyAcceptanceTests`, `MediaPanelTests`, `MotionEditorTests`, `TransitionPanelTests`, `TemplatePanelTests`, `TimelineScaleEditorTests`.
+
+### Deviations from the spec
+- **Pictures are read by Skia, not FFmpeg:** the plan says "any video FFmpeg reads" and pictures alongside it. FFmpeg's frames are taken as opaque throughout the editor, and a GIF's frames depend on each other.
+- **Motion is a layer on top of placement,** not a replacement for it: old projects and looks stay as they are, and a picture's `Placement` still says where it sits.
+- **Eleven transitions,** the plan's list with wipe's four directions. Slide and push take a direction in the panel. The library lists them once each.
+- **Templates are drawn in code,** not Lottie: the plan allows either, and a list of annotations is what lets a brand and a canvas change them.
+- **A rotated blurred area doesn't turn:** what is hidden is an upright box that moves, grows and is cut.
+- **The keyframe lane shows every lane's keys as one row of diamonds,** and dragging one moves the keys at that time in all of them. The values are in the panel.
+- **A group is keyframed by the same change to each member,** each about its own middle, not about the group's.
+- **Multiple selection is for grouping, copying and deleting:** dragging moves what is linked or grouped with the item under the pointer.
+- **The ripple mode's cuts are the app's own ripple cut,** on every unlocked track, keeping pictures and sound together. A clip dragged moves only on its own and linked tracks.
+- **The 30-minute 4K project is a minute of 4K laid out thirty times:** what the preview reads is the same, and making 30 minutes of 4K would take far longer than the test should.
+
+### Fixed during development
+- **A speed change or a crossfade after a transcript cut left the sound behind** (a bug since Phase 21): the sound after a cut starts 8 ms before its picture, so "everything from here on" missed it. The Phase 21 fixture has this in it, on the sound only; a project already saved stays as it is. What moves now includes the sound joined just before, and what is linked to what moves.
+- **A curve cut by a split changed shape:** a part of a curve has no curve of its own. It is kept in short straight lines, and the keyframes after the cut survive.
+- **A chroma key on a screen that wasn't the key's exact colour left it half there:** it measured how far from the key's colour, so a dim green stayed. It measures the angle of the chroma, with a floor so greys and faint tints stay.
+- **Deleting a track took away media in the panel that was never on the timeline:** only what that track alone used goes now.
+- **`Ctrl+C` in the image editor stopped copying the image** when an annotation was selected, in this phase's first go at copying annotations, which is the usual moment to copy it. An existing test caught it: the image is copied as ever, and the selected annotation is remembered too.
+- **The logo put a project's end further on** when inserted near its end: it lasts for what is left of the timeline now.
+
+### Tested
+- **Automated tests:** with the desktop (the user's go-ahead) 2006 tests: 1987 pass, 19 skipped, 0 failed (16 min) in the last full run. The skips: 6 need RNNoise, and 13 run only when asked for. Phase 21 had 1864. The full run before it had 2 failures: this phase's own Arabic check taking a font's name for English text (fixed), and `The_capture_callback_allocates_nothing_per_picture` once, 0.9 B a picture, which is unexplained. Nothing in this phase touches recording; alone it then passed five times of five at 0.0 B.
+- **Acceptance:**
+  - **M1:** the screen, the webcam, two pictures and another video, exported and read back every tenth frame against the compositor's own frame: under 3 levels at worst, the encoder's loss.
+  - **M2:** keyframed scale, rotation, opacity, position and crop on the GTX 1650 against memory: under 1 level at three moments. Easing curves unit-tested, CSS's ease-in-out against its known values.
+  - **M3:** all 11 transitions at both clip edges and at a cut, at 60 fps, the graphics card against memory: dip 0.333 levels at worst, blur 0.021, the others 0.002 or less. Chroma key on a synthetic clip: the screen goes altogether, the fringe's greenest pixel is 0 levels above red and blue against a set level of 8. Arabic typewriter: at every grapheme no pixel has more ink than the whole sentence has there, and three golden frames.
+  - **M4:** a template with a picture of its own and Arabic text, exported as `.cgpack` and imported on a clean profile: 0 levels at four moments. Changing the brand's colour changes a title and a lower third, exactly.
+  - **M5:** 30 minutes of 4K on the timeline (a minute laid out thirty times, flat pictures) with 720p proxies: 297 to 300 of 300 pictures over three runs, no draw waited, 1.9 to 2.5 ms a draw; without them 4 to 7 of 300. The bound is 297, so the lowest run only just met it. A range exported at 3840 × 2160: every frame the original's by its stamp.
+  - **Full rate:** a 1080p30 project with a look, colour effects, a transition every 2 s, a keyed rotating picture, a lower third and a typewriter, on the graphics card: 356 to 360 of 360 pictures over four runs, no draw waited, 8.4 to 8.7 ms a draw.
+  - **Old projects:** 1.1.1, Phase 20 and Phase 21 projects open and draw byte for byte what they drew (49 golden frames).
+- **Export time of the reference project:** 69 s before this phase, 67 to 72 s after it over three full runs.
+- **The desktop tests** ran with the media panel in the real window, with real keys, and on each of its tabs in Arabic and right to left, with the user's go-ahead.
+- **Build:** `dotnet build --no-incremental` without warnings.
+- **Not run** (pending in TESTING.md): dragging rows with a real mouse and a real drop from Explorer, a real 4K recording of 30 minutes, a camera's green screen, Narrator and a real high-contrast switch on the panel, a `.cgpack` between two PCs, a native reader's look at the Arabic titles and typewriter.
+
+### Known limitations
+- **Media:** an animated picture keeps at most 900 frames in memory, and pictures stay in memory while a window is open. A video's rotation flag isn't followed. A `.cube` table is 8 bits a channel.
+- **Motion:** a shadow and a border turn with their picture. Lines and arrows are found on the preview where their motion puts them, but dragging a keyed one moves its own keyframes. An item that moves with zooms is dragged on the preview where it is without the zoom. Moving a keyframe's time by the keyboard is removing it and adding another.
+- **Transitions:** what is drawn under a transition (a look's frame, a device) goes with its clip's layer, so it transitions too. One transition on a track at a moment. The sound over a transition is a straight crossfade (Phase 23). A transition costs a layer per clip: on the processor about what motion blur does.
+- **Effects:** a look-up table and a key work on 8-bit pictures, and on the processor each costs per pixel across the clip's area (at 1080p 24 to 44 ms a frame; TESTING.md). Spill removal also takes green out of green things in the subject; its slider sets how much.
+- **Chroma key:** measured on a synthetic clip, not a camera's green screen, with its noise and motion blur (by hand).
+- **Typewriter:** a lam-alef or other ligature shows whole when its first letter does. Reveals in the order written, line by line.
+- **Templates:** one font per brand slot; a template's parts don't take keyframes of their own after it is placed; lower thirds mirror by the first right-to-left text they find.
+- **Callouts:** several spotlights dim each other (the image editor shares one layer). A magnifier draws what is below it on the processor each frame. Freehand needs the mouse.
+- **Groups:** dragging on the preview moves only the item under the pointer (on the timeline, all of them).
+- **Copy and paste:** between PCs, a pasted item's media must be at the same path. A paste over a locked track goes to another.
+- **Tracks:** sound tracks stay below the others.
+- **The panel:** whether it is shown, and on which tab, isn't remembered.
+- **Proxies:** made per stream whatever part is used, kept until deleted by hand. The first picture after a seek in a proxy is still a decode away. The preview shows the copy's quality.

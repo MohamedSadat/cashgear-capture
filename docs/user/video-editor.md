@@ -8,6 +8,7 @@ Tray › **Video Editor** › **Open a Recording or Project…**, or **Edit the 
 - **The transport:** to the start, a frame back, play or pause (Space), a frame on, to the end.
 - **The timeline:** a header per track (mute, solo, shown, lock, volume) and the clips. Click or drag the ruler to move the playhead.
 - **The settings panel** for the selected item; with nothing selected (`Esc`), the project's look and canvas.
+- **The media panel** (View › Media, `Ctrl+M`, the Media button), beside the preview, with five tabs: **Media**, **Transitions**, **Titles**, **Markers** and **Brand**.
 
 ## Editing
 
@@ -17,11 +18,17 @@ Tray › **Video Editor** › **Open a Recording or Project…**, or **Edit the 
 | **Mark a range** | `I` and `O`, Shift+drag on the ruler, or drag over an empty part of a track |
 | **Cut** | `Delete` takes the marked range out of every track and closes the gap; on a selected clip it deletes the clip, and `Shift+Delete` its time too |
 | **Move and trim** | drag clips and their edges (Alt: no snapping). From the keyboard: Tab selects a clip, `Alt+←/→` moves it a frame (`Shift+Alt`: a second), `Ctrl+[` and `Ctrl+]` trim its start or end to the playhead |
+| **Copy and paste** | `Ctrl+C`, `Ctrl+X`, `Ctrl+V`: clips, annotations and templates go at the playhead, where they have room, also into another editor window |
+| **Group** | `Ctrl`+click chooses several items; `Ctrl+G` makes them move, cut and take keyframes as one; `Ctrl+Shift+G` undoes it |
+| **Markers** | `M` puts a named marker at the playhead; `Ctrl+←` and `Ctrl+→` go between them; the Markers tab renames and moves them. Cuts carry them along |
+| **Track order** | drag a track's header, use its right-click menu, or `Alt+↑` and `Alt+↓` on the selected item's track. Sound tracks stay below the others |
+| **Ripple mode** | the Ripple button or View › Ripple Mode: deleting or trimming closes the gap on every unlocked track, lengthening makes room, and dragging a clip puts it between the others |
 | **Undo** | `Ctrl+Z`, `Ctrl+Y` |
 | **Save the project** | `Ctrl+S` writes `name.cgcap`. **Save with Media…** puts the recordings inside |
 
 ## Adding things
 
+- **Any media** (the Media tab, Insert › Picture, Video or Sound…, `Ctrl+I`, or dropped on the timeline from Explorer): pictures (PNG, JPEG, WebP, an animated GIF that goes round and round) for as long as you like, and any video FFmpeg reads, with its sound. They go on as many media tracks as they need, over the screen. Zooms and layouts leave them where they are placed. **Add a Colour** adds a plain colour.
 - **Music:** File › Add Music…
 - **Annotations** (Insert menu): text, arrows, lines, shapes, highlights, blurred or pixelated areas, with fades and keyframes.
 - **Speed:** 0.25× to 8×, or a speed that changes along the clip. Also **Freeze the Frame at the Playhead** and **Crossfade into the Next Clip** (Edit menu).
@@ -30,6 +37,33 @@ Tray › **Video Editor** › **Open a Recording or Project…**, or **Edit the 
 - **Captions:**
   - Insert › **Captions from Speech…** listens with Whisper on this PC, in English or Arabic, and nothing is sent anywhere;
   - or type them, or import SRT/WebVTT files.
+
+## Motion
+
+Every picture and annotation has **position, scale, rotation, opacity and crop** in its panel, at the playhead. Off, **Changes make keyframes** sets a value for the whole item. On, each change makes a keyframe at the playhead, and the item moves between its keyframes. So does dragging a picture on the preview.
+
+- **Keyframes** show as diamonds in a lane under the track. Click one to go there, drag it along. The panel adds and removes them and goes to the next or previous one.
+- **From this keyframe on** sets how it goes to the next: even, ease in, ease out, both, a spring, or a curve of your own.
+- A moving annotation's own keyframes also have a **colour** and an **opacity** there.
+- **Moves with zooms** (per track): a webcam, picture or annotation track that the zoom's camera moves, as it does the screen. By default it stays where it is on the canvas, so a title doesn't fly off. A blurred area on such a track follows the pictures it hides.
+
+## Transitions and effects
+
+- **Transitions** (the Transitions tab): dissolve, dip to colour, wipes in four directions, slide, push, zoom, blur and circle. Drag one onto a cut or a clip's edge, or choose a clip and press `Enter` (the edge nearest the playhead). At a cut the clips come to overlap by its length, and what follows moves back. At a free edge the clip comes from or goes to nothing. A picture clip's panel sets its **way in** and **way out**: the kind, length, direction, colour and pace.
+- **Fades** have a curve each: even, ease in, ease out, or both.
+- **Effects** on a picture clip: brightness, contrast, saturation, temperature, a look-up table (a `.cube` file) and **chroma key** for a green screen (the colour, how near, the edge, and taking its spill out of what stays). The panel's shadow, border and corners are there too; a see-through picture's or keyed clip's shadow follows its shape.
+- **Text animations:** how a text (or shape) comes in, what it does while shown, and how it goes out: fade, slide, pop, and for text a typewriter that reveals it letter by letter, Arabic letters staying joined.
+
+## Titles, callouts and your brand
+
+- **Titles** (the Titles tab, Insert › Title or Lower Third): title cards and lower thirds. Drag one onto the timeline or press `Enter`. Its panel has its texts, its length and its place; drag it on the preview. An Arabic lower third goes on the other side.
+- **Callouts** (Insert › Callouts): speech bubbles, freehand (draw on the preview; `Esc` cancels), step numbers, spotlights and magnifiers.
+- **Brand** (the Brand tab): colours, heading and body fonts, a logo, intro and outro clips and a look. Templates take its colours and fonts, so changing one changes them all. **Keep as My Brand Kit** saves it for other projects, and **Use My Brand Kit** brings it to this one.
+- **Your library** (`%AppData%\CashGear\Capture\Library`): **Save Selection…** makes a template of the selected annotations, group or template. **Export a Pack…** saves your templates, their files and your brand kit as one `.cgpack` to share with a team, and **Import a Pack…** adds one.
+
+## Large media
+
+View › **Smaller Copies for the Preview** (1080p or 720p): 4K media previews from a smaller copy made once on this PC, with the progress in the status line, and kept in `%LocalAppData%\CashGear\Capture\VideoEditor\proxies`. The export always reads the original.
 
 ## Editing by the transcript
 
