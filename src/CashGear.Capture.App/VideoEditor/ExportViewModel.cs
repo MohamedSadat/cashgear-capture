@@ -45,6 +45,18 @@ public sealed record CaptionTrackChoice(string TrackId, string Name)
     public override string ToString() => Name;
 }
 
+/// <summary>A loudness target as the export window lists it (0: as mixed).</summary>
+public sealed record LoudnessChoice(double Lufs, string Name)
+{
+    public override string ToString() => Name;
+}
+
+/// <summary>How the sound tracks go out, as the export window lists it.</summary>
+public sealed record TracksOutChoice(SoundTracksOut Value, string Name)
+{
+    public override string ToString() => Name;
+}
+
 /// <summary>
 /// The export window: the kind of file and its quality, where it goes, only the marked range or not, the captions
 /// burned in and/or saved beside it, then the export running in the background with its progress and the time left
@@ -60,6 +72,7 @@ public sealed partial class ExportViewModel : ObservableObject
     private readonly IAppStateStore _state;
     private readonly IShell _shell;
     private readonly ILogger _logger;
+    private readonly bool _soundPost;
     private CancellationTokenSource? _cancel;
     private string? _confirmed;
 
@@ -90,7 +103,44 @@ public sealed partial class ExportViewModel : ObservableObject
         _gifLoop = gif.Loop;
         _gifDithering = GifDithers.FirstOrDefault(d => d.Value == gif.Dither) ?? GifDithers[0];
         _gifLimit = GifLimits.FirstOrDefault(l => Math.Abs(l.Megabytes - remembered.GifMaxMegabytes) < 0.01) ?? GifLimits[0];
+        _soundPost = gate.IsEnabled(ProFeature.AudioPost);
+        _loudness = Loudnesses.FirstOrDefault(l => Math.Abs(l.Lufs - remembered.ExportLoudness) < 0.01) ?? Loudnesses[1];
+        _tracksOut = TracksOutChoices.FirstOrDefault(t => t.Value.ToString() == remembered.ExportTracksOut) ?? TracksOutChoices[0];
     }
+
+    /// <summary>What an export can do with sound here (a licence that has it, a kind of file with sound).</summary>
+    public bool HasSoundChoices => _soundPost && SelectedPreset.HasSound;
+
+    /// <summary>There are sound tracks to keep apart.</summary>
+    public bool ChoosesTracks => HasSoundChoices && ProjectExporter.HeardTracks(_project).Count > 0;
+
+    public IReadOnlyList<LoudnessChoice> Loudnesses { get; } =
+    [
+        new(0, VideoEditorText.LoudnessAsMixed),
+        new(ExportLoudness.Online, VideoEditorText.LoudnessOnline),
+        new(ExportLoudness.YouTube, VideoEditorText.LoudnessYouTube),
+        new(ExportLoudness.Broadcast, VideoEditorText.LoudnessBroadcast),
+    ];
+
+    [ObservableProperty]
+    private LoudnessChoice _loudness;
+
+    /// <summary>How the tracks can go out with this kind of file: a stream each only in a video's file.</summary>
+    public IReadOnlyList<TracksOutChoice> TracksOutChoices => SelectedPreset.CanHoldTracks
+        ?
+        [
+            new(SoundTracksOut.Mix, VideoEditorText.TracksOutMix),
+            new(SoundTracksOut.Streams, VideoEditorText.TracksOutStreams),
+            new(SoundTracksOut.WavFiles, VideoEditorText.TracksOutFiles),
+        ]
+        :
+        [
+            new(SoundTracksOut.Mix, VideoEditorText.TracksOutMix),
+            new(SoundTracksOut.WavFiles, VideoEditorText.TracksOutFiles),
+        ];
+
+    [ObservableProperty]
+    private TracksOutChoice _tracksOut;
 
     /// <summary>The kind of file is a GIF: its own choices instead of the quality.</summary>
     public bool IsGif => SelectedPreset.IsGif;
@@ -254,6 +304,11 @@ public sealed partial class ExportViewModel : ObservableObject
         Path = System.IO.Path.ChangeExtension(Path, value.Extension);
         OnPropertyChanged(nameof(IsGif));
         OnPropertyChanged(nameof(HasQuality));
+        OnPropertyChanged(nameof(HasSoundChoices));
+        OnPropertyChanged(nameof(ChoosesTracks));
+        var kept = TracksOutChoices.FirstOrDefault(t => t.Value == TracksOut.Value) ?? TracksOutChoices[0];
+        OnPropertyChanged(nameof(TracksOutChoices));
+        TracksOut = kept;
     }
 
     [RelayCommand]
@@ -283,6 +338,9 @@ public sealed partial class ExportViewModel : ObservableObject
         var (burn, srt, vtt) = (BurnCaptions, SaveSrt, SaveVtt);
         var gif = GifOptions;
         var gifLimit = GifLimit.Megabytes;
+        var (loudness, tracksOut) = (Loudness.Lufs, TracksOut.Value);
+        double? target = HasSoundChoices && loudness != 0 ? loudness : null;
+        var tracks = ChoosesTracks ? tracksOut : SoundTracksOut.Mix;
         var range = OnlyRange ? _range : null;
         var path = System.IO.Path.GetFullPath(Path);
         if (File.Exists(path) && !string.Equals(path, _confirmed, StringComparison.OrdinalIgnoreCase))
@@ -309,6 +367,8 @@ public sealed partial class ExportViewModel : ObservableObject
                     GifLoop = preset.IsGif ? gif.Loop : s.VideoEditor?.GifLoop ?? true,
                     GifDither = preset.IsGif ? gif.Dither.ToString() : s.VideoEditor?.GifDither,
                     GifMaxMegabytes = preset.IsGif ? gifLimit : s.VideoEditor?.GifMaxMegabytes ?? 0,
+                    ExportLoudness = loudness,
+                    ExportTracksOut = tracksOut.ToString(),
                 },
             });
             var progress = new Progress<ExportProgress>(p =>
@@ -320,7 +380,7 @@ public sealed partial class ExportViewModel : ObservableObject
             });
             var files = (srt ? CaptionFiles.Srt : CaptionFiles.None) | (vtt ? CaptionFiles.Vtt : CaptionFiles.None);
             var result = await _exporter.ExportAsync(
-                new ExportRequest(_project, preset, quality, path, _settings.Current.Recording.Encoder, range, burn, HasCaptions ? files : CaptionFiles.None, preset.IsGif ? gif : null, ChoosesCaptionTrack ? BurnTrack?.TrackId : null),
+                new ExportRequest(_project, preset, quality, path, _settings.Current.Recording.Encoder, range, burn, HasCaptions ? files : CaptionFiles.None, preset.IsGif ? gif : null, ChoosesCaptionTrack ? BurnTrack?.TrackId : null, target, tracks),
                 progress,
                 _cancel.Token);
             Progress = 1;
@@ -335,6 +395,16 @@ public sealed partial class ExportViewModel : ObservableObject
             if (result.PointerOutOfView is { Count: > 0 } missed)
             {
                 captions += VideoEditorText.ExportPointerOutOfView(string.Join(", ", missed.Select(m => TimeText(TimeSpan.FromSeconds(m.From)))));
+            }
+
+            if (result.TrackPaths is { Count: > 0 } trackFiles)
+            {
+                captions += VideoEditorText.WithTrackFiles(trackFiles.Select(System.IO.Path.GetFileName).Aggregate((list, next) => VideoEditorText.AndList(list, next)));
+            }
+
+            if (result.MeasuredLufs is { } measured && target is { } met)
+            {
+                captions += VideoEditorText.ExportLoudnessDone(measured, met);
             }
 
             var encoder = result.Encoder is { } used ? $" ({used})" : "";

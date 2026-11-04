@@ -1,12 +1,15 @@
+using CashGear.Capture.Core.Audio;
 using CashGear.Capture.Media;
+using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Model;
 
 namespace CashGear.Capture.VideoEditor.Playback;
 
 /// <summary>
 /// Mixes a project's sound tracks, a block of samples at a time on the timeline (48 kHz stereo float): each clip read
-/// from its file at its source time, at its speed (atempo keeps the pitch; a ramp is resampled, so its pitch follows
-/// the speed), with the track's and the clip's volume, the clip's fades and crossfades where clips overlap. Muted
+/// from its file at its source time, through its effects (<see cref="ClipSoundReader"/>), at its speed (atempo keeps the
+/// pitch; a ramp keeps it through <see cref="RampStretcher"/>, else it is resampled, as older projects' are),
+/// with the track's and the clip's volume, its volume keyframes, its fades and crossfades where clips overlap. Muted
 /// tracks are left out, and when any track is solo only the solo ones play. Clips are read in turn, so reading the
 /// timeline forward never seeks; a jump repositions the clips it reaches. One thread at a time.
 /// </summary>
@@ -21,6 +24,9 @@ public sealed class TimelineMixer : IDisposable
     private readonly Dictionary<string, Voice> _voices = [];
     private float[] _scratch = [];
     private int _block;
+
+    /// <summary>Whether the mix is kept within full scale at the end; an export's limiter takes care of that itself.</summary>
+    public bool Clamps { get; init; } = true;
 
     /// <summary>Voices made (for tests: reading forward shouldn't make more than one per clip).</summary>
     public int Repositions { get; private set; }
@@ -80,12 +86,17 @@ public sealed class TimelineMixer : IDisposable
                 // Crossfades where the clip overlaps the one before or after on its track.
                 var overlapIn = i > 0 && clips[i - 1].End > clip.Start + Times.Epsilon ? clips[i - 1].End - clip.Start : 0;
                 var overlapOut = i < clips.Count - 1 && clips[i + 1].Start < clip.End - Times.Epsilon ? clip.End - clips[i + 1].Start : 0;
-                var gain = track.Volume * clip.Volume;
+
+                // A cut's short join is the same sound going on, so it stays a straight line whatever its clip says.
+                var equalIn = clip.EqualPowerIn && overlapIn > TranscriptEdits.LongestJoin;
+                var equalOut = i < clips.Count - 1 && clips[i + 1].EqualPowerIn && overlapOut > TranscriptEdits.LongestJoin;
+                var gain = track.Volume * clip.Volume * (clip.Sound is { HasChain: false } plain ? Decibels.ToGain(plain.GainDb) : 1);
+                var keys = clip.VolumeKeys;
                 var at = (int)(from - start) * Channels;
                 for (var n = 0; n < count; n++)
                 {
                     var time = (double)(from + n) / SampleRate;
-                    var level = gain * Envelope(clip, time, overlapIn, overlapOut);
+                    var level = gain * Envelope(clip, time, overlapIn, overlapOut, equalIn, equalOut) * (keys is null ? 1 : VolumeCurve.At(keys, time - clip.Start));
                     output[at + (n * Channels)] += (float)(block[n * Channels] * level);
                     output[at + (n * Channels) + 1] += (float)(block[(n * Channels) + 1] * level);
                 }
@@ -98,9 +109,12 @@ public sealed class TimelineMixer : IDisposable
             _voices.Remove(id);
         }
 
-        for (var i = 0; i < output.Length; i++)
+        if (Clamps)
         {
-            output[i] = Math.Clamp(output[i], -1f, 1f);
+            for (var i = 0; i < output.Length; i++)
+            {
+                output[i] = Math.Clamp(output[i], -1f, 1f);
+            }
         }
     }
 
@@ -118,28 +132,33 @@ public sealed class TimelineMixer : IDisposable
     public static long Sample(double seconds) => (long)Math.Round(seconds * SampleRate);
 
     /// <summary>A clip's level at <paramref name="time"/> from its fades and crossfades (0 to 1).</summary>
-    public static double Envelope(Clip clip, double time, double overlapIn = 0, double overlapOut = 0)
+    /// <param name="equalIn">The overlap at its start is an equal-power crossfade, not a straight line.</param>
+    /// <param name="equalOut">The same at its end.</param>
+    public static double Envelope(Clip clip, double time, double overlapIn = 0, double overlapOut = 0, bool equalIn = false, bool equalOut = false)
     {
         ArgumentNullException.ThrowIfNull(clip);
         var level = 1.0;
         var fadeIn = Math.Max(clip.FadeIn, overlapIn);
         var fadeOut = Math.Max(clip.FadeOut, overlapOut);
 
-        // A clip's own fade goes by its curve; an overlap's crossfade stays a straight line.
+        // A clip's own fade goes by its curve; an overlap's crossfade is a straight line or equal power.
         if (fadeIn > 0)
         {
             var part = (time - clip.Start) / fadeIn;
-            level = Math.Min(level, clip.FadeIn >= overlapIn ? MotionCurves.Ease(clip.FadeInCurve, part) : part);
+            level = Math.Min(level, clip.FadeIn >= overlapIn ? MotionCurves.Ease(clip.FadeInCurve, part) : equalIn ? EqualPower(part) : part);
         }
 
         if (fadeOut > 0)
         {
             var part = (clip.End - time) / fadeOut;
-            level = Math.Min(level, clip.FadeOut >= overlapOut ? MotionCurves.Ease(clip.FadeOutCurve, part) : part);
+            level = Math.Min(level, clip.FadeOut >= overlapOut ? MotionCurves.Ease(clip.FadeOutCurve, part) : equalOut ? EqualPower(part) : part);
         }
 
         return Math.Clamp(level, 0, 1);
     }
+
+    /// <summary>How much of a sound is left <paramref name="part"/> of the way through a crossfade that keeps the sum's power: the two parts' squares add up to 1.</summary>
+    private static double EqualPower(double part) => Math.Sin(Math.Clamp(part, 0, 1) * Math.PI / 2);
 
     private Voice VoiceFor(Clip clip, MediaAsset asset)
     {
@@ -159,9 +178,9 @@ public sealed class TimelineMixer : IDisposable
     private void Prepare(Clip clip, MediaAsset asset, long clipStart)
     {
         var voice = VoiceFor(clip, asset);
-        if (voice.Next != clipStart || !ReferenceEquals(voice.Clip, clip))
+        if (voice.Next != clipStart || voice.Clip is not { } known || !Voice.SameReading(known, clip))
         {
-            voice.Reposition(clip, clipStart);
+            voice.Reposition(clip, clipStart, ahead: true);
         }
     }
 
@@ -172,6 +191,10 @@ public sealed class TimelineMixer : IDisposable
         private readonly SampleQueue _queue = new();
         private readonly float[] _chunk = new float[1024 * Channels];
         private TempoFilter? _tempo;
+        private ClipSoundReader? _effects;
+        private ClipSound? _effectsSound;
+        private Task? _seeking;
+        private RampStretcher? _stretcher;
         private bool _readerEnded;
 
         // A ramp's source samples: interleaved, the first at source sample _origin.
@@ -189,28 +212,38 @@ public sealed class TimelineMixer : IDisposable
 
         public Clip? Clip { get; private set; }
 
+        /// <summary>Whether what was being read for one clip goes on being right for the other (a change of level doesn't need a seek, and the sound doesn't break).</summary>
+        public static bool SameReading(Clip one, Clip other) =>
+            one.Id == other.Id && one.Start == other.Start && one.SourceIn == other.SourceIn && one.SourceOut == other.SourceOut && one.Speed == other.Speed && one.EndSpeed == other.EndSpeed
+            && one.KeepPitch == other.KeepPitch && Equals(Effects(one), Effects(other));
+
         public void Render(Clip clip, long from, Span<float> block)
         {
-            if (from != Next || !ReferenceEquals(Clip, clip))
+            if (from != Next || Clip is not { } known || !SameReading(known, clip))
             {
                 Reposition(clip, from);
             }
 
+            Clip = clip;
             var frames = block.Length / Channels;
-            if (clip.IsRamp)
+            if (_stretcher is { } stretcher)
+            {
+                stretcher.Render(clip, from, block);
+            }
+            else if (clip.IsRamp)
             {
                 Ramp(clip, from, block);
             }
-            else if (Math.Abs(clip.Speed - 1) < 1e-9)
+            else if (!clip.IsRamp && Math.Abs(clip.Speed - 1) < 1e-9)
             {
-                var read = _reader.Read(block);
+                var read = ReadSource(block);
                 block[(read * Channels)..].Clear();
             }
             else
             {
                 while (_queue.Frames < frames && !(_readerEnded && _tempo is null))
                 {
-                    var read = _reader.Read(_chunk);
+                    var read = ReadSource(_chunk);
                     if (read > 0)
                     {
                         _tempo!.Push(_chunk.AsSpan(0, read * Channels), _queue.Append);
@@ -232,15 +265,45 @@ public sealed class TimelineMixer : IDisposable
             Next = from + frames;
         }
 
-        /// <summary>Starts reading the clip again at timeline sample <paramref name="from"/>.</summary>
-        public void Reposition(Clip clip, long from)
+        /// <summary>
+        /// Starts reading the clip again at timeline sample <paramref name="from"/>. Getting there through a clip's effects works through
+        /// seconds of sound: when <paramref name="ahead"/>, a clip that starts soon does that beside the mixing thread, so the sound
+        /// already mixed doesn't run out meanwhile (the first read waits for it, and the samples are the same).
+        /// </summary>
+        public void Reposition(Clip clip, long from, bool ahead = false)
         {
+            FinishSeeking();
             Clip = clip;
             var source = clip.SourceAt((double)from / SampleRate);
-            _reader.Seek(source);
+            var effects = Effects(clip);
+            if (!Equals(effects, _effectsSound))
+            {
+                _effects?.Dispose();
+                _effects = effects is null ? null : new ClipSoundReader(_reader, effects);
+                _effectsSound = effects;
+            }
+
+            _origin = (long)Math.Round(source * SampleRate);
+            _stretcher = clip.IsRamp && clip.KeepPitch ? new RampStretcher(ReadSource) : null;
+            var seek = _stretcher?.Start(clip, from) ?? _origin;
+            if (_effects is { } worked)
+            {
+                if (ahead)
+                {
+                    _seeking = Task.Run(() => worked.Seek(seek));
+                }
+                else
+                {
+                    worked.Seek(seek);
+                }
+            }
+            else
+            {
+                _reader.Seek((double)seek / SampleRate);
+            }
+
             _queue.Clear();
             _source.Clear();
-            _origin = (long)Math.Round(source * SampleRate);
             _readerEnded = false;
             _tempo?.Dispose();
             _tempo = !clip.IsRamp && Math.Abs(clip.Speed - 1) >= 1e-9 ? new TempoFilter(clip.Speed) : null;
@@ -258,7 +321,7 @@ public sealed class TimelineMixer : IDisposable
                 var fraction = (float)(position - index);
                 while (_source.Frames < index + 2 && !_readerEnded)
                 {
-                    var read = _reader.Read(_chunk);
+                    var read = ReadSource(_chunk);
                     _source.Append(_chunk.AsSpan(0, read * Channels));
                     _readerEnded = read < 1024;
                 }
@@ -288,8 +351,35 @@ public sealed class TimelineMixer : IDisposable
 
         public void Dispose()
         {
+            try
+            {
+                FinishSeeking();
+            }
+            catch (FfmpegException)
+            {
+                // The file went wrong and the voice is going anyway.
+            }
+
             _tempo?.Dispose();
+            _effects?.Dispose();
             _reader.Dispose();
+        }
+
+        /// <summary>The effects to read through, when it has any that work on samples.</summary>
+        private static ClipSound? Effects(Clip clip) => clip.Sound is { HasChain: true } sound ? sound : null;
+
+        private int ReadSource(Span<float> interleaved)
+        {
+            FinishSeeking();
+            return _effects is { } worked ? worked.Read(interleaved) : _reader.Read(interleaved);
+        }
+
+        /// <summary>Waits for a seek going on beside the mixing thread, with what went wrong in it, if anything.</summary>
+        private void FinishSeeking()
+        {
+            var seeking = _seeking;
+            _seeking = null;
+            seeking?.GetAwaiter().GetResult();
         }
     }
 }

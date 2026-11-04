@@ -29,6 +29,8 @@
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
       <TextBlock x:Name="FormatLabel" Grid.Row="0" Text="{x:Static r:VideoEditorText.FileFormat}" VerticalAlignment="Center" Margin="0,0,12,8" />
@@ -73,7 +75,15 @@
                AutomationProperties.LabeledBy="{Binding ElementName=FileLabel}" />
       <Button Grid.Row="3" Grid.Column="2" Content="{x:Static r:CommonText.Browse}" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
 
-      <StackPanel Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
+      <TextBlock x:Name="LoudnessLabel" Grid.Row="4" Text="{x:Static r:VideoEditorText.ExportLoudnessLabel}" VerticalAlignment="Center" Margin="0,8,12,0" Visibility="{Binding HasSoundChoices, Converter={StaticResource Visible}}" />
+      <ComboBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding Loudnesses}" SelectedItem="{Binding Loudness}" DisplayMemberPath="Name" Margin="0,8,0,0" Visibility="{Binding HasSoundChoices, Converter={StaticResource Visible}}"
+                AutomationProperties.LabeledBy="{Binding ElementName=LoudnessLabel}" />
+
+      <TextBlock x:Name="TracksLabel" Grid.Row="5" Text="{x:Static r:VideoEditorText.ExportTracksLabel}" VerticalAlignment="Center" Margin="0,8,12,0" Visibility="{Binding ChoosesTracks, Converter={StaticResource Visible}}" />
+      <ComboBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding TracksOutChoices}" SelectedItem="{Binding TracksOut}" DisplayMemberPath="Name" Margin="0,8,0,0" Visibility="{Binding ChoosesTracks, Converter={StaticResource Visible}}"
+                AutomationProperties.LabeledBy="{Binding ElementName=TracksLabel}" />
+
+      <StackPanel Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
         <CheckBox Content="{Binding RangeText}" IsChecked="{Binding OnlyRange}" Visibility="{Binding HasRange, Converter={StaticResource Visible}}" Margin="0,0,0,4" />
         <StackPanel Visibility="{Binding HasCaptions, Converter={StaticResource Visible}}">
           <CheckBox Content="{x:Static r:VideoEditorText.BurnCaptions}" IsChecked="{Binding BurnCaptions}" Margin="0,0,0,4" />

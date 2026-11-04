@@ -114,6 +114,55 @@ public static class MotionCurves
     }
 }
 
+/// <summary>A clip's volume keyframes (<see cref="Clip.VolumeKeys"/>): a lane of keys like the others, read for every sample, so found by halving.</summary>
+public static class VolumeCurve
+{
+    /// <summary>The level <paramref name="into"/> seconds after the clip's start: held before the first key and after the last.</summary>
+    public static double At(IReadOnlyList<MotionKey>? keys, double into)
+    {
+        if (keys is not { Count: > 0 })
+        {
+            return 1;
+        }
+
+        if (into <= keys[0].Time)
+        {
+            return keys[0].Value;
+        }
+
+        if (into >= keys[^1].Time)
+        {
+            return keys[^1].Value;
+        }
+
+        var (low, high) = (0, keys.Count - 1);
+        while (high - low > 1)
+        {
+            var middle = (low + high) / 2;
+            if (keys[middle].Time <= into)
+            {
+                low = middle;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        var from = keys[low];
+        var span = keys[high].Time - from.Time;
+        return from.Value + ((keys[high].Value - from.Value) * MotionCurves.Ease(from.Easing, span <= 0 ? 1 : (into - from.Time) / span, from.Curve));
+    }
+
+    /// <summary>The part from <paramref name="shift"/> seconds for <paramref name="length"/> seconds, starting at 0: the change in it is unchanged.</summary>
+    public static IReadOnlyList<MotionKey>? Sliced(IReadOnlyList<MotionKey>? keys, double shift, double length) =>
+        keys is { Count: > 0 } ? new ItemMotion { Opacity = keys }.Sliced(shift, length).Opacity : keys;
+
+    /// <summary>The keys <paramref name="by"/> seconds later (a clip made longer at its start keeps its level where it was).</summary>
+    public static IReadOnlyList<MotionKey>? Shifted(IReadOnlyList<MotionKey>? keys, double by) =>
+        keys is { Count: > 0 } ? new ItemMotion { Opacity = keys }.Shifted(by).Opacity : keys;
+}
+
 /// <summary>A value at a time, seconds from the item's start, and how it goes on to the next keyframe.</summary>
 /// <param name="Curve">A <see cref="MotionEasing.Bezier"/>'s x1, y1, x2, y2.</param>
 public sealed record MotionKey(double Time, double Value, MotionEasing Easing = MotionEasing.Linear, IReadOnlyList<double>? Curve = null);

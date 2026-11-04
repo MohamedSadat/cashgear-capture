@@ -381,4 +381,20 @@
   <data name="NewerPack" xml:space="preserve">
     <value>{0} was made by a newer version of this app.</value>
   </data>
+  <data name="PresetWav" xml:space="preserve">
+    <value>WAV (sound only, uncompressed, 24-bit)</value>
+    <comment>export preset</comment>
+  </data>
+  <data name="PresetFlac" xml:space="preserve">
+    <value>FLAC (sound only, lossless)</value>
+    <comment>export preset</comment>
+  </data>
+  <data name="PresetMkv" xml:space="preserve">
+    <value>MKV H.264</value>
+    <comment>export preset</comment>
+  </data>
+  <data name="UndoAddVolumeKey" xml:space="preserve">
+    <value>Add volume keyframe</value>
+    <comment>undo step</comment>
+  </data>
 </root>

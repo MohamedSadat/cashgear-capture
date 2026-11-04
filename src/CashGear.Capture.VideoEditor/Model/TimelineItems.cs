@@ -194,6 +194,21 @@ public sealed record Clip : TimelineItem
     /// <summary>A plain colour (<c>#RRGGBB</c> or <c>#AARRGGBB</c>) instead of media: <see cref="AssetId"/> is empty and <see cref="FreezeLength"/> says how long it lasts.</summary>
     public string? Solid { get; init; }
 
+    /// <summary>What is done to its sound (null: as recorded).</summary>
+    public ClipSound? Sound { get; init; }
+
+    /// <summary>
+    /// Its sound's level over time, on top of <see cref="Volume"/>: 1 changes nothing. Times are seconds from the clip's start,
+    /// on the timeline, as for <see cref="Motion"/>. Null: no change along it.
+    /// </summary>
+    public IReadOnlyList<MotionKey>? VolumeKeys { get; init; }
+
+    /// <summary>Its sound comes in over the overlap with the clip before at equal power (sine and cosine), not in a straight line. Older projects have straight ones, and keep them.</summary>
+    public bool EqualPowerIn { get; init; }
+
+    /// <summary>A ramp's sound keeps its pitch, going through the tempo filter. Older projects' ramps are resampled, and stay so.</summary>
+    public bool KeepPitch { get; init; }
+
     [JsonIgnore]
     public bool IsSolid => Solid is not null;
 
@@ -217,7 +232,7 @@ public sealed record Clip : TimelineItem
         var length = Math.Max(0, to - from);
         var keepsStart = from <= Start + Times.Epsilon;
         var keepsEnd = to >= End - Times.Epsilon;
-        var fades = this with { FadeIn = KeptFade(FadeIn, keepsStart, length), FadeOut = KeptFade(FadeOut, keepsEnd, length), Motion = Motion?.Sliced(from - Start, length), TransitionIn = keepsStart ? TransitionIn : null, TransitionOut = keepsEnd ? TransitionOut : null };
+        var fades = this with { FadeIn = KeptFade(FadeIn, keepsStart, length), FadeOut = KeptFade(FadeOut, keepsEnd, length), Motion = Motion?.Sliced(from - Start, length), TransitionIn = keepsStart ? TransitionIn : null, TransitionOut = keepsEnd ? TransitionOut : null, VolumeKeys = VolumeCurve.Sliced(VolumeKeys, from - Start, length), EqualPowerIn = keepsStart && EqualPowerIn };
         if (IsFreeze)
         {
             return fades with { Start = from, FreezeLength = length };

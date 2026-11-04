@@ -5,14 +5,17 @@ namespace CashGear.Capture.Media;
 
 /// <summary>
 /// One sound track's encoder: FFmpeg's own AAC (the recordings') by default, or another codec for exports (Opus for
-/// WebM, MP3). 48 kHz stereo, fed interleaved float samples <see cref="FrameSize"/> at a time. Timestamps are sample
-/// positions (time base 1/48000).
+/// WebM, MP3, and 24-bit WAV and FLAC). 48 kHz stereo, fed interleaved float samples <see cref="FrameSize"/> at a time.
+/// Timestamps are sample positions (time base 1/48000).
 /// </summary>
 public sealed unsafe class AudioEncoder : IDisposable
 {
     public const int SampleRate = 48000;
     public const int Channels = 2;
     public const int DefaultBitRate = 160_000;
+
+    /// <summary>How many samples at a time go to an encoder that takes any number (uncompressed sound).</summary>
+    private const int AnyFrameSize = 1024;
 
     private AVCodecContext* _context;
     private AVFrame* _frame;
@@ -26,7 +29,7 @@ public sealed unsafe class AudioEncoder : IDisposable
         _frame = ffmpeg.av_frame_alloc();
         _frame->format = (int)context->sample_fmt;
         _frame->sample_rate = SampleRate;
-        _frame->nb_samples = context->frame_size;
+        _frame->nb_samples = context->frame_size > 0 ? context->frame_size : AnyFrameSize;
         FfmpegException.Check(ffmpeg.av_channel_layout_copy(&_frame->ch_layout, &context->ch_layout), MediaStrings.SettingUpSoundFrame);
         FfmpegException.Check(ffmpeg.av_frame_get_buffer(_frame, 0), MediaStrings.AllocatingSoundFrame);
     }
@@ -34,7 +37,7 @@ public sealed unsafe class AudioEncoder : IDisposable
     public int Stream { get; }
 
     /// <summary>Samples per channel in each frame the encoder takes (1024 for AAC); only the last may be shorter.</summary>
-    public int FrameSize => _context->frame_size;
+    public int FrameSize => _context->frame_size > 0 ? _context->frame_size : AnyFrameSize;
 
     internal AVCodecContext* Context => _context;
 
@@ -42,8 +45,10 @@ public sealed unsafe class AudioEncoder : IDisposable
     public const string Aac = "aac";
     public const string Opus = "libopus";
     public const string Mp3 = "libmp3lame";
+    public const string Wav24 = "pcm_s24le";
+    public const string Flac = "flac";
 
-    /// <param name="codec">FFmpeg's encoder: <see cref="Aac"/>, <see cref="Opus"/> or <see cref="Mp3"/>.</param>
+    /// <param name="codec">FFmpeg's encoder: <see cref="Aac"/>, <see cref="Opus"/>, <see cref="Mp3"/>, <see cref="Wav24"/> or <see cref="Flac"/>.</param>
     public static AudioEncoder Open(int stream, int bitRate = DefaultBitRate, string codec = Aac)
     {
         var encoder = ffmpeg.avcodec_find_encoder_by_name(codec);
@@ -54,8 +59,18 @@ public sealed unsafe class AudioEncoder : IDisposable
 
         var context = ffmpeg.avcodec_alloc_context3(encoder);
 
-        // libopus takes interleaved float; AAC and LAME planar.
-        context->sample_fmt = codec == Opus ? AVSampleFormat.AV_SAMPLE_FMT_FLT : AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+        // libopus takes interleaved float; AAC and LAME planar; WAV and FLAC 32-bit integers, of which they keep 24.
+        context->sample_fmt = codec switch
+        {
+            Opus => AVSampleFormat.AV_SAMPLE_FMT_FLT,
+            Wav24 or Flac => AVSampleFormat.AV_SAMPLE_FMT_S32,
+            _ => AVSampleFormat.AV_SAMPLE_FMT_FLTP,
+        };
+        if (codec == Flac)
+        {
+            context->bits_per_raw_sample = 24;
+        }
+
         context->sample_rate = SampleRate;
         ffmpeg.av_channel_layout_default(&context->ch_layout, Channels);
         context->bit_rate = bitRate;
@@ -88,6 +103,19 @@ public sealed unsafe class AudioEncoder : IDisposable
         if (_context->sample_fmt == AVSampleFormat.AV_SAMPLE_FMT_FLT)
         {
             interleaved.CopyTo(new Span<float>(_frame->data[0], samples * Channels));
+            Send(_frame, output);
+            return;
+        }
+
+        if (_context->sample_fmt == AVSampleFormat.AV_SAMPLE_FMT_S32)
+        {
+            var whole = new Span<int>(_frame->data[0], samples * Channels);
+            for (var i = 0; i < whole.Length; i++)
+            {
+                // On the 24 bits that are kept (rounded there, not cut), in the top of the integer.
+                whole[i] = (int)Math.Clamp(Math.Round(interleaved[i] * 8388608.0), -8388608, 8388607) << 8;
+            }
+
             Send(_frame, output);
             return;
         }

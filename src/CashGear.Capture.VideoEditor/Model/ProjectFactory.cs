@@ -222,7 +222,7 @@ public static class ProjectFactory
     public const double MusicVolume = 0.3;
 
     /// <summary>A music (or any sound) file on a new sound track at <paramref name="at"/>, played once, at <paramref name="volume"/>.</summary>
-    public static VideoProject AddSound(VideoProject project, MediaAsset asset, double at, string? name = null, double volume = 1)
+    public static VideoProject AddSound(VideoProject project, MediaAsset asset, double at, string? name = null, double volume = 1, bool background = false)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(asset);
@@ -237,7 +237,7 @@ public static class ProjectFactory
             SourceIn = 0,
             SourceOut = Times.Round(asset.Duration),
         };
-        var track = new Track(Ids.New(), TrackKind.Audio, name ?? Path.GetFileNameWithoutExtension(asset.Path), [clip], Volume: volume);
+        var track = new Track(Ids.New(), TrackKind.Audio, name ?? Path.GetFileNameWithoutExtension(asset.Path), [clip], Volume: volume, Background: background);
         return project.WithAsset(asset) with { Tracks = [track, .. project.Tracks] };
     }
 

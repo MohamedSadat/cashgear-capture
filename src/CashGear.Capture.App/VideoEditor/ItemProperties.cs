@@ -128,7 +128,7 @@ public static class ItemProperties
         };
     }
 
-    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null, ClipActions? actions = null, CaptionActions? captions = null, IFeatureGate? features = null, Func<string?>? pickPicture = null, Action<MediaAsset, string, string>? addAsset = null, MotionActions? motion = null)
+    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null, ClipActions? actions = null, CaptionActions? captions = null, IFeatureGate? features = null, Func<string?>? pickPicture = null, Action<MediaAsset, string, string>? addAsset = null, MotionActions? motion = null, SoundProperties.Actions? sound = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(item);
@@ -266,6 +266,19 @@ public static class ItemProperties
                 list.Add(speed);
                 list.Add(ramp);
                 list.Add(end);
+                if (found.Track.HasSound)
+                {
+                    // Made on with the ramp, so what it shows is so before the panel is made again.
+                    var keep = new SwitchParameter(VideoEditorText.KeepPitch, !clip.IsRamp || clip.KeepPitch) { IsVisible = clip.IsRamp };
+                    ramp.PropertyChanged += (_, e) =>
+                    {
+                        if (e.PropertyName == "Value")
+                        {
+                            keep.IsVisible = ramp.Value;
+                        }
+                    };
+                    Change(keep, "keep pitch", VideoEditorText.UndoKeepPitch, c => c with { KeepPitch = keep.Value });
+                }
             }
 
             if (CashGear.Capture.VideoEditor.Editing.TransitionEdits.CrossfadeLength(project, clip.Id) > 0)
@@ -286,6 +299,11 @@ public static class ItemProperties
         Change(fadeInCurve, "fade in curve", VideoEditorText.UndoFadeCurve, c => c with { FadeInCurve = fadeInCurve.As<MotionEasing>() });
         var fadeOutCurve = new ChoiceParameter(VideoEditorText.FadeOutCurve, Paces(), clip.FadeOutCurve);
         Change(fadeOutCurve, "fade out curve", VideoEditorText.UndoFadeCurve, c => c with { FadeOutCurve = fadeOutCurve.As<MotionEasing>() });
+
+        if (found.Track.HasSound && sound is not null && gate.IsEnabled(ProFeature.AudioPost))
+        {
+            SoundProperties.Add(clip, found.Track, list, current, apply, sound);
+        }
 
         if (found.Track.HasPictures)
         {

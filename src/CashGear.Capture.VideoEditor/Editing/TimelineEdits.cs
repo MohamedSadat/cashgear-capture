@@ -302,6 +302,7 @@ public static class TimelineEdits
                 SourceIn = Times.Round(Math.Max(0, clip.SourceIn - (more * clip.Speed))),
                 EndSpeed = clip.IsRamp ? clip.EndSpeed : null,
                 Motion = clip.Motion?.Shifted(more),
+                VolumeKeys = VolumeCurve.Shifted(clip.VolumeKeys, more),
             },
             Clip clip => clip with { SourceOut = Times.Round(clip.SourceOut + (more * (clip.EndSpeed ?? clip.Speed))) },
             _ => item.Lengthen(edge, more),

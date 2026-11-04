@@ -85,6 +85,9 @@ public static class ProjectJson
     /// transcript only when the user takes up the offer (<see cref="Editing.TranscriptBuilder.FromCaptions"/>).
     /// 3 → 4 (Phase 22): nothing to change: pictures, colours, motion, transitions, effects, templates, groups and
     /// markers are all new and optional, and without them a project draws what it drew.
+    /// 4 → 5 (Phase 23): nothing to change: clip effects, volume keyframes and background tracks are new and optional, and the
+    /// two changes to how sound is mixed are switches a clip must have on (<see cref="Clip.EqualPowerIn"/>,
+    /// <see cref="Clip.KeepPitch"/>), which older clips haven't, so a project mixes the samples it mixed.
     /// </summary>
     internal static void Migrate(JsonObject document)
     {
@@ -108,6 +111,11 @@ public static class ProjectJson
         if (version < 4)
         {
             version = 4;
+        }
+
+        if (version < 5)
+        {
+            version = 5;
         }
 
         document["version"] = version;

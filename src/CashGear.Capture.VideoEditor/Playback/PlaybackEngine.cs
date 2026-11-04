@@ -120,6 +120,20 @@ public sealed partial class PlaybackEngine : IDisposable
         _playing = true;
     }
 
+    /// <summary>The next sound goes to the device the output delegate gives now (another was chosen); playing goes on from where it is, there.</summary>
+    public void ChangeOutput()
+    {
+        var playing = _playing;
+        var position = Position;
+        Stop();
+        _output?.Dispose();
+        _output = null;
+        if (playing)
+        {
+            Play(position);
+        }
+    }
+
     public void Pause()
     {
         if (!_playing)

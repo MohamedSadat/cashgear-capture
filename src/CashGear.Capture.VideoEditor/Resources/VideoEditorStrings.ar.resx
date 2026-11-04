@@ -315,4 +315,16 @@
   <data name="NewerPack" xml:space="preserve">
     <value>أنشأ إصدار أحدث من هذا التطبيق {0}.</value>
   </data>
+  <data name="PresetWav" xml:space="preserve">
+    <value>WAV (صوت فقط، دون ضغط، 24 بت)</value>
+  </data>
+  <data name="PresetFlac" xml:space="preserve">
+    <value>FLAC (صوت فقط، دون فقدان)</value>
+  </data>
+  <data name="PresetMkv" xml:space="preserve">
+    <value>MKV H.264</value>
+  </data>
+  <data name="UndoAddVolumeKey" xml:space="preserve">
+    <value>إضافة إطار مفتاحي لمستوى الصوت</value>
+  </data>
 </root>

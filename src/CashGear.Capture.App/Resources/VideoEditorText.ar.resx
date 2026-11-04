@@ -2475,4 +2475,226 @@
   <data name="ProxyFailed" xml:space="preserve">
     <value>تعذر إنشاء النسخة الأصغر: {0}</value>
   </data>
+  <data name="VolumeKeysTitle" xml:space="preserve">
+    <value>مستوى الصوت عبر الزمن</value>
+  </data>
+  <data name="VolumeAtPlayhead" xml:space="preserve">
+    <value>مستوى الصوت عند مؤشر التشغيل</value>
+  </data>
+  <data name="VolumeKeysNote" xml:space="preserve">
+    <value>يؤدي تغيير هذا إلى إنشاء إطار رئيسي عند مؤشر التشغيل. على المقطع، يضيف Shift+نقرة إطارًا رئيسيًا، ويمكن سحب الإطارات الرئيسية للمقطع المحدد.</value>
+  </data>
+  <data name="AddVolumeKey" xml:space="preserve">
+    <value>إضافة إطار رئيسي لمستوى الصوت</value>
+  </data>
+  <data name="RemoveVolumeKey" xml:space="preserve">
+    <value>إزالة الإطار الرئيسي لمستوى الصوت</value>
+  </data>
+  <data name="VolumeKeyEasing" xml:space="preserve">
+    <value>ابتداءً من هذا الإطار الرئيسي</value>
+  </data>
+  <data name="UndoVolumeKeys" xml:space="preserve">
+    <value>إطار رئيسي لمستوى الصوت</value>
+  </data>
+  <data name="SoundEffectsTitle" xml:space="preserve">
+    <value>مؤثرات الصوت</value>
+  </data>
+  <data name="UndoSoundEffect" xml:space="preserve">
+    <value>مؤثر صوتي</value>
+  </data>
+  <data name="EvenOut" xml:space="preserve">
+    <value>موازنة الصوت</value>
+  </data>
+  <data name="SoundGain" xml:space="preserve">
+    <value>الكسب</value>
+  </data>
+  <data name="DecibelsUnit" xml:space="preserve">
+    <value> ديسيبل</value>
+  </data>
+  <data name="HertzUnit" xml:space="preserve">
+    <value> هرتز</value>
+  </data>
+  <data name="NoiseRemoval" xml:space="preserve">
+    <value>إزالة الضوضاء</value>
+  </data>
+  <data name="NoiseStrength" xml:space="preserve">
+    <value>القوة</value>
+  </data>
+  <data name="NoiseGate" xml:space="preserve">
+    <value>بوابة الضوضاء</value>
+  </data>
+  <data name="GateThreshold" xml:space="preserve">
+    <value>تفتح فوق</value>
+  </data>
+  <data name="Compressor" xml:space="preserve">
+    <value>الضاغط</value>
+  </data>
+  <data name="CompressorThreshold" xml:space="preserve">
+    <value>يضغط فوق</value>
+  </data>
+  <data name="CompressorRatio" xml:space="preserve">
+    <value>النسبة</value>
+  </data>
+  <data name="Limiter" xml:space="preserve">
+    <value>المحدّد</value>
+  </data>
+  <data name="LimiterCeiling" xml:space="preserve">
+    <value>السقف</value>
+  </data>
+  <data name="Equalizer" xml:space="preserve">
+    <value>المعادل</value>
+  </data>
+  <data name="EqFlat" xml:space="preserve">
+    <value>إيقاف</value>
+  </data>
+  <data name="EqVoice" xml:space="preserve">
+    <value>صوت بشري</value>
+  </data>
+  <data name="EqWarm" xml:space="preserve">
+    <value>دافئ</value>
+  </data>
+  <data name="EqPhone" xml:space="preserve">
+    <value>هاتف</value>
+  </data>
+  <data name="EqCustom" xml:space="preserve">
+    <value>مخصص</value>
+  </data>
+  <data name="EqHighPass" xml:space="preserve">
+    <value>قطع الترددات المنخفضة</value>
+  </data>
+  <data name="EqLow" xml:space="preserve">
+    <value>الترددات المنخفضة</value>
+  </data>
+  <data name="EqMid" xml:space="preserve">
+    <value>الترددات الوسطى</value>
+  </data>
+  <data name="EqHigh" xml:space="preserve">
+    <value>الترددات العالية</value>
+  </data>
+  <data name="CrossfadeShape" xml:space="preserve">
+    <value>الصوت أثناء التلاشي المتداخل</value>
+  </data>
+  <data name="CrossfadeEqualPower" xml:space="preserve">
+    <value>قدرة متساوية</value>
+  </data>
+  <data name="CrossfadeStraight" xml:space="preserve">
+    <value>خط مستقيم</value>
+  </data>
+  <data name="UndoCrossfadeShape" xml:space="preserve">
+    <value>صوت التلاشي المتداخل</value>
+  </data>
+  <data name="KeepPitch" xml:space="preserve">
+    <value>يحافظ على طبقة الصوت</value>
+  </data>
+  <data name="UndoKeepPitch" xml:space="preserve">
+    <value>الحفاظ على طبقة الصوت</value>
+  </data>
+  <data name="DuckingTitle" xml:space="preserve">
+    <value>تحت صوت المتحدث</value>
+  </data>
+  <data name="BackgroundTrack" xml:space="preserve">
+    <value>مسار خلفية</value>
+  </data>
+  <data name="DuckAmount" xml:space="preserve">
+    <value>ينخفض بمقدار</value>
+  </data>
+  <data name="DuckAttack" xml:space="preserve">
+    <value>يستغرق الانخفاض</value>
+  </data>
+  <data name="DuckRelease" xml:space="preserve">
+    <value>تستغرق العودة</value>
+  </data>
+  <data name="DuckingNote" xml:space="preserve">
+    <value>ينشئ إطارات رئيسية لمستوى الصوت على مقاطع هذا المسار، بدلًا مما فيها، ويمكنك تغييرها بعد ذلك.</value>
+  </data>
+  <data name="DuckThisTrack" xml:space="preserve">
+    <value>خفض هذا المسار تحت صوت المتحدث</value>
+  </data>
+  <data name="DuckMusicMenu" xml:space="preserve">
+    <value>خفض الموسيقى تحت صوت المتحدث</value>
+  </data>
+  <data name="DuckMusicTip" xml:space="preserve">
+    <value>تنخفض الموسيقى وأي مسار مميّز كخلفية أثناء كلام المتحدث، في صورة إطارات رئيسية يمكنك تغييرها</value>
+  </data>
+  <data name="UndoDuck" xml:space="preserve">
+    <value>الخفض تحت صوت المتحدث</value>
+  </data>
+  <data name="UndoBackgroundTrack" xml:space="preserve">
+    <value>مسار الخلفية</value>
+  </data>
+  <data name="UndoEvenOut" xml:space="preserve">
+    <value>موازنة الصوت</value>
+  </data>
+  <data name="NoVoiceTrack" xml:space="preserve">
+    <value>لا يوجد مسار صوت فيه كلام للانخفاض تحته.</value>
+  </data>
+  <data name="NoBackgroundTrack" xml:space="preserve">
+    <value>لا توجد موسيقى أو مسار خلفية للخفض. حدّد مقطعًا صوتيًا وفعّل «مسار خلفية» في إعداداته.</value>
+  </data>
+  <data name="CantDuckVoice" xml:space="preserve">
+    <value>هذا هو مسار المتحدث نفسه، فلا يمكن خفضه تحت نفسه.</value>
+  </data>
+  <data name="ListeningForVoice" xml:space="preserve">
+    <value>جارٍ تحديد مواضع كلام المتحدث…</value>
+  </data>
+  <data name="MeasuringLoudness" xml:space="preserve">
+    <value>جارٍ قياس شدة الصوت… {0:0} %</value>
+  </data>
+  <data name="EvenedOut" xml:space="preserve">
+    <value>كان {0:0.0} LUFS؛ والآن {1:0.0} ديسيبل تجعله {2:0} LUFS.</value>
+  </data>
+  <data name="NothingToEvenOut" xml:space="preserve">
+    <value>هذا المقطع صامت، لذا تُرك كما هو.</value>
+  </data>
+  <data name="CantMeasure" xml:space="preserve">
+    <value>تعذرت قراءة الصوت: {0}</value>
+  </data>
+  <data name="DuckedNothing" xml:space="preserve">
+    <value>لا يُسمع المتحدث أثناء هذا المسار، فلم يتغير شيء.</value>
+  </data>
+  <data name="SoundOutputMenu" xml:space="preserve">
+    <value>جهاز إخراج الصوت (_O)</value>
+  </data>
+  <data name="SoundOutputTip" xml:space="preserve">
+    <value>مكان تشغيل صوت المعاينة</value>
+  </data>
+  <data name="SoundOutputDefault" xml:space="preserve">
+    <value>الافتراضي في Windows</value>
+  </data>
+  <data name="ExportLoudnessLabel" xml:space="preserve">
+    <value>شدة الصوت:</value>
+  </data>
+  <data name="LoudnessAsMixed" xml:space="preserve">
+    <value>كما هي في المزج</value>
+  </data>
+  <data name="LoudnessOnline" xml:space="preserve">
+    <value>‎−16 LUFS (الكلام على الإنترنت)</value>
+  </data>
+  <data name="LoudnessYouTube" xml:space="preserve">
+    <value>‎−14 LUFS (يوتيوب)</value>
+  </data>
+  <data name="LoudnessBroadcast" xml:space="preserve">
+    <value>‎−23 LUFS (البث)</value>
+  </data>
+  <data name="ExportTracksLabel" xml:space="preserve">
+    <value>مسارات الصوت:</value>
+  </data>
+  <data name="TracksOutMix" xml:space="preserve">
+    <value>مزج واحد</value>
+  </data>
+  <data name="TracksOutStreams" xml:space="preserve">
+    <value>المزج، وكل مسار في تدفق خاص به</value>
+  </data>
+  <data name="TracksOutFiles" xml:space="preserve">
+    <value>المزج، وكل مسار في ملف WAV بجانبه</value>
+  </data>
+  <data name="WithTrackFiles" xml:space="preserve">
+    <value> كل مسار في {0}.</value>
+  </data>
+  <data name="ExportLoudnessDone" xml:space="preserve">
+    <value> كان المزج {0:0.0} LUFS وأصبح {1:0} LUFS.</value>
+  </data>
+  <data name="ExportStagesMeasuring" xml:space="preserve">
+    <value>جارٍ قياس شدة الصوت…</value>
+  </data>
 </root>

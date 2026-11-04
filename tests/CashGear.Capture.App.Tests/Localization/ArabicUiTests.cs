@@ -320,6 +320,31 @@ public sealed class ArabicVideoEditorUiTests : VideoEditorTestBase
     });
 
     [Fact]
+    public Task A_sound_clips_settings_and_the_exports_sound() => StaDispatcher.RunAsync(async () =>
+    {
+        InteractiveDesktop.Require();
+        using var arabic = ArabicUi.InArabic();
+        var problems = new List<string>();
+        using var vm = Open();
+        static bool Data(string text) => text.Contains(".mp4", StringComparison.OrdinalIgnoreCase) || text.Contains("Rec", StringComparison.Ordinal);
+
+        // Everything that can be on is on, so every setting is shown.
+        var clip = vm.Project.Tracks.First(t => t.HasSound).Clips.First();
+        vm.History.Apply("sound", vm.Project.WithItem(clip with { VolumeKeys = [new(0.5, 0.5), new(1, 1)], Sound = new ClipSound(GainDb: 3, NoiseRemoval: true, Gate: true, Compressor: true, Limiter: true, Eq: SoundEq.Of(EqPreset.Voice)) }));
+        vm.Timeline.Select(clip.Id);
+        vm.Seek(clip.Start + 0.5);
+        var window = new VideoEditorWindow(vm, AppTheme.Dark, tryGpu: false, NullLogger.Instance);
+        problems.AddRange(await ArabicUi.CheckAsync(window, "video-editor-sound", leftToRight: () => [window.TimelineSurface], data: Data));
+
+        vm.ExportCommand.Execute(null);
+        Dialogs.Export!.HasSoundChoices.Should().BeTrue();
+        Dialogs.Export!.ChoosesTracks.Should().BeTrue();
+        problems.AddRange(await ArabicUi.CheckAsync(new ExportWindow(Dialogs.Export!, AppTheme.Dark), "export-sound", data: Data, escCloses: true));
+
+        problems.Should().BeEmpty(ArabicUi.Report("Sound", problems));
+    });
+
+    [Fact]
     public Task The_media_panel_on_each_of_its_tabs() => StaDispatcher.RunAsync(async () =>
     {
         InteractiveDesktop.Require();

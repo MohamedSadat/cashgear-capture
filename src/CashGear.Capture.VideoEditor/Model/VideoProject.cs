@@ -82,6 +82,7 @@ public enum TrackKind
 /// <param name="Volume">The track's sound level: 1 is as recorded, up to 2.</param>
 /// <param name="Captions">How a caption track's captions look (null: the default look).</param>
 /// <param name="MovesWithZoom">A webcam, media or annotation track that the zooms' camera moves too, as it moves the screen. By default they stay where they are on the canvas.</param>
+/// <param name="Background">A sound track that goes down under the voice when ducking is asked for, as music does.</param>
 public sealed record Track(
     string Id,
     TrackKind Kind,
@@ -93,7 +94,8 @@ public sealed record Track(
     bool Hidden = false,
     double Volume = 1,
     CaptionStyle? Captions = null,
-    bool MovesWithZoom = false)
+    bool MovesWithZoom = false,
+    bool Background = false)
 {
     [JsonIgnore]
     public bool HasPictures => Kind is TrackKind.Video or TrackKind.Webcam or TrackKind.Media;
@@ -117,8 +119,8 @@ public sealed record Track(
 /// </summary>
 public sealed record VideoProject(int Version, ProjectCanvas Canvas, IReadOnlyList<MediaAsset> Assets, IReadOnlyList<Track> Tracks)
 {
-    /// <summary>1: to 1.1.1. 2: the canvas's background is a record (Phase 20). 3: media has transcripts (Phase 21). 4: any media, motion, transitions, templates, markers (Phase 22). See <see cref="ProjectJson"/>'s migrations.</summary>
-    public const int CurrentVersion = 4;
+    /// <summary>1: to 1.1.1. 2: the canvas's background is a record (Phase 20). 3: media has transcripts (Phase 21). 4: any media, motion, transitions, templates, markers (Phase 22). 5: clip sound effects, volume keyframes, background tracks (Phase 23). See <see cref="ProjectJson"/>'s migrations.</summary>
+    public const int CurrentVersion = 5;
 
     /// <summary>The colours, fonts and files its templates take (null: none chosen yet).</summary>
     public BrandKit? Brand { get; init; }

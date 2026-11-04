@@ -193,6 +193,8 @@ public partial class VideoEditorWindow : Window, IThemedWindow
         e.Handled = HandleKey(viewModel, e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers);
     }
 
+    private void OnOutputMenuOpened(object sender, RoutedEventArgs e) => (DataContext as VideoEditorViewModel)?.RefreshOutputDevices();
+
     private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
 
     private Point? _headerPressed;

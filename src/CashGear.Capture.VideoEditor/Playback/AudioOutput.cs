@@ -22,11 +22,12 @@ public interface IAudioOutput : IDisposable
 }
 
 /// <summary>
-/// The default output device through WASAPI in shared mode (Windows converts 48 kHz float to the device's format),
-/// filled by a thread of its own every 10 ms. The clock is what was written minus what still waits in the device's
-/// buffer, so it follows what is heard.
+/// An output device through WASAPI in shared mode (Windows converts 48 kHz float to the device's format), filled by a
+/// thread of its own every 10 ms. The clock is what was written minus what still waits in the device's buffer, so it
+/// follows what is heard. A chosen device that is gone (unplugged) gives way to Windows' default.
 /// </summary>
-public sealed class WasapiAudioOutput : IAudioOutput
+/// <param name="deviceId">Windows' id of the device (null: Windows' default output).</param>
+public sealed class WasapiAudioOutput(string? deviceId = null) : IAudioOutput
 {
     private static readonly TimeSpan BufferLength = TimeSpan.FromMilliseconds(100);
 
@@ -73,6 +74,31 @@ public sealed class WasapiAudioOutput : IAudioOutput
 
     public void Dispose() => Stop();
 
+    /// <summary>The chosen device, when it is there and on.</summary>
+    private MMDevice? Chosen(MMDeviceEnumerator devices)
+    {
+        if (deviceId is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var device = devices.GetDevice(deviceId);
+            if (device.State == DeviceState.Active)
+            {
+                return device;
+            }
+
+            device.Dispose();
+            return null;
+        }
+        catch (COMException)
+        {
+            return null;
+        }
+    }
+
     private unsafe void Run(AudioPull pull, ManualResetEventSlim ready, Action<Exception> failed)
     {
         MMDeviceEnumerator? devices = null;
@@ -82,7 +108,7 @@ public sealed class WasapiAudioOutput : IAudioOutput
         try
         {
             devices = new MMDeviceEnumerator();
-            device = devices.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            device = Chosen(devices) ?? devices.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
             client = device.CreateAudioClient();
             client.Initialize(
                 AudioClientShareMode.Shared,

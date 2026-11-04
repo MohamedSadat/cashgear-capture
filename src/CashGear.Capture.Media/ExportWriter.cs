@@ -19,6 +19,15 @@ public enum ExportContainer
 
     /// <summary>An animated GIF (no sound), written by <see cref="GifWriter"/> rather than this writer.</summary>
     Gif,
+
+    /// <summary>Matroska: any number of titled streams.</summary>
+    Mkv,
+
+    /// <summary>Sound only, uncompressed.</summary>
+    Wav,
+
+    /// <summary>Sound only, compressed without loss.</summary>
+    Flac,
 }
 
 /// <summary>
@@ -136,6 +145,9 @@ public sealed unsafe class ExportWriter : IDisposable
             ExportContainer.WebM => "webm",
             ExportContainer.M4a => "ipod",
             ExportContainer.Mp3 => "mp3",
+            ExportContainer.Mkv => "matroska",
+            ExportContainer.Wav => "wav",
+            ExportContainer.Flac => "flac",
             _ => "mp4",
         };
         AVFormatContext* output = null;

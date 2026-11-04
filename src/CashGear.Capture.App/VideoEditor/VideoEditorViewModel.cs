@@ -125,7 +125,8 @@ public sealed record VideoEditorServices(
     CashGear.Capture.Inference.ITranslators? Translators = null,
     TemplateLibrary? TemplateStore = null,
     ProxyStore? Proxies = null,
-    IVideoClipboard? Clipboard = null)
+    IVideoClipboard? Clipboard = null,
+    CashGear.Capture.Core.Recording.IAudioDevices? AudioDevices = null)
 {
     /// <summary>Saved templates and media on this PC, in <c>%AppData%\CashGear\Capture\Library</c>.</summary>
     public TemplateLibrary Library => TemplateStore ?? new TemplateLibrary(Path.Combine(Paths.SettingsDirectory, "Library"));
@@ -299,6 +300,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         }
 
         MakeProxies();
+        RefreshOutputDevices();
     }
 
     /// <summary>The height of the preview's smaller copies of large media (0: none).</summary>
@@ -795,7 +797,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     /// <summary>The panel shows an item's motion at the playhead: when the item moves, it is made again as the playhead does.</summary>
     private void RefreshMotionPanel()
     {
-        if (!Engine.IsPlaying && Timeline.Selected is { } item && (MotionEdits.Of(item)?.KeyTimes().Count > 0 || item is AnnotationItem { Keyframes.Count: > 1 }))
+        if (!Engine.IsPlaying && Timeline.Selected is { } item && (MotionEdits.Of(item)?.KeyTimes().Count > 0 || item is AnnotationItem { Keyframes.Count: > 1 } || item is Clip { VolumeKeys.Count: > 0 }))
         {
             _shown = null;
             _applied = null;
@@ -1954,7 +1956,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            History.Apply(VideoEditorText.UndoAddMusic, ProjectFactory.AddSound(Project, asset, 0, VideoEditorText.MusicTrack, ProjectFactory.MusicVolume));
+            History.Apply(VideoEditorText.UndoAddMusic, ProjectFactory.AddSound(Project, asset, 0, VideoEditorText.MusicTrack, ProjectFactory.MusicVolume, background: true));
         }
         catch (Exception e) when (e is FfmpegException or IOException)
         {
@@ -2598,7 +2600,8 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             };
             var captions = new ItemProperties.CaptionActions(SplitCaption, MergeCaption, ChangeCaptionStyle);
             var motion = new ItemProperties.MotionActions(() => Timeline.Playhead, Seek, SetMovesWithZoom, Project.Canvas.Fps);
-            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions, captions, _services.Gate, PickPicture, (asset, name, key) => History.Apply(name, Project.WithAsset(asset), key), motion))
+            var sound = new SoundProperties.Actions(() => Timeline.Playhead, Seek, Project.Canvas.Fps, id => _ = EvenOutAsync(id), id => _ = DuckClipsTrackAsync(id), SetBackground, () => _ducking, options => _ducking = options, new CashGear.Capture.Audio.MicrophoneProcessors().NoiseSuppressionProblem);
+            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions, captions, _services.Gate, PickPicture, (asset, name, key) => History.Apply(name, Project.WithAsset(asset), key), motion, sound))
             {
                 Properties.Add(parameter);
             }
@@ -2606,6 +2609,161 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
         PropertiesTitle = item is null ? "" : ItemProperties.Title(Project, item);
         OnPropertyChanged(nameof(HasProperties));
+    }
+
+    /// <summary>The ducking settings in the panel, kept while the window is open.</summary>
+    private DuckOptions _ducking = new();
+
+    /// <summary>Measures a clip's loudness through its effects and sets its gain to bring it to the usual level, as one undo step.</summary>
+    internal async Task EvenOutAsync(string clipId)
+    {
+        if (!Allowed(ProFeature.AudioPost) || Project.Find(clipId)?.Item is not Clip clip || Project.Asset(clip.AssetId) is not { } asset)
+        {
+            return;
+        }
+
+        var progress = new Progress<double>(done => WorkText = VideoEditorText.MeasuringLoudness(done * 100));
+        WorkText = VideoEditorText.MeasuringLoudness(0);
+        try
+        {
+            var meter = await Task.Run(() => SoundEdits.Measure(asset, clip, progress));
+            if (Project.Find(clipId)?.Item is not Clip now)
+            {
+                WorkText = "";
+                return;
+            }
+
+            var evened = SoundEdits.EvenOut(now, meter.IntegratedLufs, meter.PeakDb);
+            if (evened == now)
+            {
+                WorkText = VideoEditorText.NothingToEvenOut;
+                return;
+            }
+
+            History.Apply(VideoEditorText.UndoEvenOut, Project.WithItem(evened));
+            WorkText = VideoEditorText.EvenedOut(meter.IntegratedLufs, evened.Sound?.GainDb ?? 0, SoundEdits.EvenOutLufs);
+        }
+        catch (Exception e) when (e is FfmpegException or IOException)
+        {
+            WorkText = "";
+            _dialogs.ShowError(VideoEditorText.CantMeasure(e.Message));
+        }
+    }
+
+    /// <summary>A sound track marked as background, or not, for ducking.</summary>
+    private void SetBackground(string trackId, bool background)
+    {
+        if (Project.Track(trackId) is { } track)
+        {
+            ChangeTrack(track, t => t with { Background = background }, VideoEditorText.UndoBackgroundTrack);
+        }
+    }
+
+    /// <summary>Edit › Duck the Music Under the Voice: every track marked as background, and music, under the voice's track.</summary>
+    [RelayCommand]
+    private async Task DuckMusicAsync()
+    {
+        if (!Allowed(ProFeature.AudioPost))
+        {
+            return;
+        }
+
+        var voice = Ducking.VoiceTrack(Project, VideoEditorText.MusicTrack);
+        if (voice is null)
+        {
+            _dialogs.ShowError(VideoEditorText.NoVoiceTrack);
+            return;
+        }
+
+        var tracks = Ducking.BackgroundTracks(Project, voice, VideoEditorText.MusicTrack);
+        if (tracks.Count == 0)
+        {
+            _dialogs.ShowError(VideoEditorText.NoBackgroundTrack);
+            return;
+        }
+
+        await DuckAsync(voice, tracks);
+    }
+
+    /// <summary>The panel's button: the track a clip is on, under the voice on another.</summary>
+    internal async Task DuckClipsTrackAsync(string clipId)
+    {
+        if (!Allowed(ProFeature.AudioPost) || Project.Find(clipId)?.Track is not { } track)
+        {
+            return;
+        }
+
+        var voice = Ducking.VoiceTrack(Project, VideoEditorText.MusicTrack, track.Id);
+        if (voice is null)
+        {
+            _dialogs.ShowError(SilenceFinder.VoiceTrack(Project)?.Id == track.Id ? VideoEditorText.CantDuckVoice : VideoEditorText.NoVoiceTrack);
+            return;
+        }
+
+        await DuckAsync(voice, [track]);
+    }
+
+    private async Task DuckAsync(Track voice, IReadOnlyList<Track> tracks)
+    {
+        WorkText = VideoEditorText.ListeningForVoice;
+        try
+        {
+            var project = Project;
+            var options = _ducking;
+            var spans = await Task.Run(async () =>
+            {
+                var known = new Dictionary<(string, int), CashGear.Capture.VideoEditor.Playback.SoundLevels>();
+                foreach (var clip in voice.Clips.Where(c => !c.IsFreeze).DistinctBy(c => (c.AssetId, c.Stream)))
+                {
+                    if (project.Asset(clip.AssetId) is { } asset)
+                    {
+                        known[(asset.Id, clip.Stream)] = _services.Levels is { } store
+                            ? await store.GetAsync(asset, clip.Stream)
+                            : CashGear.Capture.VideoEditor.Playback.SoundLevels.FromSamples(TranscriptAudio.RenderStream(asset, clip.Stream));
+                    }
+                }
+
+                return Ducking.SpeechSpans(project, voice, (asset, stream) => known.GetValueOrDefault((asset.Id, stream)), options);
+            });
+            if (!tracks.SelectMany(t => t.Clips).Any(c => Ducking.Keys(c, spans, options) is not null))
+            {
+                WorkText = VideoEditorText.DuckedNothing;
+                return;
+            }
+
+            History.Apply(VideoEditorText.UndoDuck, Ducking.Duck(Project, [.. tracks.Select(t => t.Id)], spans, options));
+            WorkText = "";
+        }
+        catch (Exception e) when (e is FfmpegException or IOException)
+        {
+            WorkText = "";
+            _dialogs.ShowError(VideoEditorText.CantMeasure(e.Message));
+        }
+    }
+
+    /// <summary>The devices the preview's sound can play on (View › Sound Output).</summary>
+    public ObservableCollection<OutputChoice> OutputDevices { get; } = [];
+
+    /// <summary>Lists the devices there are now, each time the menu opens: they come and go.</summary>
+    public void RefreshOutputDevices()
+    {
+        OutputDevices.Clear();
+        var chosen = _services.State.Current.VideoEditor?.PreviewOutput;
+        var devices = _services.AudioDevices?.Outputs() ?? [];
+        var known = devices.Any(d => d.Id == chosen);
+        OutputDevices.Add(new OutputChoice(null, VideoEditorText.SoundOutputDefault, !known, new AsyncRelayCommand(() => ChooseOutputAsync(null))));
+        foreach (var device in devices)
+        {
+            OutputDevices.Add(new OutputChoice(device.Id, device.Name, device.Id == chosen, new AsyncRelayCommand(() => ChooseOutputAsync(device.Id))));
+        }
+    }
+
+    /// <summary>The preview's sound goes to another device, from now on and next time, playing on from where it is.</summary>
+    internal async Task ChooseOutputAsync(string? deviceId)
+    {
+        await _services.State.UpdateAsync(s => s with { VideoEditor = (s.VideoEditor ?? new VideoEditorState()) with { PreviewOutput = deviceId } });
+        Engine.ChangeOutput();
+        RefreshOutputDevices();
     }
 
     private void SetMovesWithZoom(string trackId, bool moves)

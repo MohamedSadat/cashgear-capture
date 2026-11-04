@@ -38,6 +38,8 @@ public sealed class ExportException : Exception
 /// <param name="CaptionFiles">Subtitle files written next to the file (same name): one for each caption track, named for it when there are several.</param>
 /// <param name="Gif">How a GIF is made (null: the defaults).</param>
 /// <param name="BurnTrack">The only caption track burned in, when there is one language to choose among several (null: all those shown).</param>
+/// <param name="LoudnessTarget">The loudness the sound is brought to, in LUFS (null: as mixed).</param>
+/// <param name="TracksOut">Whether the sound tracks are kept apart too.</param>
 public sealed record ExportRequest(
     VideoProject Project,
     ExportPreset Preset,
@@ -48,7 +50,9 @@ public sealed record ExportRequest(
     bool BurnCaptions = true,
     CaptionFiles CaptionFiles = CaptionFiles.None,
     GifOptions? Gif = null,
-    string? BurnTrack = null)
+    string? BurnTrack = null,
+    double? LoudnessTarget = null,
+    SoundTracksOut TracksOut = SoundTracksOut.Mix)
 {
     /// <summary>
     /// The project as the export makes it: the range only, on the preset's own canvas (the screen covering it and
@@ -78,7 +82,10 @@ public sealed record ExportProgress(double Fraction, TimeSpan Elapsed, TimeSpan?
 /// <param name="CaptionPaths">The subtitle files written next to it.</param>
 /// <param name="Gif">For a GIF, how it was made in the end (smaller than asked, to fit its size).</param>
 /// <param name="PointerOutOfView">When the screen followed the pointer: the times it moved too fast to stay in the picture.</param>
-public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed, IReadOnlyList<string>? CaptionPaths = null, GifOptions? Gif = null, IReadOnlyList<TimeRange>? PointerOutOfView = null);
+/// <param name="TrackPaths">The WAV files of the sound tracks written beside it.</param>
+/// <param name="MeasuredLufs">How loud the mix was before a loudness target was met.</param>
+/// <param name="LoudnessGainDb">What was done to the mix to meet it.</param>
+public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed, IReadOnlyList<string>? CaptionPaths = null, GifOptions? Gif = null, IReadOnlyList<TimeRange>? PointerOutOfView = null, IReadOnlyList<string>? TrackPaths = null, double? MeasuredLufs = null, double? LoudnessGainDb = null);
 
 /// <summary>
 /// Makes a file from a project on a background thread: each frame drawn by the same <see cref="FrameCompositor"/>
@@ -97,6 +104,10 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
     /// <summary>The sound stream's title in the file, kept in English like a recording's ("Microphone").</summary>
     [Localizable(false)]
     private const string SoundStreamTitle = "Sound";
+
+    /// <summary>The mix's title when the tracks are streams beside it.</summary>
+    [Localizable(false)]
+    private const string MixStreamTitle = "Mix";
 
     public Task<ExportResult> ExportAsync(ExportRequest request, IProgress<ExportProgress>? progress = null, CancellationToken ct = default)
     {
@@ -124,11 +135,18 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         var partial = request.Path + ".partial";
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(request.Path))!);
         LogStarted(request.Path, request.Preset.Id, request.Quality);
+        var trackFiles = new List<(string Partial, string Final)>();
         try
         {
             var prepared = request with { Project = project, Range = null };
-            var result = request.Preset.IsGif ? WriteGif(prepared, partial, progress, ct) : Write(prepared, partial, detected, progress, ct);
+            var result = request.Preset.IsGif ? WriteGif(prepared, partial, progress, ct) : Write(prepared, partial, detected, trackFiles, progress, ct);
             File.Move(partial, request.Path, overwrite: true);
+            foreach (var (written, final) in trackFiles)
+            {
+                File.Move(written, final, overwrite: true);
+            }
+
+            result = trackFiles.Count > 0 ? result with { TrackPaths = [.. trackFiles.Select(t => t.Final)] } : result;
             LogFinished(request.Path, result.Frames, result.Elapsed.TotalSeconds);
             var outOfView = project.Canvas.Framing == ScreenFraming.FollowPointer && request.Preset.HasVideo
                 ? new ZoomCamera(new MetadataOverlays()).PointerOutOfView(project)
@@ -145,10 +163,29 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
             {
                 File.Delete(partial);
             }
+
+            foreach (var (written, _) in trackFiles)
+            {
+                if (File.Exists(written))
+                {
+                    File.Delete(written);
+                }
+            }
         }
     }
 
-    private ExportResult Write(ExportRequest request, string partial, IReadOnlyList<EncoderProbe> detected, IProgress<ExportProgress>? progress, CancellationToken ct)
+    /// <summary>The sound tracks that are heard in the mix.</summary>
+    internal static IReadOnlyList<Track> HeardTracks(VideoProject project)
+    {
+        var solo = project.Tracks.Any(t => t.HasSound && t.Solo);
+        return [.. project.Tracks.Where(t => t.HasSound && !t.Muted && (!solo || t.Solo) && t.Volume > 0 && t.Clips.Any())];
+    }
+
+    /// <summary>The project with only this sound track heard: what a solo export of it plays.</summary>
+    internal static VideoProject Solo(VideoProject project, string trackId) =>
+        project with { Tracks = [.. project.Tracks.Select(t => t.HasSound ? t with { Solo = t.Id == trackId } : t)] };
+
+    private ExportResult Write(ExportRequest request, string partial, IReadOnlyList<EncoderProbe> detected, List<(string Partial, string Final)> trackFiles, IProgress<ExportProgress>? progress, CancellationToken ct)
     {
         var project = request.Project;
         var preset = request.Preset;
@@ -169,94 +206,159 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
             progress?.Report(new ExportProgress(fraction, watch.Elapsed, remaining));
         }
 
-        var packets = new List<EncodedPacket>();
-        using var audio = AudioEncoder.Open(stream: 1, preset.AudioBitRate, preset.AudioCodec);
-        using var writer = new ExportWriter(partial, preset.Container);
-        using var mixer = new TimelineMixer();
-        var block = new float[audio.FrameSize * TimelineMixer.Channels];
+        // Measuring the whole mix first is about what a file of sound alone takes again, and little beside a video's pictures.
+        var share = request.LoudnessTarget is null ? 0 : preset.HasVideo ? 0.05 : 0.5;
+        LoudnessFound? loudness = null;
+        if (request.LoudnessTarget is { } target)
+        {
+            loudness = ExportLoudness.Find(project, target, f => Report(share * f), ct);
+        }
+
+        var gain = loudness?.GainDb;
         var totalSamples = TimelineMixer.Sample(duration);
-        long audioPts = 0;
-        void Send()
+        using var writer = new ExportWriter(partial, preset.Container);
+        var writers = new List<ExportWriter>();
+        var streams = new List<ExportSoundStream>();
+        var mainStreams = new List<ExportSoundStream>();
+        try
         {
-            packets.ForEach(writer.Write);
-            packets.Clear();
-        }
-
-        // Whole encoder frames up to a time; only the very last frame of the export may be shorter.
-        void Sound(long until)
-        {
-            while (audioPts < until && (audioPts + audio.FrameSize <= until || until == totalSamples))
+            var separate = request.TracksOut == SoundTracksOut.Streams && preset.CanHoldTracks;
+            var main = new ExportSoundStream(AudioEncoder.Open(stream: 1, preset.AudioBitRate, preset.AudioCodec), new ExportSoundSource(project, gain), writer);
+            streams.Add(main);
+            mainStreams.Add(main);
+            var titled = new List<(ExportSoundStream Stream, string Title)> { (main, separate ? MixStreamTitle : SoundStreamTitle) };
+            if (separate)
             {
-                var count = (int)Math.Min(audio.FrameSize, until - audioPts);
-                var samples = block.AsSpan(0, count * TimelineMixer.Channels);
-                mixer.Mix(project, audioPts, samples);
-                audio.Encode(samples, audioPts, packets);
-                audioPts += count;
-                Send();
-            }
-        }
-
-        if (!preset.HasVideo)
-        {
-            writer.Add(audio, SoundStreamTitle);
-            var step = (long)TimelineMixer.SampleRate;
-            for (var at = 0L; at < totalSamples; at += step)
-            {
-                ct.ThrowIfCancellationRequested();
-                Sound(Math.Min(totalSamples, at + step));
-                Report((double)audioPts / totalSamples);
-            }
-
-            audio.Flush(packets);
-            Send();
-            var soundBytes = writer.Finish();
-            Report(1);
-            return new ExportResult(partial, TimeSpan.FromSeconds(duration), 0, soundBytes, null, watch.Elapsed);
-        }
-
-        var (width, height) = preset.Size(canvas.Width, canvas.Height);
-        var format = new VideoFormat(width, height, fps);
-        using var video = OpenEncoder(preset.Codec!.Value, format, request, detected);
-        writer.Add(video);
-        writer.Add(audio, SoundStreamTitle);
-        using var frames = new ExportFrameProvider(VideoDecoding.Hardware);
-        using var converter = new FrameConverter(width, height, video.PixelFormat);
-        using var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul))
-            ?? throw new ExportException(VideoEditorStrings.NotEnoughMemory(width, height));
-        var compositor = NewCompositor(frames);
-        var count = (long)Math.Ceiling((duration * fps) - 1e-6);
-        for (var n = 0L; n < count; n++)
-        {
-            ct.ThrowIfCancellationRequested();
-            var time = (double)n / fps;
-            var target = surface.Canvas;
-            target.Save();
-            target.Scale((float)width / canvas.Width, (float)height / canvas.Height);
-            compositor.Render(target, project, time);
-            target.Restore();
-            surface.Flush();
-            using (var pixmap = surface.PeekPixels())
-            {
-                unsafe
+                var number = 2;
+                foreach (var track in HeardTracks(project))
                 {
-                    converter.Convert(new ReadOnlySpan<byte>((void*)pixmap.GetPixels(), pixmap.RowBytes * height), pixmap.RowBytes, video.NextFrame());
+                    var stream = new ExportSoundStream(AudioEncoder.Open(number++, preset.AudioBitRate, preset.AudioCodec), new ExportSoundSource(Solo(project, track.Id), gain), writer);
+                    streams.Add(stream);
+                    mainStreams.Add(stream);
+                    titled.Add((stream, track.Name));
                 }
             }
 
-            video.Encode(n, packets);
-            Send();
-            Sound(Math.Min(totalSamples, (n + 1) * TimelineMixer.SampleRate / fps));
-            frames.Retire();
-            Report((double)(n + 1) / count);
-        }
+            if (request.TracksOut == SoundTracksOut.WavFiles)
+            {
+                var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var track in HeardTracks(project))
+                {
+                    var final = Path.ChangeExtension(request.Path, null) + "." + SubtitleFiles.SafeName(track.Name, names) + ".wav";
+                    var trackPartial = final + ".partial";
+                    trackFiles.Add((trackPartial, final));
+                    var trackWriter = new ExportWriter(trackPartial, ExportContainer.Wav);
+                    writers.Add(trackWriter);
+                    var stream = new ExportSoundStream(AudioEncoder.Open(0, 0, AudioEncoder.Wav24), new ExportSoundSource(Solo(project, track.Id), gain), trackWriter);
+                    trackWriter.Add(stream.Encoder, track.Name);
+                    streams.Add(stream);
+                }
+            }
 
-        Sound(totalSamples);
-        video.Flush(packets);
-        audio.Flush(packets);
-        Send();
-        var bytes = writer.Finish();
-        Report(1);
-        return new ExportResult(partial, TimeSpan.FromSeconds((double)count / fps), count, bytes, video.Candidate.DisplayName, watch.Elapsed);
+            void Sound(long until)
+            {
+                foreach (var stream in streams)
+                {
+                    stream.Until(until, totalSamples);
+                }
+            }
+
+            void FinishTrackFiles()
+            {
+                foreach (var stream in streams.Except(mainStreams))
+                {
+                    stream.Flush();
+                }
+
+                foreach (var trackWriter in writers)
+                {
+                    trackWriter.Finish();
+                }
+            }
+
+            if (!preset.HasVideo)
+            {
+                writer.Add(main.Encoder, SoundStreamTitle);
+                var step = (long)TimelineMixer.SampleRate;
+                for (var at = 0L; at < totalSamples; at += step)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    Sound(Math.Min(totalSamples, at + step));
+                    Report(share + ((1 - share) * main.Pts / totalSamples));
+                }
+
+                main.Flush();
+                FinishTrackFiles();
+                var soundBytes = writer.Finish();
+                Report(1);
+                return new ExportResult(partial, TimeSpan.FromSeconds(duration), 0, soundBytes, null, watch.Elapsed, MeasuredLufs: loudness?.MeasuredLufs, LoudnessGainDb: loudness?.GainDb);
+            }
+
+            var (width, height) = preset.Size(canvas.Width, canvas.Height);
+            var format = new VideoFormat(width, height, fps);
+            using var video = OpenEncoder(preset.Codec!.Value, format, request, detected);
+            writer.Add(video);
+            foreach (var (stream, title) in titled)
+            {
+                writer.Add(stream.Encoder, title);
+            }
+
+            var packets = new List<EncodedPacket>();
+            void Send()
+            {
+                packets.ForEach(writer.Write);
+                packets.Clear();
+            }
+
+            using var frames = new ExportFrameProvider(VideoDecoding.Hardware);
+            using var converter = new FrameConverter(width, height, video.PixelFormat);
+            using var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul))
+                ?? throw new ExportException(VideoEditorStrings.NotEnoughMemory(width, height));
+            var compositor = NewCompositor(frames);
+            var count = (long)Math.Ceiling((duration * fps) - 1e-6);
+            for (var n = 0L; n < count; n++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var time = (double)n / fps;
+                var target2 = surface.Canvas;
+                target2.Save();
+                target2.Scale((float)width / canvas.Width, (float)height / canvas.Height);
+                compositor.Render(target2, project, time);
+                target2.Restore();
+                surface.Flush();
+                using (var pixmap = surface.PeekPixels())
+                {
+                    unsafe
+                    {
+                        converter.Convert(new ReadOnlySpan<byte>((void*)pixmap.GetPixels(), pixmap.RowBytes * height), pixmap.RowBytes, video.NextFrame());
+                    }
+                }
+
+                video.Encode(n, packets);
+                Send();
+                Sound(Math.Min(totalSamples, (n + 1) * TimelineMixer.SampleRate / fps));
+                frames.Retire();
+                Report(share + ((1 - share) * (n + 1) / count));
+            }
+
+            Sound(totalSamples);
+            video.Flush(packets);
+            Send();
+            foreach (var stream in mainStreams)
+            {
+                stream.Flush();
+            }
+
+            FinishTrackFiles();
+            var bytes = writer.Finish();
+            Report(1);
+            return new ExportResult(partial, TimeSpan.FromSeconds((double)count / fps), count, bytes, video.Candidate.DisplayName, watch.Elapsed, MeasuredLufs: loudness?.MeasuredLufs, LoudnessGainDb: loudness?.GainDb);
+        }
+        finally
+        {
+            streams.ForEach(s => s.Dispose());
+            writers.ForEach(w => w.Dispose());
+        }
     }
 
     /// <summary>

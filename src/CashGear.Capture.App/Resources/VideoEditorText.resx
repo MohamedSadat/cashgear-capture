@@ -2744,4 +2744,238 @@
   <data name="ProxyFailed" xml:space="preserve">
     <value>The smaller copy couldn't be made: {0}</value>
   </data>
+  <data name="VolumeKeysTitle" xml:space="preserve">
+    <value>Volume over time</value>
+    <comment>panel heading</comment>
+  </data>
+  <data name="VolumeAtPlayhead" xml:space="preserve">
+    <value>Volume at the playhead</value>
+  </data>
+  <data name="VolumeKeysNote" xml:space="preserve">
+    <value>Changing this makes a keyframe at the playhead. On the clip, Shift+click adds one, and a selected clip's keyframes can be dragged.</value>
+  </data>
+  <data name="AddVolumeKey" xml:space="preserve">
+    <value>Add a Volume Keyframe</value>
+  </data>
+  <data name="RemoveVolumeKey" xml:space="preserve">
+    <value>Remove the Volume Keyframe</value>
+  </data>
+  <data name="VolumeKeyEasing" xml:space="preserve">
+    <value>From this keyframe on</value>
+  </data>
+  <data name="UndoVolumeKeys" xml:space="preserve">
+    <value>Volume keyframe</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="SoundEffectsTitle" xml:space="preserve">
+    <value>Sound effects</value>
+    <comment>panel heading</comment>
+  </data>
+  <data name="UndoSoundEffect" xml:space="preserve">
+    <value>Sound effect</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="EvenOut" xml:space="preserve">
+    <value>Even Out</value>
+    <comment>measures a clip's loudness and sets its gain</comment>
+  </data>
+  <data name="SoundGain" xml:space="preserve">
+    <value>Gain</value>
+  </data>
+  <data name="DecibelsUnit" xml:space="preserve">
+    <value> dB</value>
+  </data>
+  <data name="HertzUnit" xml:space="preserve">
+    <value> Hz</value>
+  </data>
+  <data name="NoiseRemoval" xml:space="preserve">
+    <value>Noise removal</value>
+  </data>
+  <data name="NoiseStrength" xml:space="preserve">
+    <value>Strength</value>
+  </data>
+  <data name="NoiseGate" xml:space="preserve">
+    <value>Noise gate</value>
+  </data>
+  <data name="GateThreshold" xml:space="preserve">
+    <value>Opens above</value>
+  </data>
+  <data name="Compressor" xml:space="preserve">
+    <value>Compressor</value>
+  </data>
+  <data name="CompressorThreshold" xml:space="preserve">
+    <value>Compresses above</value>
+  </data>
+  <data name="CompressorRatio" xml:space="preserve">
+    <value>Ratio</value>
+  </data>
+  <data name="Limiter" xml:space="preserve">
+    <value>Limiter</value>
+  </data>
+  <data name="LimiterCeiling" xml:space="preserve">
+    <value>Ceiling</value>
+  </data>
+  <data name="Equalizer" xml:space="preserve">
+    <value>Equalizer</value>
+  </data>
+  <data name="EqFlat" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="EqVoice" xml:space="preserve">
+    <value>Voice</value>
+  </data>
+  <data name="EqWarm" xml:space="preserve">
+    <value>Warm</value>
+  </data>
+  <data name="EqPhone" xml:space="preserve">
+    <value>Phone</value>
+  </data>
+  <data name="EqCustom" xml:space="preserve">
+    <value>Your own</value>
+  </data>
+  <data name="EqHighPass" xml:space="preserve">
+    <value>Low cut</value>
+  </data>
+  <data name="EqLow" xml:space="preserve">
+    <value>Lows</value>
+  </data>
+  <data name="EqMid" xml:space="preserve">
+    <value>Middle</value>
+  </data>
+  <data name="EqHigh" xml:space="preserve">
+    <value>Highs</value>
+  </data>
+  <data name="CrossfadeShape" xml:space="preserve">
+    <value>Sound over the crossfade</value>
+  </data>
+  <data name="CrossfadeEqualPower" xml:space="preserve">
+    <value>Equal power</value>
+  </data>
+  <data name="CrossfadeStraight" xml:space="preserve">
+    <value>Straight line</value>
+  </data>
+  <data name="UndoCrossfadeShape" xml:space="preserve">
+    <value>Crossfade's sound</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="KeepPitch" xml:space="preserve">
+    <value>Keeps its pitch</value>
+    <comment>a speed ramp's sound</comment>
+  </data>
+  <data name="UndoKeepPitch" xml:space="preserve">
+    <value>Keep pitch</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="DuckingTitle" xml:space="preserve">
+    <value>Under the voice</value>
+    <comment>panel heading: ducking</comment>
+  </data>
+  <data name="BackgroundTrack" xml:space="preserve">
+    <value>A background track</value>
+  </data>
+  <data name="DuckAmount" xml:space="preserve">
+    <value>Goes down by</value>
+  </data>
+  <data name="DuckAttack" xml:space="preserve">
+    <value>Going down takes</value>
+  </data>
+  <data name="DuckRelease" xml:space="preserve">
+    <value>Coming back takes</value>
+  </data>
+  <data name="DuckingNote" xml:space="preserve">
+    <value>Makes volume keyframes on this track's clips, in place of any they have, which you can then change.</value>
+  </data>
+  <data name="DuckThisTrack" xml:space="preserve">
+    <value>Duck This Track Under the Voice</value>
+  </data>
+  <data name="DuckMusicMenu" xml:space="preserve">
+    <value>Duck the Music Under the Voice</value>
+  </data>
+  <data name="DuckMusicTip" xml:space="preserve">
+    <value>Music, and any track marked as background, goes down while the voice speaks, as volume keyframes you can change</value>
+  </data>
+  <data name="UndoDuck" xml:space="preserve">
+    <value>Duck under the voice</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoBackgroundTrack" xml:space="preserve">
+    <value>Background track</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="UndoEvenOut" xml:space="preserve">
+    <value>Even out</value>
+    <comment>undo step</comment>
+  </data>
+  <data name="NoVoiceTrack" xml:space="preserve">
+    <value>There's no sound track with a voice on it to go under.</value>
+  </data>
+  <data name="NoBackgroundTrack" xml:space="preserve">
+    <value>There's no music or background track to duck. Select a sound clip and turn on "A background track" in its settings.</value>
+  </data>
+  <data name="CantDuckVoice" xml:space="preserve">
+    <value>This is the voice's own track, so it can't go under itself.</value>
+  </data>
+  <data name="ListeningForVoice" xml:space="preserve">
+    <value>Finding where the voice speaks…</value>
+  </data>
+  <data name="MeasuringLoudness" xml:space="preserve">
+    <value>Measuring the loudness… {0:0} %</value>
+  </data>
+  <data name="EvenedOut" xml:space="preserve">
+    <value>It was {0:0.0} LUFS; now {1:0.0} dB brings it to {2:0} LUFS.</value>
+  </data>
+  <data name="NothingToEvenOut" xml:space="preserve">
+    <value>This clip is silent, so it was left as it is.</value>
+  </data>
+  <data name="CantMeasure" xml:space="preserve">
+    <value>The sound couldn't be read: {0}</value>
+  </data>
+  <data name="DuckedNothing" xml:space="preserve">
+    <value>The voice isn't heard during this track, so nothing changed.</value>
+  </data>
+  <data name="SoundOutputMenu" xml:space="preserve">
+    <value>Sound _Output</value>
+  </data>
+  <data name="SoundOutputTip" xml:space="preserve">
+    <value>Where the preview's sound plays</value>
+  </data>
+  <data name="SoundOutputDefault" xml:space="preserve">
+    <value>Windows' Default</value>
+  </data>
+  <data name="ExportLoudnessLabel" xml:space="preserve">
+    <value>Loudness:</value>
+  </data>
+  <data name="LoudnessAsMixed" xml:space="preserve">
+    <value>As mixed</value>
+  </data>
+  <data name="LoudnessOnline" xml:space="preserve">
+    <value>−16 LUFS (speech online)</value>
+  </data>
+  <data name="LoudnessYouTube" xml:space="preserve">
+    <value>−14 LUFS (YouTube)</value>
+  </data>
+  <data name="LoudnessBroadcast" xml:space="preserve">
+    <value>−23 LUFS (broadcast)</value>
+  </data>
+  <data name="ExportTracksLabel" xml:space="preserve">
+    <value>Sound tracks:</value>
+  </data>
+  <data name="TracksOutMix" xml:space="preserve">
+    <value>One mix</value>
+  </data>
+  <data name="TracksOutStreams" xml:space="preserve">
+    <value>The mix, and each track as its own stream</value>
+  </data>
+  <data name="TracksOutFiles" xml:space="preserve">
+    <value>The mix, and each track as a WAV file beside it</value>
+  </data>
+  <data name="WithTrackFiles" xml:space="preserve">
+    <value> Each track is in {0}.</value>
+  </data>
+  <data name="ExportLoudnessDone" xml:space="preserve">
+    <value> The mix was {0:0.0} LUFS and is now at {1:0} LUFS.</value>
+  </data>
+  <data name="ExportStagesMeasuring" xml:space="preserve">
+    <value>Measuring the loudness…</value>
+  </data>
 </root>

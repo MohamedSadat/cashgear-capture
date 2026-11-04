@@ -209,6 +209,41 @@ public sealed class TimelineView
         return best;
     }
 
+    /// <summary>Where a row's items are drawn: from the top of its strip to the bottom, without the keyframe lane.</summary>
+    public (double Top, double Bottom) ItemBox(TrackRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        var top = RowTop(row);
+        return (top + 3, top + row.Height - row.Lane - 3);
+    }
+
+    /// <summary>How high a volume keyframe's level is drawn on a clip: its bottom is silence, its top twice as loud as recorded.</summary>
+    public static double VolumeY(double top, double bottom, double level) => bottom - ((bottom - top) * Math.Clamp(level, 0, Editing.SoundEdits.LoudestKey) / Editing.SoundEdits.LoudestKey);
+
+    /// <summary>The level at a height on a clip.</summary>
+    public static double VolumeAt(double top, double bottom, double y) => Math.Clamp((bottom - y) / Math.Max(1, bottom - top), 0, 1) * Editing.SoundEdits.LoudestKey;
+
+    /// <summary>The volume keyframe under a point of the selected clip, as its time from the clip's start; null when there is none. Only a selected clip's can be taken, so clips still drag.</summary>
+    public (string ItemId, double Time)? VolumeKeyAt(VideoProject project, double x, double y, string? selected)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        if (selected is null || RowAt(project, y) is not { } row || row.Track.Items.FirstOrDefault(i => i.Id == selected) is not Clip { VolumeKeys: { } keys } clip)
+        {
+            return null;
+        }
+
+        var (top, bottom) = ItemBox(row);
+        foreach (var key in keys)
+        {
+            if (Math.Abs(X(clip.Start + key.Time) - x) <= KeyframeGrab && Math.Abs(VolumeY(top, bottom, key.Value) - y) <= KeyframeGrab)
+            {
+                return (clip.Id, key.Time);
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// <paramref name="time"/> pulled to the nearest item edge, the playhead or 0 within <see cref="SnapDistance"/>
     /// pixels (items in <paramref name="ignore"/>, the ones being dragged, don't count).

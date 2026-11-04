@@ -23,6 +23,9 @@ public sealed record ExportPreset(string Id, string Name, ExportContainer Contai
     /// <summary>It has sound (not a GIF).</summary>
     public bool HasSound => !IsGif;
 
+    /// <summary>Its file can hold each sound track as a stream of its own: a video's. A file of sound alone is one stream; its tracks go out as files.</summary>
+    public bool CanHoldTracks => Codec is not null;
+
     /// <summary>The picture's size for a project: the preset's height (the width in proportion), even, and in multiples of 8 for HEVC.</summary>
     public (int Width, int Height) Size(int projectWidth, int projectHeight)
     {
@@ -37,6 +40,7 @@ public sealed record ExportPreset(string Id, string Name, ExportContainer Contai
     {
         AudioEncoder.Mp3 => 192_000,
         AudioEncoder.Opus => 128_000,
+        AudioEncoder.Wav24 or AudioEncoder.Flac => 0,
         _ => AudioEncoder.DefaultBitRate,
     };
 
@@ -64,6 +68,12 @@ public static class ExportPresets
 
     public static ExportPreset Mp3 => new("mp3", VideoEditorStrings.PresetMp3, ExportContainer.Mp3, null, AudioEncoder.Mp3, 0, ".mp3");
 
+    public static ExportPreset Wav => new("wav", VideoEditorStrings.PresetWav, ExportContainer.Wav, null, AudioEncoder.Wav24, 0, ".wav");
+
+    public static ExportPreset Flac => new("flac", VideoEditorStrings.PresetFlac, ExportContainer.Flac, null, AudioEncoder.Flac, 0, ".flac");
+
+    public static ExportPreset Mkv => new("mkv", VideoEditorStrings.PresetMkv, ExportContainer.Mkv, VideoCodec.H264, AudioEncoder.Aac, 0, ".mkv");
+
     public static ExportPreset Gif => new("gif", VideoEditorStrings.PresetGif, ExportContainer.Gif, null, "", 0, ".gif");
 
     public static ExportPreset Vertical => new("mp4-9x16", VideoEditorStrings.PresetVertical, ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 0, ".mp4", 1080, 1920);
@@ -72,7 +82,7 @@ public static class ExportPresets
 
     public static ExportPreset Portrait => new("mp4-4x5", VideoEditorStrings.PresetPortrait, ExportContainer.Mp4, VideoCodec.H264, AudioEncoder.Aac, 0, ".mp4", 1080, 1350);
 
-    public static IReadOnlyList<ExportPreset> All => [Mp4H264Hd, Mp4H264Small, Mp4H264Project, Mp4Hevc, Vertical, Square, Portrait, WebMVp9, WebMAv1, Gif, M4a, Mp3];
+    public static IReadOnlyList<ExportPreset> All => [Mp4H264Hd, Mp4H264Small, Mp4H264Project, Mp4Hevc, Vertical, Square, Portrait, Mkv, WebMVp9, WebMAv1, Gif, M4a, Mp3, Wav, Flac];
 
     public static ExportPreset? Find(string? id) => All.FirstOrDefault(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
 }

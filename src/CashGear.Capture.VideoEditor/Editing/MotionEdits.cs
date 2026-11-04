@@ -177,7 +177,12 @@ public static class MotionEdits
     {
         ArgumentNullException.ThrowIfNull(item);
         var times = Of(item)?.KeyTimes() ?? [];
-        return item is AnnotationItem { Keyframes.Count: > 1 } annotation ? [.. times.Concat(annotation.Keyframes.Select(k => k.Time)).Distinct().Order()] : times;
+        return item switch
+        {
+            AnnotationItem { Keyframes.Count: > 1 } annotation => [.. times.Concat(annotation.Keyframes.Select(k => k.Time)).Distinct().Order()],
+            Clip { VolumeKeys.Count: > 0 } sound => [.. times.Concat(sound.VolumeKeys!.Select(k => k.Time)).Distinct().Order()],
+            _ => times,
+        };
     }
 
     /// <summary>A keyframe's move on the timeline, for a diamond dragged along the lane: in the motion's lanes and an annotation's own keyframes.</summary>
@@ -190,6 +195,11 @@ public static class MotionEdits
             var target = Times.Round(Math.Clamp(to, 0, item.Duration));
             var keyframes = annotation.Keyframes.Select(k => Math.Abs(k.Time - from) <= 0.5 / fps ? k with { Time = target } : k).OrderBy(k => k.Time).ToList();
             moved = annotation with { Keyframes = keyframes };
+        }
+
+        if (moved is Clip { VolumeKeys.Count: > 0 } clip)
+        {
+            moved = SoundEdits.MoveVolumeKey(clip, from, to, null, fps);
         }
 
         return moved;

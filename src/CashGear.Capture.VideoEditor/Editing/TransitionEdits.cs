@@ -41,7 +41,7 @@ public static class TransitionEdits
             {
                 if (group.Contains(item.Id) && item is Clip linked)
                 {
-                    var faster = linked with { Speed = speed, EndSpeed = endSpeed };
+                    var faster = linked with { Speed = speed, EndSpeed = endSpeed, KeepPitch = endSpeed is not null || linked.KeepPitch };
                     return FitFades(faster);
                 }
 
@@ -176,7 +176,16 @@ public static class TransitionEdits
         }
 
         var cut = Times.Round(clip.End);
-        return Shift(project, cut, -length);
+        var shifted = Shift(project, cut, -length);
+
+        // What is made now keeps its loudness across the overlap; what older projects have stays as it was.
+        var coming = Times.Round(cut - length);
+        return shifted with
+        {
+            Tracks = [.. shifted.Tracks.Select(t => t.HasSound && !t.Locked
+                ? t.WithItems(t.Items.Select(i => i is Clip c && Math.Abs(c.Start - coming) <= Times.Epsilon * 10 && t.Clips.Any(o => o.Id != c.Id && o.Start < c.Start && o.End > c.Start + Times.Epsilon) ? c with { EqualPowerIn = true } : i))
+                : t)],
+        };
     }
 
     /// <summary>The clip that a crossfade from <paramref name="clipId"/> overlaps, and the overlap's length (0: none).</summary>

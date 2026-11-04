@@ -52,6 +52,9 @@ public enum ProFeature
 
     /// <summary>Video editor: templates, the brand kit and the library.</summary>
     Templates,
+
+    /// <summary>Video editor: clip sound effects, volume keyframes, loudness targets, ducking and separate tracks out.</summary>
+    AudioPost,
 }
 
 /// <summary>A licence's content (signed into a <c>.cglicense</c> file).</summary>

@@ -62,6 +62,15 @@ public sealed record VideoEditorState
     /// <summary>Exports draw the captions that are shown into the pictures.</summary>
     public bool ExportBurnCaptions { get; init; } = true;
 
+    /// <summary>The loudness exports aim at, in LUFS (0: as mixed). −16 is the usual level for speech online.</summary>
+    public double ExportLoudness { get; init; } = -16;
+
+    /// <summary>How exports keep the sound tracks apart (the name of a <c>SoundTracksOut</c>; null: only the mix).</summary>
+    public string? ExportTracksOut { get; init; }
+
+    /// <summary>The device the preview's sound plays on (Windows' id; null: Windows' default output).</summary>
+    public string? PreviewOutput { get; init; }
+
     /// <summary>Exports also save the captions as an SRT file.</summary>
     public bool ExportSrt { get; init; }
 

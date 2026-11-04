@@ -171,6 +171,88 @@ public static unsafe class Loudness
 }
 
 /// <summary>
+/// The loudness (EBU R128, ITU-R BS.1770) of 48 kHz stereo given in blocks: K-weighting, 400 ms gates every 100 ms, the −70 LUFS
+/// and −10 LU gates. It gives what <see cref="Loudness.Measure"/> does, for sound that isn't in a file yet: a clip through its
+/// effects, or a project's mix.
+/// </summary>
+public sealed class LoudnessMeter
+{
+    private const int Hop = AudioEncoder.SampleRate / 10;
+    private const int HopsInGate = 4;
+
+    private readonly double[] _state = new double[8];
+    private readonly List<double> _gates = [];
+    private readonly double[] _hops = new double[HopsInGate];
+    private double _energy;
+    private int _filled;
+    private long _hopCount;
+    private double _peak;
+
+    /// <summary>The loudest sample's level so far (dB below full scale).</summary>
+    public double PeakDb => _peak <= 0 ? double.NegativeInfinity : 20 * Math.Log10(_peak);
+
+    /// <summary>The loudness of everything so far (LUFS); −∞ when it is all silence, or shorter than a gate.</summary>
+    public double IntegratedLufs
+    {
+        get
+        {
+            var loud = _gates.Where(g => Lufs(g) > -70).ToList();
+            if (loud.Count == 0)
+            {
+                return double.NegativeInfinity;
+            }
+
+            var gate = Lufs(loud.Average()) - 10;
+            var kept = loud.Where(g => Lufs(g) > gate).ToList();
+            return kept.Count == 0 ? double.NegativeInfinity : Lufs(kept.Average());
+        }
+    }
+
+    /// <summary>The next samples (interleaved L, R).</summary>
+    public void Add(ReadOnlySpan<float> interleaved)
+    {
+        for (var i = 0; i + 1 < interleaved.Length; i += 2)
+        {
+            _peak = Math.Max(_peak, Math.Max(Math.Abs(interleaved[i]), Math.Abs(interleaved[i + 1])));
+            var left = Weigh(interleaved[i], 0);
+            var right = Weigh(interleaved[i + 1], 4);
+            _energy += (left * left) + (right * right);
+            if (++_filled == Hop)
+            {
+                _hops[_hopCount++ % HopsInGate] = _energy / Hop;
+                _energy = 0;
+                _filled = 0;
+                if (_hopCount >= HopsInGate)
+                {
+                    _gates.Add(_hops.Average());
+                }
+            }
+        }
+    }
+
+    private static double Lufs(double energy) => energy <= 0 ? double.NegativeInfinity : -0.691 + (10 * Math.Log10(energy));
+
+    /// <summary>The two filters of K-weighting at 48 kHz, as BS.1770 gives them: the head's shelf and the low cut.</summary>
+    private double Weigh(double sample, int at)
+    {
+        const double b0 = 1.53512485958697;
+        const double b1 = -2.69169618940638;
+        const double b2 = 1.19839281085285;
+        const double a1 = -1.69065929318241;
+        const double a2 = 0.73248077421585;
+        const double c1 = -1.99004745483398;
+        const double c2 = 0.99007225036621;
+        var shelved = (b0 * sample) + _state[at];
+        _state[at] = (b1 * sample) - (a1 * shelved) + _state[at + 1];
+        _state[at + 1] = (b2 * sample) - (a2 * shelved);
+        var cut = shelved + _state[at + 2];
+        _state[at + 2] = (-2 * shelved) - (c1 * cut) + _state[at + 3];
+        _state[at + 3] = shelved - (c2 * cut);
+        return cut;
+    }
+}
+
+/// <summary>
 /// One sound track re-encoded to −16 LUFS (the second pass): its packets are decoded, put through loudnorm with the
 /// track's measurements, and encoded again to AAC like the recording's own sound (<see cref="AudioEncoder"/>). The
 /// output starts at the time of the first sound decoded and then counts the samples that come out, which are exactly

@@ -127,6 +127,7 @@
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.FreezeFrameMenu}" Command="{Binding FreezeFrameCommand}" ToolTip="{x:Static r:VideoEditorText.FreezeFrameTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.CrossfadeMenu}" Command="{Binding CrossfadeCommand}" ToolTip="{x:Static r:VideoEditorText.CrossfadeTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.DuckMusicMenu}" Command="{Binding DuckMusicCommand}" ToolTip="{x:Static r:VideoEditorText.DuckMusicTip}" />
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.MarkInMenu}" Command="{Binding MarkInCommand}" InputGestureText="I" />
         <MenuItem Header="{x:Static r:VideoEditorText.MarkOutMenu}" Command="{Binding MarkOutCommand}" InputGestureText="O" />
@@ -187,6 +188,16 @@
         <MenuItem Header="{x:Static r:VideoEditorText.UseLookMenu}" Command="{Binding UseLookForRecordingsCommand}" ToolTip="{x:Static r:VideoEditorText.UseLookTip}" />
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.MagneticMenu}" IsCheckable="True" IsChecked="{Binding IsMagnetic}" ToolTip="{x:Static r:VideoEditorText.MagneticTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.SoundOutputMenu}" ToolTip="{x:Static r:VideoEditorText.SoundOutputTip}" ItemsSource="{Binding OutputDevices}" SubmenuOpened="OnOutputMenuOpened">
+          <MenuItem.ItemContainerStyle>
+            <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+              <Setter Property="Header" Value="{Binding Name}" />
+              <Setter Property="IsCheckable" Value="True" />
+              <Setter Property="IsChecked" Value="{Binding IsChosen, Mode=OneWay}" />
+              <Setter Property="Command" Value="{Binding Choose}" />
+            </Style>
+          </MenuItem.ItemContainerStyle>
+        </MenuItem>
         <MenuItem Header="{x:Static r:VideoEditorText.ProxiesMenu}" ToolTip="{x:Static r:VideoEditorText.ProxiesTip}">
           <MenuItem Header="{x:Static r:VideoEditorText.ProxiesOff}" IsCheckable="True" IsChecked="{Binding ProxiesOff}" />
           <MenuItem Header="{x:Static r:VideoEditorText.Proxies1080}" IsCheckable="True" IsChecked="{Binding Proxies1080}" />

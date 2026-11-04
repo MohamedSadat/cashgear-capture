@@ -16,6 +16,11 @@
     <None Include="$(MSBuildThisFileDirectory)..\..\tools\ffmpeg\*" Link="ffmpeg\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
+  <!-- Noise removal on a clip loads RNNoise from rnnoise\ next to the tests (built by tools\get-rnnoise.ps1); those tests skip without it. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\rnnoise\rnnoise.dll')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\rnnoise\rnnoise.dll;$(MSBuildThisFileDirectory)..\..\tools\rnnoise\COPYING" Link="rnnoise\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
   <!-- A project saved by 1.1.1 and the frames it drew then: what every later version must still draw. -->
   <ItemGroup>
     <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />

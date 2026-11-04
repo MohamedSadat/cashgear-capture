@@ -389,6 +389,7 @@ public sealed class TimelineRenderer : IDisposable
         if (item is Clip shaped)
         {
             DrawFades(canvas, shaped, box, view, Colors.Fade);
+            DrawVolumeKeys(canvas, shaped, box, view, Colors.Selection);
             DrawTransitions(canvas, shaped, box, view, Colors.Selection);
         }
 
@@ -464,14 +465,59 @@ public sealed class TimelineRenderer : IDisposable
         using var paint = new SKPaint { Color = color, StrokeWidth = 1, IsAntialias = false };
         var middle = box.MidY + 4;
         var half = (box.Height - 18) / 2;
-        var gain = (float)Math.Min(2, clip.Volume);
+
+        // It shows what is heard: its level, its gain and, moment by moment, its volume keyframes.
+        var gain = clip.Volume * (clip.Sound is { GainDb: var decibels } ? Math.Pow(10, decibels / 20) : 1);
         for (var x = Math.Max(box.Left, 0); x < Math.Min(box.Right, view.Width); x++)
         {
             var from = clip.SourceAt(view.Time(x));
             var to = clip.SourceAt(view.Time(x + 1));
-            var peak = (float)wave.Peak(from, to) * gain;
+            var peak = (float)(wave.Peak(from, to) * gain * VolumeCurve.At(clip.VolumeKeys, view.Time(x + 0.5) - clip.Start));
             var h = Math.Min(half, peak * half);
             canvas.DrawLine(x + 0.5f, middle - h, x + 0.5f, middle + h, paint);
+        }
+    }
+
+    /// <summary>A clip's volume keyframes on it: the line its level goes along, and a diamond at each.</summary>
+    private static void DrawVolumeKeys(SKCanvas canvas, Clip clip, SKRect box, TimelineView view, SKColor color)
+    {
+        if (clip.VolumeKeys is not { Count: > 0 } keys)
+        {
+            return;
+        }
+
+        using var line = new SKPaint { Color = color, StrokeWidth = 1.5f, IsAntialias = true, Style = SKPaintStyle.Stroke };
+        using var path = new SKPathBuilder();
+        var started = false;
+        for (var x = Math.Max(box.Left, 0); x <= Math.Min(box.Right, view.Width); x += 2)
+        {
+            var y = (float)TimelineView.VolumeY(box.Top, box.Bottom, VolumeCurve.At(keys, view.Time(x) - clip.Start));
+            if (started)
+            {
+                path.LineTo(x, y);
+            }
+            else
+            {
+                path.MoveTo(x, y);
+                started = true;
+            }
+        }
+
+        using var drawn = path.Detach();
+        canvas.DrawPath(drawn, line);
+        using var mark = new SKPaint { Color = color, IsAntialias = true };
+        foreach (var key in keys)
+        {
+            var at = (float)view.X(clip.Start + key.Time);
+            var y = (float)TimelineView.VolumeY(box.Top, box.Bottom, key.Value);
+            using var builder = new SKPathBuilder();
+            builder.MoveTo(at, y - 5);
+            builder.LineTo(at + 5, y);
+            builder.LineTo(at, y + 5);
+            builder.LineTo(at - 5, y);
+            builder.Close();
+            using var diamond = builder.Detach();
+            canvas.DrawPath(diamond, mark);
         }
     }
 

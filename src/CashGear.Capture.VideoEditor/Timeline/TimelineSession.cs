@@ -16,7 +16,8 @@ public enum TimelineCursor
 /// What the mouse does on the timeline, without WPF: a click on the ruler (or a drag along it) moves the playhead; a
 /// click selects an item and a drag moves it (with the clips linked to it, unless Alt is held) or trims it by an edge;
 /// a drag over an empty part of a track, or Shift with a drag on the ruler, marks a range. Moves and trims snap to
-/// item edges, the playhead and 0 (Alt: no snapping), and one drag is one undo step.
+/// item edges, the playhead and 0 (Alt: no snapping), and one drag is one undo step. On a selected sound clip, a volume
+/// keyframe is dragged in time and level, and Shift with a click adds one.
 /// </summary>
 public sealed class TimelineSession(ProjectHistory history, TimelineView view)
 {
@@ -29,6 +30,7 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
         TrimEnd,
         Range,
         Keyframe,
+        VolumeKey,
     }
 
     private Drag _drag;
@@ -288,6 +290,21 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
 
         _base = project;
         _drags++;
+        if (View.VolumeKeyAt(project, x, y, SelectedId) is { } volume && project.Find(volume.ItemId) is { Track.Locked: false, Item: Clip sound })
+        {
+            _item = sound;
+            _keyframe = volume.Time;
+            _drag = Drag.VolumeKey;
+            return;
+        }
+
+        if (shift && hit.Kind == TimelineHitKind.Item && hit.ItemId == SelectedId && project.Find(hit.ItemId!) is { Track: { HasSound: true, Locked: false } soundTrack, Item: Clip added } && TimelineView.Rows(project).FirstOrDefault(r => r.Track.Id == soundTrack.Id) is { } soundRow)
+        {
+            var (top, bottom) = View.ItemBox(soundRow);
+            History.Apply(VideoEditorStrings.UndoAddVolumeKey, project.WithItem(SoundEdits.SetVolumeAt(added, hit.Time - added.Start, TimelineView.VolumeAt(top, bottom, y), project.Canvas.Fps)));
+            return;
+        }
+
         if (View.KeyframeAt(project, x, y, SelectedId) is { } key && project.Find(key.ItemId) is { Track.Locked: false, Item: var keyed })
         {
             _item = keyed;
@@ -352,6 +369,15 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
                 var moved = Times.Round(Math.Clamp(alt ? time : Times.NearestFrame(time, fps), _item.Start, _item.End) - _item.Start);
                 History.Apply(VideoEditorStrings.UndoMoveKeyframe, _base.WithItem(MotionEdits.MoveKeyframesOf(_item, _keyframe, moved, fps)), $"drag {_drags}");
                 Scrub(_item.Start + moved);
+                break;
+            case Drag.VolumeKey when _item is Clip clip:
+                var keyFps = _base.Canvas.Fps;
+                var movedTo = Times.Round(Math.Clamp(alt ? time : Times.NearestFrame(time, keyFps), clip.Start, clip.End) - clip.Start);
+                var level = TimelineView.Rows(_base).FirstOrDefault(r => r.Track.Items.Any(i => i.Id == clip.Id)) is { } volumeRow && View.ItemBox(volumeRow) is var (above, below)
+                    ? TimelineView.VolumeAt(above, below, y)
+                    : (double?)null;
+                History.Apply(VideoEditorStrings.UndoMoveKeyframe, _base.WithItem(SoundEdits.MoveVolumeKey(clip, _keyframe, movedTo, level, keyFps)), $"drag {_drags}");
+                Scrub(clip.Start + movedTo);
                 break;
             case Drag.TrimStart or Drag.TrimEnd when _item is not null:
                 var edge = _drag == Drag.TrimStart ? ItemEdge.Start : ItemEdge.End;
