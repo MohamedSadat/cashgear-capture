@@ -87,6 +87,7 @@ Change them in Settings › Hotkeys. The ones with "—" have no key until you s
 | `M` | Add a marker at the playhead |
 | `Ctrl+←` / `Ctrl+→` | Go to the previous / next marker |
 | `Alt+↑` / `Alt+↓` | Move the selected item's track up / down |
+| `Shift`+click, on a selected sound clip | Add a volume keyframe (a keyframe's level and time are also in the clip's settings, from the keyboard) |
 
 In the transcript's words:
 

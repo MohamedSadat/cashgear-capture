@@ -2024,7 +2024,7 @@ The editor now takes any media, and everything in it can move. Pictures, colours
   - **Zooms and the other tracks, decided:** a track stays where it is on the canvas by default, so no old project changes and a title doesn't fly off. **Moves with zooms** (`Track.MovesWithZoom`) puts a webcam, media or annotation track through the camera, and a blurred area on it follows the pictures it hides (a Phase 17 limitation).
 - **M3 — Transitions, clip effects, text animations:**
   - **Eleven transitions** (`ClipTransition`, `TransitionShaders`), each an SkSL shader reading two layers: dissolve, dip to colour, wipe in four directions, slide, push (with a direction), zoom, blur, circle, with a length and a pace. Dragged from a library onto a cut or a clip's edge, or `Enter` on a chosen clip. At a cut the clips overlap by its length and what follows moves back; at a free edge the clip comes from or goes to nothing.
-  - **Fades with curves** in the picture and the sound (a Phase 16 limitation). An overlap's crossfade stays a straight line; equal power is Phase 23.
+  - **Fades with curves** in the picture and the sound (a Phase 16 limitation). An overlap's crossfade stays a straight line; equal power came in Phase 23.
   - **Clip effects** (`ClipEffects`) per pixel in SkSL: brightness, contrast, saturation, temperature; `.cube` look-up tables, 3D and 1D (`CubeLut`), kept with the media; chroma key with spill removal. On the processor they are drawn in strips side by side, one per core. Drop shadow, border and corners are the placement's, and a see-through picture's or keyed clip's shadow now follows its shape.
   - **Text animations** in, during and out (`TextAnimator`): fade, slide, pop, typewriter. The typewriter counts grapheme clusters and draws the first ones of the shaped line (`ShapedLine.DrawFirst`), so each letter is where and as the whole line has it.
 - **M4 — Titles, callouts, templates, brand kit:**
@@ -2081,7 +2081,7 @@ The editor now takes any media, and everything in it can move. Pictures, colours
 ### Known limitations
 - **Media:** an animated picture keeps at most 900 frames in memory, and pictures stay in memory while a window is open. A video's rotation flag isn't followed. A `.cube` table is 8 bits a channel.
 - **Motion:** a shadow and a border turn with their picture. Lines and arrows are found on the preview where their motion puts them, but dragging a keyed one moves its own keyframes. An item that moves with zooms is dragged on the preview where it is without the zoom. Moving a keyframe's time by the keyboard is removing it and adding another.
-- **Transitions:** what is drawn under a transition (a look's frame, a device) goes with its clip's layer, so it transitions too. One transition on a track at a moment. The sound over a transition is a straight crossfade (Phase 23). A transition costs a layer per clip: on the processor about what motion blur does.
+- **Transitions:** what is drawn under a transition (a look's frame, a device) goes with its clip's layer, so it transitions too. One transition on a track at a moment. The sound over a transition was a straight crossfade (equal power since Phase 23, on what is made then). A transition costs a layer per clip: on the processor about what motion blur does.
 - **Effects:** a look-up table and a key work on 8-bit pictures, and on the processor each costs per pixel across the clip's area (at 1080p 24 to 44 ms a frame; TESTING.md). Spill removal also takes green out of green things in the subject; its slider sets how much.
 - **Chroma key:** measured on a synthetic clip, not a camera's green screen, with its noise and motion blur (by hand).
 - **Typewriter:** a lam-alef or other ligature shows whole when its first letter does. Reveals in the order written, line by line.
@@ -2092,3 +2092,89 @@ The editor now takes any media, and everything in it can move. Pictures, colours
 - **Tracks:** sound tracks stay below the others.
 - **The panel:** whether it is shown, and on which tab, isn't remembered.
 - **Proxies:** made per stream whatever part is used, kept until deleted by hand. The first picture after a seek in a proxy is still a decode away. The preview shows the copy's quality.
+
+## Phase 23 — Sound After Recording (2026-11-04)
+
+Sound can now be finished in the editor. Any sound clip takes noise removal, a gate, a compressor, a limiter and an equalizer, and the preview and the export play the same samples, from wherever playing starts. Volume has keyframes drawn on the clip, Even Out sets a clip's level, and an export can aim at a loudness. Music goes down under the voice, as keyframes that can be changed. An export can keep the tracks apart, as titled streams or as WAV files, and sound alone can be WAV or FLAC. Crossfades are equal power, a ramp keeps its pitch, and the preview plays on the device you choose.
+
+### Added
+- **Clip sound effects** (`Clip.Sound`, `ClipSound`, the panel of a selected sound clip):
+  - **Noise removal** with RNNoise, with a strength; a **noise gate**, a **compressor** and a **limiter**, the microphone's own stages; an **equalizer** (`Core.Audio.Equalizer`): a low cut and low, middle and high bands, with Voice, Warm and Phone (`EqPreset`); a **gain**. Their order: noise, equalizer, gate, gain, compressor, limiter.
+  - **In the mixer, the same samples:** `ClipSoundReader` works on the stream, before the clip's speed. What comes out depends only on the settings and the sample's place in the stream. So a seek gives what playing from the start gives, a split clip plays on as if it weren't split, and neither the block size nor the export matter. The chains' delay is taken out, so the sound stays with its pictures.
+  - **Without RNNoise** the panel says why it isn't offered, and a project that has it on plays the rest of its chain.
+- **Volume keyframes** (`Clip.VolumeKeys`, `VolumeCurve`, `SoundEdits`):
+  - In the panel at the playhead; `Shift`+click on a selected clip adds one; diamonds on the clip are dragged in time and level, one undo step a drag (`TimelineView.VolumeKeyAt`, `Drag.VolumeKey`).
+  - The waveform follows them, and its clip's gain. The line and its diamonds are drawn in the palette's selection colour, so high contrast reaches them. They show in the keyframe lane too, and next and previous go through them.
+  - They come through splits, trims, cuts and ranges (`Clip.Slice`, `Extend`) with each moment at its level.
+- **Loudness:**
+  - **`LoudnessMeter`** (`Media/Loudness.cs`): EBU R128 for sound that isn't in a file yet: K-weighting, 400 ms gates, the −70 LUFS and −10 LU gates.
+  - **Even Out** (`SoundEdits.Measure`, `EvenOut`) measures a clip through its effects, without its fades or keyframes, and sets its gain to −16 LUFS. When that would pass full scale, the clip's limiter goes on. Silence stays as it is.
+  - **Export targets** (`ExportRequest.LoudnessTarget`, `ExportLoudness`): −16 LUFS, the window's default, −14 (YouTube), −23 (broadcast) or as mixed. The whole mix is measured first, then turned up or down, with a limiter at −1 dBFS (`ExportSoundSource`). When the limiter has to hold peaks it is measured again through it and made up for.
+- **Ducking** (`Ducking`, `DuckOptions`, Edit › Duck the Music Under the Voice, or the panel's Duck This Track):
+  - Music and any track marked as background (`Track.Background`; Add Music marks its track) go down under the voice: −12 dB, going down in 0.3 s and coming back in 0.5 s by default.
+  - The voice's track comes from Phase 21's `SilenceFinder.VoiceTrack`, among the tracks that aren't background, and its pauses from the same detector.
+  - **The result is volume keyframes** on the music's clips, in place of any they had, one undo step. Close spans stay down rather than bobbing up between them. Nothing but those clips changes.
+- **Tracks out** (`ExportRequest.TracksOut`, `SoundTracksOut`):
+  - **Streams:** a video file holds the mix, titled "Mix", then each track heard in it, titled with its name.
+  - **WAV files:** each track as `name.Track.wav` beside the file, 24-bit, written as `.partial` and left behind by nothing when cancelled.
+  - **`ExportContainer.Mkv`, `Wav`, `Flac`,** with the presets MKV H.264, WAV (24-bit, `pcm_s24le`) and FLAC. `AudioEncoder` takes 32-bit integers for the last two.
+- **The Phase 16 leftovers:**
+  - **Equal-power crossfades** (`Clip.EqualPowerIn`, sine and cosine, `TimelineMixer.Envelope`): what Crossfade and a transition make now, on the sound. **Sound over the crossfade** in the panel changes it.
+  - **A ramp keeps its pitch** (`Clip.KeepPitch`, `RampStretcher`): set by `SetSpeed` on a new ramp, with **Keeps its pitch** in the panel.
+  - **The preview on a chosen device** (View › Sound Output, `WasapiAudioOutput(deviceId)`, `PlaybackEngine.ChangeOutput`, `VideoEditorState.PreviewOutput`): from now on and next time, playing on from where it is. One that has gone gives way to Windows' default.
+- **Mixing:** a change of level while playing no longer seeks the clip again (`Voice.SameReading`), so a volume slider doesn't break the sound. A clip with effects that starts soon gets ready beside the mixing thread, so the sound already mixed doesn't run out.
+- **Pro features:** `ProFeature.AudioPost` covers clip effects, volume keyframes, Even Out, ducking, loudness targets and tracks out, behind `IFeatureGate`. Clip volume, fades, WAV, FLAC and MKV are free. Everything stays free in this version.
+- **RNNoise is built** on the dev PC (`tools\get-rnnoise.ps1`, with the user's go-ahead), so its 6 tests run at last: the first time since Phase 11.
+- **Project version 5**, with a step in `ProjectJson.Migrate`: everything new is optional, and the two changes to how sound mixes are switches older clips don't have on.
+- **Tests:** a Phase 22 project written by the Phase 22 code before anything changed (`Fixtures\phase-22`, 16 golden frames and its mix); `SoundPostTests`, `SoundPlayingAcceptanceTests`, `SoundPanelTests`, `SoundPanelWindowTests`, `ArabicVideoEditorUiTests.A_sound_clips_settings_and_the_exports_sound`.
+
+### Deviations from the spec
+- **A ramp doesn't go through `atempo`:** the plan says to feed the tempo filter in short blocks at the speed of each. It was tried, and each change of `atempo`'s tempo moves its position by half a piece, whatever the speed: at short blocks a clip going from 0.5× to 2× ran about 40 % short, and its sound ended 3 s before its pictures. Fewer changes means jumps you can hear. `RampStretcher` is the same method (waveform-similarity overlap-add, no GPL code, no new dependency), with each piece placed from the clip's own time map. Constant speeds stay on `atempo`.
+- **Effects are worked out as the clip plays, not cached:** the plan's cache is for when live processing can't keep up, and it does: all effects on two different channels ran 10 times as fast as playing in a Debug build. The memory of the chains is made to start somewhere fixed instead: a chain per 5 s stretch of the stream, starting 2 s before it, going over to the next in the last 10 ms.
+- **Old projects keep straight crossfades and resampled ramps,** because old projects must mix the samples they mixed. The new behaviour is on the clips an edit makes now, with a switch on older ones. Sound over a transition in an old project is as it was. A cut's 16 ms join stays a straight line even if its clip is switched on, in `TimelineMixer`, since it is one sound going on.
+- **Volume keyframes aren't a `MotionLane`:** they are read for every sample, on sound clips, which have no motion, and halving through them matters for a long ducked track. They use `MotionKey`, its easing and its way of slicing, and the same lane on the timeline.
+- **`GainDb` is a new setting, not `Clip.Volume`:** the volume only goes to +6 dB, and Even Out needs more. The volume stays the user's, on top.
+- **Export's loudness is measured with `LoudnessMeter`,** not FFmpeg's `loudnorm`, since the mix isn't a file yet and a linear gain with a limiter is what's wanted. The tests measure the result with `Loudness.Measure`, FFmpeg's.
+- **MKV is a new preset:** the plan names it among the containers for tracks out, and there was no MKV export.
+- **A sound-only file holds one stream:** WAV and FLAC can't title several, so M4A, MP3, WAV and FLAC offer track files only.
+- **Ducking listens to the sound as recorded,** not through the voice's effects: it needs levels that are already kept, and a noise gate would only sharpen what they show.
+
+### Fixed during development
+- **The tests couldn't tell a ramp's pitch from a whole number:** 1000 Hz at 48 kHz has 48 samples a wave, so any stretch lines up. They use 997 Hz and a 131.7 Hz voice with harmonics.
+- **A change of level could set a clip back a whole seek,** once it had effects: any edit to the clip was taken as another reading. It now compares what matters to the reading.
+- **Seeking started a chain that wasn't needed** for the stretch before.
+- **`atempo` at a changing tempo** is above, under Deviations: it passed the pitch test and failed the test of where the sound is, which is why both exist.
+- **Playing could run dry for 100 ms at a jump in a clip's source, once in three full runs:** the clip with effects started getting ready 0.5 s ahead, on the thread pool, and under load it wasn't ready in time. It starts 2 s ahead now, on a thread of its own. Under 36 busy processes on this PC's 24 threads, the first run or two after the load starts can still go silent for 1.6 to 1.9 s at the first jump; every later run there is clean (`SoundPlayingAcceptanceTests`, TESTING.md). The cause of those first runs wasn't found.
+- **The Arabic for the loudness targets came out scrambled** ("−LUFS ١٦", seen in the Arabic check's picture, which no assertion catches): the Arabic comes first now, with the number and its unit kept in a left-to-right run, and likewise in the lines saying what was measured.
+- **The Sound Output menu would never have opened:** a menu without items doesn't, and its items came when it opened. Windows' default is listed from the start.
+- **RNNoise's own tests failed the first time they ran:** they had skipped since Phase 11. All three failures were the tests': the meter test delivered less sound than the chain holds back, and two bounds took a synthetic buzz for a voice. Real speech keeps its level (Tested).
+- **Exports of the same project sound different from Phase 22's unless As mixed is chosen,** since the window's default is now −16 LUFS, as the plan asks.
+
+### Tested
+- **Automated tests:** with the desktop (the user's go-ahead) 2099 tests: 2086 pass, 13 skipped, 0 failed (17 min) in the last two full runs, on the final code. The skips are the 13 that run only when asked for; RNNoise's 6 run now. Phase 22 had 2006. Of the three full runs before, the first had 6 failures, all in this phase's new tests or an older test counting the export window's boxes; the second was clean; the third found a real gap in the sound at a jump in a clip's source, fixed (Playing under load in TESTING.md).
+- **Acceptance:**
+  - **Noise removal:** Windows' voice over a synthetic fan and keyboard. The noise floor in four gaps went from about −42 dBFS to below −124: **−82 to −94 dB**, against a bound of −15. The speech against its clean original: correlation **0.957 to 0.966**, level **−0.4 dB**. Preview and export: under 1.5 LSB of 24 bits, the file against the mixer's blocks, also after a seek; a difference of **0** at other block sizes, eight seeks and two splits.
+  - **Keeping up:** every effect on two different channels **9 to 10 times as fast as playing** (Debug build), the worst seek 0.6 to 0.7 s; three clips at a device's real pace, each from the far end of a stretch: **0.0 ms of silence**.
+  - **Ducking:** music **−12.0 dB** under the voice, against a bound of −10; back within 0.2 dB from the end of the release.
+  - **Tracks out:** `ffprobe` lists Mix and each track, titled, in MP4, MKV and WebM. Each stream is within 0.01 of a solo export decoded the same way; each WAV within 1.5 LSB of 24 bits of the mixer's samples.
+  - **Loudness:** at −16, −14 and −23 in M4A, WAV and MP3: **within 0.24 LU** by FFmpeg's `loudnorm`. A clip with short knocks turned up 10 dB: **−16.04 LUFS with peaks at −1.0 dBFS**. `LoudnessMeter` reads 997 Hz at −23 dBFS as −23 LUFS within 0.1, and is within 0.2 LU of `loudnorm` on a test clip.
+  - **A ramp's pitch:** 0.5× to 2×, 2× to 0.5×, 0.25× to 0.75×, 1× to 4×: **under 0.5 cents** at 997 Hz, **under 0.6** on a 131.7 Hz voice with harmonics, against a bound of 10. The sound at worst **6 ms** from its pictures.
+  - **Equal power:** two steady sounds half way through a crossfade are within 0.2 dB of one alone, where a straight line dips 3 dB. A cut's join: a difference of 0.
+  - **Old projects:** 1.1.1, Phase 20, Phase 21 and Phase 22 projects open and draw byte for byte what they drew (65 golden frames), and the Phase 22 project **mixes the same samples** within 1e-5 at every 32nd frame.
+- **Export time of the reference project:** 67 to 72 s before this phase, 68 to 79 s over five full runs, in which making the recording also slowed from 37 to 42 s, and 69 to 70 s run alone after it.
+- **The desktop tests** ran with a sound clip's settings in the real window, with real keys, and in Arabic and right to left with the export window's new choices, with the user's go-ahead.
+- **Build:** `dotnet build --no-incremental` without warnings.
+- **Not run** (pending in TESTING.md): anything by ear (noise removal on a real microphone, a real voice under real music, a ramp through speech), the streams in a real editor, a real high-contrast switch and Narrator on the new settings, a real mouse on a keyframe's diamond, View › Sound Output with the two devices heard, a native reader's look at the new Arabic.
+
+### Known limitations
+- **Noise removal** is RNNoise's: for voices, and it treats music as noise, so leave it off a clip with music. A clip with two different channels costs twice one with the same sound on both. Its acceptance clip is Windows' voice over a synthetic fan and keyboard; a real microphone is by hand.
+- **Seeking with effects on** works through up to 7 s of sound. In the Debug test the worst case took 0.7 s with every effect on; while playing, a clip starting within 2 s gets ready beside the mixing, but a seek to a far place waits. A PC far over-loaded can still run dry at a jump (Fixed during development). The chains' change at each 5 s is a 10 ms blend of two runs of the same effects, inaudible in the tests and not yet heard by ear on real noise.
+- **A project with noise removal on, opened where RNNoise isn't built,** plays without it, so it sounds different there; the panel says so.
+- **The preview plays as mixed:** a loudness target is applied to the export only, since it needs the whole mix measured. Peaks over full scale in the preview are clipped as ever; the export's limiter holds them when there is a target.
+- **Tracks out with a target:** each track gets the mix's gain and its own limiter, so they add up to the mix unless the limiter was working. A solo export with a target would be brought to the target itself.
+- **Ducking:** a track is ducked on its own clips' time, so moving the music afterwards moves its keyframes with it; duck again. Noise as loud as the voice counts as speech, since the detector reads levels. Going down and coming back are straight lines in level, not in decibels. Keyframes the music had are replaced.
+- **Volume keyframes:** one easing at a time in the panel, the four usual; a spring or a custom curve only in the file. Dragging a diamond needs the mouse; the keyboard's way is the panel, which moves a keyframe by removing it and adding another.
+- **A seek into a ramp** starts its pieces afresh, so it isn't exactly the samples of playing it from the start, though it is the same moment within 11 ms. The same goes for a constant speed through `atempo`, as it always has. Only effects are the same samples from anywhere.
+- **Speeds above about 4×** skip more than they keep, in a ramp as with `atempo`.
+- **Sound Output:** a device unplugged while playing stops the sound and the playhead, as it always has, until the next play, which goes to the default. The choice is one for all projects.
+- **WAV tracks** are 24-bit; a mix above full scale is clipped in them unless there is a target.

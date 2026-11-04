@@ -428,6 +428,7 @@ With a test recording of system audio and the H5 microphone running (track layou
 3. Choose the H5 by name (not the default) under Settings › Recording › System audio from and repeat step 2: it should be waited for and recorded again.
 
 ### Pending: RNNoise
+Step 1 was done in Phase 23: the DLL is built and its tests run (Phase 23 results). Steps 2 and 3, on a real microphone, are still by hand.
 1. Add "Desktop development with C++" to Visual Studio 2026 in the Visual Studio Installer, then run `tools\get-rnnoise.ps1` and rebuild. The RNNoise tests then run: the delay (expected 960 frames), more than 20 dB off noise alone, strength, switching on mid-way, the chain's timestamps.
 2. Acceptance: Settings › Recording, turn on noise suppression (100%), and with a fan or typing nearby, **Record 5 seconds** while talking, then play it as recorded and processed. For a file: record 10 s with the processing off and on (a track per source), and compare the microphone tracks' noise floor (`ffmpeg -i file.mp4 -map 0:a:2 -af astats -f null -`) and spectrograms (`-lavfi showspectrumpic=s=1024x512`).
 3. CPU: watch the app's CPU in Task Manager during a few minutes of recording with the microphone, noise suppression on and then off.
@@ -1046,3 +1047,74 @@ Without anything of this phase in a project, a frame takes the paths it took: th
 - **Arabic:** a native reader's look at the typewriter and at titles and lower thirds.
 - **Narrator and a real high-contrast switch** on the media panel.
 - **A `.cgpack` between two PCs**, and copy and paste between two windows of the installed app on the real clipboard.
+
+## Phase 23 results (2026-11-04)
+
+The reference PC of Phase 18, with RNNoise built on it for the first time (`tools\get-rnnoise.ps1`, Visual Studio 2026's C++ compiler; the user's go-ahead). The desktop tests had the user's go-ahead for this phase. **How it was tested:**
+- **Old projects:** `Fixtures\phase-22` was written once by the code at `phase-22-done`, before this phase changed anything: a project using media, motion, transitions, effects, templates and markers, the 16 frames it drew after opening, and every 32nd frame of what it mixed (`mix.f32.gz`). Its sound has levels, fades with curves, a cut's join, a straight crossfade, a speed and a ramp; the sound files are made by the test, always the same.
+- **Sound with its truth:** files written sample by sample, so a tone's frequency and a tick's place are known. WAV goes through the decoder exactly, so "the same samples" is tested as a difference of 0.
+- **The noise acceptance:** real speech from Windows' voice, with a synthetic fan (rumble, hiss, hum) and keyboard (bursts of noise) added, so the clean speech is there to compare with. **It isn't a real microphone in a real room:** that is by hand, below.
+- **Measured by something else:** loudness read back with FFmpeg's `loudnorm` (`Loudness.Measure`), streams and titles with `ffprobe`.
+- **Times are from a Debug build,** as the tests run; RNNoise itself is the same optimized DLL in both.
+
+```bash
+dotnet test --project tests/CashGear.Capture.VideoEditor.Tests --filter-class "*SoundPostTests" --output Detailed
+```
+
+### Acceptance
+
+| Item | Automated (result) | By hand |
+|---|---|---|
+| RNNoise on a clip: the noisy clip (fan + keyboard) has a noise floor ≥ 15 dB lower in the gaps, speech intact | `RNNoise_on_a_clip_takes_the_noise_floor_down…`: pass. In four gaps, from about −42 dBFS to below −124 dBFS: **−82 to −94 dB**. Speech against the clean original: **correlation 0.957 to 0.966, level −0.4 dB** | A real microphone with a real fan and keyboard, by ear |
+| Preview and export give the same samples | Same test: the file read back against the mixer's blocks, also after a seek: under 1.5 LSB of 24 bits; FLAC and WAV identical. `A_clips_effects_give_the_same_samples_however_they_are_reached`: **a difference of 0** at other block sizes, at eight seeks on and off the stretches' edges, and across two splits, with and without RNNoise | |
+| Live processing keeps up in the preview | `Noise_removal_keeps_up_with_playing`: every effect on two different channels **9 to 10 times as fast as playing**; the worst seek **0.6 to 0.7 s**. `SoundPlayingAcceptanceTests`: three clips at a device's real pace, each from the far end of a stretch: **0.0 ms of silence**. So no cache was needed | Several long clips on a slower PC |
+| Ducking: music ≥ 10 dB lower during speech, back within the release after it | `Music_goes_at_least_10_dB_down…`: pass, **−12.0 dB** in all three stretches of speech, 0 dB within 0.2 dB from the release's end | A real voice under real music, by ear |
+| Separate tracks: `ffprobe` lists the mix and each track, titled; each track matches a solo export | `Each_track_is_a_titled_stream…`: pass in MP4, MKV and WebM: "Mix", "Microphone", "System audio", each within 0.01 of a solo export decoded the same way, the mix of a plain export. `Each_track_is_a_WAV_file…`: pass, within 1.5 LSB of 24 bits | In a real editor |
+| Export loudness within ±1 LU of the target | `An_exports_loudness_is_within_one_LU…`: pass at −16, −14 and −23 in M4A, WAV and MP3: **within 0.24 LU**, by `loudnorm`. `A_loudness_target_holds_the_peaks…`: a clip with short knocks 10 dB up: **−16.04 LUFS with peaks at −1.0 dBFS** | |
+| A ramped clip's test tone stays within ±10 cents | `A_ramped_clip_keeps_its_pitch_within_ten_cents`: 0.5× to 2×, 2× to 0.5×, 0.25× to 0.75×, 1× to 4×, at 997 Hz in 100 ms windows: **under 0.5 cents**. A 131.7 Hz voice with harmonics: **under 0.6**. The sound against its pictures: **at worst 6 ms** | A real voice through a ramp, by ear |
+| Equal-power crossfades | `A_crossfade_made_now_is_equal_power…`: two steady sounds half way through: **within 0.2 dB** of one alone, where a straight line dips 3 dB | By ear |
+| A cut's join stays as it was | `A_cuts_join_stays_a_straight_line…`: a difference of 0 with or without the switch | |
+| Preview on a chosen device | `The_preview_plays_on_a_chosen_device…`: silence through both devices and a gone one (the default takes it). `SoundPanelTests.The_preview_can_play_on_another_device…`: remembered, goes on playing | Heard on each of the H5 and the speakers |
+| Projects from 1.1.1, Phase 20, 21 and 22 still open | `GoldenFrameTests`: pass, all 65 frames byte for byte. **The Phase 22 project mixes the same samples:** within 1e-5 at every 32nd frame | |
+| A 1080p30 project previews at full rate | Nothing here draws. The pictures' tests of Phase 22 pass as they did | |
+| Panels: right to left, keyboard, UI Automation, high contrast | `ArabicVideoEditorUiTests.A_sound_clips_settings_and_the_exports_sound`, `SoundPanelWindowTests` with real keys, `TimelinePaletteTests.Volume_keyframes_are_drawn…` with the palette's colour: pass | Narrator, a real high-contrast switch, dragging a diamond with a real mouse |
+| The whole suite | with the desktop (the user's go-ahead) 2099 tests: 2086 pass, 13 skipped, 0 failed (17 min) in the last two full runs, on the final code. The skips are the 13 that run only when asked for; RNNoise's 6 run now. Phase 22 had 2006. Of the three full runs before, the first had 6 failures, all in this phase's new tests or an older test counting the export window's boxes; the second was clean; the third found a real gap in the sound at a jump in a clip's source, fixed (Playing under load in TESTING.md). | |
+
+### Playing under load
+
+`SoundPlayingAcceptanceTests`, three clips with effects at a device's real pace. Before the fix one of three full runs heard 100 ms of silence at a jump, and two of four runs under 36 busy processes (on this PC's 24 threads) 170 to 250 ms. After it, a clip starts getting ready 2 s ahead on a thread of its own:
+
+| | Runs | Longest silence |
+|---|---|---|
+| At rest | 3 | 0.0 ms |
+| Under the 36 processes, after those | 11 | 0.0 ms |
+| Under the 36 processes, the first run or two after the load starts | 3 | 1.6 to 1.9 s, at the first jump |
+
+Those first runs are unexplained: the same load a run later is clean, so it isn't the processor alone. Something done once may be slowed by the load, but that wasn't shown.
+
+### RNNoise's own tests, at last
+
+Their six tests have skipped since Phase 11. Built, three failed, and all three were the tests' own: they had never run.
+
+| Test | What it was | Now |
+|---|---|---|
+| `AudioMonitorTests.The_meters_measure…` | Delivered 960 frames, less than the chain holds back with RNNoise there (1056, on or not), so nothing reached the meter | 2400 frames |
+| `RnnoiseTests.Steady_noise_is_taken_out…` | −6.2 dB on a synthetic buzz, against −6 | −8; real speech keeps its level (−0.4 dB above) |
+| `RnnoiseTests.Turned_on_mid_way…` | A fixed level, and the buzz's syllables go below it, before the switch too | Held to the voice's own level two frames before |
+
+### Export time
+
+| Project | Before (Phase 22) | After |
+|---|---|---|
+| **The reference project:** three cuts out of a 20-minute recording, 320 × 180, 30,885 frames, nothing of this phase in it (`ExportAcceptanceTests`) | 67 to 72 s | 68 to 79 s over five full runs, in which making the recording also slowed from 37 to 42 s, and 69 to 70 s run alone |
+
+Without anything of this phase in a project, the mix takes the paths it took, a per-clip check apart. A loudness target measures the whole mix first (the export window's default): next to a video's pictures, that is about a twentieth of its time; for sound alone, about half.
+
+### Pending: by hand
+- **By ear on a real voice:** noise removal on a real microphone with a real fan and keyboard, against the mic's chain at record time; whether the change of chain every 5 s can be heard on real room noise; a ramp through speech; equal power on real clips.
+- **Ducking:** a real talk-over under real music: whether −12 dB, 0.3 s and 0.5 s sound right, and how the level detector does with a noisy room.
+- **Loudness:** an export against a loudness meter of another make; an upload to YouTube's "stats for nerds".
+- **Tracks out** opened in a real editor (DaVinci Resolve, Audacity): the streams' titles, the WAV files lining up.
+- **The installed app:** dragging a keyframe's diamond with a real mouse, View › Sound Output with the H5 and the speakers, unplugging one while playing.
+- **Narrator and a real high-contrast switch** on a sound clip's settings and the export window's new choices.
+- **A native reader's look** at the Arabic of the new settings.

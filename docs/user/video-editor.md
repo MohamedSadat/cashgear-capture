@@ -61,6 +61,23 @@ Every picture and annotation has **position, scale, rotation, opacity and crop**
 - **Brand** (the Brand tab): colours, heading and body fonts, a logo, intro and outro clips and a look. Templates take its colours and fonts, so changing one changes them all. **Keep as My Brand Kit** saves it for other projects, and **Use My Brand Kit** brings it to this one.
 - **Your library** (`%AppData%\CashGear\Capture\Library`): **Save Selection…** makes a template of the selected annotations, group or template. **Export a Pack…** saves your templates, their files and your brand kit as one `.cgpack` to share with a team, and **Import a Pack…** adds one.
 
+## Sound
+
+Select a sound clip: its settings are in the panel on the right.
+
+- **Volume over time:** **Volume at the playhead** makes a volume keyframe there, on top of the clip's own volume. **Add a Volume Keyframe** makes one that changes nothing yet, to change later. On the clip, `Shift`+click adds one, and a selected clip's keyframes are dragged in time and level. The waveform follows them. They also show in the lane under the track, as a picture's keyframes do.
+- **Even Out** measures how loud the clip is, with its effects on (EBU R128, on this PC), and sets its **Gain** to bring it to −16 LUFS. If that would push its peaks past the top, its limiter goes on.
+- **Noise removal** (RNNoise) takes fans, hum and keyboards out of speech; **Strength** mixes some of the original back in. It is for voices: it treats music as noise. The noise gate, compressor and limiter are the ones the microphone has in Settings.
+- **Equalizer:** Voice, Warm, Phone, or your own low cut and lows, middle and highs.
+- **Sound over the crossfade** (on the clip coming in): **Equal power** stays as loud across it, for two different sounds; **Straight line** is what older projects have, and suits two takes of one sound.
+- **Keeps its pitch** (a clip whose speed changes along it): on for new ramps. Older projects' ramps are resampled, so their pitch follows the speed, until you turn it on.
+
+Preview and export play the same samples, wherever you start playing from and however the clip is cut.
+
+**Ducking:** music goes down while the voice speaks. Edit › **Duck the Music Under the Voice** does it for music added with Add Music and for tracks marked **A background track**. Or select a clip: **Goes down by** (−12 dB), **Going down takes** (0.3 s, ending as the voice starts), **Coming back takes** (0.5 s, starting as it stops) and **Duck This Track Under the Voice**. The voice is found on the track a transcript was made from, else the microphone's. The result is ordinary volume keyframes on the music, in place of any it had, so you can change any of them, or duck again with other settings.
+
+**Where you hear it:** View › **Sound Output** plays the preview on another device from now on, without stopping. A device that has been unplugged gives way to Windows' default.
+
 ## Large media
 
 View › **Smaller Copies for the Preview** (1080p or 720p): 4K media previews from a smaller copy made once on this PC, with the progress in the status line, and kept in `%LocalAppData%\CashGear\Capture\VideoEditor\proxies`. The export always reads the original.
@@ -110,5 +127,7 @@ The panel's **Canvas** makes the video 16:9, 9:16 (Shorts, Reels, TikTok), 1:1 o
 ## Export
 
 `Ctrl+E`:
-- **Formats:** MP4 (H.264 or HEVC), MP4 for 9:16, 1:1 or 4:5, WebM (VP9 or AV1), an animated GIF, or just the sound as M4A or MP3. A 9:16, 1:1 or 4:5 export of a project of another shape follows the pointer, whatever its canvas is, and says when it couldn't.
+- **Formats:** MP4 (H.264 or HEVC), MP4 for 9:16, 1:1 or 4:5, MKV (H.264), WebM (VP9 or AV1), an animated GIF, or just the sound as M4A, MP3, WAV (24-bit) or FLAC. A 9:16, 1:1 or 4:5 export of a project of another shape follows the pointer, whatever its canvas is, and says when it couldn't.
 - **Options:** four qualities, the marked range only, and captions burned in or saved beside it.
+- **Loudness:** the whole mix is measured and turned up or down to −16 LUFS (speech online, the default), −14 (YouTube) or −23 (broadcast), with a limiter on its peaks, or left **As mixed**. The preview plays it as mixed.
+- **Sound tracks:** one mix; or the mix and each track as a stream of its own in a video file (MP4, MKV, WebM), titled with its name, so an editor or a player can choose; or each track as a 24-bit WAV beside the file (`name.Microphone.wav`). Only the tracks you can hear in the mix go out. Each is what a solo export of it would be.
