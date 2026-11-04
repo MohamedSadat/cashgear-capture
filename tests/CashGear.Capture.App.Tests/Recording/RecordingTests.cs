@@ -1067,16 +1067,40 @@ public sealed class ScreenRecorderTests : IDisposable
             {
                 await recorder.StartAsync(options, ct);
                 await UntilRecorded(recorder, 1, ct);
-                var (bytes, pictures) = (stream!.CallbackAllocatedBytes, stream.Delivered);
-                await UntilRecorded(recorder, 4, ct);
-                var perPicture = (stream.CallbackAllocatedBytes - bytes) / (double)(stream.Delivered - pictures);
+
+                // A frame allocates only when it makes a texture, as the recorder falling behind for a moment needs
+                // another (a few, then no more): on a busy PC one can land in any stretch. So a stretch without one is
+                // what must allocate nothing, and one with one must cost only that.
+                double? perPicture = null;
+                var counted = 0L;
+                var made = new List<string>();
+                for (var (stretch, seconds) = (0, 1); stretch < 6 && perPicture is null; stretch++)
+                {
+                    var (bytes, pictures, textures) = (stream!.CallbackAllocatedBytes, stream.Delivered, stream.TexturesMade);
+                    seconds += 3;
+                    await UntilRecorded(recorder, seconds, ct);
+                    var (allocated, more) = (stream.CallbackAllocatedBytes - bytes, stream.TexturesMade - textures);
+                    if (more == 0 && stream.Delivered - pictures > 60)
+                    {
+                        counted = stream.Delivered - pictures;
+                        perPicture = allocated / (double)counted;
+                    }
+                    else if (more > 0)
+                    {
+                        made.Add($"{more} texture(s), {allocated} B");
+                        allocated.Should().BeLessThanOrEqualTo(more * 1024, "a new texture is all that may allocate");
+                    }
+                }
+
                 var allocations = recorder.Allocations!.Value;
+                var texturesMade = stream!.TexturesMade;
                 await recorder.StopAsync(ct);
 
-                TestContext.Current.TestOutputHelper?.WriteLine($"{stream.Delivered - pictures} pictures, {perPicture:0.0} B each in the callback");
+                OverlayRecordingTests.Report($"The capture callback: {counted} pictures, {perPicture:0.0} B each; before that {(made.Count == 0 ? "nothing" : string.Join(", ", made))}; {texturesMade} textures in all");
                 stream.UsesAbi.Should().BeTrue("the ABI read the first frame as the projection did");
-                (stream.Delivered - pictures).Should().BeGreaterThan(60, "the square repaints every refresh");
+                counted.Should().BeGreaterThan(60, "the square repaints every refresh");
                 perPicture.Should().Be(0);
+                texturesMade.Should().BeLessThanOrEqualTo(12);
                 allocations.Frames.Should().BeGreaterThan(100);
             }
             finally

@@ -133,6 +133,18 @@ internal sealed partial class WgcAreaStream : IPictureStream
     /// <summary>Bytes the frame callbacks allocated in all (tests: none per picture).</summary>
     internal long CallbackAllocatedBytes => Interlocked.Read(ref _callbackAllocated);
 
+    /// <summary>Textures made so far: all a frame may allocate for, and only until there are enough for how far behind the recorder gets.</summary>
+    internal int TexturesMade
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _textures.Count;
+            }
+        }
+    }
+
     /// <summary>Frames are read through the WinRT ABI directly (checked against the projection on the first frame).</summary>
     internal bool UsesAbi => _abiWorks;
 
