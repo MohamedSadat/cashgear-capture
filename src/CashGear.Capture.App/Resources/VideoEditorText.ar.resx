@@ -2641,7 +2641,7 @@
     <value>جارٍ قياس شدة الصوت… {0:0} %</value>
   </data>
   <data name="EvenedOut" xml:space="preserve">
-    <value>كان {0:0.0} LUFS؛ والآن {1:0.0} ديسيبل تجعله {2:0} LUFS.</value>
+    <value>كان ‪{0:0.0} LUFS‬؛ والآن ‪{1:0.0} dB‬ تجعله ‪{2:0} LUFS‬.</value>
   </data>
   <data name="NothingToEvenOut" xml:space="preserve">
     <value>هذا المقطع صامت، لذا تُرك كما هو.</value>
@@ -2668,13 +2668,13 @@
     <value>كما هي في المزج</value>
   </data>
   <data name="LoudnessOnline" xml:space="preserve">
-    <value>‎−16 LUFS (الكلام على الإنترنت)</value>
+    <value>الكلام على الإنترنت (‪−16 LUFS‬)</value>
   </data>
   <data name="LoudnessYouTube" xml:space="preserve">
-    <value>‎−14 LUFS (يوتيوب)</value>
+    <value>يوتيوب (‪−14 LUFS‬)</value>
   </data>
   <data name="LoudnessBroadcast" xml:space="preserve">
-    <value>‎−23 LUFS (البث)</value>
+    <value>البث (‪−23 LUFS‬)</value>
   </data>
   <data name="ExportTracksLabel" xml:space="preserve">
     <value>مسارات الصوت:</value>
@@ -2692,7 +2692,7 @@
     <value> كل مسار في {0}.</value>
   </data>
   <data name="ExportLoudnessDone" xml:space="preserve">
-    <value> كان المزج {0:0.0} LUFS وأصبح {1:0} LUFS.</value>
+    <value> كان المزج ‪{0:0.0} LUFS‬ وأصبح ‪{1:0} LUFS‬.</value>
   </data>
   <data name="ExportStagesMeasuring" xml:space="preserve">
     <value>جارٍ قياس شدة الصوت…</value>
