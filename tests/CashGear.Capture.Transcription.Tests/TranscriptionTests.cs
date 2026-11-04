@@ -104,15 +104,19 @@ public sealed class TranscriptionTests
     {
         var model = Repository.Model(WhisperModels.Base);
         var samples = await Speech.SayAsync(string.Join(' ', Enumerable.Repeat(Said, 6)));
-        using var cancel = new CancellationTokenSource();
-        var transcribing = Transcriber().TranscribeAsync(samples, new TranscriptionOptions(model, "en", UseGpu: false), new SyncProgress(p =>
+        await CashGear.Capture.Tests.MachineTurn.RunAsync(async () =>
         {
-            if (p > 0)
+            using var cancel = new CancellationTokenSource();
+            var transcribing = Transcriber().TranscribeAsync(samples, new TranscriptionOptions(model, "en", UseGpu: false), new SyncProgress(p =>
             {
-                cancel.Cancel();
-            }
-        }), cancel.Token);
-        await FluentActions.Awaiting(() => transcribing).Should().ThrowAsync<OperationCanceledException>();
+                if (p > 0)
+                {
+                    cancel.Cancel();
+                }
+            }), cancel.Token);
+            await FluentActions.Awaiting(() => transcribing).Should().ThrowAsync<OperationCanceledException>();
+            return true;
+        });
     }
 
     [Fact]

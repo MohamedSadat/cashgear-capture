@@ -135,7 +135,7 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
     private static WhisperTranscriber Whisper() => new(NullLogger<WhisperTranscriber>.Instance);
 
     [Fact]
-    public async Task Deleting_ten_words_of_a_five_minute_recording_cuts_exactly_those_words_without_a_click()
+    public Task Deleting_ten_words_of_a_five_minute_recording_cuts_exactly_those_words_without_a_click() => MachineTurn.RunAsync(async () =>
     {
         var model = Model(WhisperModels.Small);
         TestMedia.Require();
@@ -146,7 +146,7 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
         var stream = project.Tracks.First(t => t.HasSound).Clips.First().Stream;
         var samples = TranscriptAudio.RenderStream(asset, stream, ct: TestContext.Current.CancellationToken);
         var levels = SoundLevels.FromSamples(samples, TestContext.Current.CancellationToken);
-        var result = await MachineTurn.RunAsync(() => Whisper().TranscribeAsync(samples, new TranscriptionOptions(model, "en", UseGpu: true), ct: TestContext.Current.CancellationToken));
+        var result = await Whisper().TranscribeAsync(samples, new TranscriptionOptions(model, "en", UseGpu: true), ct: TestContext.Current.CancellationToken);
         var transcript = TranscriptBuilder.FromSegments(stream, result.Language, result.Segments, levels);
         project = TranscriptEdits.WithTranscript(project, asset.Id, transcript);
         var view = TranscriptView.Build(project);
@@ -212,7 +212,7 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
 
         // Heard again: the neighbours are all there, and the words cut are gone.
         var cutSound = TranscriptAudio.Render(cut, ct: TestContext.Current.CancellationToken);
-        var again = await MachineTurn.RunAsync(() => Whisper().TranscribeAsync(cutSound, new TranscriptionOptions(model, "en", UseGpu: true), ct: TestContext.Current.CancellationToken));
+        var again = await Whisper().TranscribeAsync(cutSound, new TranscriptionOptions(model, "en", UseGpu: true), ct: TestContext.Current.CancellationToken);
         var heardAgain = Plain(string.Join(' ', again.Segments.Select(s => s.Text)));
         var expected = heardPlain.Where((_, i) => !positions.Contains(i)).ToList();
         var kept = Matched(heardAgain, expected).Count;
@@ -231,7 +231,8 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
         }
 
         worst.Should().BeLessThan(0.15, "no syllable of a neighbour is lost");
-    }
+        return true;
+    });
 
     /// <summary>The end of the sound before <paramref name="start"/>: the silence just before it, if there is one.</summary>
     private static double EndBefore(SoundLevels levels, double start)
@@ -290,7 +291,7 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
     }
 
     [Fact]
-    public async Task Shortening_the_silences_of_ten_minutes_keeps_sound_and_picture_together()
+    public Task Shortening_the_silences_of_ten_minutes_keeps_sound_and_picture_together() => MachineTurn.RunAsync(async () =>
     {
         TestMedia.Require();
         var path = _media.Stamped("ten-minutes.mp4", 600);
@@ -313,7 +314,7 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
 
         // The file says so: every flash has its beep within a frame, all the way to the end.
         var output = Path.Combine(_media.Root, "shortened.mp4");
-        await MachineTurn.RunAsync(() => new ProjectExporter(new SoftwareEncoders(), NullLogger<ProjectExporter>.Instance).ExportAsync(new ExportRequest(cut, ExportPresets.Mp4H264Project, QualityPreset.Balanced, output, EncoderPresets.Software), ct: TestContext.Current.CancellationToken));
+        await new ProjectExporter(new SoftwareEncoders(), NullLogger<ProjectExporter>.Instance).ExportAsync(new ExportRequest(cut, ExportPresets.Mp4H264Project, QualityPreset.Balanced, output, EncoderPresets.Software), ct: TestContext.Current.CancellationToken);
 
         var exported = ExportedFile.Read(output);
         exported.Flashes.Count.Should().BeGreaterThan(290);
@@ -321,7 +322,8 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
         var offsets = exported.Beeps.Zip(exported.Flashes, (beep, flash) => beep - (flash / 30.0)).ToList();
         TestContext.Current.TestOutputHelper?.WriteLine($"Flash to beep: {offsets.Min() * 1000:0.0} to {offsets.Max() * 1000:0.0} ms over {offsets.Count} pairs; the last {offsets[^1] * 1000:0.0} ms");
         offsets.Should().OnlyContain(o => Math.Abs(o) < 1 / 30.0, "sound and picture stay together");
-    }
+        return true;
+    });
 
     [Fact]
     public async Task An_export_with_two_languages_saves_a_file_for_each()
@@ -363,7 +365,7 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
     }
 
     [Fact]
-    public async Task Filler_words_are_found_in_the_labelled_clip()
+    public Task Filler_words_are_found_in_the_labelled_clip() => MachineTurn.RunAsync(async () =>
     {
         var model = Model(WhisperModels.Small);
         var speech = await Speech.SayWithWordsAsync(FillerTalk);
@@ -372,7 +374,7 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
         var scores = new Dictionary<bool, (int Found, int Said, int Wrong, string List)>();
         foreach (var prompt in new[] { false, true })
         {
-            var result = await MachineTurn.RunAsync(() => Whisper().TranscribeAsync(speech.Samples, new TranscriptionOptions(model, "en", UseGpu: true, KeepFillers: prompt), ct: TestContext.Current.CancellationToken));
+            var result = await Whisper().TranscribeAsync(speech.Samples, new TranscriptionOptions(model, "en", UseGpu: true, KeepFillers: prompt), ct: TestContext.Current.CancellationToken);
             var transcript = TranscriptBuilder.FromSegments(1, "en", result.Segments, levels);
             var score = Score(speech, levels, transcript);
             scores[prompt] = score;
@@ -384,5 +386,6 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
         var all = best.Found + best.Wrong;
         (best.Found * 100 / best.Said).Should().BeGreaterThanOrEqualTo(80, "at least 80 % found");
         (best.Wrong * 100 / Math.Max(1, all)).Should().BeLessThanOrEqualTo(10, "at most 10 % false");
-    }
+        return true;
+    });
 }

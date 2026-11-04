@@ -223,7 +223,7 @@ public sealed class ExportAcceptanceTests : IDisposable
     /// duration and no A/V desync. The recording has a flash with a beep every 2 s and every picture numbered.
     /// </summary>
     [Fact]
-    public async Task Acceptance_three_cuts_out_of_a_20_minute_recording_keep_the_duration_and_the_sync()
+    public Task Acceptance_three_cuts_out_of_a_20_minute_recording_keep_the_duration_and_the_sync() => CashGear.Capture.Tests.MachineTurn.RunAsync(async () =>
     {
         TestMedia.Require();
         var watch = Stopwatch.StartNew();
@@ -254,7 +254,8 @@ public sealed class ExportAcceptanceTests : IDisposable
         var offsets = exported.Beeps.Zip(exported.Flashes, (beep, flash) => beep - (flash / 30.0)).ToList();
         offsets.Should().OnlyContain(d => Math.Abs(d) < 1 / 30.0);
         TestContext.Current.TestOutputHelper?.WriteLine($"Flash to beep: {offsets.Min() * 1000:0.0} to {offsets.Max() * 1000:0.0} ms over {offsets.Count} pairs");
-    }
+        return true;
+    });
 }
 
 /// <summary>An IProgress that reports on the reporting thread (Progress&lt;T&gt; posts to the thread pool).</summary>
