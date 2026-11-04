@@ -59,6 +59,11 @@ internal sealed class FakeVideoDialogs : IVideoEditorDialogs
 
     public void ShowError(string message) => Errors.Add(message);
 
+    /// <summary>The Translate window it was asked to show.</summary>
+    public TranslateViewModel? Translate { get; private set; }
+
+    public void ShowTranslate(TranslateViewModel viewModel) => Translate = viewModel;
+
     public void ShowExport(ExportViewModel viewModel) => Export = viewModel;
 
     public void ShowTranscribe(TranscribeViewModel viewModel) => Transcribe = viewModel;

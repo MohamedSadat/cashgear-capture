@@ -28,6 +28,7 @@ using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Document;
 using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Engine.Display;
+using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.Engine.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
 using SkiaSharp;
@@ -287,5 +288,34 @@ public sealed class ArabicVideoEditorUiTests : VideoEditorTestBase
         problems.AddRange(await ArabicUi.CheckAsync(new ExportWindow(Dialogs.Export!, AppTheme.Dark), "export", data: Data, escCloses: true));
 
         problems.Should().BeEmpty(ArabicUi.Report("Video editor", problems));
+    });
+
+    [Fact]
+    public Task The_transcript_panel_and_its_windows() => StaDispatcher.RunAsync(async () =>
+    {
+        InteractiveDesktop.Require();
+        using var arabic = ArabicUi.InArabic();
+        var problems = new List<string>();
+        var project = ProjectFactory.FromRecording(ProjectFactory.ReadAsset(Recording()));
+        var words = Enumerable.Range(0, 30).Select(i => new SpokenWord(i * 0.1, (i * 0.1) + 0.08, $"كلمة{i}")).ToList();
+        var stream = project.Tracks.First(t => t.HasSound).Clips.First().Stream;
+        project = project.WithAsset(project.Assets[0] with { Transcript = new MediaTranscript(stream, "ar", words) });
+        var folder = Path.Combine(Root, "models");
+        Directory.CreateDirectory(folder);
+        var store = new CashGear.Capture.Transcription.WhisperModelStore(folder, new System.Net.Http.HttpClient(), NullLogger<CashGear.Capture.Transcription.WhisperModelStore>.Instance);
+        using var vm = new VideoEditorViewModel(project, null, Services with { Transcriber = new FakeTranscriber(), Models = store }, Dialogs);
+        static bool Data(string text) => text.Contains(".mp4", StringComparison.OrdinalIgnoreCase) || text.Contains("Rec", StringComparison.Ordinal);
+
+        vm.Transcript.Select(2);
+        await vm.Transcript.ShowFillersAsync();
+        var window = new VideoEditorWindow(vm, AppTheme.Dark, tryGpu: false, NullLogger.Instance);
+        problems.AddRange(await ArabicUi.CheckAsync(window, "video-editor-transcript", leftToRight: () => [window.TimelineSurface, window.TranscriptArea2.WordsControl], data: Data));
+
+        vm.OpenTranscript();
+        problems.AddRange(await ArabicUi.CheckAsync(new TranscribeWindow(Dialogs.Transcribe!, AppTheme.Dark), "transcript-from-speech", data: Data, escCloses: true));
+        vm.OpenTranslate();
+        problems.AddRange(await ArabicUi.CheckAsync(new TranslateWindow(Dialogs.Translate!, AppTheme.Dark), "translate", data: Data, escCloses: true));
+
+        problems.Should().BeEmpty(ArabicUi.Report("Transcript", problems));
     });
 }

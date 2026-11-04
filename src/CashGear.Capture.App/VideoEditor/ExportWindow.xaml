@@ -77,6 +77,11 @@
         <CheckBox Content="{Binding RangeText}" IsChecked="{Binding OnlyRange}" Visibility="{Binding HasRange, Converter={StaticResource Visible}}" Margin="0,0,0,4" />
         <StackPanel Visibility="{Binding HasCaptions, Converter={StaticResource Visible}}">
           <CheckBox Content="{x:Static r:VideoEditorText.BurnCaptions}" IsChecked="{Binding BurnCaptions}" Margin="0,0,0,4" />
+          <StackPanel Orientation="Horizontal" Margin="20,0,0,4" Visibility="{Binding ChoosesCaptionTrack, Converter={StaticResource Visible}}">
+            <TextBlock x:Name="BurnWhichLabel" Text="{x:Static r:VideoEditorText.BurnWhichCaptions}" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <ComboBox MinWidth="180" ItemsSource="{Binding CaptionTracks}" SelectedItem="{Binding BurnTrack}" DisplayMemberPath="Name" IsEnabled="{Binding BurnCaptions}"
+                      AutomationProperties.LabeledBy="{Binding ElementName=BurnWhichLabel}" />
+          </StackPanel>
           <CheckBox Content="{x:Static r:VideoEditorText.SaveSrt}" IsChecked="{Binding SaveSrt}" Margin="0,0,0,4" />
           <CheckBox Content="{x:Static r:VideoEditorText.SaveVtt}" IsChecked="{Binding SaveVtt}" />
         </StackPanel>

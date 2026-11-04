@@ -21,4 +21,16 @@
   <data name="ModelCantStart" xml:space="preserve">
     <value>تعذر تشغيل {0}: {1}</value>
   </data>
+  <data name="ModelEnglishToArabicEncoder" xml:space="preserve">
+    <value>من الإنجليزية إلى العربية (القراءة)</value>
+  </data>
+  <data name="ModelEnglishToArabicDecoder" xml:space="preserve">
+    <value>من الإنجليزية إلى العربية (الكتابة)</value>
+  </data>
+  <data name="ModelEnglishToArabicPieces" xml:space="preserve">
+    <value>من الإنجليزية إلى العربية (أجزاء الكلمات)</value>
+  </data>
+  <data name="ModelEnglishToArabicWords" xml:space="preserve">
+    <value>من الإنجليزية إلى العربية (المفردات)</value>
+  </data>
 </root>

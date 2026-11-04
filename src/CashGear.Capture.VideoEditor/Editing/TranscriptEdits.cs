@@ -74,7 +74,9 @@ public static class TranscriptEdits
         var result = project;
         foreach (var range in Merged(ranges).OrderByDescending(r => r.From))
         {
-            result = Join(TimelineEdits.DeleteRange(result, range.From, range.To), range.From);
+            // Joins already at either end first: a clip's overlap would leave a sliver of it behind.
+            var clean = Unjoin(Unjoin(result, range.From), range.To);
+            result = Join(TimelineEdits.DeleteRange(clean, range.From, range.To), range.From);
         }
 
         return result;

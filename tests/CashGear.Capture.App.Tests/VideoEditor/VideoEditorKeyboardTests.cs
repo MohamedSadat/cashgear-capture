@@ -26,7 +26,7 @@ public sealed class VideoEditorKeyboardTests : VideoEditorTestBase
     /// <summary>Marks the arrows (and Delete) as the keys beside the number pad: otherwise Shift + "numpad 2" lets go of Shift.</summary>
     private const uint ExtendedKey = 0x0001;
 
-    private static async Task Press(Key key, params Key[] held)
+    internal static async Task Press(Key key, params Key[] held)
     {
         var extended = key is Key.Left or Key.Right or Key.Up or Key.Down or Key.Delete;
         (await Task.Run(() => Send(key, extended, held))).Should().BeTrue();

@@ -39,6 +39,12 @@ public sealed record SizeLimitChoice(double Megabytes, string Name)
     public override string ToString() => Name;
 }
 
+/// <summary>A caption track to burn in. Its name is what screen readers read for it.</summary>
+public sealed record CaptionTrackChoice(string TrackId, string Name)
+{
+    public override string ToString() => Name;
+}
+
 /// <summary>
 /// The export window: the kind of file and its quality, where it goes, only the marked range or not, the captions
 /// burned in and/or saved beside it, then the export running in the background with its progress and the time left
@@ -74,6 +80,7 @@ public sealed partial class ExportViewModel : ObservableObject
         _path = System.IO.Path.Combine(folder, Safe(name) + _selectedPreset.Extension);
         _onlyRange = range is not null;
         _burnCaptions = remembered.ExportBurnCaptions;
+        _burnTrack = CaptionTracks.FirstOrDefault(c => project.Track(c.TrackId)?.Hidden == false) ?? CaptionTracks.FirstOrDefault();
         _saveSrt = remembered.ExportSrt;
         _saveVtt = remembered.ExportVtt;
         var gif = GifChoices.From(remembered);
@@ -143,6 +150,16 @@ public sealed partial class ExportViewModel : ObservableObject
 
     /// <summary>The project has captions: they can be burned in and saved as files.</summary>
     public bool HasCaptions => SubtitleFiles.Cues(_project).Count > 0;
+
+    /// <summary>The caption tracks with text: a track per language.</summary>
+    public IReadOnlyList<CaptionTrackChoice> CaptionTracks => [.. _project.Tracks.Where(t => t.Kind == TrackKind.Caption && SubtitleFiles.Cues(_project, t.Id).Count > 0).Select(t => new CaptionTrackChoice(t.Id, TrackNames.Display(t.Name)))];
+
+    /// <summary>Several tracks, so one is chosen to burn in.</summary>
+    public bool ChoosesCaptionTrack => CaptionTracks.Count > 1;
+
+    /// <summary>The track burned in, when there is a choice: the first shown.</summary>
+    [ObservableProperty]
+    private CaptionTrackChoice? _burnTrack;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SizeText))]
@@ -303,7 +320,7 @@ public sealed partial class ExportViewModel : ObservableObject
             });
             var files = (srt ? CaptionFiles.Srt : CaptionFiles.None) | (vtt ? CaptionFiles.Vtt : CaptionFiles.None);
             var result = await _exporter.ExportAsync(
-                new ExportRequest(_project, preset, quality, path, _settings.Current.Recording.Encoder, range, burn, HasCaptions ? files : CaptionFiles.None, preset.IsGif ? gif : null),
+                new ExportRequest(_project, preset, quality, path, _settings.Current.Recording.Encoder, range, burn, HasCaptions ? files : CaptionFiles.None, preset.IsGif ? gif : null, ChoosesCaptionTrack ? BurnTrack?.TrackId : null),
                 progress,
                 _cancel.Token);
             Progress = 1;

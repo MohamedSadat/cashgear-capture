@@ -124,6 +124,14 @@ public sealed class TranscriptTests
         project = TranscriptEdits.CutWords(project, [PositionOf(view, "w4")]);
         Screen(project).Spans().Should().Equal((0, 2.75, 0, 2.75), (2.75, 8, 4.75, 10)); // no crumb is left between the cuts
         project.Duration.Should().BeApproximately(8, 1e-6);
+        Mic(project).Clips.Should().HaveCount(2, "nor a sliver of sound from the first join");
+        Mic(project).Spans()[1].In.Should().BeApproximately(4.75 - (TranscriptEdits.JoinLength / 2), 1e-6);
+
+        // And the same on the other side of a cut.
+        var other = TranscriptEdits.CutWords(Spoken(10), [PositionOf(TranscriptView.Build(Spoken(10)), "w4")]);
+        other = TranscriptEdits.CutWords(other, [PositionOf(TranscriptView.Build(other), "w3")]);
+        Mic(other).Clips.Should().HaveCount(2);
+        other.Duration.Should().BeApproximately(8, 1e-6);
     }
 
     [Fact]
@@ -428,6 +436,27 @@ public sealed class TranscriptTests
     }
 
     [Fact]
+    public void An_export_burns_one_language_in_and_saves_a_file_for_each()
+    {
+        var project = TestProjects.Project(5);
+        var (one, english) = CaptionEdits.AddTrack(project, [new CaptionItem { Id = "e", Start = 1, Length = 1, Text = "Hello" }], "Captions (English)");
+        var (two, arabic) = CaptionEdits.AddTrack(one, [new CaptionItem { Id = "a", Start = 1, Length = 1, Text = "مرحبا" }], "Captions (Arabic)");
+        var prepared = new Export.ExportRequest(two, Export.ExportPresets.Mp4H264Project, Core.Recording.QualityPreset.Balanced, "x.mp4", BurnTrack: arabic).Prepared();
+        prepared.Track(arabic)!.Hidden.Should().BeFalse();
+        prepared.Track(english)!.Hidden.Should().BeTrue();
+        new Export.ExportRequest(two, Export.ExportPresets.Mp4H264Project, Core.Recording.QualityPreset.Balanced, "x.mp4").Prepared().Track(english)!.Hidden.Should().BeFalse("all those shown, without a choice");
+        new Export.ExportRequest(two, Export.ExportPresets.Mp4H264Project, Core.Recording.QualityPreset.Balanced, "x.mp4", BurnCaptions: false, BurnTrack: arabic).Prepared().Track(arabic)!.Hidden.Should().BeTrue();
+
+        Export.SubtitleFiles.Cues(two, arabic).Should().ContainSingle().Which.Text.Should().Be("مرحبا");
+        Export.SubtitleFiles.Cues(two, "none").Should().BeEmpty();
+        var taken = new HashSet<string>();
+        Export.SubtitleFiles.SafeName("Captions (English)", taken).Should().Be("Captions (English)");
+        Export.SubtitleFiles.SafeName("Captions (English)", taken).Should().Be("Captions (English) 2");
+        Export.SubtitleFiles.SafeName("a/b:c", taken).Should().Be("abc");
+        Export.SubtitleFiles.SafeName("???", taken).Should().Be("captions");
+    }
+
+    [Fact]
     public void A_project_saved_with_a_transcript_reads_back_and_keeps_no_box()
     {
         var project = TranscriptEdits.Correct(Spoken(3), "rec", 1, "one");
@@ -451,6 +480,27 @@ public sealed class TranscriptTests
         project.Version.Should().Be(3);
         project.Asset("a")!.Transcript.Should().BeNull();
         project.Track("c")!.Captions!.Box.Should().Be(CaptionStyle.DefaultBox, "what older versions read a style without one as");
+    }
+
+    /// <summary>How long the view takes with a long transcript and many cuts, measured when asked.</summary>
+    [Fact(Explicit = true)]
+    public void A_long_transcript_with_many_cuts_is_quick_to_see_through()
+    {
+        var seconds = 3600.0;
+        var words = Enumerable.Range(0, 7200).Select(i => new SpokenWord(i * 0.5, (i * 0.5) + 0.3, $"w{i}")).ToList();
+        var project = TranscriptEdits.WithTranscript(TestProjects.Project(seconds), "rec", new MediaTranscript(1, "en", words));
+        project = TranscriptEdits.Cut(project, Enumerable.Range(0, 300).Select(i => new CutRange((i * 11.0) + 0.32, (i * 11.0) + 0.48)));
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        const int runs = 20;
+        TranscriptView? view = null;
+        for (var i = 0; i < runs; i++)
+        {
+            view = TranscriptView.Build(project);
+        }
+
+        var ms = watch.Elapsed.TotalMilliseconds / runs;
+        TestContext.Current.TestOutputHelper?.WriteLine($"{view!.Words.Count} words through {Mic(project).Clips.Count()} clips: {ms:0.0} ms a view");
+        ms.Should().BeLessThan(16, "a view on every edit, and a slider's drag is many edits");
     }
 
     public static TheoryData<string, string> OldProjects => new()

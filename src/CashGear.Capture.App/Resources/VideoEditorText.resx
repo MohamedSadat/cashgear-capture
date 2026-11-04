@@ -1979,4 +1979,49 @@
   <data name="SecondsTenthsFormat" xml:space="preserve">
     <value>{0:0.00} s</value>
   </data>
+  <data name="TranslateMenu" xml:space="preserve">
+    <value>Tra_nslate…</value>
+  </data>
+  <data name="TranslateMenuTip" xml:space="preserve">
+    <value>A caption track in another language, made on this PC.</value>
+  </data>
+  <data name="TranslateTitle" xml:space="preserve">
+    <value>Translate</value>
+  </data>
+  <data name="TranslateIntro" xml:space="preserve">
+    <value>English captions become Arabic, or Arabic speech becomes English, on a new caption track at the same times. Everything happens on this PC. Machine translation makes mistakes: read it before you use it.</value>
+  </data>
+  <data name="TranslateWhat" xml:space="preserve">
+    <value>Translate</value>
+  </data>
+  <data name="TranslateStart" xml:space="preserve">
+    <value>Translate</value>
+  </data>
+  <data name="TranslateCaptionsChoice" xml:space="preserve">
+    <value>The captions of «{0}» into Arabic</value>
+  </data>
+  <data name="TranslateSpeechChoice" xml:space="preserve">
+    <value>The Arabic speech on «{0}» into English</value>
+  </data>
+  <data name="TranslatorToDownload" xml:space="preserve">
+    <value>The first time, the translation model is downloaded ({0}).</value>
+  </data>
+  <data name="DownloadingTranslator" xml:space="preserve">
+    <value>Downloading the translation model: {0:P0}</value>
+  </data>
+  <data name="Translating" xml:space="preserve">
+    <value>Translating: {0:P0}</value>
+  </data>
+  <data name="TranslateProgressName" xml:space="preserve">
+    <value>Translation progress</value>
+  </data>
+  <data name="UndoTranslate" xml:space="preserve">
+    <value>translate</value>
+  </data>
+  <data name="NothingToTranslate" xml:space="preserve">
+    <value>There are no captions or sound to translate.</value>
+  </data>
+  <data name="BurnWhichCaptions" xml:space="preserve">
+    <value>Burn in</value>
+  </data>
 </root>

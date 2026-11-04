@@ -290,6 +290,88 @@ public sealed class TranscriptEditorTests : VideoEditorTestBase
         vm.Transcript.IsShown.Should().BeTrue();
     }
 
+    /// <summary>A translator that writes what it was given in brackets, and a download's worth of nothing.</summary>
+    private sealed class FakeTranslators : CashGear.Capture.Inference.ITranslators
+    {
+        public bool IsReady { get; set; }
+
+        public long DownloadSize => 113_000_000;
+
+        public Task<CashGear.Capture.Inference.ITranslator> OpenEnglishToArabicAsync(IProgress<double>? progress = null, CancellationToken ct = default)
+        {
+            progress?.Report(1);
+            return Task.FromResult<CashGear.Capture.Inference.ITranslator>(new Fake());
+        }
+
+        private sealed class Fake : CashGear.Capture.Inference.ITranslator
+        {
+            public string Translate(string text, CancellationToken ct = default) => $"[{text}]";
+
+            public void Dispose()
+            {
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Captions_are_translated_onto_a_track_of_their_own_in_one_step()
+    {
+        using var vm = Spoken(services: Services with { Translators = new FakeTranslators() });
+        vm.OpenTranslate().Should().BeNull("there are no captions, and no speech recognition here");
+        Dialogs.Errors.Should().ContainSingle();
+        var (project, id) = CaptionEdits.AddTrack(vm.Project, [
+            new CaptionItem { Id = "a", Start = 1, Length = 2, Text = "Hello" },
+            new CaptionItem { Id = "b", Start = 4, Length = 1, Text = "there" },
+        ], "Captions (English)");
+        vm.History.Apply("captions", project);
+        var dialog = vm.OpenTranslate()!;
+        Dialogs.Translate.Should().BeSameAs(dialog);
+        dialog.Choices.Should().ContainSingle().Which.Name.Should().Contain("Captions (English)").And.Contain("Arabic");
+        dialog.Note.Should().Contain("113");
+        dialog.ShowsGpu.Should().BeFalse();
+        await dialog.StartCommand.ExecuteAsync(null);
+        dialog.Error.Should().BeNull();
+        vm.UndoText.Should().Be("Undo translate");
+        var track = vm.Project.Tracks[^1];
+        track.Name.Should().Be("Captions (Arabic)");
+        track.Items.Cast<CaptionItem>().Select(c => (c.Start, c.Length, c.Text)).Should().Equal((1.0, 2.0, "[Hello]"), (4.0, 1.0, "[there]"));
+        vm.Project.Track(id)!.Items.Should().HaveCount(2, "the English stays");
+    }
+
+    [Fact]
+    public async Task Arabic_speech_is_translated_with_whispers_own_task()
+    {
+        TestMedia.Require();
+        var folder = Path.Combine(Root, "models");
+        Directory.CreateDirectory(folder);
+        using (var model = File.Create(Path.Combine(folder, WhisperModels.Small.File)))
+        {
+            model.SetLength(WhisperModels.Small.Bytes);
+        }
+
+        var transcriber = new FakeTranscriber(new TranscriptSegment(0.5, 2, "Hello there"));
+        var store = new WhisperModelStore(Path.Combine(Root, "downloads"), new HttpClient(), NullLogger<WhisperModelStore>.Instance, alsoIn: [folder]);
+        using var vm = new VideoEditorViewModel(ProjectFactory.FromRecording(ProjectFactory.ReadAsset(Recording())), null, Services with { Transcriber = transcriber, Models = store }, Dialogs);
+        var dialog = vm.OpenTranslate()!;
+        dialog.Choices.Select(c => c.IsSpeech).Should().OnlyContain(s => s);
+        dialog.Choice!.Name.Should().Contain("Microphone").And.Contain("English");
+        dialog.ShowsGpu.Should().BeTrue();
+        await dialog.StartCommand.ExecuteAsync(null);
+        dialog.Error.Should().BeNull();
+        transcriber.Calls.Single().Options.Should().Match<TranscriptionOptions>(o => o.Translate && o.Language == "ar");
+        vm.Project.Tracks[^1].Name.Should().Be("Captions (English)");
+        vm.Project.Tracks[^1].Items.Cast<CaptionItem>().Single().Text.Should().Be("Hello there");
+    }
+
+    [Fact]
+    public void Translating_is_part_of_pro()
+    {
+        using var vm = Spoken(services: Services with { Features = new NothingFree(), Translators = new FakeTranslators() });
+        vm.TranslateCommand.Execute(null);
+        Dialogs.Errors.Should().ContainSingle();
+        Dialogs.Translate.Should().BeNull();
+    }
+
     private static TranscriptControl Attached(TranscriptPanelViewModel panel, double width = 330, double height = 300)
     {
         var words = new TranscriptControl();

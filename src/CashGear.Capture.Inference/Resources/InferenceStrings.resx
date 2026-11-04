@@ -24,4 +24,16 @@
     <value>{0} can't start: {1}</value>
     <comment>{0}: the model's name; {1}: ONNX Runtime's message</comment>
   </data>
+  <data name="ModelEnglishToArabicEncoder" xml:space="preserve">
+    <value>English to Arabic (reading)</value>
+  </data>
+  <data name="ModelEnglishToArabicDecoder" xml:space="preserve">
+    <value>English to Arabic (writing)</value>
+  </data>
+  <data name="ModelEnglishToArabicPieces" xml:space="preserve">
+    <value>English to Arabic (pieces of words)</value>
+  </data>
+  <data name="ModelEnglishToArabicWords" xml:space="preserve">
+    <value>English to Arabic (vocabulary)</value>
+  </data>
 </root>

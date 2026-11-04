@@ -323,6 +323,22 @@ public sealed partial class TranscriptAcceptanceTests : IDisposable
         offsets.Should().OnlyContain(o => Math.Abs(o) < 1 / 30.0, "sound and picture stay together");
     }
 
+    [Fact]
+    public async Task An_export_with_two_languages_saves_a_file_for_each()
+    {
+        TestMedia.Require();
+        var project = ProjectFactory.FromRecording(ProjectFactory.ReadAsset(_media.Stamped("languages.mp4", 2)));
+        var (one, _) = CaptionEdits.AddTrack(project, [new CaptionItem { Id = "e", Start = 0.5, Length = 1, Text = "Hello" }], "Captions (English)");
+        var (two, arabic) = CaptionEdits.AddTrack(one, [new CaptionItem { Id = "a", Start = 0.5, Length = 1, Text = "مرحبا" }], "Captions (Arabic)");
+        var output = Path.Combine(_media.Root, "languages-out.mp4");
+        var result = await new ProjectExporter(new SoftwareEncoders(), NullLogger<ProjectExporter>.Instance).ExportAsync(
+            new ExportRequest(two, ExportPresets.Mp4H264Project, QualityPreset.Balanced, output, EncoderPresets.Software, CaptionFiles: CaptionFiles.Srt | CaptionFiles.Vtt, BurnTrack: arabic),
+            ct: TestContext.Current.CancellationToken);
+        result.CaptionPaths!.Select(Path.GetFileName).Should().BeEquivalentTo("languages-out.Captions (English).srt", "languages-out.Captions (Arabic).srt", "languages-out.Captions (English).vtt", "languages-out.Captions (Arabic).vtt");
+        File.ReadAllText(Path.Combine(_media.Root, "languages-out.Captions (Arabic).srt")).Should().Contain("مرحبا").And.NotContain("Hello");
+        File.ReadAllText(Path.Combine(_media.Root, "languages-out.Captions (English).vtt")).Should().Contain("Hello").And.NotContain("مرحبا");
+    }
+
     /// <summary>What was found of the labelled clip: how many of its fillers, and how many things that weren't.</summary>
     private static (int Found, int Said, int Wrong, string List) Score(SaidSpeech speech, SoundLevels levels, MediaTranscript transcript)
     {

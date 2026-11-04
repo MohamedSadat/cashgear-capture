@@ -63,7 +63,8 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         IFeatureGate? features = null,
         IPresetStore? presets = null,
         WebcamMasks? masks = null,
-        SoundLevelStore? levels = null)
+        SoundLevelStore? levels = null,
+        CashGear.Capture.Inference.ITranslators? translators = null)
     {
         _ui = ui;
         _settings = settings;
@@ -73,7 +74,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         _notifier = notifier;
         _loggers = loggers;
         _logger = loggers.CreateLogger<VideoEditorWindows>();
-        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models, Features: features, Presets: presets, Masks: masks, Levels: levels);
+        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models, Features: features, Presets: presets, Masks: masks, Levels: levels, Translators: translators);
     }
 
     public int OpenCount => _windows.Count;
@@ -253,6 +254,9 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
 
         public void ShowTranscribe(TranscribeViewModel viewModel) =>
             new TranscribeWindow(viewModel, theme) { Owner = owner() }.ShowDialog();
+
+        public void ShowTranslate(TranslateViewModel viewModel) =>
+            new TranslateWindow(viewModel, theme) { Owner = owner() }.ShowDialog();
 
         public string? AskSavePath(string title, string filter, string fileName, string? folder)
         {

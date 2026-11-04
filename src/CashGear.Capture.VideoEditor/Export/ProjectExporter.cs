@@ -35,8 +35,9 @@ public sealed class ExportException : Exception
 /// <param name="EncoderSetting">The recording setting for the encoder (automatic, software only or one encoder).</param>
 /// <param name="Range">Only this part of the timeline (null: all of it).</param>
 /// <param name="BurnCaptions">Whether caption tracks that are shown are drawn into the pictures.</param>
-/// <param name="CaptionFiles">Subtitle files written next to the file (same name), from every caption track.</param>
+/// <param name="CaptionFiles">Subtitle files written next to the file (same name): one for each caption track, named for it when there are several.</param>
 /// <param name="Gif">How a GIF is made (null: the defaults).</param>
+/// <param name="BurnTrack">The only caption track burned in, when there is one language to choose among several (null: all those shown).</param>
 public sealed record ExportRequest(
     VideoProject Project,
     ExportPreset Preset,
@@ -46,7 +47,8 @@ public sealed record ExportRequest(
     TimeRange? Range = null,
     bool BurnCaptions = true,
     CaptionFiles CaptionFiles = CaptionFiles.None,
-    GifOptions? Gif = null)
+    GifOptions? Gif = null,
+    string? BurnTrack = null)
 {
     /// <summary>
     /// The project as the export makes it: the range only, on the preset's own canvas (the screen covering it and
@@ -58,6 +60,11 @@ public sealed record ExportRequest(
         if (Preset.HasCanvas && Math.Abs(((double)project.Canvas.Width / project.Canvas.Height) - ((double)Preset.CanvasWidth / Preset.CanvasHeight)) > 0.01)
         {
             project = CanvasEdits.Change(project, Preset.CanvasWidth, Preset.CanvasHeight, ScreenFraming.FollowPointer);
+        }
+
+        if (BurnCaptions && BurnTrack is { } burned)
+        {
+            return project with { Tracks = [.. project.Tracks.Select(t => t.Kind == TrackKind.Caption ? t with { Hidden = t.Id != burned } : t)] };
         }
 
         return BurnCaptions ? project : project with { Tracks = [.. project.Tracks.Select(t => t.Kind == TrackKind.Caption ? t with { Hidden = true } : t)] };
@@ -378,19 +385,23 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
     /// <summary>The subtitle files asked for, next to <paramref name="path"/> (none when no caption has text).</summary>
     private static IReadOnlyList<string> WriteCaptions(VideoProject project, string path, CaptionFiles files)
     {
-        var cues = SubtitleFiles.Cues(project);
         var written = new List<string>();
-        if (cues.Count == 0)
-        {
-            return written;
-        }
-
+        var tracks = project.Tracks.Where(t => t.Kind == TrackKind.Caption && SubtitleFiles.Cues(project, t.Id).Count > 0).ToList();
         foreach (var (flag, format) in new[] { (CaptionFiles.Srt, SubtitleFormat.Srt), (CaptionFiles.Vtt, SubtitleFormat.Vtt) })
         {
-            if (files.HasFlag(flag))
+            if (!files.HasFlag(flag))
             {
-                var file = Path.ChangeExtension(path, SubtitleFiles.Extension(format));
-                SubtitleFiles.Save(file, cues, format);
+                continue;
+            }
+
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var track in tracks)
+            {
+                // One track: the file's own name. Several, each for a language: named for its track.
+                var file = tracks.Count == 1
+                    ? Path.ChangeExtension(path, SubtitleFiles.Extension(format))
+                    : Path.ChangeExtension(path, null) + "." + SubtitleFiles.SafeName(track.Name, names) + SubtitleFiles.Extension(format);
+                SubtitleFiles.Save(file, SubtitleFiles.Cues(project, track.Id), format);
                 written.Add(file);
             }
         }

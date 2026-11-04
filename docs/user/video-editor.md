@@ -31,6 +31,23 @@ Tray › **Video Editor** › **Open a Recording or Project…**, or **Edit the 
   - Insert › **Captions from Speech…** listens with Whisper on this PC, in English or Arabic, and nothing is sent anywhere;
   - or type them, or import SRT/WebVTT files.
 
+## Editing by the transcript
+
+Edit a talk-over by editing its text. View › **Transcript** (`Ctrl+T`, or the Transcript button) opens the panel beside the preview.
+
+- **Make the Transcript…** listens to a sound track's recording on this PC, in English or Arabic, with the time of each word. The transcript belongs to the recording, so it stays right through cuts, speed changes and freezes. "Write down filler words" asks Whisper to keep "um" and "uh". If the project has captions made from speech, the panel offers to use their words instead.
+- **Read and go:** paragraphs split at pauses, the word being said is marked as it plays, and a click on a word goes there.
+- **Delete cuts:** select words (the mouse, or `Shift` with the arrows) and press `Delete`. That part of the video goes from every unlocked track, cut in the middle of the silence between words, with a crossfade of 16 ms on the sound so it doesn't click. It is an ordinary cut: the timeline shows it, and undo brings it back.
+- **Typing corrects:** start typing on a word (or `F2`, or double-click it). The box says the video stays as it is: only the transcript and the captions saying that word change. A corrected word has a dotted line under it.
+- **Cut words** are struck through and can be put back: select them and press `Ctrl+R`, or **Restore**. Clear **Show cut words** to hide them. What was cut with them on other tracks, such as an annotation, stays cut; undo brings that back too.
+- **Silences…** lists the pauses in the voice longer than 0.75 s (you can change that) and shortens them to 0.3 s, rather than removing them. Play each one, keep it or shorten it, or **Shorten All**.
+- **Filler Words…** lists um, uh, er, ah, hmm and اممم, إممم, آه, words said twice in a row ("the the"), and voiced sound between words that has no word (possibly a filler Whisper left out). Play each, keep it or remove it, or **Remove All**. "يعني" counts only when you ask, since it is also a real word.
+- **Make Captions** (or Insert › Captions from the Transcript) makes a caption track of the words as this cut plays them.
+
+Where Whisper gives no word times for a stretch, it is cut as a whole sentence, and the panel says so.
+
+**Translate** (Insert › Translate…): English captions into Arabic with Opus-MT (the model, 113 MB, is downloaded the first time), or Arabic speech into English with Whisper. Each makes a caption track of its own, named for its language. When there are several, the export window asks which to burn in, and saves an SRT or WebVTT file for each. Machine translation makes mistakes: read it before you use it.
+
 ## The look
 
 A recording looks finished before you edit it: the screen sits on a background with space round it, rounded corners and a shadow. With nothing selected, the panel on the right sets all of it.

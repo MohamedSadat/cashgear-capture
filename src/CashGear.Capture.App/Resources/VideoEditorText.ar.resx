@@ -1710,4 +1710,49 @@
   <data name="WordsSelected_many" xml:space="preserve">
     <value>{0} كلمة محددة</value>
   </data>
+  <data name="TranslateMenu" xml:space="preserve">
+    <value>ترجمة… (_N)</value>
+  </data>
+  <data name="TranslateMenuTip" xml:space="preserve">
+    <value>مسار تسميات توضيحية بلغة أخرى، يُنشأ على هذا الكمبيوتر.</value>
+  </data>
+  <data name="TranslateTitle" xml:space="preserve">
+    <value>ترجمة</value>
+  </data>
+  <data name="TranslateIntro" xml:space="preserve">
+    <value>تتحول التسميات التوضيحية الإنجليزية إلى العربية، أو الكلام العربي إلى الإنجليزية، على مسار جديد للتسميات التوضيحية في التوقيتات نفسها. يجري كل شيء على هذا الكمبيوتر. الترجمة الآلية تخطئ: اقرأها قبل استخدامها.</value>
+  </data>
+  <data name="TranslateWhat" xml:space="preserve">
+    <value>ترجمة</value>
+  </data>
+  <data name="TranslateStart" xml:space="preserve">
+    <value>ترجمة</value>
+  </data>
+  <data name="TranslateCaptionsChoice" xml:space="preserve">
+    <value>تسميات «{0}» التوضيحية إلى العربية</value>
+  </data>
+  <data name="TranslateSpeechChoice" xml:space="preserve">
+    <value>الكلام العربي في «{0}» إلى الإنجليزية</value>
+  </data>
+  <data name="TranslatorToDownload" xml:space="preserve">
+    <value>يُنزَّل نموذج الترجمة في المرة الأولى ({0}).</value>
+  </data>
+  <data name="DownloadingTranslator" xml:space="preserve">
+    <value>جارٍ تنزيل نموذج الترجمة: {0:P0}</value>
+  </data>
+  <data name="Translating" xml:space="preserve">
+    <value>جارٍ الترجمة: {0:P0}</value>
+  </data>
+  <data name="TranslateProgressName" xml:space="preserve">
+    <value>تقدم الترجمة</value>
+  </data>
+  <data name="UndoTranslate" xml:space="preserve">
+    <value>الترجمة</value>
+  </data>
+  <data name="NothingToTranslate" xml:space="preserve">
+    <value>لا توجد تسميات توضيحية أو صوت لترجمتها.</value>
+  </data>
+  <data name="BurnWhichCaptions" xml:space="preserve">
+    <value>دمج</value>
+  </data>
 </root>

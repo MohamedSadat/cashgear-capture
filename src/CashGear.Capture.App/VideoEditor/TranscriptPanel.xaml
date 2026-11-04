@@ -11,25 +11,21 @@
              KeyboardNavigation.TabNavigation="Local">
   <UserControl.Resources>
     <BooleanToVisibilityConverter x:Key="Visible" />
-    <Style x:Key="Tool" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-      <Setter Property="Margin" Value="0,0,6,4" />
-      <Setter Property="Padding" Value="8,2" />
-    </Style>
   </UserControl.Resources>
   <DockPanel>
     <!-- Above the words: what can be done with them. -->
     <StackPanel DockPanel.Dock="Top" Margin="10,8,10,4">
       <TextBlock Text="{x:Static r:VideoEditorText.TranscriptTitle}" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6" />
       <WrapPanel>
-        <Button Style="{StaticResource Tool}" Content="{Binding MakeButtonText}" Command="{Binding MakeTranscriptCommand}" ToolTip="{x:Static r:VideoEditorText.MakeTranscriptTip}" />
-        <Button Style="{StaticResource Tool}" Content="{x:Static r:VideoEditorText.CutWordsButton}" Command="{Binding CutSelectedCommand}" ToolTip="{x:Static r:VideoEditorText.CutWordsTip}"
+        <Button Margin="0,0,6,4" Padding="8,2" Content="{Binding MakeButtonText}" Command="{Binding MakeTranscriptCommand}" ToolTip="{x:Static r:VideoEditorText.MakeTranscriptTip}" />
+        <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.CutWordsButton}" Command="{Binding CutSelectedCommand}" ToolTip="{x:Static r:VideoEditorText.CutWordsTip}"
                 Visibility="{Binding HasTranscript, Converter={StaticResource Visible}}" />
-        <Button Style="{StaticResource Tool}" Content="{x:Static r:VideoEditorText.RestoreWordsButton}" Command="{Binding RestoreSelectedCommand}" ToolTip="{x:Static r:VideoEditorText.RestoreWordsTip}"
+        <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.RestoreWordsButton}" Command="{Binding RestoreSelectedCommand}" ToolTip="{x:Static r:VideoEditorText.RestoreWordsTip}"
                 Visibility="{Binding HasTranscript, Converter={StaticResource Visible}}" />
-        <Button Style="{StaticResource Tool}" Content="{x:Static r:VideoEditorText.SilencesButton}" Command="{Binding ShowSilencesCommand}" ToolTip="{x:Static r:VideoEditorText.SilencesTip}" />
-        <Button Style="{StaticResource Tool}" Content="{x:Static r:VideoEditorText.FillersButton}" Command="{Binding ShowFillersCommand}" ToolTip="{x:Static r:VideoEditorText.FillersTip}"
+        <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.SilencesButton}" Command="{Binding ShowSilencesCommand}" ToolTip="{x:Static r:VideoEditorText.SilencesTip}" />
+        <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.FillersButton}" Command="{Binding ShowFillersCommand}" ToolTip="{x:Static r:VideoEditorText.FillersTip}"
                 Visibility="{Binding HasTranscript, Converter={StaticResource Visible}}" />
-        <Button Style="{StaticResource Tool}" Content="{x:Static r:VideoEditorText.CaptionsFromTranscriptButton}" Command="{Binding MakeCaptionsCommand}" ToolTip="{x:Static r:VideoEditorText.CaptionsFromTranscriptTip}"
+        <Button Margin="0,0,6,4" Padding="8,2" Content="{x:Static r:VideoEditorText.CaptionsFromTranscriptButton}" Command="{Binding MakeCaptionsCommand}" ToolTip="{x:Static r:VideoEditorText.CaptionsFromTranscriptTip}"
                 Visibility="{Binding HasTranscript, Converter={StaticResource Visible}}" />
       </WrapPanel>
       <CheckBox Content="{x:Static r:VideoEditorText.ShowCutWords}" IsChecked="{Binding ShowCut}" Margin="0,2,0,4"
@@ -60,7 +56,7 @@
     </StackPanel>
 
     <!-- The review lists, under the words. -->
-    <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{p:Chrome Separator}" MaxHeight="280"
+    <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{p:Chrome Separator}" MaxHeight="220"
             Visibility="{Binding ShowsSilences, Converter={StaticResource Visible}}">
       <DockPanel Margin="10,6">
         <StackPanel DockPanel.Dock="Top">
@@ -104,7 +100,7 @@
         </ScrollViewer>
       </DockPanel>
     </Border>
-    <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{p:Chrome Separator}" MaxHeight="280"
+    <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{p:Chrome Separator}" MaxHeight="220"
             Visibility="{Binding ShowsFillers, Converter={StaticResource Visible}}">
       <DockPanel Margin="10,6">
         <StackPanel DockPanel.Dock="Top">

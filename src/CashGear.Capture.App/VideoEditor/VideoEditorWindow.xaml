@@ -142,6 +142,7 @@
         <MenuItem Header="{x:Static r:VideoEditorText.InsertCaptionMenu}" Command="{Binding InsertCaptionCommand}" ToolTip="{x:Static r:VideoEditorText.InsertCaptionTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.TranscribeMenu}" Command="{Binding TranscribeCommand}" ToolTip="{x:Static r:VideoEditorText.TranscribeMenuTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.CaptionsFromTranscriptMenu}" Command="{Binding Transcript.MakeCaptionsCommand}" ToolTip="{x:Static r:VideoEditorText.CaptionsFromTranscriptTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.TranslateMenu}" Command="{Binding TranslateCommand}" ToolTip="{x:Static r:VideoEditorText.TranslateMenuTip}" />
       </MenuItem>
       <MenuItem Header="{x:Static r:VideoEditorText.MenuView}">
         <MenuItem Header="{x:Static r:VideoEditorText.ZoomInMenu}" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />

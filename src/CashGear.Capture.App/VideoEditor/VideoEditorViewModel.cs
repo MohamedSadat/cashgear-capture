@@ -41,6 +41,9 @@ public interface IVideoEditorDialogs
     /// <summary>Shows the Captions from Speech window (it runs the transcription, and closes when it is done).</summary>
     void ShowTranscribe(TranscribeViewModel viewModel);
 
+    /// <summary>Shows the Translate window (it runs the translation, and closes when it is done).</summary>
+    void ShowTranslate(TranslateViewModel viewModel);
+
     /// <summary>Asks where to save a file (null: cancelled).</summary>
     string? AskSavePath(string title, string filter, string fileName, string? folder);
 
@@ -64,7 +67,8 @@ public sealed record VideoEditorServices(
     IFeatureGate? Features = null,
     IPresetStore? Presets = null,
     WebcamMasks? Masks = null,
-    SoundLevelStore? Levels = null)
+    SoundLevelStore? Levels = null,
+    CashGear.Capture.Inference.ITranslators? Translators = null)
 {
     /// <summary>Which Pro features may be used (all of them in this version).</summary>
     public IFeatureGate Gate => Features ?? FeatureGate.Open;
@@ -786,6 +790,37 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     /// <summary>View › Transcript: shows or hides the panel beside the preview.</summary>
     [RelayCommand]
     private void ToggleTranscript() => Transcript.IsShown = !Transcript.IsShown;
+
+    /// <summary>Insert › Translate: the window that makes a caption track in another language.</summary>
+    [RelayCommand]
+    private void Translate()
+    {
+        if (Allowed(ProFeature.Translation))
+        {
+            OpenTranslate();
+        }
+    }
+
+    /// <summary>The window that translates; what it makes comes back as a caption track, one undo step. Null when there is nothing to translate.</summary>
+    public TranslateViewModel? OpenTranslate()
+    {
+        StopPlaying();
+        var viewModel = new TranslateViewModel(Project, _services.Translators, _services.Transcriber, _services.Models, _services.State, _services.Loggers.CreateLogger<TranslateViewModel>(), AddTranslation);
+        if (viewModel.Choices.Count == 0)
+        {
+            _dialogs.ShowError(VideoEditorText.NothingToTranslate);
+            return null;
+        }
+
+        _dialogs.ShowTranslate(viewModel);
+        return viewModel;
+    }
+
+    private void AddTranslation(IReadOnlyList<CaptionItem> captions, string language)
+    {
+        var (project, _) = CaptionEdits.AddTrack(Project, captions, VideoEditorText.CaptionsInLanguage(TranscribeViewModel.LanguageName(language)));
+        History.Apply(VideoEditorText.UndoTranslate, project);
+    }
 
     /// <summary>A transcript of the media on a sound track: the window that makes it; it comes back as one undo step. Null when there is nothing to listen to.</summary>
     public TranscribeViewModel? OpenTranscript()
@@ -1553,6 +1588,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         RefreshLook();
         MakeMasks();
         Transcript.Refresh();
+        Transcript.PlayheadMoved(Timeline.Playhead);
         OnPropertyChanged(nameof(Status));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(IsDirty));

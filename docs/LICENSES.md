@@ -29,7 +29,7 @@ No GPL or AGPL component ships.
 | FFmpeg (n9.0.2, LGPL build) | LGPL v3 | Encoding, decoding and writing recordings and exports (see below) |
 | RNNoise (0.2) | BSD 3-Clause | Microphone noise suppression (see below) |
 | Whisper.net, whisper.cpp, ggml (1.9.1) | MIT | Captions from speech (see below); the models are downloaded, not shipped |
-| ONNX Runtime with DirectML (1.24.4) | MIT | The webcam's background (see below) |
+| ONNX Runtime with DirectML (1.24.4) | MIT | The webcam's background and translation (see below) |
 | DirectML (Microsoft.AI.DirectML 1.15.4) | Microsoft Software License Terms, which allow distributing it in applications | Running the model on the graphics card (see below) |
 | DocumentFormat.OpenXml (3.5.1) | MIT | Word and PowerPoint destinations |
 | FluentFTP (55.0.0) | MIT | FTP and FTPS uploads |
@@ -114,6 +114,17 @@ The person in a webcam's pictures is found with Google's MediaPipe Selfie Segmen
 | What ships | `onnxruntime.dll` (16.5 MB) and `DirectML.dll` (17.7 MB) beside the app, and the notices in `THIRD-PARTY-NOTICES.txt`. |
 | Privacy | Official Windows builds of ONNX Runtime send trace events through Windows' own telemetry unless told not to (the package's `Privacy.md`). The app calls `DisableTelemetryEvents` before it starts a model. |
 | Test pictures | Four official NASA portraits (works of the United States government: public domain) in `tests\CashGear.Capture.Inference.Tests\Fixtures\people`, not shipped. |
+
+## Opus-MT (English to Arabic translation)
+
+Captions in English are translated into Arabic with Helsinki-NLP's Opus-MT `en-ar` model run by ONNX Runtime on the processor. (Arabic speech into English needs no other model: it is Whisper's translate task.)
+
+| | |
+|---|---|
+| Model | Not shipped: downloaded on first use from a fixed commit of <https://huggingface.co/Xenova/opus-mt-en-ar> (`034a684356c19021a187cda4d7f823298b913921`), four files with their SHA-256 in `InferenceModels.EnglishToArabic`: `onnx/encoder_model_quantized.onnx` (52 MB), `onnx/decoder_model_quantized.onnx` (59 MB), `source.spm`, `vocab.json`. Xenova's files are a conversion of <https://huggingface.co/Helsinki-NLP/opus-mt-en-ar> to ONNX. |
+| Model's licence | **CC-BY 4.0**, for the weights: the training project's README says its models "are distribted with a CC-BY 4.0 license" (<https://github.com/Helsinki-NLP/Opus-MT-train>). Helsinki-NLP's model card on Hugging Face says Apache 2.0. Either allows commercial use; the app follows the stricter one and credits Helsinki-NLP in `THIRD-PARTY-NOTICES.txt`, as CC-BY asks. Xenova's repository states no licence of its own for the conversion. **Worth the owner's look before selling**: `onnx-community/opus-mt-en-ar` carries a CC-BY 4.0 tag, but its decoder is three times the size. |
+| Code | Opus-MT's own code is MIT (<https://github.com/Helsinki-NLP/Opus-MT>), and isn't used: the app has a small reader of SentencePiece's model file and runs the model through ONNX Runtime, greedy, without packages of its own. |
+| Privacy | Runs on this PC; ONNX Runtime's telemetry is turned off, as for the person finder. |
 
 ## Whisper (speech to text for captions)
 

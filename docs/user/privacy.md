@@ -12,7 +12,8 @@
 A portable copy keeps all of these but captures in its **Data** folder.
 
 - **The keyboard is only watched while you record with keystrokes on.** Keys go into the recording and its metadata file, and nowhere else. Password fields and the apps you list are never shown.
-- **Captions from speech** are made on this PC; nothing is uploaded.
+- **Captions and transcripts from speech** are made on this PC; nothing is uploaded.
+- **Translation** runs on this PC too. The first time English is translated into Arabic, its model (113 MB) is downloaded from Hugging Face and checked.
 - **The webcam's background** is worked out on this PC; no pictures leave it. The first time, a small model is downloaded from Hugging Face and checked. ONNX Runtime's Windows telemetry is turned off.
 - **Uploads** happen only to the servers and services you set up as destinations.
 

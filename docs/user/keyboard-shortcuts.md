@@ -76,6 +76,22 @@ Change them in Settings › Hotkeys. The ones with "—" have no key until you s
 | `Ctrl+S`, `Ctrl+Shift+S` | Save the project, save as |
 | `Ctrl+E` | Export |
 | `Ctrl++`, `Ctrl+-`, `Ctrl+0` | Zoom the timeline in, out, to fit |
+| `Ctrl+T` | Show or hide the transcript |
+
+In the transcript's words:
+
+| Keys | |
+|---|---|
+| `←` / `→` | The word before / after, as they look: in Arabic, `←` is the next word |
+| `↑` / `↓`, `Page Up` / `Page Down` | The line above / below, a screenful |
+| `Home` / `End`, `Ctrl+Home` / `Ctrl+End` | The start / end of the line, of the transcript |
+| `Shift` with any of those, `Ctrl+A` | Select as far as there, select everything |
+| `Enter` | Go to the word in the video |
+| `Delete` or `Backspace` | Cut the selected words |
+| `Ctrl+R` | Restore the selected cut words |
+| Typing, `F2` | Correct the word's text (the video doesn't change): `Enter` keeps it, `Esc` cancels |
+| `Space` | Play / pause |
+| `Esc` | Clear the selection |
 
 ## Screen tools
 

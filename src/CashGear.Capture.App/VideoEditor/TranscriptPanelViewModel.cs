@@ -92,8 +92,14 @@ public sealed partial class TranscriptPanelViewModel : ObservableObject
     /// <summary>The words changed, or which of them show.</summary>
     public event EventHandler? WordsChanged;
 
-    /// <summary>The selection or the word being said changed.</summary>
+    /// <summary>The selection changed.</summary>
     public event EventHandler? MarksChanged;
+
+    /// <summary>The word being said changed.</summary>
+    public event EventHandler? CurrentChanged;
+
+    /// <summary>Whether the words follow the playhead: while playing.</summary>
+    public bool Follows => _owner.IsPlaying;
 
     public TranscriptView View { get; private set; }
 
@@ -218,7 +224,7 @@ public sealed partial class TranscriptPanelViewModel : ObservableObject
         if (now != Current)
         {
             Current = now;
-            MarksChanged?.Invoke(this, EventArgs.Empty);
+            CurrentChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -304,7 +310,7 @@ public sealed partial class TranscriptPanelViewModel : ObservableObject
     }
 
     /// <summary>Delete: the selected words out of every unlocked track, one undo step. The next word is selected.</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanCut))]
     public void CutSelected()
     {
         var chosen = Selected.Where(p => !View.Words[p].IsCut).ToList();
@@ -334,7 +340,7 @@ public sealed partial class TranscriptPanelViewModel : ObservableObject
     }
 
     /// <summary>Ctrl+R: the selected cut words back where they were, one undo step.</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRestore))]
     public void RestoreSelected()
     {
         var chosen = Selected.Where(p => View.Words[p].IsCut).ToList();
@@ -382,21 +388,34 @@ public sealed partial class TranscriptPanelViewModel : ObservableObject
         var track = _owner.Project.Track(offer.TrackId);
         var language = track is null ? "" : LanguageOf(track.Name);
         var made = TranscriptBuilder.FromCaptions(_owner.Project, offer.TrackId, language, LevelsOf);
-        _owner.History.Apply(VideoEditorText.UndoUseCaptionWords, made);
+        var refined = made.Assets.Where(a => a.Transcript is not null).All(a => LevelsOf(a, a.Transcript!.Stream) is not null);
+        _owner.History.Apply(VideoEditorText.UndoUseCaptionWords, made, UseCaptionWordsStep);
+        if (refined)
+        {
+            return;
+        }
+
         await MeasureAsync();
         if (!ReferenceEquals(_owner.Project, made))
         {
             return; // changed since: leave what was edited alone
         }
 
+        var better = made;
         foreach (var asset in made.Assets.Where(a => a.Transcript is not null))
         {
             if (LevelsOf(asset, asset.Transcript!.Stream) is { } levels)
             {
-                _owner.History.Apply(VideoEditorText.UndoUseCaptionWords, TranscriptEdits.WithTranscript(_owner.Project, asset.Id, asset.Transcript with { Words = TranscriptBuilder.Refine(asset.Transcript.Words, levels) }), "use-caption-words");
+                better = TranscriptEdits.WithTranscript(better, asset.Id, asset.Transcript with { Words = TranscriptBuilder.Refine(asset.Transcript.Words, levels) });
             }
         }
+
+        // The same undo step: the times come nearer once the sound is measured.
+        _owner.History.Apply(VideoEditorText.UndoUseCaptionWords, better, UseCaptionWordsStep);
     }
+
+    [System.ComponentModel.Localizable(false)]
+    private const string UseCaptionWordsStep = "use-caption-words";
 
     /// <summary>A language from a caption track's name ("Captions (Arabic)"), or none.</summary>
     private static string LanguageOf(string trackName) =>

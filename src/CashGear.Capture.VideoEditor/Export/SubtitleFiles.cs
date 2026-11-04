@@ -44,6 +44,36 @@ public static partial class SubtitleFiles
             .Select(c => new SubtitleCue(c.Start, c.End, c.Text.Trim().ReplaceLineEndings("\n")))];
     }
 
+    /// <summary>The captions with text on one caption track, in time order.</summary>
+    public static IReadOnlyList<SubtitleCue> Cues(VideoProject project, string trackId)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        return project.Track(trackId) is not { } track
+            ? []
+            : [.. track.Items.OfType<CaptionItem>().Where(c => c.Text.Trim().Length > 0).OrderBy(c => c.Start).Select(c => new SubtitleCue(c.Start, c.End, c.Text.Trim().ReplaceLineEndings("\n")))];
+    }
+
+    /// <summary>A track's name as part of a file's name: what a file name can't hold left out, and each one different from the <paramref name="taken"/>.</summary>
+    public static string SafeName(string name, ISet<string> taken)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(taken);
+        var bad = Path.GetInvalidFileNameChars();
+        var safe = new string([.. name.Where(c => !bad.Contains(c))]).Trim().TrimEnd('.');
+        if (safe.Length == 0)
+        {
+            safe = "captions";
+        }
+
+        var unique = safe;
+        for (var i = 2; !taken.Add(unique); i++)
+        {
+            unique = string.Create(CultureInfo.InvariantCulture, $"{safe} {i}");
+        }
+
+        return unique;
+    }
+
     /// <summary>A time as the format writes it: <c>01:02:03,456</c> (SRT) or <c>01:02:03.456</c> (VTT).</summary>
     public static string Time(double seconds, SubtitleFormat format)
     {

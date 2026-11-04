@@ -88,10 +88,11 @@ internal sealed class TranscriptControl : FrameworkElement
             InvalidateVisual();
             (UIElementAutomationPeer.FromElement(this) as TranscriptAutomationPeer)?.WordsChanged();
         };
-        panel.MarksChanged += (_, _) =>
+        panel.MarksChanged += (_, _) => InvalidateVisual();
+        panel.CurrentChanged += (_, _) =>
         {
             InvalidateVisual();
-            if (panel.Current >= 0 && IsFollowing)
+            if (panel.Current >= 0 && panel.Follows)
             {
                 Reveal(panel.Current);
             }
@@ -115,9 +116,6 @@ internal sealed class TranscriptControl : FrameworkElement
         };
         IsKeyboardFocusedChanged += (_, _) => InvalidateVisual();
     }
-
-    /// <summary>The panel follows the word being said while nothing else is going on.</summary>
-    internal bool IsFollowing { get; set; } = true;
 
     /// <summary>Where a word is in the control, or empty when it isn't laid out.</summary>
     public Rect BoxOf(int position)
