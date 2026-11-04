@@ -326,7 +326,9 @@ public sealed class ArabicVideoEditorUiTests : VideoEditorTestBase
         using var arabic = ArabicUi.InArabic();
         var problems = new List<string>();
         using var vm = Open();
-        static bool Data(string text) => text.Contains(".mp4", StringComparison.OrdinalIgnoreCase) || text.Contains("Rec", StringComparison.Ordinal);
+
+        // The brand's fonts are shown by their own names, as a font's list does everywhere.
+        static bool Data(string text) => text.Contains(".mp4", StringComparison.OrdinalIgnoreCase) || text.Contains("Rec", StringComparison.Ordinal) || text == BrandKit.Default.HeadingFont;
 
         vm.Media.IsShown = true;
         vm.AddMarkerCommand.Execute(null);
