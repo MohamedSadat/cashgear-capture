@@ -86,7 +86,7 @@ public sealed class AnnotationEditorTests : VideoEditorTestBase
         moving.At(2).Y.Should().BeApproximately(first.Y + 15, 0.1);
         FrameCompositor.Bounds(moving, 2).Top.Should().BeLessThan(FrameCompositor.Bounds(moving, 3).Top);
 
-        vm.Properties.OfType<ActionParameter>().Last().Command.Execute(null);
+        vm.Properties.OfType<ActionParameter>().ElementAt(1).Command.Execute(null);
         Selected(vm).Keyframes.Should().HaveCount(1, "the keyframe at the playhead went");
         vm.PreviewHitAt(5, 5)!.Value.ItemId.Should().NotBe(moving.Id);
         PlacementEdits.HitTest(vm.Project, 3, middle + new SKPoint(20, 0))!.Value.ItemId.Should().Be(moving.Id);

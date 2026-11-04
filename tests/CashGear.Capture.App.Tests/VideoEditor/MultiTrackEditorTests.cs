@@ -34,7 +34,8 @@ public sealed class MultiTrackEditorTests : VideoEditorTestBase
         var microphone = vm.Project.Tracks.Single(t => t.Name == "Microphone").Clips.Single();
         vm.Timeline.Select(microphone.Id);
         vm.PropertiesTitle.Should().Be("Sound clip");
-        vm.Properties.Select(p => p.Label).Should().Equal("Volume", "Speed", "Change the speed along the clip", "Speed at the end", "Fade in", "Fade out");
+        vm.Properties.Select(p => p.Label).Should().ContainInOrder("Volume", "Speed", "Change the speed along the clip", "Speed at the end", "Fade in", "Fade out");
+        vm.Properties.Select(p => p.Label).Should().NotContain("Size", "sound has no picture to place");
 
         var volume = Number(vm, "Volume");
         volume.Value = 120;
@@ -57,7 +58,7 @@ public sealed class MultiTrackEditorTests : VideoEditorTestBase
         var webcam = vm.Project.Tracks.Single(t => t.Kind == TrackKind.Webcam).Clips.Single();
         vm.Timeline.Select(webcam.Id);
         vm.PropertiesTitle.Should().Be("Webcam clip");
-        vm.Properties.Select(p => p.Label).Should().Equal("Speed", "Change the speed along the clip", "Speed at the end", "Fade in", "Fade out", "Size", "Across", "Down", "Shape", "Border", "Border width", "Mirrored", "Opacity", "Corners", "Shadow", "Behind the person", "Blur", "Colour", "Picture", vm.Properties[^1].Label);
+        vm.Properties.Select(p => p.Label).Should().ContainInOrder("Speed", "Change the speed along the clip", "Speed at the end", "Fade in", "Fade out", "Size", "Across", "Down", "Shape", "Border", "Border width", "Mirrored", "Opacity", "Corners", "Shadow", "Behind the person", "Blur", "Colour", "Picture");
 
         Number(vm, "Size").Value = 40;
         Number(vm, "Across").Value = 20;

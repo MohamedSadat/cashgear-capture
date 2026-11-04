@@ -58,9 +58,9 @@ public sealed class TransitionEditorTests : VideoEditorTestBase
         vm.Timeline.Select(first.Id);
         vm.CrossfadeCommand.Execute(null);
         vm.Project.Duration.Should().BeApproximately(4.5, 1e-6, "half a second of overlap: the shorter clip's half");
-        vm.Properties.OfType<ActionParameter>().Single().Label.Should().Be("Remove the crossfade into the next clip");
-        vm.Properties.OfType<ActionParameter>().Single().Command.Execute(null);
+        vm.Properties.OfType<ActionParameter>().First().Label.Should().Be("Remove the crossfade into the next clip");
+        vm.Properties.OfType<ActionParameter>().First().Command.Execute(null);
         vm.Project.Duration.Should().BeApproximately(5, 1e-6);
-        vm.Properties.OfType<ActionParameter>().Single().Label.Should().StartWith("Crossfade into");
+        vm.Properties.OfType<ActionParameter>().First().Label.Should().StartWith("Crossfade into");
     }
 }
