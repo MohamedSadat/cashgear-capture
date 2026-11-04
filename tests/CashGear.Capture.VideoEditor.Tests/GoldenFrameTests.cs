@@ -26,6 +26,20 @@ public sealed class GoldenFrameTests : IDisposable
         { 3.0, 0.5 }, { 10.2, 0.5 },
     };
 
+    /// <summary>
+    /// <c>Fixtures\phase-20</c> was written once by the Phase 20 code (tag <c>phase-20-done</c>) and never again: <c>Project.cgcap</c>
+    /// has a gradient, a framed picture with corners and a shadow, zooms with motion blur and a spring, layouts, a webcam
+    /// background, the sharp pointer and captions, and <c>Vertical.cgcap</c> a 9:16 canvas following the pointer over the
+    /// blurred screen (version 2). Its frames are what that code drew after opening them.
+    /// </summary>
+    public static TheoryData<string, string, double> Phase20Frames => new()
+    {
+        { "Project", "frame", 0.6 }, { "Project", "frame", 1.2 }, { "Project", "frame", 2.5 }, { "Project", "frame", 3.5 }, { "Project", "frame", 4.1 },
+        { "Project", "frame", 5.2 }, { "Project", "frame", 6.5 }, { "Project", "frame", 7.9 }, { "Project", "frame", 9.2 }, { "Project", "frame", 10.5 },
+        { "Project", "frame", 12.2 }, { "Project", "frame", 13.5 }, { "Project", "frame", 14.2 }, { "Project", "frame", 16.5 }, { "Project", "frame", 18.5 },
+        { "Vertical", "vertical", 0.5 }, { "Vertical", "vertical", 6.0 }, { "Vertical", "vertical", 12.0 },
+    };
+
     private VideoProject Open() => ProjectFile.Open(Path.Combine(Fixture, "Project.cgcap"), _cache).Project;
 
     internal static SKBitmap Render(VideoProject project, double time, double scale = 1)
@@ -60,5 +74,30 @@ public sealed class GoldenFrameTests : IDisposable
         }
 
         differing.Should().Be(0, "every pixel of {0} is as 1.1.1 drew it", name);
+    }
+
+    [Theory]
+    [MemberData(nameof(Phase20Frames))]
+    public void A_phase_20_project_draws_the_same_pixels(string file, string prefix, double time)
+    {
+        using var turn = new CashGear.Capture.Tests.MachineTurn(); // motion blur works every core
+        var folder = Path.Combine(AppContext.BaseDirectory, "Fixtures", "phase-20");
+        var name = FormattableString.Invariant($"{prefix}-{time:00.00}.png");
+        using var golden = SKBitmap.Decode(Path.Combine(folder, name)).Copy(SKColorType.Bgra8888);
+        using var drawn = Render(ProjectFile.Open(Path.Combine(folder, file + ".cgcap"), _cache).Project, time);
+        (drawn.Width, drawn.Height).Should().Be((golden.Width, golden.Height));
+        var differing = 0;
+        for (var y = 0; y < golden.Height; y++)
+        {
+            for (var x = 0; x < golden.Width; x++)
+            {
+                if (golden.GetPixel(x, y) != drawn.GetPixel(x, y))
+                {
+                    differing++;
+                }
+            }
+        }
+
+        differing.Should().Be(0, "every pixel of {0} is as Phase 20 drew it", name);
     }
 }
