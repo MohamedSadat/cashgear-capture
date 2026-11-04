@@ -89,16 +89,18 @@ public sealed class FrameCompositor
         ArgumentNullException.ThrowIfNull(item);
         var place = item.At(time);
         var look = item.Look;
+        var color = place.Color ?? look.Color;
+        var level = (place.Opacity ?? look.Opacity) * (item.Motion?.At(time - item.Start).Opacity ?? 1);
         var style = new AnnotationStyle
         {
-            Color = Color(look.Color, EditorColors.Red),
+            Color = Color(color, EditorColors.Red),
             StrokeWidth = (float)look.StrokeWidth,
             Fill = look.Fill is null ? SKColors.Transparent : Color(look.Fill, SKColors.Transparent),
             FontFamily = look.FontFamily,
             FontSize = (float)look.FontSize,
             Bold = look.Bold,
             Strength = (float)look.Strength,
-        }.Normalize() with { Opacity = (float)Math.Clamp(look.Opacity * item.Fade(time), 0, 1) };
+        }.Normalize() with { Opacity = (float)Math.Clamp(level * item.Fade(time), 0, 1) };
         var id = new AnnotationId(0);
         var from = new SKPoint((float)place.X, (float)place.Y);
         var to = new SKPoint((float)(place.X + place.Width), (float)(place.Y + place.Height));
@@ -110,7 +112,7 @@ public sealed class FrameCompositor
             AnnotationShape.Line => new LineAnnotation(id, style, from, to),
             AnnotationShape.Rectangle => new RectangleAnnotation(id, style, box),
             AnnotationShape.Ellipse => new EllipseAnnotation(id, style, box),
-            AnnotationShape.Highlight => new HighlightAnnotation(id, style with { Color = Color(look.Color, EditorColors.Highlighter) }, box),
+            AnnotationShape.Highlight => new HighlightAnnotation(id, style with { Color = Color(color, EditorColors.Highlighter) }, box),
             _ => null,
         };
     }
@@ -126,6 +128,14 @@ public sealed class FrameCompositor
 
         var place = item.At(time);
         return SKRect.Create((float)place.X, (float)place.Y, (float)place.Width, (float)place.Height);
+    }
+
+    /// <summary>What an annotation covers at <paramref name="time"/> with its motion, on <paramref name="canvas"/>.</summary>
+    public static SKRect Bounds(AnnotationItem item, double time, ProjectCanvas canvas)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        var bounds = Bounds(item, time);
+        return item.Motion is { } motion ? MotionDrawing.Bounds(motion.At(time - item.Start), bounds, canvas) : bounds;
     }
 
     /// <summary>
@@ -167,9 +177,25 @@ public sealed class FrameCompositor
 
             if (track.Kind == TrackKind.Annotation)
             {
+                var follows = track.MovesWithZoom && !camera.IsIdentity;
                 foreach (var item in track.Items.OfType<AnnotationItem>().Where(a => a.Covers(time)))
                 {
-                    missing += DrawAnnotation(canvas, project, index, item, time, pass);
+                    if (follows && AnnotationFor(item, time) is not null)
+                    {
+                        canvas.Save();
+                        if (pass.Cell is { } part)
+                        {
+                            canvas.ClipRect(part);
+                        }
+
+                        canvas.Concat(in camera);
+                        missing += DrawAnnotation(canvas, project, index, item, time, pass);
+                        canvas.Restore();
+                    }
+                    else
+                    {
+                        missing += DrawAnnotation(canvas, project, index, item, time, pass, follows);
+                    }
                 }
 
                 continue;
@@ -186,7 +212,7 @@ public sealed class FrameCompositor
                 continue;
             }
 
-            var zoomed = track.Kind == TrackKind.Video && !camera.IsIdentity;
+            var zoomed = (track.Kind == TrackKind.Video || track.MovesWithZoom) && !camera.IsIdentity;
             if (zoomed)
             {
                 canvas.Save();
@@ -237,7 +263,7 @@ public sealed class FrameCompositor
 
             if (asset is null)
             {
-                DrawPicture(canvas, project, clip, asset, 0, Solid(clip.Solid!), box, project.Canvas.Width, project.Canvas.Height, opacity);
+                DrawPicture(canvas, project, clip, asset, 0, Solid(clip.Solid!), box, project.Canvas.Width, project.Canvas.Height, opacity, time);
                 continue;
             }
 
@@ -246,7 +272,7 @@ public sealed class FrameCompositor
                 // A file that is gone draws nothing: there is nothing to wait for.
                 if (StillOf(asset) is { } still)
                 {
-                    DrawPicture(canvas, project, clip, asset, 0, still.At(time - clip.Start), box, still.Width, still.Height, opacity);
+                    DrawPicture(canvas, project, clip, asset, 0, still.At(time - clip.Start), box, still.Width, still.Height, opacity, time);
                 }
 
                 continue;
@@ -266,7 +292,7 @@ public sealed class FrameCompositor
                 var pictureWidth = stream is { Width: > 0 } ? stream.Width : frame.Width;
                 var pictureHeight = stream is { Height: > 0 } ? stream.Height : frame.Height;
                 using var image = frame.ToImage();
-                DrawPicture(canvas, project, clip, asset, sourceTime, image, box, pictureWidth, pictureHeight, opacity);
+                DrawPicture(canvas, project, clip, asset, sourceTime, image, box, pictureWidth, pictureHeight, opacity, time);
             }
             finally
             {
@@ -419,31 +445,60 @@ public sealed class FrameCompositor
         canvas.Restore();
     }
 
-    private int DrawAnnotation(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, Pass pass)
+    private int DrawAnnotation(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, Pass pass, bool followsCamera = false)
     {
-        if (item.Fade(time) * item.Look.Opacity <= 0.005)
+        var motion = item.Motion?.At(time - item.Start);
+        if (item.Fade(time) * (item.At(time).Opacity ?? item.Look.Opacity) * (motion?.Opacity ?? 1) <= 0.005)
         {
             return 0;
         }
 
         if (AnnotationFor(item, time) is { } annotation)
         {
-            annotation.Render(canvas, new RenderContext(Blank, NoEffects, Sampling));
+            var context = new RenderContext(Blank, NoEffects, Sampling);
+            if (motion is not { } state)
+            {
+                annotation.Render(canvas, context);
+                return 0;
+            }
+
+            var bounds = annotation.Bounds;
+            canvas.Save();
+            canvas.Concat(MotionDrawing.Matrix(state, bounds, project.Canvas));
+            if (state.HasCrop)
+            {
+                canvas.ClipRect(MotionDrawing.Cropped(state, bounds), SKClipOperation.Intersect, antialias: true);
+            }
+
+            annotation.Render(canvas, context);
+            canvas.Restore();
             return 0;
         }
 
-        return DrawHidden(canvas, project, trackIndex, item, time, pass);
+        return DrawHidden(canvas, project, trackIndex, item, time, pass, motion, followsCamera);
     }
 
     /// <summary>
     /// A blurred or pixelated area: what the tracks below draw there is drawn again on its own (with a margin, so a
     /// blur doesn't darken at its edges), blurred or pixelated, and drawn over them.
     /// </summary>
-    private int DrawHidden(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, Pass pass)
+    private int DrawHidden(SKCanvas canvas, VideoProject project, int trackIndex, AnnotationItem item, double time, Pass pass, MotionState? motion = null, bool followsCamera = false)
     {
         var place = item.At(time);
         var canvasArea = SKRectI.Create(project.Canvas.Width, project.Canvas.Height);
-        var area = SKRectI.Intersect(SKRectI.Round(SKRect.Create((float)Math.Min(place.X, place.X + place.Width), (float)Math.Min(place.Y, place.Y + place.Height), (float)Math.Abs(place.Width), (float)Math.Abs(place.Height))), canvasArea);
+        var box = SKRect.Create((float)Math.Min(place.X, place.X + place.Width), (float)Math.Min(place.Y, place.Y + place.Height), (float)Math.Abs(place.Width), (float)Math.Abs(place.Height));
+        if (motion is { } state)
+        {
+            // What is hidden is an upright box: it moves, grows and is cut, and doesn't turn.
+            box = MotionDrawing.Matrix(state with { Rotation = 0 }, box, project.Canvas).MapRect(MotionDrawing.Cropped(state, box));
+        }
+
+        if (followsCamera)
+        {
+            box = pass.Camera.MapRect(box);
+        }
+
+        var area = SKRectI.Intersect(SKRectI.Round(box), canvasArea);
         if (area.Width <= 0 || area.Height <= 0)
         {
             return 0;
@@ -466,7 +521,7 @@ public sealed class FrameCompositor
         var inner = SKRectI.Create(area.Left - region.Left, area.Top - region.Top, area.Width, area.Height);
         using var patch = blur ? EffectCache.Blur(under, SKRectI.Create(region.Width, region.Height), strength) : EffectCache.Pixelate(under, inner, strength);
         var source = blur ? SKRect.Create(inner.Left, inner.Top, inner.Width, inner.Height) : SKRect.Create(inner.Width, inner.Height);
-        using var paint = new SKPaint { Color = SKColors.White.WithAlpha((byte)Math.Round(Math.Clamp(item.Fade(time) * item.Look.Opacity, 0, 1) * 255)) };
+        using var paint = new SKPaint { Color = SKColors.White.WithAlpha((byte)Math.Round(Math.Clamp(item.Fade(time) * (place.Opacity ?? item.Look.Opacity) * (motion?.Opacity ?? 1), 0, 1) * 255)) };
         canvas.DrawImage(patch, source, SKRect.Create(area.Left, area.Top, area.Width, area.Height), new SKSamplingOptions(SKFilterMode.Nearest), paint);
         return missing;
     }
@@ -531,7 +586,7 @@ public sealed class FrameCompositor
         };
     }
 
-    private void DrawPicture(SKCanvas canvas, VideoProject project, Clip clip, MediaAsset? asset, double sourceTime, SKImage image, PictureBox? box, int pictureWidth, int pictureHeight, double opacity)
+    private void DrawPicture(SKCanvas canvas, VideoProject project, Clip clip, MediaAsset? asset, double sourceTime, SKImage image, PictureBox? box, int pictureWidth, int pictureHeight, double opacity, double time)
     {
         var placement = clip.Placement ?? Placement.Fit;
         var size = project.Canvas;
@@ -551,6 +606,27 @@ public sealed class FrameCompositor
         {
             var side = Math.Min(image.Width, image.Height);
             source = SKRect.Create((image.Width - side) / 2f, (image.Height - side) / 2f, side, side);
+        }
+
+        // Its motion turns and moves it about its middle as placed; a crop cuts both the picture and the place it goes.
+        var motion = clip.Motion?.At(time - clip.Start);
+        var saved = canvas.SaveCount;
+        if (motion is { } state)
+        {
+            canvas.Save();
+            canvas.Concat(MotionDrawing.Matrix(state, target, size));
+            opacity *= state.Opacity;
+            if (state.HasCrop)
+            {
+                var kept = MotionDrawing.Cropped(state, target);
+                var (acrossScale, downScale) = (source.Width / target.Width, source.Height / target.Height);
+                source = new SKRect(
+                    source.Left + ((kept.Left - target.Left) * acrossScale),
+                    source.Top + ((kept.Top - target.Top) * downScale),
+                    source.Right - ((target.Right - kept.Right) * acrossScale),
+                    source.Bottom - ((target.Bottom - kept.Bottom) * downScale));
+                target = kept;
+            }
         }
 
         var radius = Math.Max(box?.Radius ?? Radius(placement, target), DeviceFrames.PictureRadius(placement.Frame, target));
@@ -627,6 +703,8 @@ public sealed class FrameCompositor
             };
             canvas.DrawPath(outline, border);
         }
+
+        canvas.RestoreToCount(saved);
     }
 
     private static SKPath Rounded(SKRect area, float radius)

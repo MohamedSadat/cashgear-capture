@@ -52,12 +52,15 @@ public static class PlacementEdits
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(clip);
-        return project.Tracks.Any(t => t.Kind == TrackKind.Layout) && project.Find(clip.Id)?.Track is { } track ? Area(project, track, clip, time) : Area(project, clip);
+        return (clip.Motion is not null || project.Tracks.Any(t => t.Kind == TrackKind.Layout)) && project.Find(clip.Id)?.Track is { } track ? Area(project, track, clip, time) : Area(project, clip);
     }
 
     /// <summary>A clip's area on the canvas at <paramref name="time"/>, where the layout track puts it.</summary>
-    public static SKRect Area(VideoProject project, Track track, Clip clip, double time) =>
-        LayoutEngine.Box(project, track, clip, time) is { } box ? box.Area : Area(project, clip);
+    public static SKRect Area(VideoProject project, Track track, Clip clip, double time)
+    {
+        var area = LayoutEngine.Box(project, track, clip, time) is { } box ? box.Area : Area(project, clip);
+        return clip.Motion is { } motion ? MotionDrawing.Bounds(motion.At(time - clip.Start), area, project.Canvas) : area;
+    }
 
     /// <summary>The top annotation or picture clip at <paramref name="point"/> (canvas pixels) at <paramref name="time"/>, or null.</summary>
     /// <param name="grip">The grip's size in canvas pixels (larger when the preview is shown small).</param>
@@ -75,7 +78,7 @@ public static class PlacementEdits
             {
                 foreach (var item in track.Items.OfType<AnnotationItem>().Where(a => a.Covers(time)).Reverse())
                 {
-                    if (AnnotationEdits.HitTest(item, time, point, grip) is { } on)
+                    if (AnnotationEdits.HitTest(item, time, point, grip, project.Canvas) is { } on)
                     {
                         return new PreviewHit(item.Id, on);
                     }

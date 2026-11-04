@@ -428,6 +428,18 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(Position));
         OnPropertyChanged(nameof(TimeText));
         Transcript.PlayheadMoved(time);
+        RefreshMotionPanel();
+    }
+
+    /// <summary>The panel shows an item's motion at the playhead: when the item moves, it is made again as the playhead does.</summary>
+    private void RefreshMotionPanel()
+    {
+        if (!Engine.IsPlaying && Timeline.Selected is { } item && (MotionEdits.Of(item)?.KeyTimes().Count > 0 || item is AnnotationItem { Keyframes.Count: > 1 }))
+        {
+            _shown = null;
+            _applied = null;
+            RefreshProperties();
+        }
     }
 
     /// <summary>Plays from <paramref name="from"/> and stops at <paramref name="to"/> (a row of a review list).</summary>
@@ -505,7 +517,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             }
             else if (selected is AnnotationItem annotation)
             {
-                DrawSelection(canvas, annotation, Timeline.Playhead, scale, SelectionColor);
+                DrawSelection(canvas, annotation, Timeline.Playhead, scale, SelectionColor, size);
             }
         }
 
@@ -559,13 +571,29 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         {
             var placement = clip.Placement ?? Placement.Fit;
             var resize = drag.Grip != PreviewGrip.None;
-            item = clip with
-            {
-                Placement = resize
-                    ? PlacementEdits.Resize(placement, drag.Area, point)
-                    : PlacementEdits.Move(placement, Project.Canvas, point.X - drag.Start.X, point.Y - drag.Start.Y),
-            };
             name = resize ? VideoEditorText.UndoResizePicture : VideoEditorText.UndoMovePicture;
+            if (clip.Motion is { Animated: true } motion)
+            {
+                // While it animates, a drag makes a keyframe at the playhead, as the panel's values do.
+                var state = motion.At(Timeline.Playhead - clip.Start);
+                var size = Project.Canvas;
+                item = clip with
+                {
+                    Motion = resize
+                        ? MotionEdits.SetValue(motion, MotionLane.Scale, Timeline.Playhead - clip.Start, Math.Clamp(state.Scale * Math.Max(1e-3, Math.Max((point.X - drag.Area.MidX) / Math.Max(1, drag.Area.Width / 2), (point.Y - drag.Area.MidY) / Math.Max(1, drag.Area.Height / 2))), 0.01, 8), size.Fps)
+                        : MotionEdits.SetValue(MotionEdits.SetValue(motion, MotionLane.X, Timeline.Playhead - clip.Start, state.X + ((point.X - drag.Start.X) / size.Width), size.Fps), MotionLane.Y, Timeline.Playhead - clip.Start, state.Y + ((point.Y - drag.Start.Y) / size.Height), size.Fps),
+                };
+            }
+            else
+            {
+                item = clip with
+                {
+                    Placement = resize
+                        ? PlacementEdits.Resize(placement, drag.Area, point)
+                        : PlacementEdits.Move(placement, Project.Canvas, point.X - drag.Start.X, point.Y - drag.Start.Y),
+                };
+            }
+
         }
         else if (drag.Item is ZoomItem zoom)
         {
@@ -1732,7 +1760,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     private void RebuildTracks()
     {
         var rows = TimelineView.Rows(Project);
-        if (Tracks.Count == rows.Count && Tracks.Zip(rows).All(p => p.First.Track.Id == p.Second.Track.Id))
+        if (Tracks.Count == rows.Count && Tracks.Zip(rows).All(p => p.First.Track.Id == p.Second.Track.Id && p.First.Height == p.Second.Height))
         {
             foreach (var (header, row) in Tracks.Zip(rows))
             {
@@ -1778,7 +1806,8 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         {
             var actions = new ItemProperties.ClipActions(SetSpeed, SetFreezeLength, CrossfadeFrom, RemoveCrossfadeFrom);
             var captions = new ItemProperties.CaptionActions(SplitCaption, MergeCaption, ChangeCaptionStyle);
-            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions, captions, _services.Gate, PickPicture, (asset, name, key) => History.Apply(name, Project.WithAsset(asset), key)))
+            var motion = new ItemProperties.MotionActions(() => Timeline.Playhead, Seek, SetMovesWithZoom, Project.Canvas.Fps);
+            foreach (var parameter in ItemProperties.For(Project, item, () => Project, ApplyProperty, new ItemProperties.Keyframes(AddKeyframe, RemoveKeyframe), actions, captions, _services.Gate, PickPicture, (asset, name, key) => History.Apply(name, Project.WithAsset(asset), key), motion))
             {
                 Properties.Add(parameter);
             }
@@ -1786,6 +1815,15 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
 
         PropertiesTitle = item is null ? "" : ItemProperties.Title(Project, item);
         OnPropertyChanged(nameof(HasProperties));
+    }
+
+    private void SetMovesWithZoom(string trackId, bool moves)
+    {
+        if (Project.Track(trackId) is { } track)
+        {
+            _applied = Timeline.Selected;
+            History.Apply(VideoEditorText.UndoMovesWithZoom, Project.WithTrack(track with { MovesWithZoom = moves }));
+        }
     }
 
     private void ApplyProperty(TimelineItem item, string name, string mergeKey)
@@ -1858,11 +1896,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>An annotation's outline (or, for a line, its two ends) and grips.</summary>
-    private static void DrawSelection(SKCanvas canvas, AnnotationItem item, double time, float scale, SKColor color)
+    private static void DrawSelection(SKCanvas canvas, AnnotationItem item, double time, float scale, SKColor color, ProjectCanvas? canvasSize = null)
     {
         if (!item.IsLine)
         {
-            DrawSelection(canvas, FrameCompositor.Bounds(item, time), scale, corner: item.Shape != AnnotationShape.Text, color);
+            DrawSelection(canvas, canvasSize is null ? FrameCompositor.Bounds(item, time) : FrameCompositor.Bounds(item, time, canvasSize), scale, corner: item.Shape != AnnotationShape.Text, color);
             return;
         }
 

@@ -27,7 +27,11 @@ public enum Easing
 /// Where an annotation is <see cref="Time"/> seconds after it starts, in canvas pixels: its box (a text's top-left
 /// corner is (<see cref="X"/>, <see cref="Y"/>)), or, for a line or an arrow, from (X, Y) to (X + Width, Y + Height).
 /// </summary>
-public sealed record AnnotationKeyframe(double Time, double X, double Y, double Width, double Height);
+/// <param name="Color">Its colour here (<c>#RRGGBB</c>), going to the next keyframe's (null: the look's).</param>
+/// <param name="Opacity">Its opacity here, 0 to 1 (null: the look's).</param>
+/// <param name="Ease">How it goes on from here (null: the annotation's <see cref="AnnotationItem.Easing"/>).</param>
+/// <param name="Curve">A <see cref="MotionEasing.Bezier"/>'s x1, y1, x2, y2.</param>
+public sealed record AnnotationKeyframe(double Time, double X, double Y, double Width, double Height, string? Color = null, double? Opacity = null, MotionEasing? Ease = null, IReadOnlyList<double>? Curve = null);
 
 /// <summary>How an annotation looks: colours as <c>#RRGGBB</c>, sizes in canvas pixels.</summary>
 /// <param name="Fill">A rectangle's, an ellipse's or a text's background (null: none).</param>
@@ -73,6 +77,9 @@ public sealed record AnnotationItem : TimelineItem
 
     public double FadeOut { get; init; }
 
+    /// <summary>Its position, scale, rotation, opacity and crop over time, on top of its keyframes (null: none).</summary>
+    public ItemMotion? Motion { get; init; }
+
     [System.Text.Json.Serialization.JsonIgnore]
     public override double Duration => Length;
 
@@ -102,7 +109,11 @@ public sealed record AnnotationItem : TimelineItem
                 var previous = Keyframes[i - 1];
                 var span = next.Time - previous.Time;
                 var t = span <= 0 ? 1 : (into - previous.Time) / span;
-                if (Easing == Easing.Smooth)
+                if (previous.Ease is { } own)
+                {
+                    t = MotionCurves.Ease(own, t, previous.Curve);
+                }
+                else if (Easing == Easing.Smooth)
                 {
                     t = t * t * (3 - (2 * t)); // smoothstep: eases in and out
                 }
@@ -112,11 +123,29 @@ public sealed record AnnotationItem : TimelineItem
                     previous.X + ((next.X - previous.X) * t),
                     previous.Y + ((next.Y - previous.Y) * t),
                     previous.Width + ((next.Width - previous.Width) * t),
-                    previous.Height + ((next.Height - previous.Height) * t));
+                    previous.Height + ((next.Height - previous.Height) * t),
+                    MixedColor(previous.Color, next.Color, t),
+                    previous.Opacity is null && next.Opacity is null ? null : (previous.Opacity ?? Look.Opacity) + (((next.Opacity ?? Look.Opacity) - (previous.Opacity ?? Look.Opacity)) * t));
             }
         }
 
         return Keyframes[^1] with { Time = into };
+    }
+
+    /// <summary>A colour between two keyframes' (<c>#RRGGBB</c>), or null when neither has one of its own.</summary>
+    private string? MixedColor(string? from, string? to, double t)
+    {
+        if (from is null && to is null)
+        {
+            return null;
+        }
+
+        static (int R, int G, int B) Parts(string text) => text.Length >= 7
+            ? (Convert.ToInt32(text[^6..^4], 16), Convert.ToInt32(text[^4..^2], 16), Convert.ToInt32(text[^2..], 16))
+            : (0, 0, 0);
+        var (a, b) = (Parts(from ?? Look.Color), Parts(to ?? Look.Color));
+        int Mix(int x, int y) => (int)Math.Round(Math.Clamp(x + ((y - x) * t), 0, 255));
+        return string.Create(System.Globalization.CultureInfo.InvariantCulture, $"#{Mix(a.R, b.R):X2}{Mix(a.G, b.G):X2}{Mix(a.B, b.B):X2}");
     }
 
     /// <summary>Its level at <paramref name="time"/> from the fades (0 to 1).</summary>
@@ -211,10 +240,11 @@ public sealed record AnnotationItem : TimelineItem
             Keyframes = Keyframes.Count > 1 ? keyframes : [Keyframes.Count == 1 ? Keyframes[0] with { Time = 0 } : keyframes[0]],
             FadeIn = KeptFade(FadeIn, from <= Start + Times.Epsilon, length),
             FadeOut = KeptFade(FadeOut, to >= End - Times.Epsilon, length),
+            Motion = Motion?.Sliced(shift, length),
         };
     }
 
     public override TimelineItem Lengthen(ItemEdge edge, double more) => edge == ItemEdge.Start
-        ? this with { Start = Times.Round(Start - more), Length = Times.Round(Length + more), Keyframes = [.. Keyframes.Select(k => k with { Time = Times.Round(k.Time + more) })] }
+        ? this with { Start = Times.Round(Start - more), Length = Times.Round(Length + more), Keyframes = [.. Keyframes.Select(k => k with { Time = Times.Round(k.Time + more) })], Motion = Motion?.Shifted(more) }
         : this with { Length = Times.Round(Length + more) };
 }

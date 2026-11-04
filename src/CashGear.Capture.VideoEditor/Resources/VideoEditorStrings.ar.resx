@@ -234,4 +234,7 @@
   <data name="NotAPicture" xml:space="preserve">
     <value>{0} ليس صورة يستطيع هذا التطبيق قراءتها.</value>
   </data>
+  <data name="UndoMoveKeyframe" xml:space="preserve">
+    <value>نقل إطار رئيسي</value>
+  </data>
 </root>

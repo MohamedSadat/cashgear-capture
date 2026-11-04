@@ -28,6 +28,7 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
         TrimStart,
         TrimEnd,
         Range,
+        Keyframe,
     }
 
     private Drag _drag;
@@ -37,6 +38,7 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
     private double _anchor;
     private int _drags;
     private double _playhead;
+    private double _keyframe;
 
     /// <summary>The selection, the range or the playhead changed.</summary>
     public event EventHandler? Changed;
@@ -248,6 +250,16 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
         var hit = View.HitTest(project, x, y);
         _base = project;
         _drags++;
+        if (View.KeyframeAt(project, x, y, SelectedId) is { } key && project.Find(key.ItemId) is { Track.Locked: false, Item: var keyed })
+        {
+            _item = keyed;
+            _keyframe = key.Time;
+            _drag = Drag.Keyframe;
+            Select(key.ItemId);
+            Scrub(keyed.Start + key.Time);
+            return;
+        }
+
         switch (hit.Kind)
         {
             case TimelineHitKind.Ruler when shift:
@@ -296,6 +308,12 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
                 break;
             case Drag.Move when _item is not null:
                 Move(time - _grabOffset, alt);
+                break;
+            case Drag.Keyframe when _item is not null:
+                var fps = _base.Canvas.Fps;
+                var moved = Times.Round(Math.Clamp(alt ? time : Times.NearestFrame(time, fps), _item.Start, _item.End) - _item.Start);
+                History.Apply(VideoEditorStrings.UndoMoveKeyframe, _base.WithItem(MotionEdits.MoveKeyframesOf(_item, _keyframe, moved, fps)), $"drag {_drags}");
+                Scrub(_item.Start + moved);
                 break;
             case Drag.TrimStart or Drag.TrimEnd when _item is not null:
                 var edge = _drag == Drag.TrimStart ? ItemEdge.Start : ItemEdge.End;

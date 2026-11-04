@@ -1869,4 +1869,100 @@
   <data name="ClipLength" xml:space="preserve">
     <value>المدة</value>
   </data>
+  <data name="MotionAcross" xml:space="preserve">
+    <value>الإزاحة أفقيًا</value>
+  </data>
+  <data name="MotionDown" xml:space="preserve">
+    <value>الإزاحة رأسيًا</value>
+  </data>
+  <data name="MotionScale" xml:space="preserve">
+    <value>المقياس</value>
+  </data>
+  <data name="MotionRotation" xml:space="preserve">
+    <value>الدوران</value>
+  </data>
+  <data name="MotionOpacity" xml:space="preserve">
+    <value>عتامة الحركة</value>
+  </data>
+  <data name="CropLeft" xml:space="preserve">
+    <value>اقتصاص من اليسار</value>
+  </data>
+  <data name="CropTop" xml:space="preserve">
+    <value>اقتصاص من الأعلى</value>
+  </data>
+  <data name="CropRight" xml:space="preserve">
+    <value>اقتصاص من اليمين</value>
+  </data>
+  <data name="CropBottom" xml:space="preserve">
+    <value>اقتصاص من الأسفل</value>
+  </data>
+  <data name="MotionTitle" xml:space="preserve">
+    <value>الحركة عند مؤشر التشغيل</value>
+  </data>
+  <data name="MotionAnimated" xml:space="preserve">
+    <value>التغييرات تُنشئ إطارات رئيسية</value>
+  </data>
+  <data name="MotionNote" xml:space="preserve">
+    <value>عند الإيقاف تسري القيمة على العنصر كله. وعند التشغيل يُنشئ تغيير القيمة إطارًا رئيسيًا عند مؤشر التشغيل، ويتحرك العنصر بين الإطارات الرئيسية.</value>
+  </data>
+  <data name="AddMotionKeyframe" xml:space="preserve">
+    <value>إضافة إطار رئيسي هنا</value>
+  </data>
+  <data name="RemoveMotionKeyframe" xml:space="preserve">
+    <value>إزالة الإطار الرئيسي هنا</value>
+  </data>
+  <data name="PreviousKeyframe" xml:space="preserve">
+    <value>الإطار الرئيسي السابق</value>
+  </data>
+  <data name="NextKeyframe" xml:space="preserve">
+    <value>الإطار الرئيسي التالي</value>
+  </data>
+  <data name="KeyframeEasing" xml:space="preserve">
+    <value>من هذا الإطار الرئيسي فصاعدًا</value>
+  </data>
+  <data name="EasingLinear" xml:space="preserve">
+    <value>منتظم</value>
+  </data>
+  <data name="EasingIn" xml:space="preserve">
+    <value>بدء تدريجي</value>
+  </data>
+  <data name="EasingOut" xml:space="preserve">
+    <value>انتهاء تدريجي</value>
+  </data>
+  <data name="EasingInOut" xml:space="preserve">
+    <value>بدء وانتهاء تدريجيان</value>
+  </data>
+  <data name="EasingSpring" xml:space="preserve">
+    <value>نابض</value>
+  </data>
+  <data name="EasingBezier" xml:space="preserve">
+    <value>منحنى خاص</value>
+  </data>
+  <data name="BezierX1" xml:space="preserve">
+    <value>المنحنى: النقطة الأولى أفقيًا</value>
+  </data>
+  <data name="BezierY1" xml:space="preserve">
+    <value>المنحنى: النقطة الأولى رأسيًا</value>
+  </data>
+  <data name="BezierX2" xml:space="preserve">
+    <value>المنحنى: النقطة الثانية أفقيًا</value>
+  </data>
+  <data name="BezierY2" xml:space="preserve">
+    <value>المنحنى: النقطة الثانية رأسيًا</value>
+  </data>
+  <data name="KeyframeColour" xml:space="preserve">
+    <value>اللون عند هذا الإطار الرئيسي</value>
+  </data>
+  <data name="KeyframeOpacity" xml:space="preserve">
+    <value>العتامة عند هذا الإطار الرئيسي</value>
+  </data>
+  <data name="MovesWithZoom" xml:space="preserve">
+    <value>يتحرك مع التكبير (هذا المسار)</value>
+  </data>
+  <data name="UndoMotion" xml:space="preserve">
+    <value>الحركة</value>
+  </data>
+  <data name="UndoMovesWithZoom" xml:space="preserve">
+    <value>التحرك مع التكبير</value>
+  </data>
 </root>

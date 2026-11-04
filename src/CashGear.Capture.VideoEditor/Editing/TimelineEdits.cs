@@ -288,13 +288,14 @@ public static class TimelineEdits
         return item switch
         {
             Clip { IsFreeze: true } freeze => edge == ItemEdge.Start
-                ? freeze with { Start = time, FreezeLength = Times.Round(freeze.FreezeLength + more) }
+                ? freeze with { Start = time, FreezeLength = Times.Round(freeze.FreezeLength + more), Motion = freeze.Motion?.Shifted(more) }
                 : freeze with { FreezeLength = Times.Round(freeze.FreezeLength + more) },
             Clip clip when edge == ItemEdge.Start => clip with
             {
                 Start = time,
                 SourceIn = Times.Round(Math.Max(0, clip.SourceIn - (more * clip.Speed))),
                 EndSpeed = clip.IsRamp ? clip.EndSpeed : null,
+                Motion = clip.Motion?.Shifted(more),
             },
             Clip clip => clip with { SourceOut = Times.Round(clip.SourceOut + (more * (clip.EndSpeed ?? clip.Speed))) },
             _ => item.Lengthen(edge, more),

@@ -300,4 +300,7 @@
   <data name="NotAPicture" xml:space="preserve">
     <value>{0} isn't a picture this app can read.</value>
   </data>
+  <data name="UndoMoveKeyframe" xml:space="preserve">
+    <value>Move a Keyframe</value>
+  </data>
 </root>

@@ -25,7 +25,8 @@ public enum TimelineHitKind
 public readonly record struct TimelineHit(TimelineHitKind Kind, double Time, string? TrackId = null, string? ItemId = null);
 
 /// <summary>A track's row: its place from the top of the rows (top layer first, sound at the bottom).</summary>
-public sealed record TrackRow(Track Track, double Top, double Height);
+/// <param name="Lane">The strip at the bottom of the row's height showing its items' keyframes (0: none has any).</param>
+public sealed record TrackRow(Track Track, double Top, double Height, double Lane = 0);
 
 /// <summary>
 /// The timeline's geometry in view pixels: the ruler on top, then a row per track, the top picture layer first and
@@ -40,9 +41,15 @@ public sealed class TimelineView
     public const double SoundRowHeight = 44;
     public const double OtherRowHeight = 32;
 
+    /// <summary>The strip under a track's items with their keyframes.</summary>
+    public const double KeyframeLaneHeight = 18;
+
     /// <summary>How close (pixels) an edge must be to grab it, and a time to snap to it.</summary>
     public const double EdgeGrab = 6;
     public const double SnapDistance = 8;
+
+    /// <summary>How close (pixels) the pointer must be to a keyframe's diamond.</summary>
+    public const double KeyframeGrab = 6;
 
     public const double MinPixelsPerSecond = 0.5;
     public const double MaxPixelsPerSecond = 2000;
@@ -100,8 +107,9 @@ public sealed class TimelineView
         var top = 0.0;
         foreach (var track in project.Tracks.Where(t => !t.HasSound).Reverse().Concat(project.Tracks.Where(t => t.HasSound)))
         {
-            var height = track.HasPictures ? PictureRowHeight : track.HasSound ? SoundRowHeight : OtherRowHeight;
-            rows.Add(new TrackRow(track, top, height));
+            var lane = track.Items.Any(i => Editing.MotionEdits.KeyTimes(i).Count > 0) ? KeyframeLaneHeight : 0;
+            var height = (track.HasPictures ? PictureRowHeight : track.HasSound ? SoundRowHeight : OtherRowHeight) + lane;
+            rows.Add(new TrackRow(track, top, height, lane));
             top += height;
         }
 
@@ -169,6 +177,36 @@ public sealed class TimelineView
         }
 
         return new TimelineHit(TimelineHitKind.Track, time, row.Track.Id);
+    }
+
+    /// <summary>
+    /// The keyframe diamond at a point of a row's lane: the item it belongs to and its time from the item's start, or
+    /// null. An item's keyframes are found first when it is <paramref name="selected"/>.
+    /// </summary>
+    public (string ItemId, double Time)? KeyframeAt(VideoProject project, double x, double y, string? selected = null)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        if (RowAt(project, y) is not { Lane: > 0 } row || y < RowTop(row) + row.Height - row.Lane)
+        {
+            return null;
+        }
+
+        (string, double)? best = null;
+        var nearest = KeyframeGrab;
+        foreach (var item in row.Track.Items)
+        {
+            foreach (var time in Editing.MotionEdits.KeyTimes(item))
+            {
+                var distance = Math.Abs(X(item.Start + time) - x) - (item.Id == selected ? 0.5 : 0);
+                if (distance <= nearest)
+                {
+                    best = (item.Id, time);
+                    nearest = distance;
+                }
+            }
+        }
+
+        return best;
     }
 
     /// <summary>

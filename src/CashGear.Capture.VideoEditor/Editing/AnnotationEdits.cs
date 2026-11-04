@@ -90,9 +90,20 @@ public static class AnnotationEdits
     }
 
     /// <summary>Whether <paramref name="point"/> is on the annotation at <paramref name="time"/>, and on which grip.</summary>
-    public static PreviewGrip? HitTest(AnnotationItem item, double time, SKPoint point, double grip)
+    public static PreviewGrip? HitTest(AnnotationItem item, double time, SKPoint point, double grip, ProjectCanvas? canvas = null)
     {
         ArgumentNullException.ThrowIfNull(item);
+        if (item.Motion is { } motion && canvas is not null)
+        {
+            // Where the pointer is on the annotation as it would be without its motion.
+            if (!MotionDrawing.Matrix(motion.At(time - item.Start), FrameCompositor.Bounds(item, time), canvas).TryInvert(out var back))
+            {
+                return null;
+            }
+
+            point = back.MapPoint(point);
+        }
+
         var place = item.At(time);
         if (item.IsLine)
         {

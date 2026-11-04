@@ -169,6 +169,9 @@ public sealed record Clip : TimelineItem
 
     public string? Link { get; init; }
 
+    /// <summary>Its position, scale, rotation, opacity and crop over time, on top of its placement (null: as placed).</summary>
+    public ItemMotion? Motion { get; init; }
+
     /// <summary>A plain colour (<c>#RRGGBB</c> or <c>#AARRGGBB</c>) instead of media: <see cref="AssetId"/> is empty and <see cref="FreezeLength"/> says how long it lasts.</summary>
     public string? Solid { get; init; }
 
@@ -195,7 +198,7 @@ public sealed record Clip : TimelineItem
         var length = Math.Max(0, to - from);
         var keepsStart = from <= Start + Times.Epsilon;
         var keepsEnd = to >= End - Times.Epsilon;
-        var fades = this with { FadeIn = KeptFade(FadeIn, keepsStart, length), FadeOut = KeptFade(FadeOut, keepsEnd, length) };
+        var fades = this with { FadeIn = KeptFade(FadeIn, keepsStart, length), FadeOut = KeptFade(FadeOut, keepsEnd, length), Motion = Motion?.Sliced(from - Start, length) };
         if (IsFreeze)
         {
             return fades with { Start = from, FreezeLength = length };

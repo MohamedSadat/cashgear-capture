@@ -2138,4 +2138,100 @@
   <data name="ClipLength" xml:space="preserve">
     <value>Length</value>
   </data>
+  <data name="MotionAcross" xml:space="preserve">
+    <value>Moved across</value>
+  </data>
+  <data name="MotionDown" xml:space="preserve">
+    <value>Moved down</value>
+  </data>
+  <data name="MotionScale" xml:space="preserve">
+    <value>Scale</value>
+  </data>
+  <data name="MotionRotation" xml:space="preserve">
+    <value>Rotation</value>
+  </data>
+  <data name="MotionOpacity" xml:space="preserve">
+    <value>Motion opacity</value>
+  </data>
+  <data name="CropLeft" xml:space="preserve">
+    <value>Crop on the left</value>
+  </data>
+  <data name="CropTop" xml:space="preserve">
+    <value>Crop at the top</value>
+  </data>
+  <data name="CropRight" xml:space="preserve">
+    <value>Crop on the right</value>
+  </data>
+  <data name="CropBottom" xml:space="preserve">
+    <value>Crop at the bottom</value>
+  </data>
+  <data name="MotionTitle" xml:space="preserve">
+    <value>Motion at the playhead</value>
+  </data>
+  <data name="MotionAnimated" xml:space="preserve">
+    <value>Changes make keyframes</value>
+  </data>
+  <data name="MotionNote" xml:space="preserve">
+    <value>Off, a value holds for the whole item. On, changing a value makes a keyframe at the playhead, and the item moves between keyframes.</value>
+  </data>
+  <data name="AddMotionKeyframe" xml:space="preserve">
+    <value>Add a Keyframe Here</value>
+  </data>
+  <data name="RemoveMotionKeyframe" xml:space="preserve">
+    <value>Remove the Keyframe Here</value>
+  </data>
+  <data name="PreviousKeyframe" xml:space="preserve">
+    <value>Previous Keyframe</value>
+  </data>
+  <data name="NextKeyframe" xml:space="preserve">
+    <value>Next Keyframe</value>
+  </data>
+  <data name="KeyframeEasing" xml:space="preserve">
+    <value>From this keyframe on</value>
+  </data>
+  <data name="EasingLinear" xml:space="preserve">
+    <value>Even</value>
+  </data>
+  <data name="EasingIn" xml:space="preserve">
+    <value>Ease in</value>
+  </data>
+  <data name="EasingOut" xml:space="preserve">
+    <value>Ease out</value>
+  </data>
+  <data name="EasingInOut" xml:space="preserve">
+    <value>Ease in and out</value>
+  </data>
+  <data name="EasingSpring" xml:space="preserve">
+    <value>Spring</value>
+  </data>
+  <data name="EasingBezier" xml:space="preserve">
+    <value>Your own curve</value>
+  </data>
+  <data name="BezierX1" xml:space="preserve">
+    <value>Curve: first point across</value>
+  </data>
+  <data name="BezierY1" xml:space="preserve">
+    <value>Curve: first point up</value>
+  </data>
+  <data name="BezierX2" xml:space="preserve">
+    <value>Curve: second point across</value>
+  </data>
+  <data name="BezierY2" xml:space="preserve">
+    <value>Curve: second point up</value>
+  </data>
+  <data name="KeyframeColour" xml:space="preserve">
+    <value>Colour at this keyframe</value>
+  </data>
+  <data name="KeyframeOpacity" xml:space="preserve">
+    <value>Opacity at this keyframe</value>
+  </data>
+  <data name="MovesWithZoom" xml:space="preserve">
+    <value>Moves with zooms (this track)</value>
+  </data>
+  <data name="UndoMotion" xml:space="preserve">
+    <value>Motion</value>
+  </data>
+  <data name="UndoMovesWithZoom" xml:space="preserve">
+    <value>Moves with Zooms</value>
+  </data>
 </root>

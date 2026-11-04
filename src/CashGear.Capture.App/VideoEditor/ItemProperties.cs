@@ -39,6 +39,12 @@ public static class ItemProperties
     /// </summary>
     public sealed record CaptionActions(Action<string> Split, Action<string> Merge, Action<string, Func<CaptionStyle, CaptionStyle>, string, string> ChangeStyle);
 
+    /// <summary>
+    /// What a picture's or an annotation's motion needs of the window: the playhead's time, going to a time (the next
+    /// keyframe), and the track's switch for moving with zooms.
+    /// </summary>
+    public sealed record MotionActions(Func<double> Playhead, Action<double> Seek, Action<string, bool> SetMovesWithZoom, int Fps);
+
     private static readonly Lazy<IReadOnlyList<string>> FontFamilies =
         new(() => [.. System.Windows.Media.Fonts.SystemFontFamilies.Select(f => f.Source).Order(StringComparer.CurrentCultureIgnoreCase)]);
 
@@ -79,7 +85,7 @@ public static class ItemProperties
         };
     }
 
-    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null, ClipActions? actions = null, CaptionActions? captions = null, IFeatureGate? features = null, Func<string?>? pickPicture = null, Action<MediaAsset, string, string>? addAsset = null)
+    public static IReadOnlyList<EditParameter> For(VideoProject project, TimelineItem item, Func<VideoProject> current, Apply apply, Keyframes? keyframes = null, ClipActions? actions = null, CaptionActions? captions = null, IFeatureGate? features = null, Func<string?>? pickPicture = null, Action<MediaAsset, string, string>? addAsset = null, MotionActions? motion = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(item);
@@ -93,7 +99,13 @@ public static class ItemProperties
 
         if (item is AnnotationItem annotation)
         {
-            return ForAnnotation(annotation, current, apply, keyframes);
+            var settings = ForAnnotation(annotation, current, apply, keyframes, motion);
+            if (motion is not null && project.Find(annotation.Id) is { Track: var written })
+            {
+                AddMotion(annotation, written, settings, current, apply, motion);
+            }
+
+            return settings;
         }
 
         if (item is EffectItem effect)
@@ -250,9 +262,142 @@ public static class ItemProperties
             {
                 AddBackdrop(clip, list, current, apply, pickPicture, addAsset);
             }
+
+            if (motion is not null)
+            {
+                AddMotion(clip, found.Track, list, current, apply, motion);
+            }
         }
 
         return list;
+    }
+
+    /// <summary>
+    /// A picture's or an annotation's position, scale, rotation, opacity and crop at the playhead; while it animates each
+    /// change makes a keyframe there. The easing is the keyframe's at or before the playhead, for the way to the next.
+    /// </summary>
+    private static void AddMotion(TimelineItem item, Track track, IList<EditParameter> list, Func<VideoProject> current, Apply apply, MotionActions actions)
+    {
+        var motion = MotionEdits.Of(item);
+        var into = actions.Playhead() - item.Start;
+        var state = motion?.At(into) ?? MotionState.Identity;
+        list.Add(new NoteParameter(VideoEditorText.MotionTitle));
+
+        void Change(string key, Func<ItemMotion?, ItemMotion> update)
+        {
+            if (current().Find(item.Id)?.Item is { } now)
+            {
+                apply(MotionEdits.With(now, update(MotionEdits.Of(now))), VideoEditorText.UndoMotion, $"property {item.Id} motion {key} {Math.Round(actions.Playhead() * 1000)}");
+            }
+        }
+
+        void Number(string label, MotionLane lane, double scale, double minimum, double maximum, double step, string unit)
+        {
+            var parameter = new NumberParameter(label, minimum, maximum, Math.Round(state.Of(lane) * scale, 3), step, unit);
+            parameter.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Value")
+                {
+                    Change(lane.ToString(), m => MotionEdits.SetValue(m, lane, actions.Playhead() - item.Start, parameter.Value / scale, actions.Fps));
+                }
+            };
+            list.Add(parameter);
+        }
+
+        Number(VideoEditorText.MotionAcross, MotionLane.X, 100, -150, 150, 1, " %");
+        Number(VideoEditorText.MotionDown, MotionLane.Y, 100, -150, 150, 1, " %");
+        Number(VideoEditorText.MotionScale, MotionLane.Scale, 100, 1, 800, 1, " %");
+        Number(VideoEditorText.MotionRotation, MotionLane.Rotation, 1, -720, 720, 1, "°");
+        Number(VideoEditorText.MotionOpacity, MotionLane.Opacity, 100, 0, 100, 1, " %");
+        Number(VideoEditorText.CropLeft, MotionLane.CropLeft, 100, 0, 95, 1, " %");
+        Number(VideoEditorText.CropTop, MotionLane.CropTop, 100, 0, 95, 1, " %");
+        Number(VideoEditorText.CropRight, MotionLane.CropRight, 100, 0, 95, 1, " %");
+        Number(VideoEditorText.CropBottom, MotionLane.CropBottom, 100, 0, 95, 1, " %");
+
+        var animated = new SwitchParameter(VideoEditorText.MotionAnimated, motion?.Animated == true);
+        animated.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Value")
+            {
+                Change("animated", m => animated.Value ? MotionEdits.AddKeyframe(m, actions.Playhead() - item.Start, actions.Fps) : (m ?? new ItemMotion()) with { Animated = false });
+            }
+        };
+        list.Add(animated);
+        list.Add(new NoteParameter(VideoEditorText.MotionNote));
+        list.Add(new ActionParameter(VideoEditorText.AddMotionKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(() => Change("add", m => MotionEdits.AddKeyframe(m, actions.Playhead() - item.Start, actions.Fps)))));
+        list.Add(new ActionParameter(VideoEditorText.RemoveMotionKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(() => Change("remove", m => MotionEdits.RemoveKeyframe(m, actions.Playhead() - item.Start, actions.Fps)))));
+        void Jump(bool backward)
+        {
+            if (current().Find(item.Id)?.Item is { } now && MotionEdits.NextKeyframe(now, actions.Playhead() - now.Start, backward, actions.Fps) is { } time)
+            {
+                actions.Seek(now.Start + time);
+            }
+        }
+
+        list.Add(new ActionParameter(VideoEditorText.PreviousKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(() => Jump(backward: true))));
+        list.Add(new ActionParameter(VideoEditorText.NextKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(() => Jump(backward: false))));
+
+        var (easing, curve) = MotionEdits.EasingAt(motion, into, actions.Fps);
+        var choice = new ChoiceParameter(
+            VideoEditorText.KeyframeEasing,
+            [
+                new(MotionEasing.Linear, VideoEditorText.EasingLinear),
+                new(MotionEasing.EaseIn, VideoEditorText.EasingIn),
+                new(MotionEasing.EaseOut, VideoEditorText.EasingOut),
+                new(MotionEasing.EaseInOut, VideoEditorText.EasingInOut),
+                new(MotionEasing.Spring, VideoEditorText.EasingSpring),
+                new(MotionEasing.Bezier, VideoEditorText.EasingBezier),
+            ],
+            easing);
+        var isCurve = easing == MotionEasing.Bezier;
+        double[] points = curve is { Count: 4 } ? [curve[0], curve[1], curve[2], curve[3]] : [0.25, 0.1, 0.25, 1];
+        var x1 = new NumberParameter(VideoEditorText.BezierX1, 0, 1, points[0], 0.01) { IsVisible = isCurve };
+        var y1 = new NumberParameter(VideoEditorText.BezierY1, -1, 2, points[1], 0.01) { IsVisible = isCurve };
+        var x2 = new NumberParameter(VideoEditorText.BezierX2, 0, 1, points[2], 0.01) { IsVisible = isCurve };
+        var y2 = new NumberParameter(VideoEditorText.BezierY2, -1, 2, points[3], 0.01) { IsVisible = isCurve };
+        void SetEasing()
+        {
+            var chosen = choice.As<MotionEasing>();
+            foreach (var point in new[] { x1, y1, x2, y2 })
+            {
+                point.IsVisible = chosen == MotionEasing.Bezier;
+            }
+
+            Change("easing", m => MotionEdits.SetEasing(m ?? new ItemMotion(), actions.Playhead() - item.Start, chosen, [x1.Value, y1.Value, x2.Value, y2.Value], actions.Fps));
+        }
+
+        choice.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == "Selected")
+            {
+                SetEasing();
+            }
+        };
+        list.Add(choice);
+        foreach (var point in new[] { x1, y1, x2, y2 })
+        {
+            point.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Value")
+                {
+                    SetEasing();
+                }
+            };
+            list.Add(point);
+        }
+
+        if (track.Kind != TrackKind.Video)
+        {
+            var follows = new SwitchParameter(VideoEditorText.MovesWithZoom, track.MovesWithZoom);
+            follows.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Value")
+                {
+                    actions.SetMovesWithZoom(track.Id, follows.Value);
+                }
+            };
+            list.Add(follows);
+        }
     }
 
     /// <summary>A placement with a shadow of this strength: a soft one in proportion to the canvas when it had none, none at 0.</summary>
@@ -536,7 +681,7 @@ public static class ItemProperties
         return list;
     }
 
-    private static IReadOnlyList<EditParameter> ForAnnotation(AnnotationItem annotation, Func<VideoProject> current, Apply apply, Keyframes? keyframes)
+    private static List<EditParameter> ForAnnotation(AnnotationItem annotation, Func<VideoProject> current, Apply apply, Keyframes? keyframes, MotionActions? motion)
     {
         var list = new List<EditParameter>();
         void Change<T>(T parameter, [Localizable(false)] string key, string name, Func<AnnotationItem, AnnotationItem> update)
@@ -603,6 +748,31 @@ public static class ItemProperties
         {
             list.Add(new ActionParameter(VideoEditorText.AddKeyframe(annotation.Keyframes.Count), new CommunityToolkit.Mvvm.Input.RelayCommand(keyframes.Add)));
             list.Add(new ActionParameter(VideoEditorText.RemoveKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(keyframes.Remove)));
+        }
+
+        // On a keyframe of a moving annotation: its colour and opacity there, which the annotation goes between.
+        if (motion is not null && annotation.Keyframes.Count > 1 && annotation.KeyframeAt(motion.Playhead(), motion.Fps) is >= 0 and var at)
+        {
+            var key = annotation.Keyframes[at];
+            AnnotationItem At(AnnotationItem now, Func<AnnotationKeyframe, AnnotationKeyframe> update)
+            {
+                var keys = now.Keyframes.ToList();
+                if (at < keys.Count)
+                {
+                    keys[at] = update(keys[at]);
+                }
+
+                return now with { Keyframes = keys };
+            }
+
+            if (!hidden)
+            {
+                var keyColor = new ColorParameter(VideoEditorText.KeyframeColour, FrameCompositor.Color(key.Color ?? look.Color, SKColors.Red));
+                Change(keyColor, "keyframe colour", VideoEditorText.UndoColour, a => At(a, k => k with { Color = Hex(keyColor.Value.Value) }));
+            }
+
+            var keyOpacity = new NumberParameter(VideoEditorText.KeyframeOpacity, 0, 100, (key.Opacity ?? look.Opacity) * 100, 1, " %");
+            Change(keyOpacity, "keyframe opacity", VideoEditorText.UndoOpacity, a => At(a, k => k with { Opacity = keyOpacity.Value / 100 }));
         }
 
         return list;

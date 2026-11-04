@@ -81,6 +81,7 @@ public enum TrackKind
 /// <param name="Hidden">A picture track that isn't drawn (a webcam that is already in the screen's pictures).</param>
 /// <param name="Volume">The track's sound level: 1 is as recorded, up to 2.</param>
 /// <param name="Captions">How a caption track's captions look (null: the default look).</param>
+/// <param name="MovesWithZoom">A webcam, media or annotation track that the zooms' camera moves too, as it moves the screen. By default they stay where they are on the canvas.</param>
 public sealed record Track(
     string Id,
     TrackKind Kind,
@@ -91,7 +92,8 @@ public sealed record Track(
     bool Locked = false,
     bool Hidden = false,
     double Volume = 1,
-    CaptionStyle? Captions = null)
+    CaptionStyle? Captions = null,
+    bool MovesWithZoom = false)
 {
     [JsonIgnore]
     public bool HasPictures => Kind is TrackKind.Video or TrackKind.Webcam or TrackKind.Media;

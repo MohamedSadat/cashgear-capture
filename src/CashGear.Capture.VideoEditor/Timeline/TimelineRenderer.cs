@@ -216,7 +216,7 @@ public sealed class TimelineRenderer : IDisposable
                 continue;
             }
 
-            var box = new SKRect(left, top + 3, Math.Max(left + 2, right), top + height - 3);
+            var box = new SKRect(left, top + 3, Math.Max(left + 2, right), top + height - (float)row.Lane - 3);
             var isSelected = item.Id == selected;
             var fill = isSelected && Colors.SelectedItem.Alpha > 0 ? Colors.SelectedItem : dimmed ? color.WithAlpha(0x70) : color;
             var label = isSelected && Colors.SelectedItem.Alpha > 0 ? Colors.SelectedLabel : dimmed ? Colors.DimmedLabel : Colors.Label;
@@ -226,6 +226,40 @@ public sealed class TimelineRenderer : IDisposable
                 using var outline = new SKPaint { Color = Colors.Selection, Style = SKPaintStyle.Stroke, StrokeWidth = 2, IsAntialias = true };
                 canvas.DrawRoundRect(box, 4, 4, outline);
             }
+
+            if (row.Lane > 0)
+            {
+                DrawLane(canvas, view, item, new SKRect(left, top + height - (float)row.Lane, Math.Max(left + 2, right), top + height), isSelected);
+            }
+        }
+    }
+
+    /// <summary>The strip under an item: a diamond at each of its keyframes.</summary>
+    private void DrawLane(SKCanvas canvas, TimelineView view, TimelineItem item, SKRect strip, bool selected)
+    {
+        var times = Editing.MotionEdits.KeyTimes(item);
+        if (times.Count == 0)
+        {
+            return;
+        }
+
+        using (var line = new SKPaint { Color = Colors.Tick, StrokeWidth = 1, IsAntialias = true })
+        {
+            canvas.DrawLine(strip.Left, strip.MidY, strip.Right, strip.MidY, line);
+        }
+
+        using var mark = new SKPaint { Color = selected ? Colors.Selection : Colors.Text, IsAntialias = true };
+        foreach (var time in times)
+        {
+            var at = (float)view.X(item.Start + time);
+            using var builder = new SKPathBuilder();
+            builder.MoveTo(at, strip.MidY - 6);
+            builder.LineTo(at + 6, strip.MidY);
+            builder.LineTo(at, strip.MidY + 6);
+            builder.LineTo(at - 6, strip.MidY);
+            builder.Close();
+            using var diamond = builder.Detach();
+            canvas.DrawPath(diamond, mark);
         }
     }
 
@@ -297,25 +331,6 @@ public sealed class TimelineRenderer : IDisposable
         canvas.Save();
         canvas.ClipRect(box);
         var label = Label(project, item);
-
-        if (item is AnnotationItem { Keyframes.Count: > 1 } moving)
-        {
-            // A diamond at each keyframe.
-            using var mark = new SKPaint { Color = Colors.Mark, IsAntialias = true };
-            foreach (var keyframe in moving.Keyframes)
-            {
-                var at = (float)view.X(moving.Start + keyframe.Time);
-                var y = box.Bottom - 6;
-                using var builder = new SKPathBuilder();
-                builder.MoveTo(at, y - 4);
-                builder.LineTo(at + 4, y);
-                builder.LineTo(at, y + 4);
-                builder.LineTo(at - 4, y);
-                builder.Close();
-                using var diamond = builder.Detach();
-                canvas.DrawPath(diamond, mark);
-            }
-        }
 
         if (item is Clip media && project.Asset(media.AssetId) is { } asset && Previews is { } previews)
         {
