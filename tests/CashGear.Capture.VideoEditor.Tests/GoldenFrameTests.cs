@@ -133,6 +133,70 @@ public sealed class GoldenFrameTests : IDisposable
         differing.Should().Be(0, "every pixel of {0} is as Phase 21 drew it", name);
     }
 
+    /// <summary>
+    /// <c>Fixtures\phase-22</c> (beside the typewriter's frames) was written once by the Phase 22 code (tag <c>phase-22-done</c>)
+    /// and never again: a project (version 4) with a picture, a colour, another video, motion, transitions at cuts and at edges,
+    /// colour effects, a look-up table, a key, text animations, a template with a brand, a group and markers. Its sound has
+    /// levels, fades with curves, a cut's join, a straight crossfade, a speed and a ramp. Its frames, and every
+    /// <see cref="Phase22Fixture.MixStep"/>th frame of its mix, are what that code made after opening it.
+    /// </summary>
+    public static TheoryData<double> Phase22Frames => new() { 0.4, 1.1, 2.0, 3.2, 3.5, 3.8, 4.5, 5.5, 6.2, 6.5, 6.8, 7.5, 8.5, 9.2, 9.6, 11.0 };
+
+    [Theory]
+    [MemberData(nameof(Phase22Frames))]
+    public void A_phase_22_project_draws_the_same_pixels(double time)
+    {
+        using var turn = new CashGear.Capture.Tests.MachineTurn(); // shadows, transitions and effects work every core
+        var folder = Path.Combine(AppContext.BaseDirectory, "Fixtures", "phase-22");
+        var name = FormattableString.Invariant($"frame-{time:00.00}.png");
+        using var golden = SKBitmap.Decode(Path.Combine(folder, name)).Copy(SKColorType.Bgra8888);
+        using var drawn = Render(ProjectFile.Open(Path.Combine(folder, "Project.cgcap"), _cache).Project, time);
+        (drawn.Width, drawn.Height).Should().Be((golden.Width, golden.Height));
+        var differing = 0;
+        for (var y = 0; y < golden.Height; y++)
+        {
+            for (var x = 0; x < golden.Width; x++)
+            {
+                if (golden.GetPixel(x, y) != drawn.GetPixel(x, y))
+                {
+                    differing++;
+                }
+            }
+        }
+
+        differing.Should().Be(0, "every pixel of {0} is as Phase 22 drew it", name);
+    }
+
+    [Fact]
+    public void A_phase_22_project_mixes_the_same_samples()
+    {
+        CashGear.Capture.Media.Tests.TestMedia.Require();
+        var folder = Path.Combine(AppContext.BaseDirectory, "Fixtures", "phase-22");
+        var (voice, music) = Phase22Fixture.WriteSound(Path.Combine(_cache, "sound"));
+        var project = ProjectFile.Open(Path.Combine(folder, "Project.cgcap"), _cache).Project;
+        project = ProjectFile.Relocate(ProjectFile.Relocate(project, "voice", voice), "music", music);
+        var golden = Phase22Fixture.ReadMix(Path.Combine(folder, "mix.f32.gz"));
+        var mixed = Phase22Fixture.Mix(project);
+        mixed.Length.Should().Be(golden.Length);
+        var worst = 0.0;
+        for (var i = 0; i < golden.Length; i++)
+        {
+            worst = Math.Max(worst, Math.Abs(golden[i] - mixed[i]));
+        }
+
+        worst.Should().BeLessThan(1e-5, "the crossfade stays straight, the join stays a join and the ramp stays resampled, as Phase 22 mixed them");
+    }
+
+    [Fact]
+    public void A_phase_22_project_keeps_its_markers_and_groups()
+    {
+        var folder = Path.Combine(AppContext.BaseDirectory, "Fixtures", "phase-22");
+        var project = ProjectFile.Open(Path.Combine(folder, "Project.cgcap"), _cache).Project;
+        project.Markers!.Select(m => m.Name).Should().Equal("Start", "مشهد");
+        project.Tracks.SelectMany(t => t.Items).Where(i => i.Group is not null).Should().HaveCount(2);
+        project.Tracks.SelectMany(t => t.Items).OfType<TemplateItem>().Should().ContainSingle();
+    }
+
     [Fact]
     public void A_phase_21_project_keeps_its_transcript_and_its_cut()
     {
