@@ -115,6 +115,10 @@ internal sealed class TimelineControl : SKElement
                 _viewModel.MoveToTrack(e.Key == Key.Up ? -1 : 1);
                 e.Handled = true; // the arrows never take the focus off the timeline
                 break;
+            case Key.System when e.SystemKey is Key.Up or Key.Down && modifiers == ModifierKeys.Alt:
+                _viewModel.MoveSelectedTrack(e.SystemKey == Key.Up ? -1 : 1);
+                e.Handled = true;
+                break;
         }
     }
 
@@ -129,7 +133,7 @@ internal sealed class TimelineControl : SKElement
         Focus();
         var at = e.GetPosition(this);
         CaptureMouse();
-        _viewModel.Timeline.PointerDown(at.X, at.Y, Keyboard.Modifiers.HasFlag(ModifierKeys.Shift));
+        _viewModel.Timeline.PointerDown(at.X, at.Y, Keyboard.Modifiers.HasFlag(ModifierKeys.Shift), Keyboard.Modifiers.HasFlag(ModifierKeys.Control));
         e.Handled = true;
     }
 

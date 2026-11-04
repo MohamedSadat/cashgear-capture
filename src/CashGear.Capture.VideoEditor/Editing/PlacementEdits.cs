@@ -226,6 +226,36 @@ public static class TrackEdits
             .WithTrack(target.WithItems([.. target.Items, found.Item]));
     }
 
+    /// <summary>
+    /// A track one row up (<paramref name="direction"/> -1) or down (+1) on the timeline, among those of its own sort:
+    /// sound tracks among sound tracks, the others among the others, where the higher a row the later it is drawn.
+    /// </summary>
+    public static VideoProject Reorder(VideoProject project, string trackId, int direction)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        var rows = Timeline.TimelineView.Rows(project).Select(r => r.Track).ToList();
+        var at = rows.FindIndex(t => t.Id == trackId);
+        var to = at + Math.Sign(direction);
+        return at < 0 || to < 0 || to >= rows.Count || rows[at].HasSound != rows[to].HasSound || direction == 0 ? project : MoveTo(project, trackId, rows[to].Id);
+    }
+
+    /// <summary>A track dragged to another's row (of its own sort), the ones between moving over.</summary>
+    public static VideoProject MoveTo(VideoProject project, string trackId, string toTrackId)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        if (trackId == toTrackId || project.Track(trackId) is not { } moving || project.Track(toTrackId) is not { } target || moving.HasSound != target.HasSound)
+        {
+            return project;
+        }
+
+        var tracks = project.Tracks.ToList();
+        var from = tracks.FindIndex(t => t.Id == trackId);
+        var to = tracks.FindIndex(t => t.Id == toTrackId);
+        tracks.RemoveAt(from);
+        tracks.Insert(to, moving);
+        return project with { Tracks = tracks };
+    }
+
     /// <summary>Whether a clip plays sound (its stream's kind; the kind of its track when the media isn't known).</summary>
     private static bool IsSound(VideoProject project, Clip clip) =>
         project.Asset(clip.AssetId)?.Stream(clip.Stream)?.Kind is { } kind ? kind == StreamKind.Audio : project.Find(clip.Id)?.Track.HasSound == true;

@@ -449,11 +449,17 @@ public static class ItemProperties
         var state = motion?.At(into) ?? MotionState.Identity;
         list.Add(new NoteParameter(VideoEditorText.MotionTitle));
 
-        void Change(string key, Func<ItemMotion?, ItemMotion> update)
+        // A group is keyframed as one: the same change at the same moment, each from its own start, in one undo step.
+        void Change(string key, Func<ItemMotion?, double, ItemMotion> update)
         {
-            if (current().Find(item.Id)?.Item is { } now)
+            var project = current();
+            var members = GroupEdits.Members(project, item.Id).Where(id => id != item.Id).Append(item.Id).ToList();
+            foreach (var id in members)
             {
-                apply(MotionEdits.With(now, update(MotionEdits.Of(now))), VideoEditorText.UndoMotion, $"property {item.Id} motion {key} {Math.Round(actions.Playhead() * 1000)}");
+                if (current().Find(id) is { Item: var now, Track: var on } && (now is AnnotationItem || (now is Clip && on.HasPictures)))
+                {
+                    apply(MotionEdits.With(now, update(MotionEdits.Of(now), actions.Playhead() - now.Start)), VideoEditorText.UndoMotion, $"property {item.Id} motion {key} {Math.Round(actions.Playhead() * 1000)}");
+                }
             }
         }
 
@@ -464,7 +470,7 @@ public static class ItemProperties
             {
                 if (e.PropertyName == "Value")
                 {
-                    Change(lane.ToString(), m => MotionEdits.SetValue(m, lane, actions.Playhead() - item.Start, parameter.Value / scale, actions.Fps));
+                    Change(lane.ToString(), (m, at) => MotionEdits.SetValue(m, lane, at, parameter.Value / scale, actions.Fps));
                 }
             };
             list.Add(parameter);
@@ -485,13 +491,13 @@ public static class ItemProperties
         {
             if (e.PropertyName == "Value")
             {
-                Change("animated", m => animated.Value ? MotionEdits.AddKeyframe(m, actions.Playhead() - item.Start, actions.Fps) : (m ?? new ItemMotion()) with { Animated = false });
+                Change("animated", (m, at) => animated.Value ? MotionEdits.AddKeyframe(m, at, actions.Fps) : (m ?? new ItemMotion()) with { Animated = false });
             }
         };
         list.Add(animated);
         list.Add(new NoteParameter(VideoEditorText.MotionNote));
-        list.Add(new ActionParameter(VideoEditorText.AddMotionKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(() => Change("add", m => MotionEdits.AddKeyframe(m, actions.Playhead() - item.Start, actions.Fps)))));
-        list.Add(new ActionParameter(VideoEditorText.RemoveMotionKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(() => Change("remove", m => MotionEdits.RemoveKeyframe(m, actions.Playhead() - item.Start, actions.Fps)))));
+        list.Add(new ActionParameter(VideoEditorText.AddMotionKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(() => Change("add", (m, at) => MotionEdits.AddKeyframe(m, at, actions.Fps)))));
+        list.Add(new ActionParameter(VideoEditorText.RemoveMotionKeyframe, new CommunityToolkit.Mvvm.Input.RelayCommand(() => Change("remove", (m, at) => MotionEdits.RemoveKeyframe(m, at, actions.Fps)))));
         void Jump(bool backward)
         {
             if (current().Find(item.Id)?.Item is { } now && MotionEdits.NextKeyframe(now, actions.Playhead() - now.Start, backward, actions.Fps) is { } time)
@@ -529,7 +535,7 @@ public static class ItemProperties
                 point.IsVisible = chosen == MotionEasing.Bezier;
             }
 
-            Change("easing", m => MotionEdits.SetEasing(m ?? new ItemMotion(), actions.Playhead() - item.Start, chosen, [x1.Value, y1.Value, x2.Value, y2.Value], actions.Fps));
+            Change("easing", (m, at) => MotionEdits.SetEasing(m ?? new ItemMotion(), at, chosen, [x1.Value, y1.Value, x2.Value, y2.Value], actions.Fps));
         }
 
         choice.PropertyChanged += (_, e) =>

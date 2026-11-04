@@ -726,4 +726,10 @@
     <value>Image</value>
     <comment>the Image menu's name for screen readers (without the arrow)</comment>
   </data>
+  <data name="AnnotationCopied" xml:space="preserve">
+    <value>Annotation copied. Ctrl+V pastes it.</value>
+  </data>
+  <data name="PasteAnnotationMenu" xml:space="preserve">
+    <value>_Paste the Annotation</value>
+  </data>
 </root>

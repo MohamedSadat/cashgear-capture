@@ -19,6 +19,7 @@
     <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveCommand}" />
     <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAsCommand}" />
     <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyCommand}" />
+    <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteAnnotationCommand}" />
     <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomFitCommand}" />
     <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding ZoomFitCommand}" />
     <KeyBinding Gesture="Ctrl+D1" Command="{Binding ZoomActualCommand}" />

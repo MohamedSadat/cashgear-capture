@@ -318,4 +318,25 @@ public sealed class ArabicVideoEditorUiTests : VideoEditorTestBase
 
         problems.Should().BeEmpty(ArabicUi.Report("Transcript", problems));
     });
+
+    [Fact]
+    public Task The_media_panel_on_each_of_its_tabs() => StaDispatcher.RunAsync(async () =>
+    {
+        InteractiveDesktop.Require();
+        using var arabic = ArabicUi.InArabic();
+        var problems = new List<string>();
+        using var vm = Open();
+        static bool Data(string text) => text.Contains(".mp4", StringComparison.OrdinalIgnoreCase) || text.Contains("Rec", StringComparison.Ordinal);
+
+        vm.Media.IsShown = true;
+        vm.AddMarkerCommand.Execute(null);
+        for (var tab = 0; tab < 5; tab++)
+        {
+            vm.Media.ShownTab = tab;
+            var window = new VideoEditorWindow(vm, AppTheme.Dark, tryGpu: false, NullLogger.Instance);
+            problems.AddRange(await ArabicUi.CheckAsync(window, $"video-editor-media-{tab}", leftToRight: () => [window.TimelineSurface], data: Data));
+        }
+
+        problems.Should().BeEmpty(ArabicUi.Report("Media panel", problems));
+    });
 }

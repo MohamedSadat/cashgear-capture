@@ -36,6 +36,7 @@ public static class TransitionEdits
         var after = Times.Round(clip.End);
         return project with
         {
+            Markers = MarkerEdits.AfterShift(project.Markers, after, delta),
             Tracks = [.. project.Tracks.Select(track => track.Locked ? track : track.WithItems(track.Items.Select(item =>
             {
                 if (group.Contains(item.Id) && item is Clip linked)
@@ -267,6 +268,7 @@ public static class TransitionEdits
         var after = Times.Round(still.End);
         return project with
         {
+            Markers = MarkerEdits.AfterShift(project.Markers, after, delta),
             Tracks = [.. project.Tracks.Select(track => track.Locked ? track : track.WithItems(track.Items.Select(item =>
                 group.Contains(item.Id) && item is Clip linked ? linked with { FreezeLength = length }
                 : Follows(project, track, item, after) ? item with { Start = Times.Round(Math.Max(0, item.Start + delta)) }
@@ -297,6 +299,7 @@ public static class TransitionEdits
     /// <summary>Everything on unlocked tracks starting at or after <paramref name="from"/> moved by <paramref name="by"/> seconds.</summary>
     private static VideoProject Shift(VideoProject project, double from, double by, IReadOnlySet<string>? exclude = null) => project with
     {
+        Markers = MarkerEdits.AfterShift(project.Markers, from, by),
         Tracks = [.. project.Tracks.Select(track => track.Locked ? track : track.WithItems(track.Items.Select(item =>
             Follows(project, track, item, from) && exclude?.Contains(item.Id) != true ? item with { Start = Times.Round(Math.Max(0, item.Start + by)) } : item)))],
     };

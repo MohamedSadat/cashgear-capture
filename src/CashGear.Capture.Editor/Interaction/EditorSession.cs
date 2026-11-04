@@ -384,6 +384,38 @@ public sealed class EditorSession
         }
     }
 
+    /// <summary>What was copied last, for any editor window of the app.</summary>
+    private static Annotation? _copied;
+
+    /// <summary>Copies the selected annotation (Ctrl+C with one selected). False when none is.</summary>
+    public bool CopySelection()
+    {
+        if (Selected is not { } selected)
+        {
+            return false;
+        }
+
+        _copied = selected;
+        return true;
+    }
+
+    /// <summary>Whether there is an annotation to paste.</summary>
+    public static bool HasCopied => _copied is not null;
+
+    /// <summary>A copy of what was copied, a little down and to the right, selected. False when nothing was copied.</summary>
+    public bool PasteCopied()
+    {
+        if (_copied is not { } copied || IsDragging || TextEdit is not null || Preview is not null)
+        {
+            return false;
+        }
+
+        var placed = copied.Offset(16, 16) with { Id = Document.NewId() };
+        Document.Execute(new AddAnnotationCommand(placed));
+        Select(placed.Id);
+        return true;
+    }
+
     /// <summary>
     /// Moves the selection by whole pixels (arrow keys); repeated nudges are one undo step. With nothing selected, the
     /// Crop or Area frame moves instead (kept inside the image). False when there was nothing to move.

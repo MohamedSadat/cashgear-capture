@@ -101,6 +101,12 @@ public sealed record VideoEditorState
     /// <summary>The look a recording opens with (a look's id or a saved look's name; null: the usual one).</summary>
     public string? DefaultLook { get; init; }
 
+    /// <summary>The height of the smaller copies the preview uses for large media (0: none).</summary>
+    public int ProxyHeight { get; init; }
+
+    /// <summary>Whether the timeline's ripple mode is on.</summary>
+    public bool Magnetic { get; init; }
+
     /// <summary>A copy with <paramref name="path"/> first among the recent projects (once).</summary>
     public VideoEditorState WithRecent(string path) =>
         this with { RecentProjects = [path, .. (RecentProjects ?? []).Where(p => !string.Equals(p, path, StringComparison.OrdinalIgnoreCase)).Take(MaxRecent - 1)] };

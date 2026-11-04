@@ -51,6 +51,60 @@ public interface IVideoEditorDialogs
     string? AskName(string title, string suggested);
 }
 
+/// <summary>Where copied clips and annotations wait to be pasted: JSON, from any editor window to another.</summary>
+public interface IVideoClipboard
+{
+    byte[]? Read();
+
+    void Write(byte[] copied);
+}
+
+/// <summary>A clipboard of its own, for tests and whatever has no Windows clipboard.</summary>
+internal sealed class MemoryVideoClipboard : IVideoClipboard
+{
+    private byte[]? _copied;
+
+    public static MemoryVideoClipboard Shared { get; } = new();
+
+    public byte[]? Read() => _copied;
+
+    public void Write(byte[] copied) => _copied = copied;
+}
+
+/// <summary>The Windows clipboard, in a format of the app's own, so a text or a picture copied elsewhere is left alone until this is used.</summary>
+internal sealed class WpfVideoClipboard : IVideoClipboard
+{
+    /// <summary>The clipboard format's name.</summary>
+    [System.ComponentModel.Localizable(false)]
+    private const string Format = "CashGear.Capture.VideoEditorItems";
+
+    public byte[]? Read()
+    {
+        try
+        {
+            return System.Windows.Clipboard.GetDataObject()?.GetData(Format) is string text ? System.Text.Encoding.UTF8.GetBytes(text) : null;
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            return null;
+        }
+    }
+
+    public void Write(byte[] copied)
+    {
+        try
+        {
+            var data = new System.Windows.DataObject();
+            data.SetData(Format, System.Text.Encoding.UTF8.GetString(copied));
+            System.Windows.Clipboard.SetDataObject(data, copy: true);
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            // Another program has the clipboard just now: nothing was copied, as if the key hadn't been pressed.
+        }
+    }
+}
+
 /// <summary>What every video editor window shares.</summary>
 public sealed record VideoEditorServices(
     ProjectExporter Exporter,
@@ -69,7 +123,9 @@ public sealed record VideoEditorServices(
     WebcamMasks? Masks = null,
     SoundLevelStore? Levels = null,
     CashGear.Capture.Inference.ITranslators? Translators = null,
-    TemplateLibrary? TemplateStore = null)
+    TemplateLibrary? TemplateStore = null,
+    ProxyStore? Proxies = null,
+    IVideoClipboard? Clipboard = null)
 {
     /// <summary>Saved templates and media on this PC, in <c>%AppData%\CashGear\Capture\Library</c>.</summary>
     public TemplateLibrary Library => TemplateStore ?? new TemplateLibrary(Path.Combine(Paths.SettingsDirectory, "Library"));
@@ -106,6 +162,12 @@ public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Tra
 
     [RelayCommand]
     private void Delete() => owner.DeleteTrack(Track);
+
+    [RelayCommand]
+    private void MoveUp() => owner.MoveTrack(Track.Id, -1);
+
+    [RelayCommand]
+    private void MoveDown() => owner.MoveTrack(Track.Id, 1);
 
     public bool HasPictures => Track.HasPictures;
 
@@ -207,7 +269,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         History = new ProjectHistory(project);
         View = new TimelineView();
         Timeline = new TimelineSession(History, View);
-        Frames = new PreviewFrames(services.Loggers, services.Decoding);
+        Frames = new PreviewFrames(services.Loggers, services.Decoding) { Proxies = services.Proxies };
         Compositor = new FrameCompositor(Frames) { Masks = services.Masks };
         Engine = new PlaybackEngine(() => History.Project, services.AudioOutput, _logger);
         History.Changed += (_, _) => OnProjectChanged();
@@ -228,7 +290,296 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         MakeMasks();
         Transcript = new TranscriptPanelViewModel(this, services);
         Media = new MediaPanelViewModel(this);
+        var state = services.State.Current.VideoEditor;
+        Timeline.Magnetic = state?.Magnetic == true;
+        _proxyHeight = services.Proxies is null ? 0 : state?.ProxyHeight ?? 0;
+        if (services.Proxies is { } proxies)
+        {
+            proxies.Height = _proxyHeight;
+        }
+
+        MakeProxies();
     }
+
+    /// <summary>The height of the preview's smaller copies of large media (0: none).</summary>
+    private int _proxyHeight;
+
+    private readonly HashSet<string> _proxiesAsked = [];
+
+    public bool ProxiesOff
+    {
+        get => _proxyHeight == 0;
+        set => SetProxyHeight(value, ProxyStore.Off);
+    }
+
+    public bool Proxies1080
+    {
+        get => _proxyHeight == ProxyStore.Height1080;
+        set => SetProxyHeight(value, ProxyStore.Height1080);
+    }
+
+    public bool Proxies720
+    {
+        get => _proxyHeight == ProxyStore.Height720;
+        set => SetProxyHeight(value, ProxyStore.Height720);
+    }
+
+    private void SetProxyHeight(bool chosen, int height)
+    {
+        if (!chosen || height == _proxyHeight || _services.Proxies is not { } proxies)
+        {
+            return;
+        }
+
+        _proxyHeight = height;
+        proxies.Height = height;
+        _ = _services.State.UpdateAsync(s => s with { VideoEditor = (s.VideoEditor ?? new VideoEditorState()) with { ProxyHeight = height } });
+        OnPropertyChanged(nameof(ProxiesOff));
+        OnPropertyChanged(nameof(Proxies1080));
+        OnPropertyChanged(nameof(Proxies720));
+        MakeProxies();
+        Frames.Update(Project, Timeline.Playhead, Engine.IsPlaying);
+        PreviewInvalidated?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Starts making the copies of the project's large media that aren't there yet.</summary>
+    private void MakeProxies()
+    {
+        if (_services.Proxies is not { } proxies || _proxyHeight <= 0)
+        {
+            return;
+        }
+
+        foreach (var clip in Project.Tracks.Where(t => t.HasPictures).SelectMany(t => t.Clips))
+        {
+            if (Project.Asset(clip.AssetId) is { IsPicture: false } asset && File.Exists(asset.Path) && ProxyStore.Wants(asset.Stream(clip.Stream), _proxyHeight)
+                && !proxies.IsReady(asset, clip.Stream, _proxyHeight) && _proxiesAsked.Add($"{asset.Path}|{clip.Stream}|{_proxyHeight}"))
+            {
+                _ = MakeProxyAsync(proxies, asset, clip.Stream, _proxyHeight);
+            }
+        }
+    }
+
+    private async Task MakeProxyAsync(ProxyStore proxies, MediaAsset asset, int stream, int height)
+    {
+        var progress = new Progress<double>(done => WorkText = VideoEditorText.MakingProxy(asset.Name, done * 100));
+        WorkText = VideoEditorText.MakingProxy(asset.Name, 0);
+        try
+        {
+            await proxies.EnsureAsync(asset, stream, height, progress, _closing.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception e) when (e is FfmpegException or IOException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            _proxiesAsked.Remove($"{asset.Path}|{stream}|{height}");
+            _dialogs.ShowError(VideoEditorText.ProxyFailed(e.Message));
+        }
+        finally
+        {
+            if (!_disposed)
+            {
+                WorkText = "";
+            }
+        }
+
+        if (!_disposed)
+        {
+            Frames.Update(Project, Timeline.Playhead, Engine.IsPlaying);
+            PreviewInvalidated?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>The timeline's ripple mode, from the View menu and its button; remembered.</summary>
+    public bool IsMagnetic
+    {
+        get => Timeline.Magnetic;
+        set
+        {
+            if (Timeline.Magnetic != value)
+            {
+                Timeline.Magnetic = value;
+                _ = _services.State.UpdateAsync(s => s with { VideoEditor = (s.VideoEditor ?? new VideoEditorState()) with { Magnetic = value } });
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    private IVideoClipboard Clipboard => _services.Clipboard ?? MemoryVideoClipboard.Shared;
+
+    /// <summary>Ctrl+C: the selected items, with what is linked and grouped with them.</summary>
+    [RelayCommand]
+    private void Copy()
+    {
+        var ids = Selection();
+        if (ids.Count > 0)
+        {
+            Clipboard.Write(ClipboardEdits.Copy(Project, ids));
+        }
+    }
+
+    /// <summary>Ctrl+X: copied, and gone (in the ripple mode, with their time).</summary>
+    [RelayCommand]
+    private void CutItems()
+    {
+        var ids = Selection();
+        if (ids.Count > 0)
+        {
+            Clipboard.Write(ClipboardEdits.Copy(Project, ids));
+            StopPlaying();
+            History.Apply(VideoEditorText.UndoCut, RemoveItems(ids));
+            Timeline.Select(null);
+        }
+    }
+
+    /// <summary>Ctrl+V: what was copied, at the playhead, selected.</summary>
+    [RelayCommand]
+    private void Paste()
+    {
+        if (Clipboard.Read() is not { } copied)
+        {
+            return;
+        }
+
+        StopPlaying();
+        var (project, ids) = ClipboardEdits.Paste(Project, copied, Timeline.Playhead);
+        if (ids.Count > 0)
+        {
+            History.Apply(VideoEditorText.UndoPaste, project);
+            Timeline.Select(ids[0]);
+            foreach (var id in ids.Skip(1))
+            {
+                Timeline.ToggleSelected(id);
+            }
+        }
+    }
+
+    /// <summary>Ctrl+G: the items chosen, as one.</summary>
+    [RelayCommand]
+    private void GroupItems()
+    {
+        var (project, group) = GroupEdits.Group(Project, Timeline.SelectedIds);
+        if (group is not null)
+        {
+            History.Apply(VideoEditorText.UndoGroup, project);
+            OnPropertyChanged(nameof(SelectionText));
+            TimelineInvalidated?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Ctrl+Shift+G: each on its own again.</summary>
+    [RelayCommand]
+    private void UngroupItems()
+    {
+        var after = GroupEdits.Ungroup(Project, Timeline.SelectedIds);
+        if (!ReferenceEquals(after, Project))
+        {
+            History.Apply(VideoEditorText.UndoUngroup, after);
+            TimelineInvalidated?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>What Copy and Group act on: what is selected, with its linked clips.</summary>
+    private HashSet<string> Selection()
+    {
+        var ids = new HashSet<string>();
+        foreach (var id in Timeline.SelectedIds)
+        {
+            ids.UnionWith(TimelineEdits.Linked(Project, id));
+        }
+
+        return ids;
+    }
+
+    /// <summary>Items gone, with their time in the ripple mode.</summary>
+    private VideoProject RemoveItems(IReadOnlyCollection<string> ids)
+    {
+        if (!Timeline.Magnetic)
+        {
+            return TimelineEdits.Delete(Project, ids);
+        }
+
+        var result = Project;
+        foreach (var span in ids.Select(id => Project.Find(id)?.Item).OfType<TimelineItem>().Select(i => (i.Start, i.End)).Distinct().OrderByDescending(s => s.Start))
+        {
+            result = TimelineEdits.DeleteRange(result, span.Start, span.End);
+        }
+
+        return result;
+    }
+
+    /// <summary>M: a marker at the playhead, named in turn.</summary>
+    [RelayCommand]
+    private void AddMarker()
+    {
+        var (project, id) = MarkerEdits.Add(Project, Times.FrameStart(Timeline.Playhead, Project.Canvas.Fps), VideoEditorText.MarkerName((Project.Markers?.Count ?? 0) + 1));
+        History.Apply(VideoEditorText.UndoAddMarker, project);
+        Media.SelectMarker(id);
+    }
+
+    [RelayCommand]
+    private void NextMarker()
+    {
+        if (MarkerEdits.Next(Project, Timeline.Playhead, backward: false) is { } time)
+        {
+            StopPlaying();
+            Seek(time);
+        }
+    }
+
+    [RelayCommand]
+    private void PreviousMarker()
+    {
+        if (MarkerEdits.Next(Project, Timeline.Playhead, backward: true) is { } time)
+        {
+            StopPlaying();
+            Seek(time);
+        }
+    }
+
+    internal void RenameMarker(TimelineMarker marker)
+    {
+        if (_dialogs.AskName(VideoEditorText.RenameMarkerTitle, marker.Name) is { Length: > 0 } name)
+        {
+            History.Apply(VideoEditorText.UndoMarker, MarkerEdits.Rename(Project, marker.Id, name));
+        }
+    }
+
+    internal void MoveMarkerHere(TimelineMarker marker) =>
+        History.Apply(VideoEditorText.UndoMarker, MarkerEdits.MoveTo(Project, marker.Id, Times.FrameStart(Timeline.Playhead, Project.Canvas.Fps)));
+
+    internal void RemoveMarker(TimelineMarker marker) => History.Apply(VideoEditorText.UndoMarker, MarkerEdits.Remove(Project, marker.Id));
+
+    /// <summary>Alt+↑/↓ on the timeline, and a header's menu: the selected item's track a row up or down.</summary>
+    public bool MoveTrack(string trackId, int direction)
+    {
+        StopPlaying();
+        var after = TrackEdits.Reorder(Project, trackId, direction);
+        if (ReferenceEquals(after, Project))
+        {
+            return false;
+        }
+
+        History.Apply(VideoEditorText.UndoMoveTrack, after);
+        return true;
+    }
+
+    /// <summary>A track header dragged onto another's row.</summary>
+    public void MoveTrackTo(string trackId, string toTrackId)
+    {
+        var after = TrackEdits.MoveTo(Project, trackId, toTrackId);
+        if (!ReferenceEquals(after, Project))
+        {
+            StopPlaying();
+            History.Apply(VideoEditorText.UndoMoveTrack, after);
+        }
+    }
+
+    /// <summary>Alt+↑/↓: the track of what is selected.</summary>
+    public bool MoveSelectedTrack(int direction) =>
+        Timeline.SelectedId is { } id && Project.Find(id)?.Track is { } track && MoveTrack(track.Id, direction);
 
     /// <summary>The media panel beside the preview.</summary>
     public MediaPanelViewModel Media { get; }
@@ -781,7 +1132,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         History.Apply(VideoEditorText.UndoSplit, TimelineEdits.Split(Project, Timeline.Playhead));
     }
 
-    /// <summary>Delete: the marked range out of every track (closing the gap), else the selected item and its linked clips.</summary>
+    /// <summary>Delete: the marked range out of every track (closing the gap), else the selected items and what is linked to them (in the ripple mode, with their time).</summary>
     [RelayCommand]
     private void Delete()
     {
@@ -792,9 +1143,9 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             Timeline.SetRange(null);
             Seek(Math.Min(range.From, Project.Duration));
         }
-        else if (Timeline.SelectedId is { } id)
+        else if (Timeline.SelectedId is not null)
         {
-            History.Apply(VideoEditorText.UndoDelete, TimelineEdits.Delete(Project, [id]));
+            History.Apply(VideoEditorText.UndoDelete, RemoveItems(Timeline.SelectedIds));
             Timeline.Select(null);
         }
     }
@@ -2169,6 +2520,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         Transcript.Refresh();
         Transcript.PlayheadMoved(Timeline.Playhead);
         Media?.Refresh();
+        MakeProxies();
         OnPropertyChanged(nameof(Status));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(IsDirty));

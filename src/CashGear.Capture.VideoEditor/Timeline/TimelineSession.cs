@@ -39,6 +39,7 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
     private int _drags;
     private double _playhead;
     private double _keyframe;
+    private readonly HashSet<string> _more = [];
 
     /// <summary>The selection, the range or the playhead changed.</summary>
     public event EventHandler? Changed;
@@ -51,6 +52,12 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
     public TimelineView View { get; } = view;
 
     public string? SelectedId { get; private set; }
+
+    /// <summary>Everything selected: the selected item with what is grouped with it, and what Ctrl+click added.</summary>
+    public IReadOnlyList<string> SelectedIds => SelectedId is null ? [] : [.. GroupEdits.Members(History.Project, SelectedId).Union(_more).Where(id => History.Project.Find(id) is not null)];
+
+    /// <summary>The ripple (magnetic) mode: taking time out closes the gap, and adding it opens one, as the items are moved and trimmed.</summary>
+    public bool Magnetic { get; set; }
 
     /// <summary>The range marked (from, to), or null.</summary>
     public (double From, double To)? Range { get; private set; }
@@ -78,11 +85,36 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
 
     public void Select(string? id)
     {
-        if (id != SelectedId)
+        if (id != SelectedId || _more.Count > 0)
         {
             SelectedId = id;
+            _more.Clear();
             Changed?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    /// <summary>Ctrl+click: an item added to the selection, or taken out of it.</summary>
+    public void ToggleSelected(string id)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        if (SelectedId is null)
+        {
+            Select(id);
+            return;
+        }
+
+        if (id == SelectedId)
+        {
+            var next = _more.FirstOrDefault();
+            _more.Remove(next ?? "");
+            SelectedId = next;
+        }
+        else if (!_more.Remove(id))
+        {
+            _more.Add(id);
+        }
+
+        Changed?.Invoke(this, EventArgs.Empty);
     }
 
     public void SetRange((double From, double To)? range)
@@ -244,10 +276,16 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
         };
     }
 
-    public void PointerDown(double x, double y, bool shift)
+    public void PointerDown(double x, double y, bool shift, bool control = false)
     {
         var project = History.Project;
         var hit = View.HitTest(project, x, y);
+        if (control && hit.ItemId is { } clicked)
+        {
+            ToggleSelected(clicked);
+            return;
+        }
+
         _base = project;
         _drags++;
         if (View.KeyframeAt(project, x, y, SelectedId) is { } key && project.Find(key.ItemId) is { Track.Locked: false, Item: var keyed })
@@ -319,7 +357,7 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
                 var edge = _drag == Drag.TrimStart ? ItemEdge.Start : ItemEdge.End;
                 var linked = TimelineEdits.Linked(_base, _item.Id).ToHashSet();
                 var target = alt ? time : View.Snap(_base, time, Playhead, linked);
-                History.Apply(_drag == Drag.TrimStart ? VideoEditorStrings.UndoTrimStart : VideoEditorStrings.UndoTrimEnd, TimelineEdits.Trim(_base, _item.Id, edge, target), $"drag {_drags}");
+                History.Apply(_drag == Drag.TrimStart ? VideoEditorStrings.UndoTrimStart : VideoEditorStrings.UndoTrimEnd, Magnetic ? MagneticEdits.Trim(_base, _item.Id, edge, target) : TimelineEdits.Trim(_base, _item.Id, edge, target), $"drag {_drags}");
                 break;
         }
     }
@@ -344,7 +382,7 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
             start = Math.Abs(byStart - start) <= Math.Abs(byEnd - start) ? byStart : byEnd;
         }
 
-        History.Apply(VideoEditorStrings.UndoMove, TimelineEdits.Move(_base!, item.Id, Math.Max(0, start), withLinked: !alt), $"drag {_drags}");
+        History.Apply(VideoEditorStrings.UndoMove, Magnetic && !alt ? MagneticEdits.Move(_base!, item.Id, Math.Max(0, start)) : TimelineEdits.Move(_base!, item.Id, Math.Max(0, start), withLinked: !alt), $"drag {_drags}");
     }
 
     private void Scrub(double time)

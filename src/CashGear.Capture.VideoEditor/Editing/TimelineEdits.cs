@@ -57,6 +57,7 @@ public static class TimelineEdits
         var links = new Dictionary<string, string>();
         return project with
         {
+            Markers = MarkerEdits.AfterCut(project.Markers, from, to),
             Tracks = [.. project.Tracks.Select(track => track.Locked ? track : track.WithItems(track.Items.SelectMany<TimelineItem, TimelineItem>(item =>
             {
                 if (item.End <= from + Times.Epsilon)
@@ -96,12 +97,17 @@ public static class TimelineEdits
             return [];
         }
 
-        if (item is not Clip { Link: { } link })
+        if (item is not Clip { Link: not null } && item.Group is null)
         {
             return [id];
         }
 
-        return [.. project.Tracks.Where(t => !t.Locked).SelectMany(t => t.Clips).Where(c => c.Link == link).Select(c => c.Id)];
+        // Linked and grouped: a group's members bring their own linked clips along.
+        var groupIds = item.Group is { } group ? project.Tracks.Where(t => !t.Locked).SelectMany(t => t.Items).Where(i => i.Group == group).ToList() : [item];
+        var links = groupIds.OfType<Clip>().Select(c => c.Link).OfType<string>().ToHashSet();
+        var all = groupIds.Select(i => i.Id).ToHashSet();
+        all.UnionWith(project.Tracks.Where(t => !t.Locked).SelectMany(t => t.Clips).Where(c => c.Link is { } link && links.Contains(link)).Select(c => c.Id));
+        return [.. all];
     }
 
     /// <summary>Removes items (and the clips linked to them), leaving a gap.</summary>
@@ -308,6 +314,19 @@ public static class TimelineEdits
     private static TimelineItem NewPart(TimelineItem part, Dictionary<string, string> links)
     {
         part = part with { Id = Ids.New() };
+        if (part.Group is { } group)
+        {
+            // A group's parts after the cut are a group of their own.
+            var key = "group " + group;
+            if (!links.TryGetValue(key, out var parted))
+            {
+                parted = Ids.New();
+                links[key] = parted;
+            }
+
+            part = part with { Group = parted };
+        }
+
         if (part is Clip { Link: { } link } clip)
         {
             if (!links.TryGetValue(link, out var next))

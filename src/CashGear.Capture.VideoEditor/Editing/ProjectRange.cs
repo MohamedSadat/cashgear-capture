@@ -27,6 +27,7 @@ public static class ProjectRange
 
         return project with
         {
+            Markers = MarkerEdits.InRange(project.Markers, from, to),
             Tracks = [.. project.Tracks.Select(t => t.WithItems(t.Items
                 .Where(i => i.Overlaps(from, to))
                 .Select(i => i.Slice(from, to))

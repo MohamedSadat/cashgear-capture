@@ -201,7 +201,7 @@ public sealed class PreviewAcceptanceTests : IDisposable
 }
 
 /// <summary>Notes the number stamped in each picture the compositor gets.</summary>
-internal sealed class StampingFrames(IFrameProvider inner) : IFrameProvider
+internal sealed class StampingFrames(IFrameProvider inner, double scale = 1) : IFrameProvider
 {
     public List<int> Shown { get; } = [];
 
@@ -210,7 +210,7 @@ internal sealed class StampingFrames(IFrameProvider inner) : IFrameProvider
         var frame = inner.Frame(clip, asset, sourceTime);
         if (frame is not null)
         {
-            Shown.Add(StampedRecording.ReadStamp(frame.Pixels, frame.Width));
+            Shown.Add(StampedRecording.ReadStamp(frame.Pixels, frame.Width, scale));
         }
 
         return frame;

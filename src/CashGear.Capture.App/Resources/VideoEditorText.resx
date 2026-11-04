@@ -2627,4 +2627,121 @@
   <data name="UndoBrandClip" xml:space="preserve">
     <value>Add from the Brand</value>
   </data>
+  <data name="CopyMenu" xml:space="preserve">
+    <value>_Copy</value>
+  </data>
+  <data name="CutMenu" xml:space="preserve">
+    <value>Cu_t</value>
+  </data>
+  <data name="PasteMenu" xml:space="preserve">
+    <value>_Paste</value>
+  </data>
+  <data name="PasteTip" xml:space="preserve">
+    <value>Put what was copied at the playhead, where it has room</value>
+  </data>
+  <data name="UndoPaste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="UndoCut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="GroupMenu" xml:space="preserve">
+    <value>_Group</value>
+  </data>
+  <data name="GroupTip" xml:space="preserve">
+    <value>The chosen items move, cut and take keyframes as one (Ctrl+click chooses more)</value>
+  </data>
+  <data name="UngroupMenu" xml:space="preserve">
+    <value>_Ungroup</value>
+  </data>
+  <data name="UndoGroup" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="UndoUngroup" xml:space="preserve">
+    <value>Ungroup</value>
+  </data>
+  <data name="MagneticMenu" xml:space="preserve">
+    <value>_Ripple Mode</value>
+  </data>
+  <data name="MagneticTip" xml:space="preserve">
+    <value>Taking time out closes the gap, and adding time makes room, on every unlocked track</value>
+  </data>
+  <data name="MagneticButton" xml:space="preserve">
+    <value>Ripple</value>
+  </data>
+  <data name="MoveTrackUpMenu" xml:space="preserve">
+    <value>Move the Track _Up</value>
+  </data>
+  <data name="MoveTrackDownMenu" xml:space="preserve">
+    <value>Move the Track _Down</value>
+  </data>
+  <data name="UndoMoveTrack" xml:space="preserve">
+    <value>Move the Track</value>
+  </data>
+  <data name="MarkersTab" xml:space="preserve">
+    <value>Markers</value>
+  </data>
+  <data name="MarkersListName" xml:space="preserve">
+    <value>Markers</value>
+  </data>
+  <data name="MarkersNote" xml:space="preserve">
+    <value>Named places on the timeline. M adds one at the playhead; Ctrl+← and Ctrl+→ go between them.</value>
+  </data>
+  <data name="AddMarkerMenu" xml:space="preserve">
+    <value>Add a _Marker</value>
+  </data>
+  <data name="AddMarkerButton" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="RenameMarkerButton" xml:space="preserve">
+    <value>Rename…</value>
+  </data>
+  <data name="MoveMarkerButton" xml:space="preserve">
+    <value>Move to the Playhead</value>
+  </data>
+  <data name="RemoveMarkerButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="RenameMarkerTitle" xml:space="preserve">
+    <value>Rename the Marker</value>
+  </data>
+  <data name="MarkerName" xml:space="preserve">
+    <value>Marker {0}</value>
+  </data>
+  <data name="MarkerRow" xml:space="preserve">
+    <value>{0}  {1}</value>
+  </data>
+  <data name="NextMarkerMenu" xml:space="preserve">
+    <value>Next Marker</value>
+  </data>
+  <data name="PreviousMarkerMenu" xml:space="preserve">
+    <value>Previous Marker</value>
+  </data>
+  <data name="UndoAddMarker" xml:space="preserve">
+    <value>Add a Marker</value>
+  </data>
+  <data name="UndoMarker" xml:space="preserve">
+    <value>Marker</value>
+  </data>
+  <data name="ProxiesMenu" xml:space="preserve">
+    <value>_Smaller Copies for the Preview</value>
+  </data>
+  <data name="ProxiesTip" xml:space="preserve">
+    <value>Large media previews from a smaller copy made on this PC; the export always uses the original</value>
+  </data>
+  <data name="ProxiesOff" xml:space="preserve">
+    <value>_Off</value>
+  </data>
+  <data name="Proxies1080" xml:space="preserve">
+    <value>_1080p</value>
+  </data>
+  <data name="Proxies720" xml:space="preserve">
+    <value>_720p</value>
+  </data>
+  <data name="MakingProxy" xml:space="preserve">
+    <value>Making a smaller copy of {0}: {1:0} %</value>
+  </data>
+  <data name="ProxyFailed" xml:space="preserve">
+    <value>The smaller copy couldn't be made: {0}</value>
+  </data>
 </root>

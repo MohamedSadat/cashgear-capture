@@ -152,6 +152,38 @@ public partial class MediaPanel : UserControl
         }
     }
 
+    private void OnMarkerKey(object sender, KeyEventArgs e)
+    {
+        if (DataContext is not MediaPanelViewModel panel)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            panel.GoToSelectedMarker();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.F2 && panel.RenameMarkerCommand.CanExecute(null))
+        {
+            panel.RenameMarkerCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Delete && panel.RemoveMarkerCommand.CanExecute(null))
+        {
+            panel.RemoveMarkerCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private void OnMarkerDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (RowAt(e.OriginalSource) is not null && DataContext is MediaPanelViewModel panel)
+        {
+            panel.GoToSelectedMarker();
+        }
+    }
+
     /// <summary>The row an event came from.</summary>
     private static ListBoxItem? RowAt(object source)
     {

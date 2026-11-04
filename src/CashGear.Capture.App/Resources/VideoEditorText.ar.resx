@@ -2358,4 +2358,121 @@
   <data name="UndoBrandClip" xml:space="preserve">
     <value>إضافة من الهوية</value>
   </data>
+  <data name="CopyMenu" xml:space="preserve">
+    <value>نسخ (_C)</value>
+  </data>
+  <data name="CutMenu" xml:space="preserve">
+    <value>قص (_T)</value>
+  </data>
+  <data name="PasteMenu" xml:space="preserve">
+    <value>لصق (_P)</value>
+  </data>
+  <data name="PasteTip" xml:space="preserve">
+    <value>وضع ما نُسخ عند مؤشر التشغيل حيث يتسع له</value>
+  </data>
+  <data name="UndoPaste" xml:space="preserve">
+    <value>لصق</value>
+  </data>
+  <data name="UndoCut" xml:space="preserve">
+    <value>قص</value>
+  </data>
+  <data name="GroupMenu" xml:space="preserve">
+    <value>تجميع (_G)</value>
+  </data>
+  <data name="GroupTip" xml:space="preserve">
+    <value>تتحرك العناصر المختارة وتُقص وتأخذ الإطارات الرئيسية معًا (Ctrl+نقرة لاختيار المزيد)</value>
+  </data>
+  <data name="UngroupMenu" xml:space="preserve">
+    <value>فك التجميع (_U)</value>
+  </data>
+  <data name="UndoGroup" xml:space="preserve">
+    <value>تجميع</value>
+  </data>
+  <data name="UndoUngroup" xml:space="preserve">
+    <value>فك التجميع</value>
+  </data>
+  <data name="MagneticMenu" xml:space="preserve">
+    <value>وضع التموج (_R)</value>
+  </data>
+  <data name="MagneticTip" xml:space="preserve">
+    <value>حذف وقت يغلق الفراغ وإضافة وقت يفتح مكانًا، على كل مسار غير مقفل</value>
+  </data>
+  <data name="MagneticButton" xml:space="preserve">
+    <value>تموج</value>
+  </data>
+  <data name="MoveTrackUpMenu" xml:space="preserve">
+    <value>نقل المسار لأعلى (_U)</value>
+  </data>
+  <data name="MoveTrackDownMenu" xml:space="preserve">
+    <value>نقل المسار لأسفل (_D)</value>
+  </data>
+  <data name="UndoMoveTrack" xml:space="preserve">
+    <value>نقل المسار</value>
+  </data>
+  <data name="MarkersTab" xml:space="preserve">
+    <value>العلامات</value>
+  </data>
+  <data name="MarkersListName" xml:space="preserve">
+    <value>العلامات</value>
+  </data>
+  <data name="MarkersNote" xml:space="preserve">
+    <value>أماكن مسماة على المخطط الزمني. يضيف M علامة عند مؤشر التشغيل، وينتقل Ctrl+← وCtrl+→ بينها.</value>
+  </data>
+  <data name="AddMarkerMenu" xml:space="preserve">
+    <value>إضافة علامة (_M)</value>
+  </data>
+  <data name="AddMarkerButton" xml:space="preserve">
+    <value>إضافة</value>
+  </data>
+  <data name="RenameMarkerButton" xml:space="preserve">
+    <value>إعادة تسمية…</value>
+  </data>
+  <data name="MoveMarkerButton" xml:space="preserve">
+    <value>نقل إلى مؤشر التشغيل</value>
+  </data>
+  <data name="RemoveMarkerButton" xml:space="preserve">
+    <value>إزالة</value>
+  </data>
+  <data name="RenameMarkerTitle" xml:space="preserve">
+    <value>إعادة تسمية العلامة</value>
+  </data>
+  <data name="MarkerName" xml:space="preserve">
+    <value>العلامة {0}</value>
+  </data>
+  <data name="MarkerRow" xml:space="preserve">
+    <value>{0}  {1}</value>
+  </data>
+  <data name="NextMarkerMenu" xml:space="preserve">
+    <value>العلامة التالية</value>
+  </data>
+  <data name="PreviousMarkerMenu" xml:space="preserve">
+    <value>العلامة السابقة</value>
+  </data>
+  <data name="UndoAddMarker" xml:space="preserve">
+    <value>إضافة علامة</value>
+  </data>
+  <data name="UndoMarker" xml:space="preserve">
+    <value>علامة</value>
+  </data>
+  <data name="ProxiesMenu" xml:space="preserve">
+    <value>نسخ أصغر للمعاينة (_S)</value>
+  </data>
+  <data name="ProxiesTip" xml:space="preserve">
+    <value>تُعرض الوسائط الكبيرة من نسخة أصغر تُنشأ على هذا الجهاز؛ ويستخدم التصدير الأصل دائمًا</value>
+  </data>
+  <data name="ProxiesOff" xml:space="preserve">
+    <value>إيقاف (_O)</value>
+  </data>
+  <data name="Proxies1080" xml:space="preserve">
+    <value>1080p (_1)</value>
+  </data>
+  <data name="Proxies720" xml:space="preserve">
+    <value>720p (_7)</value>
+  </data>
+  <data name="MakingProxy" xml:space="preserve">
+    <value>إنشاء نسخة أصغر من {0}: {1:0} %</value>
+  </data>
+  <data name="ProxyFailed" xml:space="preserve">
+    <value>تعذر إنشاء النسخة الأصغر: {0}</value>
+  </data>
 </root>

@@ -64,7 +64,8 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         IPresetStore? presets = null,
         WebcamMasks? masks = null,
         SoundLevelStore? levels = null,
-        CashGear.Capture.Inference.ITranslators? translators = null)
+        CashGear.Capture.Inference.ITranslators? translators = null,
+        ProxyStore? proxies = null)
     {
         _ui = ui;
         _settings = settings;
@@ -74,7 +75,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         _notifier = notifier;
         _loggers = loggers;
         _logger = loggers.CreateLogger<VideoEditorWindows>();
-        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models, Features: features, Presets: presets, Masks: masks, Levels: levels, Translators: translators);
+        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models, Features: features, Presets: presets, Masks: masks, Levels: levels, Translators: translators, Proxies: proxies, Clipboard: new WpfVideoClipboard());
     }
 
     public int OpenCount => _windows.Count;

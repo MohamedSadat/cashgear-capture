@@ -600,11 +600,27 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private Task SaveAsAsync() => SaveCoreAsync(askForPath: true);
 
-    /// <summary>Copies the image with the annotations burned in.</summary>
+    /// <summary>Pastes the annotation copied with Ctrl+C.</summary>
+    [RelayCommand]
+    private void PasteAnnotation()
+    {
+        FinishTextEdit();
+        Session.PasteCopied();
+    }
+
+    /// <summary>Copies the selected annotation, or the image with the annotations burned in.</summary>
     [RelayCommand]
     private async Task CopyAsync()
     {
         FinishTextEdit();
+
+        // With an annotation selected, it is what is copied; Ctrl+V pastes it, in this window or another.
+        if (Session.CopySelection())
+        {
+            ShowMessage(EditorText.AnnotationCopied);
+            return;
+        }
+
         try
         {
             using var image = Flatten();

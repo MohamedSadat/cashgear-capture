@@ -113,6 +113,10 @@ internal static class AppHost
             System.IO.Path.Combine(sp.GetRequiredService<AppPaths>().DataDirectory, "VideoEditor", "cache"),
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CashGear.Capture.VideoEditor.Playback.SoundLevelStore>>()));
         builder.Services.AddSingleton<CashGear.Capture.Inference.ITranslators>(sp => new CashGear.Capture.Inference.OpusTranslators(sp.GetRequiredService<CashGear.Capture.Inference.InferenceModelStore>()));
+        builder.Services.AddSingleton(sp => new CashGear.Capture.VideoEditor.Playback.ProxyStore(
+            System.IO.Path.Combine(sp.GetRequiredService<AppPaths>().DataDirectory, "VideoEditor", "proxies"),
+            sp.GetRequiredService<CashGear.Capture.Core.Recording.IRecordingEncoders>(),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CashGear.Capture.VideoEditor.Playback.ProxyStore>>()));
         builder.Services.AddSingleton<VideoEditor.VideoEditorWindows>();
         builder.Services.AddSingleton<VideoEditor.IVideoEditorLauncher>(sp => sp.GetRequiredService<VideoEditor.VideoEditorWindows>());
         builder.Services.AddSingleton<InterruptedRecordings>();

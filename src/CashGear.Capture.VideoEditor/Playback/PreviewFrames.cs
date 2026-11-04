@@ -30,6 +30,9 @@ public sealed class PreviewFrames : IFrameProvider, IDisposable
         _decoding = decoding;
     }
 
+    /// <summary>Smaller copies of large media, read instead of the originals when there are any.</summary>
+    public IProxyResolver? Proxies { get; set; }
+
     /// <summary>Raised on a decoder thread when a picture arrives.</summary>
     public event EventHandler? FrameReady;
 
@@ -129,8 +132,11 @@ public sealed class PreviewFrames : IFrameProvider, IDisposable
         lock (_gate)
         {
             // Asked with a canvas, a source of another size is made again: the canvas changed shape or framing.
+            var proxy = Proxies?.PathFor(asset, clip.Stream);
             var size = canvas is null ? (0, 0) : DecodeSize(asset.Stream(clip.Stream), canvas);
-            if (_sources.TryGetValue(clip.Id, out var existing) && existing.Path == asset.Path && existing.Stream == clip.Stream && (canvas is null || existing.Size == size))
+            var path = proxy ?? asset.Path;
+            var streamIndex = proxy is null ? clip.Stream : 0;
+            if (_sources.TryGetValue(clip.Id, out var existing) && existing.Path == path && existing.Stream == streamIndex && (canvas is null || existing.Size == size))
             {
                 return existing.Source;
             }
@@ -142,9 +148,19 @@ public sealed class PreviewFrames : IFrameProvider, IDisposable
             }
 
             var (width, height) = DecodeSize(asset.Stream(clip.Stream), canvas);
-            var source = new FrameSource(asset.Path, clip.Stream, _decoding, width, height, _loggers.CreateLogger<FrameSource>());
+            if (proxy is not null)
+            {
+                // No more pixels than the copy has: its size, kept in the picture's shape, at most what the canvas shows.
+                using var reader = new MediaReader(proxy);
+                if (reader.Streams.FirstOrDefault(s => s.IsVideo) is { Height: > 0 } first && first.Height < height)
+                {
+                    (width, height) = (first.Width, first.Height);
+                }
+            }
+
+            var source = new FrameSource(path, streamIndex, _decoding, width, height, _loggers.CreateLogger<FrameSource>());
             source.FrameReady += OnFrameReady;
-            _sources[clip.Id] = (source, asset.Path, clip.Stream, (width, height));
+            _sources[clip.Id] = (source, path, streamIndex, canvas is null ? (width, height) : size);
             return source;
         }
     }

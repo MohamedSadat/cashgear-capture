@@ -29,6 +29,11 @@
     <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding ZoomOutCommand}" />
     <KeyBinding Gesture="Ctrl+T" Command="{Binding ToggleTranscriptCommand}" />
     <KeyBinding Gesture="Ctrl+M" Command="{Binding ToggleMediaCommand}" />
+    <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyCommand}" />
+    <KeyBinding Gesture="Ctrl+X" Command="{Binding CutItemsCommand}" />
+    <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteCommand}" />
+    <KeyBinding Gesture="Ctrl+G" Command="{Binding GroupItemsCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+G" Command="{Binding UngroupItemsCommand}" />
     <KeyBinding Gesture="Ctrl+I" Command="{Binding InsertMediaCommand}" />
     <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomFitCommand}" />
     <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding ZoomFitCommand}" />
@@ -42,9 +47,12 @@
     <BooleanToVisibilityConverter x:Key="Visible" />
 
     <DataTemplate x:Key="TrackHeader" DataType="{x:Type local:TrackHeaderViewModel}">
-      <Border Height="{Binding Height}" BorderThickness="0,0,0,1" BorderBrush="{p:Chrome Separator}" Padding="8,3,4,3" Background="Transparent">
+      <Border Height="{Binding Height}" BorderThickness="0,0,0,1" BorderBrush="{p:Chrome Separator}" Padding="8,3,4,3" Background="Transparent"
+              AllowDrop="True" PreviewMouseLeftButtonDown="OnHeaderPress" PreviewMouseMove="OnHeaderMove" Drop="OnHeaderDrop">
         <Border.ContextMenu>
           <ContextMenu>
+            <MenuItem Header="{x:Static r:VideoEditorText.MoveTrackUpMenu}" Command="{Binding MoveUpCommand}" InputGestureText="Alt+↑" />
+            <MenuItem Header="{x:Static r:VideoEditorText.MoveTrackDownMenu}" Command="{Binding MoveDownCommand}" InputGestureText="Alt+↓" />
             <MenuItem Header="{x:Static r:VideoEditorText.DeleteTrack}" Command="{Binding DeleteCommand}" />
           </ContextMenu>
         </Border.ContextMenu>
@@ -104,6 +112,13 @@
         <MenuItem Header="{Binding UndoText}" Command="{Binding UndoCommand}" InputGestureText="Ctrl+Z" />
         <MenuItem Header="{Binding RedoText}" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y" />
         <Separator />
+        <MenuItem Header="{x:Static r:VideoEditorText.CutMenu}" Command="{Binding CutItemsCommand}" InputGestureText="Ctrl+X" />
+        <MenuItem Header="{x:Static r:VideoEditorText.CopyMenu}" Command="{Binding CopyCommand}" InputGestureText="Ctrl+C" />
+        <MenuItem Header="{x:Static r:VideoEditorText.PasteMenu}" Command="{Binding PasteCommand}" InputGestureText="Ctrl+V" ToolTip="{x:Static r:VideoEditorText.PasteTip}" />
+        <Separator />
+        <MenuItem Header="{x:Static r:VideoEditorText.GroupMenu}" Command="{Binding GroupItemsCommand}" InputGestureText="Ctrl+G" ToolTip="{x:Static r:VideoEditorText.GroupTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.UngroupMenu}" Command="{Binding UngroupItemsCommand}" InputGestureText="Ctrl+Shift+G" />
+        <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.SplitMenu}" Command="{Binding SplitCommand}" InputGestureText="S" />
         <MenuItem Header="{x:Static r:VideoEditorText.DeleteMenu}" Command="{Binding DeleteCommand}" InputGestureText="Del" ToolTip="{x:Static r:VideoEditorText.DeleteMenuTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.RippleDeleteMenu}" Command="{Binding RippleDeleteCommand}" InputGestureText="Shift+Del" ToolTip="{x:Static r:VideoEditorText.RippleDeleteTip}" />
@@ -116,6 +131,10 @@
         <MenuItem Header="{x:Static r:VideoEditorText.MarkInMenu}" Command="{Binding MarkInCommand}" InputGestureText="I" />
         <MenuItem Header="{x:Static r:VideoEditorText.MarkOutMenu}" Command="{Binding MarkOutCommand}" InputGestureText="O" />
         <MenuItem Header="{x:Static r:VideoEditorText.ClearSelectionMenu}" Command="{Binding ClearSelectionCommand}" InputGestureText="Esc" />
+        <Separator />
+        <MenuItem Header="{x:Static r:VideoEditorText.AddMarkerMenu}" Command="{Binding AddMarkerCommand}" InputGestureText="M" />
+        <MenuItem Header="{x:Static r:VideoEditorText.PreviousMarkerMenu}" Command="{Binding PreviousMarkerCommand}" InputGestureText="Ctrl+←" />
+        <MenuItem Header="{x:Static r:VideoEditorText.NextMarkerMenu}" Command="{Binding NextMarkerCommand}" InputGestureText="Ctrl+→" />
       </MenuItem>
       <MenuItem Header="{x:Static r:VideoEditorText.MenuInsert}">
         <MenuItem Header="{x:Static r:VideoEditorText.InsertMediaMenu}" Command="{Binding InsertMediaCommand}" InputGestureText="Ctrl+I" ToolTip="{x:Static r:VideoEditorText.InsertMediaTip}" />
@@ -166,6 +185,13 @@
         <MenuItem Header="{x:Static r:VideoEditorText.TranscriptMenu}" IsCheckable="True" IsChecked="{Binding Transcript.IsShown}" InputGestureText="Ctrl+T" ToolTip="{x:Static r:VideoEditorText.TranscriptTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.LookAndCanvasMenu}" Command="{Binding ShowLookCommand}" ToolTip="{x:Static r:VideoEditorText.LookAndCanvasTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.UseLookMenu}" Command="{Binding UseLookForRecordingsCommand}" ToolTip="{x:Static r:VideoEditorText.UseLookTip}" />
+        <Separator />
+        <MenuItem Header="{x:Static r:VideoEditorText.MagneticMenu}" IsCheckable="True" IsChecked="{Binding IsMagnetic}" ToolTip="{x:Static r:VideoEditorText.MagneticTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.ProxiesMenu}" ToolTip="{x:Static r:VideoEditorText.ProxiesTip}">
+          <MenuItem Header="{x:Static r:VideoEditorText.ProxiesOff}" IsCheckable="True" IsChecked="{Binding ProxiesOff}" />
+          <MenuItem Header="{x:Static r:VideoEditorText.Proxies1080}" IsCheckable="True" IsChecked="{Binding Proxies1080}" />
+          <MenuItem Header="{x:Static r:VideoEditorText.Proxies720}" IsCheckable="True" IsChecked="{Binding Proxies720}" />
+        </MenuItem>
       </MenuItem>
     </Menu>
 
@@ -267,6 +293,7 @@
             <Button Content="{x:Static r:VideoEditorText.BlurButton}" Command="{Binding InsertBlurCommand}" ToolTip="{x:Static r:VideoEditorText.BlurButtonTip}" Margin="4,0" />
             <Button Content="{x:Static r:VideoEditorText.ZoomButton}" Command="{Binding InsertZoomCommand}" ToolTip="{x:Static r:VideoEditorText.InsertZoomTip}" Margin="4,0" />
             <Button Content="{x:Static r:VideoEditorText.CaptionsButton}" Command="{Binding TranscribeCommand}" ToolTip="{x:Static r:VideoEditorText.CaptionsButtonTip}" Margin="4,0" />
+            <ToggleButton Content="{x:Static r:VideoEditorText.MagneticButton}" IsChecked="{Binding IsMagnetic}" ToolTip="{x:Static r:VideoEditorText.MagneticTip}" Padding="8,0" Margin="4,0" />
             <ToggleButton Content="{x:Static r:VideoEditorText.MediaButton}" IsChecked="{Binding Media.IsShown}" ToolTip="{x:Static r:VideoEditorText.MediaTip}" Padding="8,0" Margin="4,0" />
             <ToggleButton Content="{x:Static r:VideoEditorText.TranscriptButton}" IsChecked="{Binding Transcript.IsShown}" ToolTip="{x:Static r:VideoEditorText.TranscriptTip}" Padding="8,0" Margin="4,0,16,0" />
             <Button Content="{x:Static r:VideoEditorText.SplitButton}" Command="{Binding SplitCommand}" ToolTip="{x:Static r:VideoEditorText.SplitButtonTip}" Margin="4,0" />

@@ -43,6 +43,14 @@ public sealed partial class MediaItemViewModel(MediaAsset asset, string details)
     }
 }
 
+/// <summary>A row of the markers' list.</summary>
+public sealed record MarkerRow(TimelineMarker Marker, string Time)
+{
+    public string Text => VideoEditorText.MarkerRow(Time, Marker.Name);
+
+    public override string ToString() => Text;
+}
+
 /// <summary>A row of the templates' library: built in, or saved in the library.</summary>
 public sealed record TemplateRow(TitleTemplate Template, bool IsSaved)
 {
@@ -75,6 +83,78 @@ public sealed partial class MediaPanelViewModel : ObservableObject
         Refresh();
         RefreshTemplates();
         _owner.Previews.Changed += OnPreviewsChanged;
+    }
+
+    /// <summary>The project's markers, in time order.</summary>
+    public ObservableCollection<MarkerRow> Markers { get; } = [];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RenameMarkerCommand))]
+    [NotifyCanExecuteChangedFor(nameof(MoveMarkerCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RemoveMarkerCommand))]
+    private MarkerRow? _selectedMarker;
+
+    private bool HasMarker() => SelectedMarker is not null;
+
+    [RelayCommand]
+    private void AddMarker() => _owner.AddMarkerCommand.Execute(null);
+
+    [RelayCommand(CanExecute = nameof(HasMarker))]
+    private void RenameMarker()
+    {
+        if (SelectedMarker is { } row)
+        {
+            _owner.RenameMarker(row.Marker);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasMarker))]
+    private void MoveMarker()
+    {
+        if (SelectedMarker is { } row)
+        {
+            _owner.MoveMarkerHere(row.Marker);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasMarker))]
+    private void RemoveMarker()
+    {
+        if (SelectedMarker is { } row)
+        {
+            _owner.RemoveMarker(row.Marker);
+        }
+    }
+
+    /// <summary>Enter on a marker: the playhead goes there.</summary>
+    internal void GoToSelectedMarker()
+    {
+        if (SelectedMarker is { } row)
+        {
+            _owner.Seek(row.Marker.Time);
+        }
+    }
+
+    /// <summary>A marker just made is the one chosen.</summary>
+    internal void SelectMarker(string id) => SelectedMarker = Markers.FirstOrDefault(m => m.Marker.Id == id);
+
+    private void RefreshMarkers()
+    {
+        var project = _owner.Project;
+        var chosen = SelectedMarker?.Marker.Id;
+        var markers = project.Markers ?? [];
+        if (Markers.Count == markers.Count && Markers.Zip(markers).All(p => p.First.Marker == p.Second))
+        {
+            return;
+        }
+
+        Markers.Clear();
+        foreach (var marker in markers)
+        {
+            Markers.Add(new MarkerRow(marker, TimelineRenderer.Format(marker.Time, project.Canvas.Fps, frames: true)));
+        }
+
+        SelectedMarker = Markers.FirstOrDefault(m => m.Marker.Id == chosen);
     }
 
     /// <summary>The Titles tab's place among the tabs.</summary>
@@ -302,6 +382,7 @@ public sealed partial class MediaPanelViewModel : ObservableObject
             LoadThumbnails();
         }
 
+        RefreshMarkers();
         if (_keepBrand)
         {
             _brandShown = project.Brand ?? BrandKit.Default;

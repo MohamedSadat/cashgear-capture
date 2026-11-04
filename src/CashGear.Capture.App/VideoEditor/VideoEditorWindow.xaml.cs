@@ -133,6 +133,9 @@ public partial class VideoEditorWindow : Window, IThemedWindow
         ICommand? command = (key, modifiers) switch
         {
             (Key.S, ModifierKeys.None) => viewModel.SplitCommand,
+            (Key.M, ModifierKeys.None) => viewModel.AddMarkerCommand,
+            (Key.Left, ModifierKeys.Control) => viewModel.PreviousMarkerCommand,
+            (Key.Right, ModifierKeys.Control) => viewModel.NextMarkerCommand,
             (Key.I, ModifierKeys.None) => viewModel.MarkInCommand,
             (Key.O, ModifierKeys.None) => viewModel.MarkOutCommand,
             (Key.Delete, ModifierKeys.None) => viewModel.DeleteCommand,
@@ -191,6 +194,53 @@ public partial class VideoEditorWindow : Window, IThemedWindow
     }
 
     private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
+
+    private Point? _headerPressed;
+
+    /// <summary>What a track header's drag carries: its track's id (a format name, not text).</summary>
+    [System.ComponentModel.Localizable(false)]
+    private const string TrackFormat = "CashGear.Capture.Track";
+
+    private void OnHeaderPress(object sender, MouseButtonEventArgs e) =>
+        _headerPressed = e.OriginalSource is DependencyObject source && FindAncestor<ButtonBase>(source) is null && FindAncestor<Slider>(source) is null ? e.GetPosition(Headers) : null;
+
+    private void OnHeaderMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _headerPressed is not { } from || sender is not FrameworkElement { DataContext: TrackHeaderViewModel header })
+        {
+            return;
+        }
+
+        var moved = e.GetPosition(Headers) - from;
+        if (Math.Abs(moved.Y) >= SystemParameters.MinimumVerticalDragDistance)
+        {
+            _headerPressed = null;
+            DragDrop.DoDragDrop((DependencyObject)sender, new DataObject(TrackFormat, header.Track.Id), DragDropEffects.Move);
+        }
+    }
+
+    private void OnHeaderDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(TrackFormat) is string track && sender is FrameworkElement { DataContext: TrackHeaderViewModel target } && DataContext is VideoEditorViewModel viewModel)
+        {
+            viewModel.MoveTrackTo(track, target.Track.Id);
+            e.Handled = true;
+        }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject element)
+        where T : DependencyObject
+    {
+        for (var at = element; at is not null; at = at is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(at) : LogicalTreeHelper.GetParent(at))
+        {
+            if (at is T found)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>The media panel's column takes its width back when it is shown, and all of it when it is hidden.</summary>
     private void ShowMedia(bool shown)

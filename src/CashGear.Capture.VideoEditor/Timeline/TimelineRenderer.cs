@@ -97,7 +97,7 @@ public sealed class TimelineRenderer : IDisposable
         var rows = TimelineView.Rows(project);
         for (var i = 0; i < rows.Count; i++)
         {
-            DrawRow(canvas, view, project, rows[i], i, session.SelectedId);
+            DrawRow(canvas, view, project, rows[i], i, session.SelectedId, session.SelectedIds);
         }
 
         if (session.Range is { } range)
@@ -115,6 +115,7 @@ public sealed class TimelineRenderer : IDisposable
 
         canvas.Restore();
         DrawRuler(canvas, view, project.Canvas.Fps, session.Range);
+        DrawMarkers(canvas, view, project);
         DrawPlayhead(canvas, view, session.Playhead);
         canvas.Restore();
     }
@@ -167,6 +168,38 @@ public sealed class TimelineRenderer : IDisposable
         }
     }
 
+    /// <summary>A flag on the ruler at each marker, with its name beside it.</summary>
+    private void DrawMarkers(SKCanvas canvas, TimelineView view, VideoProject project)
+    {
+        if (project.Markers is not { Count: > 0 } markers)
+        {
+            return;
+        }
+
+        using var flag = new SKPaint { Color = Colors.Selection, IsAntialias = true };
+        using var text = new SKPaint { Color = Colors.Text, IsAntialias = true };
+        foreach (var marker in markers)
+        {
+            var x = (float)view.X(marker.Time);
+            if (x < -200 || x > view.Width + 10)
+            {
+                continue;
+            }
+
+            using var builder = new SKPathBuilder();
+            builder.MoveTo(x, (float)TimelineView.RulerHeight);
+            builder.LineTo(x, (float)TimelineView.RulerHeight - 12);
+            builder.LineTo(x + 8, (float)TimelineView.RulerHeight - 8);
+            builder.LineTo(x + 1.5f, (float)TimelineView.RulerHeight - 4);
+            builder.LineTo(x + 1.5f, (float)TimelineView.RulerHeight);
+            builder.Close();
+            using var path = builder.Detach();
+            canvas.DrawPath(path, flag);
+            var line = TextShaper.Shape(marker.Name, _small.Typeface, _small.Size, Bidi.IsRightToLeft(marker.Name));
+            line.Draw(canvas, x + 10, (float)TimelineView.RulerHeight - 3, _small, text);
+        }
+    }
+
     private void DrawPlayhead(SKCanvas canvas, TimelineView view, double playhead)
     {
         var x = (float)view.X(playhead);
@@ -189,7 +222,7 @@ public sealed class TimelineRenderer : IDisposable
         canvas.DrawPath(head, fill);
     }
 
-    private void DrawRow(SKCanvas canvas, TimelineView view, VideoProject project, TrackRow row, int index, string? selected)
+    private void DrawRow(SKCanvas canvas, TimelineView view, VideoProject project, TrackRow row, int index, string? selected, IReadOnlyList<string> selection)
     {
         var top = (float)view.RowTop(row);
         var height = (float)row.Height;
@@ -217,7 +250,7 @@ public sealed class TimelineRenderer : IDisposable
             }
 
             var box = new SKRect(left, top + 3, Math.Max(left + 2, right), top + height - (float)row.Lane - 3);
-            var isSelected = item.Id == selected;
+            var isSelected = item.Id == selected || selection.Contains(item.Id);
             var fill = isSelected && Colors.SelectedItem.Alpha > 0 ? Colors.SelectedItem : dimmed ? color.WithAlpha(0x70) : color;
             var label = isSelected && Colors.SelectedItem.Alpha > 0 ? Colors.SelectedLabel : dimmed ? Colors.DimmedLabel : Colors.Label;
             DrawItem(canvas, project, item, box, item is Clip { Solid: { } solid } && !isSelected ? Rendering.FrameCompositor.Color(solid, fill) : fill, label, view);
@@ -344,6 +377,13 @@ public sealed class TimelineRenderer : IDisposable
             {
                 DrawWaveform(canvas, previews.WaveformOf(asset, media.Stream), media, box, view, Colors.Waveform);
             }
+        }
+
+        if (item.Group is not null)
+        {
+            // A line along the bottom says it belongs with others.
+            using var together = new SKPaint { Color = labelColor, StrokeWidth = 2, PathEffect = SKPathEffect.CreateDash([4, 3], 0) };
+            canvas.DrawLine(box.Left, box.Bottom - 2, box.Right, box.Bottom - 2, together);
         }
 
         if (item is Clip shaped)
