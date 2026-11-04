@@ -1120,7 +1120,15 @@ public sealed class SoundPostTests(ITestOutputHelper output) : IDisposable
     public async Task Each_track_is_a_titled_stream_that_matches_a_solo_export_of_it(string presetId)
     {
         TestMedia.Require();
-        using var turn = new CashGear.Capture.Tests.MachineTurn(); // VP9 works every core
+        await CashGear.Capture.Tests.MachineTurn.RunAsync(async () => // VP9 works every core
+        {
+            await TitledStreams(presetId);
+            return 0;
+        });
+    }
+
+    private async Task TitledStreams(string presetId)
+    {
         var project = Tones();
         var preset = ExportPresets.Find(presetId)!;
         var path = OutFile("streams-" + presetId + preset.Extension);

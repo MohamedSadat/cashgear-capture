@@ -115,8 +115,8 @@ public sealed class VideoEditorWindowTests : VideoEditorTestBase
         try
         {
             await Task.Delay(500);
-            Find<ComboBox>(window).Where(c => c.IsVisible).Should().HaveCount(2, "the GIF choices are hidden for an MP4");
-            Find<ComboBox>(window)[0].Items.Count.Should().Be(12);
+            Find<ComboBox>(window).Where(c => c.IsVisible).Should().HaveCount(4, "the format, the quality, the loudness and the sound tracks: the GIF choices are hidden for an MP4");
+            Find<ComboBox>(window)[0].Items.Count.Should().Be(15);
             Find<Button>(window).Select(b => b.Content as string).Should().Contain(["Browse…", "Export", "Close"]);
         }
         finally

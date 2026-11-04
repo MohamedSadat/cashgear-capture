@@ -77,8 +77,12 @@ public sealed class SoundPanelWindowTests : VideoEditorTestBase
             buttons.Should().Contain(b => NameOf(b) == VideoEditorText.EvenOut);
             buttons.Should().Contain(b => NameOf(b) == VideoEditorText.DuckThisTrack);
 
-            // The space bar turns a switch on, and what it brings with it can be reached and moved with the keys.
+            // Reached with the keys, the space bar turns a switch on (reached otherwise it plays, as everywhere in the window),
+            // and what it brings with it can be reached and moved with the keys.
             boxes[0].Focus();
+            await VideoEditorKeyboardTests.Press(Key.Tab);
+            await VideoEditorKeyboardTests.Press(Key.Tab, Key.LeftShift);
+            Keyboard.FocusedElement.Should().Be(boxes[0]);
             await VideoEditorKeyboardTests.Press(Key.Space);
             await Until(() => (vm.Project.Find(clip.Id)!.Value.Item as Clip)?.Sound?.Gate == true);
             ((Clip)vm.Project.Find(clip.Id)!.Value.Item).Sound!.Gate.Should().BeTrue();
@@ -93,9 +97,10 @@ public sealed class SoundPanelWindowTests : VideoEditorTestBase
             threshold.Value.Should().NotBe(before);
 
             // The window's menu lists the sound devices.
-            var output = Find<MenuItem>(window).First(m => m.ItemsSource == vm.OutputDevices);
-            output.Should().NotBeNull();
-            vm.OutputDevices.Should().NotBeEmpty();
+            static IEnumerable<MenuItem> All(ItemsControl menu) => menu.Items.OfType<MenuItem>().SelectMany(m => All(m).Prepend(m));
+            var output = All(Find<Menu>(window).Single()).Single(m => m.Header as string == VideoEditorText.SoundOutputMenu);
+            output.ItemsSource.Should().BeSameAs(vm.OutputDevices);
+            vm.OutputDevices.Should().NotBeEmpty("Windows' default is always there, so the menu always opens");
             window.PreviewPaints.Should().BeGreaterThanOrEqualTo(0);
         }
         finally
@@ -122,7 +127,7 @@ public sealed class SoundPanelWindowTests : VideoEditorTestBase
             boxes.Should().OnlyContain(b => NameOf(b).Length > 0);
             var loudness = boxes.Single(b => b.ItemsSource == export.Loudnesses);
             NameOf(loudness).Should().Be(VideoEditorText.ExportLoudnessLabel);
-            boxes.Single(b => b.ItemsSource == export.TracksOutChoices).SelectedItem.Should().Be(export.TracksOut);
+            boxes.Single(b => b.SelectedItem is TracksOutChoice).SelectedItem.Should().Be(export.TracksOut);
 
             export.SelectedPreset = CashGear.Capture.VideoEditor.Export.ExportPresets.Gif;
             await Task.Delay(200);
