@@ -477,7 +477,7 @@ public sealed class TranscriptTests
               "tracks": [ { "id": "c", "kind": "Caption", "name": "Captions", "items": [], "captions": { "color": "#FFFFFF" } } ] }
             """;
         var project = ProjectJson.Deserialize(System.Text.Encoding.UTF8.GetBytes(json));
-        project.Version.Should().Be(3);
+        project.Version.Should().Be(VideoProject.CurrentVersion);
         project.Asset("a")!.Transcript.Should().BeNull();
         project.Track("c")!.Captions!.Box.Should().Be(CaptionStyle.DefaultBox, "what older versions read a style without one as");
     }
