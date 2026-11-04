@@ -37,6 +37,7 @@ public sealed partial class PlaybackEngine : IDisposable
     private double _start;
     private double _paused;
     private bool _playing;
+    private volatile bool _disposed;
     private bool _useClock;
     private long _silence;
 
@@ -74,6 +75,11 @@ public sealed partial class PlaybackEngine : IDisposable
 
     public void Play(double from)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         Stop();
         var duration = _project().Duration;
         _start = from >= duration - 0.01 ? 0 : Math.Max(0, from);
@@ -123,6 +129,11 @@ public sealed partial class PlaybackEngine : IDisposable
     /// <summary>The next sound goes to the device the output delegate gives now (another was chosen); playing goes on from where it is, there.</summary>
     public void ChangeOutput()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         var playing = _playing;
         var position = Position;
         Stop();
@@ -180,7 +191,13 @@ public sealed partial class PlaybackEngine : IDisposable
 
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         Stop();
+        _disposed = true;
         _output?.Dispose();
         _output = null;
         _queue.Dispose();
@@ -188,6 +205,11 @@ public sealed partial class PlaybackEngine : IDisposable
 
     private void Stop()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         _playing = false;
         _output?.Stop();
         _stop?.Cancel();

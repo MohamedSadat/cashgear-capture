@@ -2798,6 +2798,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     internal async Task ChooseOutputAsync(string? deviceId)
     {
         await _services.State.UpdateAsync(s => s with { VideoEditor = (s.VideoEditor ?? new VideoEditorState()) with { PreviewOutput = deviceId } });
+        if (_disposed)
+        {
+            return; // the window closed while that was written: the choice is kept for next time
+        }
+
         Engine.ChangeOutput();
         RefreshOutputDevices();
     }

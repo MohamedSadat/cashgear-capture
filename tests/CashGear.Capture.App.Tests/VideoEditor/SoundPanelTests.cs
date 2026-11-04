@@ -325,6 +325,20 @@ public sealed class SoundPanelTests : VideoEditorTestBase
     }
 
     [Fact]
+    public async Task Choosing_a_device_just_as_the_window_closes_keeps_the_choice_and_harms_nothing()
+    {
+        // Choosing writes the state first, and the window may close meanwhile (this took a test process down, once in two full runs).
+        var withDevices = Services with { AudioDevices = new TwoDevices(), AudioOutput = () => new NoSound() };
+        var vm = Sounding(withDevices);
+        vm.Engine.Play(0);
+        vm.Dispose();
+        await vm.ChooseOutputAsync("{two}");
+        State.Current.VideoEditor!.PreviewOutput.Should().Be("{two}");
+        vm.Engine.ChangeOutput();
+        vm.Engine.Dispose();
+    }
+
+    [Fact]
     public async Task The_preview_can_play_on_another_device_and_remembers_it()
     {
         var made = new List<string?>();
