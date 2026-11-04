@@ -14,7 +14,7 @@ public static class TranscriptBuilder
     private const double SearchAhead = 0.08;
 
     /// <summary>What moving away from the aligned time costs, in decibels a second: the quietest moment wins unless it is far.</summary>
-    private const double CostOfMoving = 10;
+    private const double CostOfMoving = 60;
 
     /// <summary>The level below which all that is left is noise, in decibels: going lower doesn't make a place better.</summary>
     private const double Inaudible = -60;
@@ -155,7 +155,7 @@ public static class TranscriptBuilder
         var lowest = double.MaxValue;
         for (var frame = from; frame <= to; frame++)
         {
-            var cost = Math.Max(levels.Level(frame), Inaudible) + (CostOfMoving * Math.Abs(frame - center) / SoundLevels.PerSecond);
+            var cost = Math.Max(levels.SharpLevel(frame), Inaudible) + (CostOfMoving * Math.Abs(frame - center) / SoundLevels.PerSecond);
             if (cost < lowest)
             {
                 lowest = cost;

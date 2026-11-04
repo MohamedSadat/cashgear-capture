@@ -63,7 +63,8 @@ public sealed record VideoEditorServices(
     WhisperModelStore? Models = null,
     IFeatureGate? Features = null,
     IPresetStore? Presets = null,
-    WebcamMasks? Masks = null)
+    WebcamMasks? Masks = null,
+    SoundLevelStore? Levels = null)
 {
     /// <summary>Which Pro features may be used (all of them in this version).</summary>
     public IFeatureGate Gate => Features ?? FeatureGate.Open;
@@ -177,6 +178,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     private (ProjectCanvas Canvas, Placement? Screen)? _lookShown;
     private readonly CancellationTokenSource _closing = new();
     private readonly HashSet<string> _masksAsked = [];
+    private double? _stopAt;
 
     /// <summary>Motion blur's samples in a preview on the graphics card, and in one drawn in memory, where they cost far more.</summary>
     public const int GpuMotionSamples = 16;
@@ -213,7 +215,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         RebuildTracks();
         RefreshLook();
         MakeMasks();
+        Transcript = new TranscriptPanelViewModel(this, services);
     }
+
+    /// <summary>The transcript panel beside the preview.</summary>
+    public TranscriptPanelViewModel Transcript { get; }
 
     /// <summary>The preview should be drawn again (raised on any thread).</summary>
     public event EventHandler? PreviewInvalidated;
@@ -412,6 +418,16 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         PreviewInvalidated?.Invoke(this, EventArgs.Empty);
         OnPropertyChanged(nameof(Position));
         OnPropertyChanged(nameof(TimeText));
+        Transcript.PlayheadMoved(time);
+    }
+
+    /// <summary>Plays from <paramref name="from"/> and stops at <paramref name="to"/> (a row of a review list).</summary>
+    public void PlayRange(double from, double to)
+    {
+        StopPlaying();
+        Seek(from);
+        _stopAt = to;
+        PlayPause();
     }
 
     /// <summary>The render loop's step (UI thread): the playhead follows playback, and the decoders follow the playhead.</summary>
@@ -433,6 +449,13 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             if (ended)
             {
                 OnPropertyChanged(nameof(IsPlaying));
+            }
+
+            Transcript.PlayheadMoved(Timeline.Playhead);
+            if (_stopAt is { } stop && Timeline.Playhead >= stop)
+            {
+                _stopAt = null;
+                PlayPause();
             }
         }
 
@@ -606,6 +629,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
     {
         if (Engine.IsPlaying)
         {
+            _stopAt = null;
             Engine.Pause();
             Timeline.Playhead = Times.FrameStart(Engine.Position, Project.Canvas.Fps);
         }
@@ -758,6 +782,58 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             _services.Gate);
         _dialogs.ShowExport(viewModel);
     }
+
+    /// <summary>View › Transcript: shows or hides the panel beside the preview.</summary>
+    [RelayCommand]
+    private void ToggleTranscript() => Transcript.IsShown = !Transcript.IsShown;
+
+    /// <summary>A transcript of the media on a sound track: the window that makes it; it comes back as one undo step. Null when there is nothing to listen to.</summary>
+    public TranscribeViewModel? OpenTranscript()
+    {
+        StopPlaying();
+        if (_services.Transcriber is null || _services.Models is null)
+        {
+            _dialogs.ShowError(VideoEditorText.SpeechUnavailable);
+            return null;
+        }
+
+        if (!Project.Tracks.Any(t => t.HasSound && t.Items.Count > 0))
+        {
+            _dialogs.ShowError(VideoEditorText.NoSoundForCaptions);
+            return null;
+        }
+
+        var viewModel = new TranscribeViewModel(Project, null, _services.Transcriber, _services.Models, _services.State, _services.Loggers.CreateLogger<TranscribeViewModel>(), (_, _) => { }, AddTranscripts, _services.Levels);
+        _dialogs.ShowTranscribe(viewModel);
+        return viewModel;
+    }
+
+    private void AddTranscripts(IReadOnlyList<MadeTranscript> made)
+    {
+        var project = Project;
+        foreach (var (assetId, transcript) in made)
+        {
+            project = TranscriptEdits.WithTranscript(project, assetId, transcript);
+        }
+
+        History.Apply(VideoEditorText.UndoMakeTranscript, project);
+        Transcript.IsShown = true;
+    }
+
+    /// <summary>Whether <paramref name="feature"/> may be used; says it is part of Pro when it can't.</summary>
+    internal bool AllowedFeature(ProFeature feature) => Allowed(feature);
+
+    /// <summary>A time as the timeline writes it.</summary>
+    internal string FormatTime(double seconds) => Format(seconds);
+
+    /// <summary>Stops playing before an edit.</summary>
+    internal void StopPlayingNow() => StopPlaying();
+
+    /// <summary>Says what went wrong.</summary>
+    internal void ShowProblem(string message) => _dialogs.ShowError(message);
+
+    /// <summary>Cancelled when the window closes.</summary>
+    internal CancellationToken ClosingToken => _closing.Token;
 
     /// <summary>Whether <paramref name="feature"/> may be used; says it is part of Pro when it can't.</summary>
     private bool Allowed(ProFeature feature)
@@ -1476,6 +1552,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         RefreshProperties();
         RefreshLook();
         MakeMasks();
+        Transcript.Refresh();
         OnPropertyChanged(nameof(Status));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(IsDirty));

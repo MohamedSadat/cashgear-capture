@@ -8,7 +8,7 @@
         xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:TranscribeViewModel}"
-        Title="{x:Static r:VideoEditorText.TranscribeTitle}"
+        Title="{Binding TitleText}"
         Width="560" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         FocusManager.FocusedElement="{Binding ElementName=SoundBox}">
@@ -18,7 +18,7 @@
   <!-- Enter makes the captions (the default button), Esc cancels or closes (the cancel button); the buttons come last for Tab. -->
   <StackPanel Margin="20">
     <TextBlock TextWrapping="Wrap" Margin="0,0,0,14" Opacity="0.8"
-               Text="{x:Static r:VideoEditorText.TranscribeIntro}" />
+               Text="{Binding IntroText}" />
     <Grid IsEnabled="{Binding IsIdle}">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
@@ -45,6 +45,7 @@
 
       <StackPanel Grid.Row="3" Grid.Column="1">
         <CheckBox Content="{x:Static r:VideoEditorText.UseGpu}" IsChecked="{Binding UseGpu}" Margin="0,0,0,4" />
+        <CheckBox Content="{x:Static r:VideoEditorText.KeepFillers}" IsChecked="{Binding KeepFillers}" Margin="0,0,0,4" Visibility="{Binding MakesTranscript, Converter={StaticResource Visible}}" />
         <CheckBox Content="{Binding RangeText}" IsChecked="{Binding OnlyRange}" Visibility="{Binding HasRange, Converter={StaticResource Visible}}" />
       </StackPanel>
     </Grid>
@@ -57,7 +58,7 @@
                AutomationProperties.LiveSetting="Assertive" Binding.TargetUpdated="OnLiveTextUpdated" />
 
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-      <Button Content="{x:Static r:VideoEditorText.MakeCaptions}" Command="{Binding StartCommand}" IsDefault="True" MinWidth="110" Margin="0,0,8,0" />
+      <Button Content="{Binding StartText}" Command="{Binding StartCommand}" IsDefault="True" MinWidth="110" Margin="0,0,8,0" />
       <Button x:Name="CancelButton" Command="{Binding CancelCommand}" IsCancel="True" MinWidth="88" />
     </StackPanel>
   </StackPanel>

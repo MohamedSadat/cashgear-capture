@@ -27,6 +27,7 @@
     <KeyBinding Gesture="Ctrl+Add" Command="{Binding ZoomInCommand}" />
     <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding ZoomOutCommand}" />
     <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding ZoomOutCommand}" />
+    <KeyBinding Gesture="Ctrl+T" Command="{Binding ToggleTranscriptCommand}" />
     <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomFitCommand}" />
     <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding ZoomFitCommand}" />
   </Window.InputBindings>
@@ -140,12 +141,14 @@
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertCaptionMenu}" Command="{Binding InsertCaptionCommand}" ToolTip="{x:Static r:VideoEditorText.InsertCaptionTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.TranscribeMenu}" Command="{Binding TranscribeCommand}" ToolTip="{x:Static r:VideoEditorText.TranscribeMenuTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.CaptionsFromTranscriptMenu}" Command="{Binding Transcript.MakeCaptionsCommand}" ToolTip="{x:Static r:VideoEditorText.CaptionsFromTranscriptTip}" />
       </MenuItem>
       <MenuItem Header="{x:Static r:VideoEditorText.MenuView}">
         <MenuItem Header="{x:Static r:VideoEditorText.ZoomInMenu}" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
         <MenuItem Header="{x:Static r:VideoEditorText.ZoomOutMenu}" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />
         <MenuItem Header="{x:Static r:VideoEditorText.FitTimelineMenu}" Command="{Binding ZoomFitCommand}" InputGestureText="Ctrl+0" />
         <Separator />
+        <MenuItem Header="{x:Static r:VideoEditorText.TranscriptMenu}" IsCheckable="True" IsChecked="{Binding Transcript.IsShown}" InputGestureText="Ctrl+T" ToolTip="{x:Static r:VideoEditorText.TranscriptTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.LookAndCanvasMenu}" Command="{Binding ShowLookCommand}" ToolTip="{x:Static r:VideoEditorText.LookAndCanvasTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.UseLookMenu}" Command="{Binding UseLookForRecordingsCommand}" ToolTip="{x:Static r:VideoEditorText.UseLookTip}" />
       </MenuItem>
@@ -209,7 +212,19 @@
       </Grid.RowDefinitions>
 
       <!-- The preview, the transport and the timeline run left to right in every language: time goes that way on screen. -->
-      <local:PreviewHost x:Name="Preview" Grid.Row="0" FlowDirection="LeftToRight" />
+      <Grid Grid.Row="0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" MinWidth="200" />
+          <ColumnDefinition x:Name="TranscriptSplitterColumn" Width="5" />
+          <ColumnDefinition x:Name="TranscriptColumn" Width="330" MinWidth="0" />
+        </Grid.ColumnDefinitions>
+        <local:PreviewHost x:Name="Preview" FlowDirection="LeftToRight" />
+        <GridSplitter x:Name="TranscriptSplitter" Grid.Column="1" HorizontalAlignment="Stretch" ResizeDirection="Columns" Background="Transparent"
+                      AutomationProperties.Name="{x:Static r:VideoEditorText.TranscriptSplitterName}" />
+        <Border x:Name="TranscriptArea" Grid.Column="2" BorderThickness="1,0,0,0" BorderBrush="{p:Chrome Separator}">
+          <local:TranscriptPanel x:Name="TranscriptPanelView" />
+        </Border>
+      </Grid>
 
       <!-- Transport: the playback buttons first (also for Tab), the editing buttons filling the rest, on the far side -->
       <Border Grid.Row="1" Padding="10,6" BorderThickness="0,1,0,1" BorderBrush="{p:Chrome Separator}">
@@ -229,7 +244,8 @@
             <Button Content="{x:Static r:VideoEditorText.ArrowButton}" Command="{Binding InsertArrowCommand}" ToolTip="{x:Static r:VideoEditorText.ArrowButtonTip}" Margin="4,0" />
             <Button Content="{x:Static r:VideoEditorText.BlurButton}" Command="{Binding InsertBlurCommand}" ToolTip="{x:Static r:VideoEditorText.BlurButtonTip}" Margin="4,0" />
             <Button Content="{x:Static r:VideoEditorText.ZoomButton}" Command="{Binding InsertZoomCommand}" ToolTip="{x:Static r:VideoEditorText.InsertZoomTip}" Margin="4,0" />
-            <Button Content="{x:Static r:VideoEditorText.CaptionsButton}" Command="{Binding TranscribeCommand}" ToolTip="{x:Static r:VideoEditorText.CaptionsButtonTip}" Margin="4,0,16,0" />
+            <Button Content="{x:Static r:VideoEditorText.CaptionsButton}" Command="{Binding TranscribeCommand}" ToolTip="{x:Static r:VideoEditorText.CaptionsButtonTip}" Margin="4,0" />
+            <ToggleButton Content="{x:Static r:VideoEditorText.TranscriptButton}" IsChecked="{Binding Transcript.IsShown}" ToolTip="{x:Static r:VideoEditorText.TranscriptTip}" Padding="8,0" Margin="4,0,16,0" />
             <Button Content="{x:Static r:VideoEditorText.SplitButton}" Command="{Binding SplitCommand}" ToolTip="{x:Static r:VideoEditorText.SplitButtonTip}" Margin="4,0" />
             <Button Content="{x:Static r:CommonText.Delete}" Command="{Binding DeleteCommand}" ToolTip="{x:Static r:VideoEditorText.DeleteButtonTip}" Margin="4,0" />
             <Button Content="{x:Static r:VideoEditorText.ExportButton}" Command="{Binding ExportCommand}" ToolTip="{x:Static r:VideoEditorText.ExportButtonTip}" Margin="4,0" />

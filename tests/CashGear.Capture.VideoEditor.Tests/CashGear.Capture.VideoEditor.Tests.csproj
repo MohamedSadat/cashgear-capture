@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CashGear.Capture.VideoEditor\CashGear.Capture.VideoEditor.csproj" />
+    <ProjectReference Include="..\..\src\CashGear.Capture.Transcription\CashGear.Capture.Transcription.csproj" />
   </ItemGroup>
 
   <!-- The real FFmpeg libraries (and ffmpeg.exe / ffprobe.exe for independent checks) when tools\ffmpeg has them; the tests that need them skip otherwise. -->
@@ -22,6 +23,7 @@
 
   <ItemGroup>
     <Compile Include="..\MachineTurn.cs" Link="MachineTurn.cs" />
+    <Compile Include="..\CashGear.Capture.Transcription.Tests\Speech.cs" Link="Speech.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\StampedRecording.cs" Link="Media\StampedRecording.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\TestMedia.cs" Link="Media\TestMedia.cs" />
     <Compile Include="..\CashGear.Capture.Media.Tests\GifProbe.cs" Link="Media\GifProbe.cs" />

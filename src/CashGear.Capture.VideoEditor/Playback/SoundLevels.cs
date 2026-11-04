@@ -23,7 +23,7 @@ public sealed class SoundLevels
     private const double Inaudible = -70;
 
     private const int FileMagic = 0x4C564743; // "CGVL"
-    private const int FileVersion = 1;
+    private const int FileVersion = 2;
 
     /// <summary>The levels, in decibels.</summary>
     private readonly float[] _levels;
@@ -31,12 +31,17 @@ public sealed class SoundLevels
     /// <summary>Whether the sound has a pitch there, as a voice does (a click or a fan doesn't).</summary>
     private readonly bool[] _voiced;
 
-    public SoundLevels(float[] levels, bool[] voiced)
+    /// <summary>The levels with the high frequencies made more of, in decibels: an "s" is as loud as a vowel in them, so the gap between words shows.</summary>
+    private readonly float[] _sharp;
+
+    /// <param name="sharp">The levels with the high frequencies made more of (null: the levels themselves).</param>
+    public SoundLevels(float[] levels, bool[] voiced, float[]? sharp = null)
     {
         ArgumentNullException.ThrowIfNull(levels);
         ArgumentNullException.ThrowIfNull(voiced);
         _levels = levels;
         _voiced = voiced;
+        _sharp = sharp ?? levels;
         var sorted = levels.Order().ToArray();
         Floor = sorted.Length == 0 ? Lowest : sorted[sorted.Length / 20];
         Loud = sorted.Length == 0 ? Lowest : sorted[(int)(sorted.Length * 0.95)];
@@ -63,6 +68,9 @@ public sealed class SoundLevels
 
     public double Level(int frame) => _levels.Length == 0 ? Lowest : _levels[Math.Clamp(frame, 0, _levels.Length - 1)];
 
+    /// <summary>The frame's level with the high frequencies made more of: for finding the gap between words.</summary>
+    public double SharpLevel(int frame) => _sharp.Length == 0 ? Lowest : _sharp[Math.Clamp(frame, 0, _sharp.Length - 1)];
+
     public bool IsVoiced(int frame) => _voiced.Length != 0 && _voiced[Math.Clamp(frame, 0, _voiced.Length - 1)];
 
     public bool IsQuiet(int frame) => Level(frame) < QuietBelow;
@@ -74,30 +82,35 @@ public sealed class SoundLevels
         var count = samples.Length / Hop;
         var levels = new float[count];
         var pitched = new bool[count];
+        var sharp = new float[count];
         const int half = Hop; // 20 ms around each frame's time
         Parallel.For(0, count, new ParallelOptions { CancellationToken = ct }, frame =>
         {
             var from = Math.Max(0, (frame * Hop) - half);
             var to = Math.Min(samples.Length, (frame * Hop) + half);
             double sum = 0;
+            double sharpSum = 0;
             for (var i = from; i < to; i++)
             {
                 sum += samples[i] * samples[i];
+                var change = i > 0 ? samples[i] - (0.95f * samples[i - 1]) : samples[i];
+                sharpSum += change * change;
             }
 
             levels[frame] = (float)Math.Max(Lowest, 10 * Math.Log10((sum / Math.Max(1, to - from)) + 1e-12));
+            sharp[frame] = (float)Math.Max(Lowest, 10 * Math.Log10((sharpSum / Math.Max(1, to - from)) + 1e-12));
             pitched[frame] = HasPitch(samples, frame * Hop);
         });
 
         // Voiced means a pitch in sound that isn't near the floor: a pitch in the noise is the mains' hum.
-        var result = new SoundLevels(levels, pitched);
+        var result = new SoundLevels(levels, pitched, sharp);
         var voiced = new bool[count];
         for (var frame = 0; frame < count; frame++)
         {
             voiced[frame] = pitched[frame] && levels[frame] >= result.QuietBelow;
         }
 
-        return new SoundLevels(levels, voiced);
+        return new SoundLevels(levels, voiced, sharp);
     }
 
     /// <summary>
@@ -170,6 +183,11 @@ public sealed class SoundLevels
             {
                 writer.Write(voiced);
             }
+
+            foreach (var level in _sharp)
+            {
+                writer.Write((short)Math.Round(level * 100));
+            }
         }
 
         File.Move(partial, path, overwrite: true);
@@ -198,7 +216,13 @@ public sealed class SoundLevels
                 voiced[i] = reader.ReadBoolean();
             }
 
-            return new SoundLevels(levels, voiced);
+            var sharp = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                sharp[i] = reader.ReadInt16() / 100f;
+            }
+
+            return new SoundLevels(levels, voiced, sharp);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

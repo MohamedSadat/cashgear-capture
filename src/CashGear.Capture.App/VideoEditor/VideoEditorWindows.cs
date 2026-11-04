@@ -62,7 +62,8 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         WhisperModelStore models,
         IFeatureGate? features = null,
         IPresetStore? presets = null,
-        WebcamMasks? masks = null)
+        WebcamMasks? masks = null,
+        SoundLevelStore? levels = null)
     {
         _ui = ui;
         _settings = settings;
@@ -72,7 +73,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         _notifier = notifier;
         _loggers = loggers;
         _logger = loggers.CreateLogger<VideoEditorWindows>();
-        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models, Features: features, Presets: presets, Masks: masks);
+        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(), Transcriber: transcriber, Models: models, Features: features, Presets: presets, Masks: masks, Levels: levels);
     }
 
     public int OpenCount => _windows.Count;

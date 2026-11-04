@@ -146,6 +146,14 @@ public sealed partial class WhisperTranscriber(ILogger<WhisperTranscriber> logge
             : WhisperAlignmentHeadsPreset.None;
     }
 
+    /// <summary>How much earlier than the true end of a word its alignment time is, in seconds (measured against a voice's own word marks: TESTING.md).</summary>
+    internal static double Lag(WhisperAlignmentHeadsPreset heads) => heads switch
+    {
+        WhisperAlignmentHeadsPreset.None => 0,
+        WhisperAlignmentHeadsPreset.Base or WhisperAlignmentHeadsPreset.Tiny => 0.02,
+        _ => 0.05,
+    };
+
     private async Task<TranscriptionResult> RunAsync(float[] samples, TranscriptionOptions options, IProgress<double>? progress, CancellationToken ct)
     {
         var heads = options.Translate ? WhisperAlignmentHeadsPreset.None : Heads(options.ModelPath);
@@ -204,7 +212,7 @@ public sealed partial class WhisperTranscriber(ILogger<WhisperTranscriber> logge
                     heard = segment.Language;
                 }
 
-                segments.Add(new TranscriptSegment(segment.Start.TotalSeconds + offset, segment.End.TotalSeconds + offset, text, Words(segment, text, offset, aligned)));
+                segments.Add(new TranscriptSegment(segment.Start.TotalSeconds + offset, segment.End.TotalSeconds + offset, text, Words(segment, text, offset, aligned, Lag(heads))));
             }
         }
 
@@ -241,10 +249,11 @@ public sealed partial class WhisperTranscriber(ILogger<WhisperTranscriber> logge
 
     /// <summary>
     /// The segment's words from its tokens, each with the part of the segment's text it spells, or null when they
-    /// can't spell it. With <paramref name="aligned"/> a token ends at its alignment time and starts where the one before
-    /// ended (its own start for the first); punctuation takes no time. Times are moved by <paramref name="offset"/> seconds.
+    /// can't spell it. With <paramref name="aligned"/> a token ends at its alignment time (plus <paramref name="lag"/>) and starts
+    /// where the one before ended (its own start for the first); punctuation takes no time. Times are moved by
+    /// <paramref name="offset"/> seconds.
     /// </summary>
-    internal static IReadOnlyList<TranscriptWord>? Words(SegmentData segment, string text, double offset = 0, bool aligned = false)
+    internal static IReadOnlyList<TranscriptWord>? Words(SegmentData segment, string text, double offset = 0, bool aligned = false, double lag = 0)
     {
         var tokens = (segment.Tokens ?? []).Where(t => !IsSpecial(t.Text) && !string.IsNullOrEmpty(t.Text)).ToList();
         var spelled = Spell([.. tokens.Select(t => t.Text!)], text);
@@ -268,7 +277,7 @@ public sealed partial class WhisperTranscriber(ILogger<WhisperTranscriber> logge
             if (aligned)
             {
                 var punctuation = spelled[i].Trim().All(char.IsPunctuation);
-                var at = token.DtwTimestamp >= 0 ? token.DtwTimestamp / 100.0 : to;
+                var at = token.DtwTimestamp >= 0 ? (token.DtwTimestamp / 100.0) + lag : to;
                 from = end >= 0 ? end : Math.Min(from, at);
                 to = punctuation && end >= 0 ? end : Math.Max(from, at);
                 end = to;

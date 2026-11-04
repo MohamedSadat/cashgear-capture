@@ -1482,4 +1482,232 @@
   <data name="UndoKeepPointerSize" xml:space="preserve">
     <value>حجم المؤشر عند التكبير</value>
   </data>
+  <data name="TranscriptTitle" xml:space="preserve">
+    <value>نص الكلام</value>
+  </data>
+  <data name="TranscriptMenu" xml:space="preserve">
+    <value>نص الكلام (_T)</value>
+  </data>
+  <data name="TranscriptTip" xml:space="preserve">
+    <value>يعرض ما يُقال: اقرأه، وانتقل إلى كلمة، واقتطع بكلماته.</value>
+  </data>
+  <data name="TranscriptButton" xml:space="preserve">
+    <value>نص الكلام</value>
+  </data>
+  <data name="TranscriptNone" xml:space="preserve">
+    <value>لا يوجد نص للكلام بعد. أنشئه من الكلام في التسجيل. يجري كل شيء على هذا الكمبيوتر.</value>
+  </data>
+  <data name="MakeTranscriptButton" xml:space="preserve">
+    <value>إنشاء نص الكلام…</value>
+  </data>
+  <data name="MakeTranscriptAgainButton" xml:space="preserve">
+    <value>إنشاؤه من جديد…</value>
+  </data>
+  <data name="MakeTranscriptTip" xml:space="preserve">
+    <value>يستمع إلى تسجيل مسار صوتي، أيًا كان ما يفعله به المخطط الزمني.</value>
+  </data>
+  <data name="UseCaptionWords" xml:space="preserve">
+    <value>استخدام كلمات «{0}»</value>
+  </data>
+  <data name="OfferCaptionWords" xml:space="preserve">
+    <value>هذه التسميات التوضيحية مصنوعة من الكلام، لذا يمكن أن تكون كلماتها نص الكلام.</value>
+  </data>
+  <data name="TranscriptHint" xml:space="preserve">
+    <value>يقتطع المفتاح Delete الكلمات من الفيديو. أما الكتابة فتصحح النص فقط.</value>
+  </data>
+  <data name="CorrectingNote" xml:space="preserve">
+    <value>تصحيح النص والتسميات التوضيحية: يبقى الفيديو كما هو. Enter للحفظ، وEsc للإلغاء.</value>
+  </data>
+  <data name="BySentenceNote" xml:space="preserve">
+    <value>جاء بعض هذا الكلام بلا توقيت للكلمات، لذا يُقتطع جملةً جملة.</value>
+  </data>
+  <data name="ShowCutWords" xml:space="preserve">
+    <value>إظهار الكلمات المقتطعة (_U)</value>
+  </data>
+  <data name="CutWordsButton" xml:space="preserve">
+    <value>اقتطاع</value>
+  </data>
+  <data name="CutWordsTip" xml:space="preserve">
+    <value>يُخرج الكلمات المحددة من الفيديو، على كل مسار غير مقفل (Delete).</value>
+  </data>
+  <data name="RestoreWordsButton" xml:space="preserve">
+    <value>استعادة</value>
+  </data>
+  <data name="RestoreWordsTip" xml:space="preserve">
+    <value>يعيد الكلمات المقتطعة المحددة إلى مكانها (Ctrl+R).</value>
+  </data>
+  <data name="SilencesButton" xml:space="preserve">
+    <value>فترات الصمت…</value>
+  </data>
+  <data name="SilencesTip" xml:space="preserve">
+    <value>يعرض فترات التوقف الطويلة في الصوت لتقصيرها.</value>
+  </data>
+  <data name="FillersButton" xml:space="preserve">
+    <value>كلمات الحشو…</value>
+  </data>
+  <data name="FillersTip" xml:space="preserve">
+    <value>يعرض مثل «اممم» و«آه» والكلمات المكررة لإزالتها.</value>
+  </data>
+  <data name="CaptionsFromTranscriptButton" xml:space="preserve">
+    <value>إنشاء التسميات التوضيحية</value>
+  </data>
+  <data name="CaptionsFromTranscriptTip" xml:space="preserve">
+    <value>مسار جديد للتسميات التوضيحية بالكلمات كما يعرضها هذا القطع.</value>
+  </data>
+  <data name="CaptionsFromTranscriptMenu" xml:space="preserve">
+    <value>تسميات توضيحية من نص الكلام (_C)</value>
+  </data>
+  <data name="UndoCutWords" xml:space="preserve">
+    <value>اقتطاع الكلمات</value>
+  </data>
+  <data name="UndoRestoreWords" xml:space="preserve">
+    <value>استعادة الكلمات</value>
+  </data>
+  <data name="UndoCorrectWord" xml:space="preserve">
+    <value>تصحيح كلمة</value>
+  </data>
+  <data name="UndoMakeTranscript" xml:space="preserve">
+    <value>نص الكلام</value>
+  </data>
+  <data name="UndoUseCaptionWords" xml:space="preserve">
+    <value>التسميات التوضيحية كنص للكلام</value>
+  </data>
+  <data name="UndoShortenSilences" xml:space="preserve">
+    <value>تقصير فترات الصمت</value>
+  </data>
+  <data name="UndoRemoveFillers" xml:space="preserve">
+    <value>إزالة كلمات الحشو</value>
+  </data>
+  <data name="UndoCaptionsFromTranscript" xml:space="preserve">
+    <value>التسميات التوضيحية من نص الكلام</value>
+  </data>
+  <data name="TranscriptWordsName" xml:space="preserve">
+    <value>كلمات نص الكلام</value>
+  </data>
+  <data name="TranscriptWordsHelp" xml:space="preserve">
+    <value>تنتقل مفاتيح الأسهم من كلمة إلى أخرى ويحدد Shift. ينتقل Enter إلى الكلمة في الفيديو، ويقتطع Delete، وتصحح الكتابة أو F2، ويستعيد Ctrl+R الكلمات المقتطعة.</value>
+  </data>
+  <data name="TranscriptScrollName" xml:space="preserve">
+    <value>تمرير نص الكلام</value>
+  </data>
+  <data name="TranscriptSplitterName" xml:space="preserve">
+    <value>عرض نص الكلام</value>
+  </data>
+  <data name="WordEditorName" xml:space="preserve">
+    <value>إملاء الكلمة</value>
+  </data>
+  <data name="WordAt" xml:space="preserve">
+    <value>{0}، عند {1}</value>
+  </data>
+  <data name="WordCut" xml:space="preserve">
+    <value>{0}، مقتطعة</value>
+  </data>
+  <data name="WordCorrected" xml:space="preserve">
+    <value>{0}، مصححة، سُمعت {1}، عند {2}</value>
+  </data>
+  <data name="ParagraphAt" xml:space="preserve">
+    <value>من {0}: {1}</value>
+  </data>
+  <data name="WordsSelected_one" xml:space="preserve">
+    <value>كلمة واحدة محددة</value>
+  </data>
+  <data name="WordsSelected_other" xml:space="preserve">
+    <value>{0} كلمة محددة</value>
+  </data>
+  <data name="SilencesTitle" xml:space="preserve">
+    <value>فترات الصمت</value>
+  </data>
+  <data name="SilencesLonger" xml:space="preserve">
+    <value>فترات التوقف الأطول من</value>
+  </data>
+  <data name="SilencesShortenTo" xml:space="preserve">
+    <value>تقصيرها إلى</value>
+  </data>
+  <data name="SilenceRow" xml:space="preserve">
+    <value>{0}، {1:0.0} ث</value>
+  </data>
+  <data name="NoSilences" xml:space="preserve">
+    <value>لا توجد فترات توقف بهذا الطول.</value>
+  </data>
+  <data name="ShortenButton" xml:space="preserve">
+    <value>تقصير</value>
+  </data>
+  <data name="ShortenAllButton" xml:space="preserve">
+    <value>تقصير الكل</value>
+  </data>
+  <data name="KeepButton" xml:space="preserve">
+    <value>إبقاء</value>
+  </data>
+  <data name="PlayRowButton" xml:space="preserve">
+    <value>تشغيل</value>
+  </data>
+  <data name="PlayRowName" xml:space="preserve">
+    <value>تشغيل {0}</value>
+  </data>
+  <data name="ShortenRowName" xml:space="preserve">
+    <value>تقصير {0}</value>
+  </data>
+  <data name="KeepRowName" xml:space="preserve">
+    <value>إبقاء {0}</value>
+  </data>
+  <data name="RemoveRowName" xml:space="preserve">
+    <value>إزالة {0}</value>
+  </data>
+  <data name="FillersTitle" xml:space="preserve">
+    <value>كلمات الحشو</value>
+  </data>
+  <data name="NoFillers" xml:space="preserve">
+    <value>لم يُعثر على كلمات حشو.</value>
+  </data>
+  <data name="RemoveButton" xml:space="preserve">
+    <value>إزالة</value>
+  </data>
+  <data name="RemoveAllButton" xml:space="preserve">
+    <value>إزالة الكل</value>
+  </data>
+  <data name="FillerWordRow" xml:space="preserve">
+    <value>{0}، عند {1}</value>
+  </data>
+  <data name="FillerRepeatRow" xml:space="preserve">
+    <value>{0}، مكررة، عند {1}</value>
+  </data>
+  <data name="FillerSoundRow" xml:space="preserve">
+    <value>صوت بلا كلمة، عند {0}</value>
+  </data>
+  <data name="CountYani" xml:space="preserve">
+    <value>احتساب «يعني» أيضًا (فهي كلمة حقيقية كذلك)</value>
+  </data>
+  <data name="MeasuringSound" xml:space="preserve">
+    <value>قياس الصوت: {0:P0}</value>
+  </data>
+  <data name="SoundNotMeasured" xml:space="preserve">
+    <value>تعذر قياس الصوت: {0}</value>
+  </data>
+  <data name="TranscriptMakeTitle" xml:space="preserve">
+    <value>نص الكلام من الصوت</value>
+  </data>
+  <data name="TranscriptMakeIntro" xml:space="preserve">
+    <value>يتحول الكلام في تسجيل مسار صوتي إلى نص لتلك الوسائط، مع توقيت كل كلمة. ويبقى معها مهما كان القطع. يجري كل شيء على هذا الكمبيوتر: لا يُرسَل الصوت إلى أي مكان.</value>
+  </data>
+  <data name="TranscriptMakeStart" xml:space="preserve">
+    <value>إنشاء نص الكلام</value>
+  </data>
+  <data name="KeepFillers" xml:space="preserve">
+    <value>كتابة كلمات الحشو (مثل اممم وآه)</value>
+  </data>
+  <data name="SecondsTenthsFormat" xml:space="preserve">
+    <value>{0:0.00} ث</value>
+  </data>
+  <data name="WordsSelected_zero" xml:space="preserve">
+    <value>لا كلمات محددة</value>
+  </data>
+  <data name="WordsSelected_two" xml:space="preserve">
+    <value>كلمتان محددتان</value>
+  </data>
+  <data name="WordsSelected_few" xml:space="preserve">
+    <value>{0} كلمات محددة</value>
+  </data>
+  <data name="WordsSelected_many" xml:space="preserve">
+    <value>{0} كلمة محددة</value>
+  </data>
 </root>

@@ -1763,4 +1763,220 @@
     <value>Pointer's size in a zoom</value>
     <comment>undo step</comment>
   </data>
+  <data name="TranscriptTitle" xml:space="preserve">
+    <value>Transcript</value>
+  </data>
+  <data name="TranscriptMenu" xml:space="preserve">
+    <value>_Transcript</value>
+  </data>
+  <data name="TranscriptTip" xml:space="preserve">
+    <value>Shows what is said: read it, go to a word, cut by its words.</value>
+  </data>
+  <data name="TranscriptButton" xml:space="preserve">
+    <value>Transcript</value>
+  </data>
+  <data name="TranscriptNone" xml:space="preserve">
+    <value>There is no transcript yet. Make one from the speech in the recording. Everything happens on this PC.</value>
+  </data>
+  <data name="MakeTranscriptButton" xml:space="preserve">
+    <value>Make the Transcript…</value>
+  </data>
+  <data name="MakeTranscriptAgainButton" xml:space="preserve">
+    <value>Make It Again…</value>
+  </data>
+  <data name="MakeTranscriptTip" xml:space="preserve">
+    <value>Listens to a sound track's recording, whatever the timeline does with it.</value>
+  </data>
+  <data name="UseCaptionWords" xml:space="preserve">
+    <value>Use the Words of «{0}»</value>
+  </data>
+  <data name="OfferCaptionWords" xml:space="preserve">
+    <value>These captions were made from speech, so their words can be the transcript.</value>
+  </data>
+  <data name="TranscriptHint" xml:space="preserve">
+    <value>Delete cuts words from the video. Typing corrects the text only.</value>
+  </data>
+  <data name="CorrectingNote" xml:space="preserve">
+    <value>Correcting the text and the captions: the video stays as it is. Enter keeps it, Esc cancels.</value>
+  </data>
+  <data name="BySentenceNote" xml:space="preserve">
+    <value>Some of this speech came without word times, so it is cut by the sentence.</value>
+  </data>
+  <data name="ShowCutWords" xml:space="preserve">
+    <value>Show c_ut words</value>
+  </data>
+  <data name="CutWordsButton" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="CutWordsTip" xml:space="preserve">
+    <value>Takes the selected words out of the video, on every unlocked track (Delete).</value>
+  </data>
+  <data name="RestoreWordsButton" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="RestoreWordsTip" xml:space="preserve">
+    <value>Puts the selected cut words back where they were (Ctrl+R).</value>
+  </data>
+  <data name="SilencesButton" xml:space="preserve">
+    <value>Silences…</value>
+  </data>
+  <data name="SilencesTip" xml:space="preserve">
+    <value>Lists the long pauses in the voice, to shorten them.</value>
+  </data>
+  <data name="FillersButton" xml:space="preserve">
+    <value>Filler Words…</value>
+  </data>
+  <data name="FillersTip" xml:space="preserve">
+    <value>Lists um, uh and words said twice, to remove them.</value>
+  </data>
+  <data name="CaptionsFromTranscriptButton" xml:space="preserve">
+    <value>Make Captions</value>
+  </data>
+  <data name="CaptionsFromTranscriptTip" xml:space="preserve">
+    <value>A new caption track of the words as this cut plays them.</value>
+  </data>
+  <data name="CaptionsFromTranscriptMenu" xml:space="preserve">
+    <value>Captions from the Trans_cript</value>
+  </data>
+  <data name="UndoCutWords" xml:space="preserve">
+    <value>cut words</value>
+  </data>
+  <data name="UndoRestoreWords" xml:space="preserve">
+    <value>restore words</value>
+  </data>
+  <data name="UndoCorrectWord" xml:space="preserve">
+    <value>correct a word</value>
+  </data>
+  <data name="UndoMakeTranscript" xml:space="preserve">
+    <value>transcript</value>
+  </data>
+  <data name="UndoUseCaptionWords" xml:space="preserve">
+    <value>captions as the transcript</value>
+  </data>
+  <data name="UndoShortenSilences" xml:space="preserve">
+    <value>shorten silences</value>
+  </data>
+  <data name="UndoRemoveFillers" xml:space="preserve">
+    <value>remove filler words</value>
+  </data>
+  <data name="UndoCaptionsFromTranscript" xml:space="preserve">
+    <value>captions from the transcript</value>
+  </data>
+  <data name="TranscriptWordsName" xml:space="preserve">
+    <value>The transcript's words</value>
+  </data>
+  <data name="TranscriptWordsHelp" xml:space="preserve">
+    <value>The arrow keys go from word to word and Shift selects. Enter goes to the word in the video, Delete cuts, typing or F2 corrects, Ctrl+R restores cut words.</value>
+  </data>
+  <data name="TranscriptScrollName" xml:space="preserve">
+    <value>Scroll the transcript</value>
+  </data>
+  <data name="TranscriptSplitterName" xml:space="preserve">
+    <value>The transcript's width</value>
+  </data>
+  <data name="WordEditorName" xml:space="preserve">
+    <value>The word's spelling</value>
+  </data>
+  <data name="WordAt" xml:space="preserve">
+    <value>{0}, at {1}</value>
+  </data>
+  <data name="WordCut" xml:space="preserve">
+    <value>{0}, cut</value>
+  </data>
+  <data name="WordCorrected" xml:space="preserve">
+    <value>{0}, corrected, heard as {1}, at {2}</value>
+  </data>
+  <data name="ParagraphAt" xml:space="preserve">
+    <value>From {0}: {1}</value>
+  </data>
+  <data name="WordsSelected_one" xml:space="preserve">
+    <value>{0} word selected</value>
+  </data>
+  <data name="WordsSelected_other" xml:space="preserve">
+    <value>{0} words selected</value>
+  </data>
+  <data name="SilencesTitle" xml:space="preserve">
+    <value>Silences</value>
+  </data>
+  <data name="SilencesLonger" xml:space="preserve">
+    <value>Pauses longer than</value>
+  </data>
+  <data name="SilencesShortenTo" xml:space="preserve">
+    <value>Shorten them to</value>
+  </data>
+  <data name="SilenceRow" xml:space="preserve">
+    <value>{0}, {1:0.0} s</value>
+  </data>
+  <data name="NoSilences" xml:space="preserve">
+    <value>There are no pauses that long.</value>
+  </data>
+  <data name="ShortenButton" xml:space="preserve">
+    <value>Shorten</value>
+  </data>
+  <data name="ShortenAllButton" xml:space="preserve">
+    <value>Shorten All</value>
+  </data>
+  <data name="KeepButton" xml:space="preserve">
+    <value>Keep</value>
+  </data>
+  <data name="PlayRowButton" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="PlayRowName" xml:space="preserve">
+    <value>Play {0}</value>
+  </data>
+  <data name="ShortenRowName" xml:space="preserve">
+    <value>Shorten {0}</value>
+  </data>
+  <data name="KeepRowName" xml:space="preserve">
+    <value>Keep {0}</value>
+  </data>
+  <data name="RemoveRowName" xml:space="preserve">
+    <value>Remove {0}</value>
+  </data>
+  <data name="FillersTitle" xml:space="preserve">
+    <value>Filler Words</value>
+  </data>
+  <data name="NoFillers" xml:space="preserve">
+    <value>No filler words were found.</value>
+  </data>
+  <data name="RemoveButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="RemoveAllButton" xml:space="preserve">
+    <value>Remove All</value>
+  </data>
+  <data name="FillerWordRow" xml:space="preserve">
+    <value>{0}, at {1}</value>
+  </data>
+  <data name="FillerRepeatRow" xml:space="preserve">
+    <value>{0}, said twice, at {1}</value>
+  </data>
+  <data name="FillerSoundRow" xml:space="preserve">
+    <value>A sound without a word, at {0}</value>
+  </data>
+  <data name="CountYani" xml:space="preserve">
+    <value>Also count «يعني» (it is a real word too)</value>
+  </data>
+  <data name="MeasuringSound" xml:space="preserve">
+    <value>Measuring the sound: {0:P0}</value>
+  </data>
+  <data name="SoundNotMeasured" xml:space="preserve">
+    <value>The sound couldn't be measured: {0}</value>
+  </data>
+  <data name="TranscriptMakeTitle" xml:space="preserve">
+    <value>Transcript from Speech</value>
+  </data>
+  <data name="TranscriptMakeIntro" xml:space="preserve">
+    <value>The speech in a sound track's recording becomes the transcript of that media, with the time of each word. It stays with the media through any cut. Everything happens on this PC: the sound isn't sent anywhere.</value>
+  </data>
+  <data name="TranscriptMakeStart" xml:space="preserve">
+    <value>Make the Transcript</value>
+  </data>
+  <data name="KeepFillers" xml:space="preserve">
+    <value>Write down filler words (um, uh)</value>
+  </data>
+  <data name="SecondsTenthsFormat" xml:space="preserve">
+    <value>{0:0.00} s</value>
+  </data>
 </root>

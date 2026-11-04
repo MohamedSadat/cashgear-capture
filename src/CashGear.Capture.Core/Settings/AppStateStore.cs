@@ -77,6 +77,12 @@ public sealed record VideoEditorState
     /// <summary>Transcribe on the graphics card when it can.</summary>
     public bool TranscriptionGpu { get; init; } = true;
 
+    /// <summary>Ask the speech recognizer to write down "um" and "uh" when making a transcript.</summary>
+    public bool TranscriptionKeepFillers { get; init; } = true;
+
+    /// <summary>The transcript panel shows cut words struck through.</summary>
+    public bool ShowCutWords { get; init; } = true;
+
     /// <summary>GIFs: frames a second.</summary>
     public int GifFps { get; init; } = 15;
 

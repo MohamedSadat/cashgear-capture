@@ -21,6 +21,7 @@ public partial class VideoEditorWindow : Window, IThemedWindow
 {
     private bool _closeConfirmed;
     private bool _focusFromKeyboard;
+    private double _transcriptWidth = 330;
 
     public VideoEditorWindow(VideoEditorViewModel viewModel, AppTheme theme, bool tryGpu, ILogger logger)
     {
@@ -28,6 +29,15 @@ public partial class VideoEditorWindow : Window, IThemedWindow
         DataContext = viewModel;
         Preview.Attach(viewModel, tryGpu, logger);
         TimelineSurface.Attach(viewModel);
+        TranscriptPanelView.Attach(viewModel.Transcript);
+        ShowTranscript(viewModel.Transcript.IsShown);
+        viewModel.Transcript.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(TranscriptPanelViewModel.IsShown))
+            {
+                ShowTranscript(viewModel.Transcript.IsShown);
+            }
+        };
         ApplyTheme(theme);
         UpdatePlayButton();
         viewModel.PropertyChanged += (_, e) =>
@@ -54,6 +64,9 @@ public partial class VideoEditorWindow : Window, IThemedWindow
             (DataContext as VideoEditorViewModel)?.Dispose();
         };
     }
+
+    /// <summary>The transcript panel beside the preview.</summary>
+    internal TranscriptPanel TranscriptArea2 => TranscriptPanelView;
 
     /// <summary>Whether the preview draws on the graphics card.</summary>
     public bool PreviewUsesGpu => Preview.UsesGpu;
@@ -94,8 +107,8 @@ public partial class VideoEditorWindow : Window, IThemedWindow
         return true;
     }
 
-    /// <summary>Whether <paramref name="element"/> takes typed keys itself: a text box, a password box or a list to pick from.</summary>
-    internal static bool IsTextInput(object? element) => element is TextBoxBase or PasswordBox or ComboBox or ComboBoxItem;
+    /// <summary>Whether <paramref name="element"/> takes typed keys itself: a text box, a password box, a list to pick from, or the transcript's words.</summary>
+    internal static bool IsTextInput(object? element) => element is TextBoxBase or PasswordBox or ComboBox or ComboBoxItem or TranscriptControl;
 
     /// <summary>
     /// The keys without Ctrl: S splits, I and O mark, Delete (Shift: ripple) deletes, Esc clears the selection, ← and →
@@ -167,6 +180,30 @@ public partial class VideoEditorWindow : Window, IThemedWindow
 
     private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
 
+    /// <summary>The transcript's column takes its width back when it is shown, and all of it when it is hidden.</summary>
+    private void ShowTranscript(bool shown)
+    {
+        if (shown)
+        {
+            TranscriptColumn.Width = new GridLength(Math.Max(_transcriptWidth, 240));
+            TranscriptSplitterColumn.Width = new GridLength(5);
+            TranscriptArea.Visibility = Visibility.Visible;
+            TranscriptSplitter.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            if (TranscriptColumn.ActualWidth > 0)
+            {
+                _transcriptWidth = TranscriptColumn.ActualWidth;
+            }
+
+            TranscriptColumn.Width = new GridLength(0);
+            TranscriptSplitterColumn.Width = new GridLength(0);
+            TranscriptArea.Visibility = Visibility.Collapsed;
+            TranscriptSplitter.Visibility = Visibility.Collapsed;
+        }
+    }
+
     /// <summary>
     /// Space plays or pauses wherever the focus is, except in a text box or a list, and on a button or switch the
     /// keyboard moved to (Space presses it, as everywhere).
@@ -174,7 +211,7 @@ public partial class VideoEditorWindow : Window, IThemedWindow
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         var focused = Keyboard.FocusedElement;
-        if (e.Key != Key.Space || Keyboard.Modifiers != ModifierKeys.None || IsTextInput(focused) || focused is MenuItem
+        if (e.Key != Key.Space || Keyboard.Modifiers != ModifierKeys.None || (IsTextInput(focused) && focused is not TranscriptControl) || focused is MenuItem
             || (focused is ButtonBase && _focusFromKeyboard))
         {
             return;

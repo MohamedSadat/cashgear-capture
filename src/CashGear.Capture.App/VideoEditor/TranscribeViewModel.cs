@@ -31,6 +31,9 @@ public sealed record ModelChoice(WhisperModel Model, string Name)
     public override string ToString() => Name;
 }
 
+/// <summary>A transcript made for one media file.</summary>
+public sealed record MadeTranscript(string AssetId, MediaTranscript Transcript);
+
 /// <summary>
 /// Captions from Speech: which sound track (the microphone first), the language, the model (downloaded the first
 /// time it is used) and whether to use the graphics card; then the sound is mixed, transcribed in the background with
@@ -45,11 +48,20 @@ public sealed partial class TranscribeViewModel : ObservableObject
     private readonly IAppStateStore _state;
     private readonly ILogger _logger;
     private readonly Action<IReadOnlyList<CaptionItem>, string> _done;
+    private readonly Action<IReadOnlyList<MadeTranscript>>? _transcripts;
+    private readonly SoundLevelStore? _levels;
     private CancellationTokenSource? _cancel;
 
     /// <param name="done">Gets the captions and the language heard (on the caller's thread), when there are some.</param>
-    public TranscribeViewModel(VideoProject project, TimeRange? range, ITranscriber transcriber, WhisperModelStore models, IAppStateStore state, ILogger logger, Action<IReadOnlyList<CaptionItem>, string> done)
+    /// <param name="transcripts">
+    /// When given, the window makes transcripts instead of captions: of each media file on the track chosen, on its own clock,
+    /// whatever the timeline does with it. Gets them on the caller's thread, when there are some.
+    /// </param>
+    /// <param name="levels">Keeps the sound's levels, for the transcripts' word times.</param>
+    public TranscribeViewModel(VideoProject project, TimeRange? range, ITranscriber transcriber, WhisperModelStore models, IAppStateStore state, ILogger logger, Action<IReadOnlyList<CaptionItem>, string> done, Action<IReadOnlyList<MadeTranscript>>? transcripts = null, SoundLevelStore? levels = null)
     {
+        _transcripts = transcripts;
+        _levels = levels;
         _project = project;
         _range = range;
         _transcriber = transcriber;
@@ -59,15 +71,29 @@ public sealed partial class TranscribeViewModel : ObservableObject
         _done = done;
         // The microphone's track first: tracks are named after a recording's sound streams, whose titles stay English.
         var sounds = project.Tracks.Where(t => t.HasSound).OrderBy(t => t.Name.Contains(MicrophoneTitle, StringComparison.OrdinalIgnoreCase) ? 0 : 1).ToList();
-        Sounds = [.. sounds.Select(t => new SoundChoice(t.Id, TrackNames.Display(t.Name))), .. sounds.Count > 1 ? [new SoundChoice(null, VideoEditorText.AllSoundTracks)] : Array.Empty<SoundChoice>()];
+        Sounds = [.. sounds.Select(t => new SoundChoice(t.Id, TrackNames.Display(t.Name))), .. sounds.Count > 1 && transcripts is null ? [new SoundChoice(null, VideoEditorText.AllSoundTracks)] : Array.Empty<SoundChoice>()];
         _sound = Sounds.FirstOrDefault();
         var remembered = state.Current.VideoEditor ?? new VideoEditorState();
         Models = [.. WhisperModels.All.Select(m => new ModelChoice(m, models.Has(m) ? VideoEditorText.ModelDownloaded(m.Name, m.About) : VideoEditorText.ModelToDownload(m.Name, m.About, m.SizeText)))];
         _model = Models.FirstOrDefault(m => m.Model.Id == remembered.TranscriptionModel) ?? Models.First(m => m.Model == WhisperModels.Small);
         _language = Languages.FirstOrDefault(l => l.Code == remembered.TranscriptionLanguage) ?? Languages[0];
         _useGpu = remembered.TranscriptionGpu;
+        _keepFillers = remembered.TranscriptionKeepFillers;
         _onlyRange = range is not null;
     }
+
+    /// <summary>Whether it makes a transcript rather than captions.</summary>
+    public bool MakesTranscript => _transcripts is not null;
+
+    public string TitleText => MakesTranscript ? VideoEditorText.TranscriptMakeTitle : VideoEditorText.TranscribeTitle;
+
+    public string IntroText => MakesTranscript ? VideoEditorText.TranscriptMakeIntro : VideoEditorText.TranscribeIntro;
+
+    public string StartText => MakesTranscript ? VideoEditorText.TranscriptMakeStart : VideoEditorText.MakeCaptions;
+
+    /// <summary>Ask Whisper to write down "um" and "uh".</summary>
+    [ObservableProperty]
+    private bool _keepFillers;
 
     public IReadOnlyList<SoundChoice> Sounds { get; }
 
@@ -137,7 +163,7 @@ public sealed partial class TranscribeViewModel : ObservableObject
         {
             await _state.UpdateAsync(s => s with
             {
-                VideoEditor = (s.VideoEditor ?? new VideoEditorState()) with { TranscriptionModel = model.Id, TranscriptionLanguage = language, TranscriptionGpu = gpu },
+                VideoEditor = (s.VideoEditor ?? new VideoEditorState()) with { TranscriptionModel = model.Id, TranscriptionLanguage = language, TranscriptionGpu = gpu, TranscriptionKeepFillers = MakesTranscript ? KeepFillers : (s.VideoEditor ?? new VideoEditorState()).TranscriptionKeepFillers },
             }, ct);
 
             // A tenth of the bar for the sound, the rest for listening; a download first has a bar of its own.
@@ -148,6 +174,12 @@ public sealed partial class TranscribeViewModel : ObservableObject
                 Status = VideoEditorText.DownloadingModelProgress(model.Name, model.SizeText, p);
             }), ct);
             Progress = 0;
+            if (_transcripts is { } hand)
+            {
+                await MakeTranscriptsAsync(path, language, gpu, hand, ct);
+                return;
+            }
+
             Status = VideoEditorText.GettingSound;
             var project = range is { } r ? ProjectRange.Extract(_project, r) : _project;
             var samples = await Task.Run(() => TranscriptAudio.Render(project, tracks, new Progress<double>(p => Progress = p * 0.1), ct), ct);
@@ -188,6 +220,53 @@ public sealed partial class TranscribeViewModel : ObservableObject
             _cancel.Dispose();
             _cancel = null;
         }
+    }
+
+    /// <summary>
+    /// A transcript of each media file on the track chosen. Its sound is heard on its own clock; its levels are kept and
+    /// bring the words' times nearer.
+    /// </summary>
+    private async Task MakeTranscriptsAsync(string path, string? language, bool gpu, Action<IReadOnlyList<MadeTranscript>> hand, CancellationToken ct)
+    {
+        var track = _project.Track(Sound!.TrackId!)!;
+        var streams = track.Clips.Where(c => !c.IsFreeze).Select(c => (c.AssetId, c.Stream)).Distinct().ToList();
+        var made = new List<MadeTranscript>();
+        for (var i = 0; i < streams.Count; i++)
+        {
+            var (assetId, stream) = streams[i];
+            if (_project.Asset(assetId) is not { } asset)
+            {
+                continue;
+            }
+
+            var share = 1.0 / streams.Count;
+            var before = i * share;
+            Status = VideoEditorText.GettingSound;
+            var samples = await Task.Run(() => TranscriptAudio.RenderStream(asset, stream, new Progress<double>(p => Progress = before + (p * 0.1 * share)), ct), ct);
+            var levels = await Task.Run(() => _levels?.Keep(asset, stream, samples, ct) ?? SoundLevels.FromSamples(samples, ct), ct);
+            Status = VideoEditorText.Listening;
+            var result = await _transcriber.TranscribeAsync(samples, new TranscriptionOptions(path, language, gpu, KeepFillers), new Progress<double>(p =>
+            {
+                Progress = before + ((0.1 + (p * 0.9)) * share);
+                Status = VideoEditorText.ListeningProgress(p);
+            }), ct);
+            var transcript = TranscriptBuilder.FromSegments(stream, result.Language, result.Segments, levels);
+            LogDone(transcript.Words.Count, result.Language, result.Runtime);
+            if (transcript.Words.Count > 0)
+            {
+                made.Add(new MadeTranscript(assetId, transcript));
+            }
+        }
+
+        if (made.Count == 0)
+        {
+            Error = VideoEditorText.NoSpeechHeard;
+            Status = "";
+            return;
+        }
+
+        hand(made);
+        CloseRequested?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]

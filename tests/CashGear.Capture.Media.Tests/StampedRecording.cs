@@ -43,6 +43,9 @@ internal sealed unsafe class StampedRecording
 
     public float BeepLevel { get; init; } = 0.25f;
 
+    /// <summary>The sound of every track, from a sample's number at 48 kHz (a voice, say), instead of beeps and tones.</summary>
+    public Func<long, float>? SoundAt { get; init; }
+
     /// <summary>A second, stamped video titled "Webcam" (not the default stream), at its own size and rate.</summary>
     public VideoFormat? Webcam { get; init; }
 
@@ -186,7 +189,11 @@ internal sealed unsafe class StampedRecording
         {
             var at = start + i;
             float value = 0;
-            if (tone > 0)
+            if (SoundAt is { } sound)
+            {
+                value = sound(at);
+            }
+            else if (tone > 0)
             {
                 value = (float)Math.Sin(2 * Math.PI * tone * at / AudioEncoder.SampleRate) * 0.2f;
             }

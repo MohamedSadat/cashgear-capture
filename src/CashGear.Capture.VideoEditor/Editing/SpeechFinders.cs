@@ -8,7 +8,8 @@ using CashGear.Capture.VideoEditor.Playback;
 namespace CashGear.Capture.VideoEditor.Editing;
 
 /// <summary>A pause on the timeline: when it starts and ends.</summary>
-public sealed record Silence(double Start, double End)
+/// <param name="Key">Which pause it is in its media, whatever the timeline does around it.</param>
+public sealed record Silence(double Start, double End, string Key = "")
 {
     public double Length => End - Start;
 
@@ -66,7 +67,7 @@ public static class SilenceFinder
             var words = asset.Transcript is { } transcript && transcript.Stream == clip.Stream ? transcript.Words : [];
             foreach (var (from, to) in QuietInClip(clip, known, words))
             {
-                runs.Add(new Silence(Times.Round(clip.TimelineAt(from)), Times.Round(clip.TimelineAt(to))));
+                runs.Add(new Silence(Times.Round(clip.TimelineAt(from)), Times.Round(clip.TimelineAt(to)), FormattableString.Invariant($"{asset.Id}:{from:0.00}")));
             }
         }
 
@@ -170,7 +171,8 @@ public enum FillerKind
 
 /// <summary>A possible filler on the timeline.</summary>
 /// <param name="Position">Its word's place in the <see cref="TranscriptView"/> it was found in (none for sound without a word).</param>
-public sealed record Filler(FillerKind Kind, double Start, double End, string Text, int? Position = null)
+/// <param name="Key">Which one it is in its media, whatever the timeline does around it.</param>
+public sealed record Filler(FillerKind Kind, double Start, double End, string Text, int? Position = null, string Key = "")
 {
     public double Length => End - Start;
 }
@@ -229,17 +231,17 @@ public static partial class FillerFinder
             {
                 if (IsFiller(word.Word.Text, yani))
                 {
-                    found.Add(new Filler(FillerKind.Word, word.Start, word.End, word.Word.Text, position));
+                    found.Add(new Filler(FillerKind.Word, word.Start, word.End, word.Word.Text, position, WordKey(word)));
                 }
                 else if (next is { Word.IsSentence: false } && next.Start - word.End <= RepeatWithin && Plain(word.Word.Text) is { Length: > 0 } plain
                     && Plain(next.Word.Text) == plain && !char.IsDigit(plain[0]))
                 {
-                    found.Add(new Filler(FillerKind.Repeat, word.Start, word.End, word.Word.Text, position));
+                    found.Add(new Filler(FillerKind.Repeat, word.Start, word.End, word.Word.Text, position, WordKey(word)));
                 }
             }
             else if (IsFiller(word.Word.Text, yani))
             {
-                found.Add(new Filler(FillerKind.Word, word.Start, word.End, word.Word.Text, position));
+                found.Add(new Filler(FillerKind.Word, word.Start, word.End, word.Word.Text, position, WordKey(word)));
             }
 
             if (levels is not null && !word.Word.IsSentence && project.Find(word.ClipId!) is { Item: Clip clip } && project.Asset(word.AssetId) is { Transcript: { } transcript } asset
@@ -248,7 +250,7 @@ public static partial class FillerFinder
                 var after = previous is not null && previous.ClipId == word.ClipId ? previous.Word.End : clip.SourceIn;
                 foreach (var (from, to) in VoicedBefore(known, after, word.Word.End))
                 {
-                    found.Add(new Filler(FillerKind.Voiced, Times.Round(clip.TimelineAt(from)), Times.Round(clip.TimelineAt(to)), ""));
+                    found.Add(new Filler(FillerKind.Voiced, Times.Round(clip.TimelineAt(from)), Times.Round(clip.TimelineAt(to)), "", null, FormattableString.Invariant($"{asset.Id}:{from:0.00}")));
                 }
             }
 
@@ -257,6 +259,8 @@ public static partial class FillerFinder
 
         return [.. found.OrderBy(f => f.Start)];
     }
+
+    private static string WordKey(ShownWord word) => FormattableString.Invariant($"{word.AssetId}#{word.Index}");
 
     /// <summary>
     /// The sounds with a pitch from <paramref name="from"/> up to the sound of the word ending at <paramref name="wordEnd"/>:
