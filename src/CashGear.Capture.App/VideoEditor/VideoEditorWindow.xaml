@@ -28,6 +28,8 @@
     <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding ZoomOutCommand}" />
     <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding ZoomOutCommand}" />
     <KeyBinding Gesture="Ctrl+T" Command="{Binding ToggleTranscriptCommand}" />
+    <KeyBinding Gesture="Ctrl+M" Command="{Binding ToggleMediaCommand}" />
+    <KeyBinding Gesture="Ctrl+I" Command="{Binding InsertMediaCommand}" />
     <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomFitCommand}" />
     <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding ZoomFitCommand}" />
   </Window.InputBindings>
@@ -116,6 +118,9 @@
         <MenuItem Header="{x:Static r:VideoEditorText.ClearSelectionMenu}" Command="{Binding ClearSelectionCommand}" InputGestureText="Esc" />
       </MenuItem>
       <MenuItem Header="{x:Static r:VideoEditorText.MenuInsert}">
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertMediaMenu}" Command="{Binding InsertMediaCommand}" InputGestureText="Ctrl+I" ToolTip="{x:Static r:VideoEditorText.InsertMediaTip}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.InsertColourMenu}" Command="{Binding InsertColourCommand}" ToolTip="{x:Static r:VideoEditorText.AddColourTip}" />
+        <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertTextMenu}" Command="{Binding InsertTextCommand}" />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertArrowMenu}" Command="{Binding InsertArrowCommand}" />
         <MenuItem Header="{x:Static r:VideoEditorText.InsertLineMenu}" Command="{Binding InsertLineCommand}" />
@@ -149,6 +154,7 @@
         <MenuItem Header="{x:Static r:VideoEditorText.ZoomOutMenu}" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />
         <MenuItem Header="{x:Static r:VideoEditorText.FitTimelineMenu}" Command="{Binding ZoomFitCommand}" InputGestureText="Ctrl+0" />
         <Separator />
+        <MenuItem Header="{x:Static r:VideoEditorText.MediaMenu}" IsCheckable="True" IsChecked="{Binding Media.IsShown}" InputGestureText="Ctrl+M" ToolTip="{x:Static r:VideoEditorText.MediaTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.TranscriptMenu}" IsCheckable="True" IsChecked="{Binding Transcript.IsShown}" InputGestureText="Ctrl+T" ToolTip="{x:Static r:VideoEditorText.TranscriptTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.LookAndCanvasMenu}" Command="{Binding ShowLookCommand}" ToolTip="{x:Static r:VideoEditorText.LookAndCanvasTip}" />
         <MenuItem Header="{x:Static r:VideoEditorText.UseLookMenu}" Command="{Binding UseLookForRecordingsCommand}" ToolTip="{x:Static r:VideoEditorText.UseLookTip}" />
@@ -215,14 +221,21 @@
       <!-- The preview, the transport and the timeline run left to right in every language: time goes that way on screen. -->
       <Grid Grid.Row="0">
         <Grid.ColumnDefinitions>
+          <ColumnDefinition x:Name="MediaColumn" Width="240" MinWidth="0" />
+          <ColumnDefinition x:Name="MediaSplitterColumn" Width="5" />
           <ColumnDefinition Width="*" MinWidth="200" />
           <ColumnDefinition x:Name="TranscriptSplitterColumn" Width="5" />
           <ColumnDefinition x:Name="TranscriptColumn" Width="330" MinWidth="0" />
         </Grid.ColumnDefinitions>
-        <local:PreviewHost x:Name="Preview" FlowDirection="LeftToRight" />
-        <GridSplitter x:Name="TranscriptSplitter" Grid.Column="1" HorizontalAlignment="Stretch" ResizeDirection="Columns" Background="Transparent"
+        <Border x:Name="MediaArea" Grid.Column="0" BorderThickness="0,0,1,0" BorderBrush="{p:Chrome Separator}">
+          <local:MediaPanel x:Name="MediaPanelView" DataContext="{Binding Media}" />
+        </Border>
+        <GridSplitter x:Name="MediaSplitter" Grid.Column="1" HorizontalAlignment="Stretch" ResizeDirection="Columns" Background="Transparent"
+                      AutomationProperties.Name="{x:Static r:VideoEditorText.MediaSplitterName}" />
+        <local:PreviewHost x:Name="Preview" Grid.Column="2" FlowDirection="LeftToRight" />
+        <GridSplitter x:Name="TranscriptSplitter" Grid.Column="3" HorizontalAlignment="Stretch" ResizeDirection="Columns" Background="Transparent"
                       AutomationProperties.Name="{x:Static r:VideoEditorText.TranscriptSplitterName}" />
-        <Border x:Name="TranscriptArea" Grid.Column="2" BorderThickness="1,0,0,0" BorderBrush="{p:Chrome Separator}">
+        <Border x:Name="TranscriptArea" Grid.Column="4" BorderThickness="1,0,0,0" BorderBrush="{p:Chrome Separator}">
           <local:TranscriptPanel x:Name="TranscriptPanelView" />
         </Border>
       </Grid>
@@ -246,6 +259,7 @@
             <Button Content="{x:Static r:VideoEditorText.BlurButton}" Command="{Binding InsertBlurCommand}" ToolTip="{x:Static r:VideoEditorText.BlurButtonTip}" Margin="4,0" />
             <Button Content="{x:Static r:VideoEditorText.ZoomButton}" Command="{Binding InsertZoomCommand}" ToolTip="{x:Static r:VideoEditorText.InsertZoomTip}" Margin="4,0" />
             <Button Content="{x:Static r:VideoEditorText.CaptionsButton}" Command="{Binding TranscribeCommand}" ToolTip="{x:Static r:VideoEditorText.CaptionsButtonTip}" Margin="4,0" />
+            <ToggleButton Content="{x:Static r:VideoEditorText.MediaButton}" IsChecked="{Binding Media.IsShown}" ToolTip="{x:Static r:VideoEditorText.MediaTip}" Padding="8,0" Margin="4,0" />
             <ToggleButton Content="{x:Static r:VideoEditorText.TranscriptButton}" IsChecked="{Binding Transcript.IsShown}" ToolTip="{x:Static r:VideoEditorText.TranscriptTip}" Padding="8,0" Margin="4,0,16,0" />
             <Button Content="{x:Static r:VideoEditorText.SplitButton}" Command="{Binding SplitCommand}" ToolTip="{x:Static r:VideoEditorText.SplitButtonTip}" Margin="4,0" />
             <Button Content="{x:Static r:CommonText.Delete}" Command="{Binding DeleteCommand}" ToolTip="{x:Static r:VideoEditorText.DeleteButtonTip}" Margin="4,0" />

@@ -46,6 +46,8 @@ public sealed class FrameCompositor
     private readonly ZoomCamera _camera;
     private readonly CaptionRenderer _captions = new();
     private readonly Dictionary<string, SKImage?> _pictures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, PictureFile?> _stills = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, SKImage> _solids = [];
     private readonly List<(object Key, SKMatrix Matrix, SKRectI Area, SKImage Image)> _kept = [];
     private (string? Clip, double Time, double Blur, SKImage? Image) _blurredScreen;
 
@@ -213,7 +215,8 @@ public sealed class FrameCompositor
         Clip? previous = null;
         foreach (var clip in track.Clips.Where(c => c.Covers(time)))
         {
-            if (project.Asset(clip.AssetId) is not { } asset)
+            var asset = project.Asset(clip.AssetId);
+            if (asset is null && !clip.IsSolid)
             {
                 continue;
             }
@@ -232,6 +235,23 @@ public sealed class FrameCompositor
                 continue;
             }
 
+            if (asset is null)
+            {
+                DrawPicture(canvas, project, clip, asset, 0, Solid(clip.Solid!), box, project.Canvas.Width, project.Canvas.Height, opacity);
+                continue;
+            }
+
+            if (asset.IsPicture)
+            {
+                // A file that is gone draws nothing: there is nothing to wait for.
+                if (StillOf(asset) is { } still)
+                {
+                    DrawPicture(canvas, project, clip, asset, 0, still.At(time - clip.Start), box, still.Width, still.Height, opacity);
+                }
+
+                continue;
+            }
+
             var sourceTime = clip.SourceAt(time);
             var frame = _frames.Frame(clip, asset, sourceTime);
             if (frame is null)
@@ -245,7 +265,8 @@ public sealed class FrameCompositor
                 var stream = asset.Stream(clip.Stream);
                 var pictureWidth = stream is { Width: > 0 } ? stream.Width : frame.Width;
                 var pictureHeight = stream is { Height: > 0 } ? stream.Height : frame.Height;
-                DrawPicture(canvas, project, clip, asset, sourceTime, frame, box, pictureWidth, pictureHeight, opacity);
+                using var image = frame.ToImage();
+                DrawPicture(canvas, project, clip, asset, sourceTime, image, box, pictureWidth, pictureHeight, opacity);
             }
             finally
             {
@@ -510,7 +531,7 @@ public sealed class FrameCompositor
         };
     }
 
-    private void DrawPicture(SKCanvas canvas, VideoProject project, Clip clip, MediaAsset asset, double sourceTime, VideoFrame frame, PictureBox? box, int pictureWidth, int pictureHeight, double opacity)
+    private void DrawPicture(SKCanvas canvas, VideoProject project, Clip clip, MediaAsset? asset, double sourceTime, SKImage image, PictureBox? box, int pictureWidth, int pictureHeight, double opacity)
     {
         var placement = clip.Placement ?? Placement.Fit;
         var size = project.Canvas;
@@ -521,15 +542,15 @@ public sealed class FrameCompositor
             return;
         }
 
-        var source = SKRect.Create(frame.Width, frame.Height);
+        var source = SKRect.Create(image.Width, image.Height);
         if (box is { Cover: true })
         {
-            source = CutToShape(frame.Width, frame.Height, target.Width / target.Height);
+            source = CutToShape(image.Width, image.Height, target.Width / target.Height);
         }
         else if (placement.Shape == PlacementShape.Circle)
         {
-            var side = Math.Min(frame.Width, frame.Height);
-            source = SKRect.Create((frame.Width - side) / 2f, (frame.Height - side) / 2f, side, side);
+            var side = Math.Min(image.Width, image.Height);
+            source = SKRect.Create((image.Width - side) / 2f, (image.Height - side) / 2f, side, side);
         }
 
         var radius = Math.Max(box?.Radius ?? Radius(placement, target), DeviceFrames.PictureRadius(placement.Frame, target));
@@ -546,7 +567,6 @@ public sealed class FrameCompositor
         }
 
         DeviceFrames.Draw(canvas, placement.Frame, target, alpha);
-        using var image = frame.ToImage();
         using (var paint = new SKPaint { Color = SKColors.White.WithAlpha(alpha) })
         {
             canvas.Save();
@@ -564,11 +584,11 @@ public sealed class FrameCompositor
                 canvas.Scale(-1, 1, target.MidX, 0);
             }
 
-            if (clip.Background is { Effect: not BackgroundEffect.None } background && Masks?.Mask(asset, clip.Stream, sourceTime) is { } mask)
+            if (clip.Background is { Effect: not BackgroundEffect.None } background && asset is not null && Masks?.Mask(asset, clip.Stream, sourceTime) is { } mask)
             {
                 using (mask)
                 {
-                    DrawMatted(canvas, project, background, image, mask, source, target, frame.Width, frame.Height, paint, radius);
+                    DrawMatted(canvas, project, background, image, mask, source, target, image.Width, image.Height, paint, radius);
                 }
             }
             else if (rounded && radius > 0)
@@ -801,7 +821,7 @@ public sealed class FrameCompositor
     {
         const int shrink = 8;
         var missing = 0;
-        if (ZoomCamera.TopVideo(project, time) is { } top && project.Asset(top.Clip.AssetId) is { } asset)
+        if (ZoomCamera.TopVideo(project, time) is { } top && project.Asset(top.Clip.AssetId) is { IsPicture: false } asset)
         {
             var sourceTime = top.Clip.SourceAt(time);
             if (_blurredScreen.Clip != top.Clip.Id || _blurredScreen.Time != sourceTime || _blurredScreen.Blur != background.Blur)
@@ -833,6 +853,32 @@ public sealed class FrameCompositor
         }
 
         return missing;
+    }
+
+    /// <summary>A picture clip's file, read once; null when it is gone.</summary>
+    private PictureFile? StillOf(MediaAsset asset)
+    {
+        if (!_stills.TryGetValue(asset.Path, out var still))
+        {
+            still = PictureFile.TryRead(asset.Path);
+            _stills[asset.Path] = still;
+        }
+
+        return still;
+    }
+
+    /// <summary>A pixel of a solid's colour, which the rest of the drawing stretches like any picture.</summary>
+    private SKImage Solid(string color)
+    {
+        if (!_solids.TryGetValue(color, out var image))
+        {
+            using var surface = SKSurface.Create(new SKImageInfo(1, 1, SKColorType.Bgra8888, SKAlphaType.Premul));
+            surface.Canvas.Clear(Color(color, SKColors.Black));
+            image = surface.Snapshot().ToRasterImage(ensurePixelData: true);
+            _solids[color] = image;
+        }
+
+        return image;
     }
 
     /// <summary>A picture file among the project's assets, read once; null when it can't be read.</summary>

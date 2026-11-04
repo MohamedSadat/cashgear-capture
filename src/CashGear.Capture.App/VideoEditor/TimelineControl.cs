@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Input;
 using CashGear.Capture.App.Wpf;
@@ -25,6 +26,7 @@ internal sealed class TimelineControl : SKElement
         Focusable = true;
         FocusVisualStyle = null; // the frame is drawn with the timeline
         ClipToBounds = true;
+        AllowDrop = true;
     }
 
     internal VideoEditorViewModel? ViewModel => _viewModel;
@@ -175,6 +177,56 @@ internal sealed class TimelineControl : SKElement
         {
             _viewModel.Timeline.PointerUp(0, 0);
         }
+    }
+
+    protected override void OnDragOver(DragEventArgs e)
+    {
+        base.OnDragOver(e);
+        var carries = e.Data.GetDataPresent(MediaPanel.DragFormat) || e.Data.GetDataPresent(DataFormats.FileDrop);
+        e.Effects = carries ? DragDropEffects.Copy : DragDropEffects.None;
+        if (_viewModel is not null && carries)
+        {
+            _viewModel.Timeline.DropAt = Math.Max(0, _viewModel.View.Time(e.GetPosition(this).X));
+            InvalidateVisual();
+        }
+
+        e.Handled = true;
+    }
+
+    protected override void OnDragLeave(DragEventArgs e)
+    {
+        base.OnDragLeave(e);
+        if (_viewModel is not null)
+        {
+            _viewModel.Timeline.DropAt = null;
+            InvalidateVisual();
+        }
+    }
+
+    protected override void OnDrop(DragEventArgs e)
+    {
+        base.OnDrop(e);
+        if (_viewModel is not { } viewModel)
+        {
+            return;
+        }
+
+        viewModel.Timeline.DropAt = null;
+        var at = e.GetPosition(this);
+        var time = viewModel.View.Snap(viewModel.Project, Math.Max(0, viewModel.View.Time(at.X)), viewModel.Position);
+        var track = viewModel.View.RowAt(viewModel.Project, at.Y)?.Track.Id;
+        if (e.Data.GetData(MediaPanel.DragFormat) is string assetId)
+        {
+            viewModel.AddMediaAt(assetId, time, track);
+        }
+        else if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
+        {
+            _ = viewModel.ImportFilesAsync(files, time, track);
+        }
+
+        Focus();
+        InvalidateVisual();
+        e.Handled = true;
     }
 
     protected override void OnMouseWheel(MouseWheelEventArgs e)

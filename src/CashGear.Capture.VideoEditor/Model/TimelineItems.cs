@@ -169,6 +169,12 @@ public sealed record Clip : TimelineItem
 
     public string? Link { get; init; }
 
+    /// <summary>A plain colour (<c>#RRGGBB</c> or <c>#AARRGGBB</c>) instead of media: <see cref="AssetId"/> is empty and <see cref="FreezeLength"/> says how long it lasts.</summary>
+    public string? Solid { get; init; }
+
+    [JsonIgnore]
+    public bool IsSolid => Solid is not null;
+
     [JsonIgnore]
     public bool IsFreeze => FreezeLength > 0;
 

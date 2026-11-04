@@ -88,7 +88,7 @@ public static class LayoutEngine
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(track);
         ArgumentNullException.ThrowIfNull(clip);
-        if (!track.HasPictures || At(project, time) is not { } moment)
+        if (track.Kind is not (TrackKind.Video or TrackKind.Webcam) || At(project, time) is not { } moment)
         {
             return null;
         }

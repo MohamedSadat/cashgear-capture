@@ -27,6 +27,7 @@ public sealed record AssetStream(int Index, StreamKind Kind, string? Title, doub
 /// </summary>
 /// <param name="MetadataPath">The recording's <c>.cgmeta.json</c> (clicks, keys, the pointer), if it has one.</param>
 /// <param name="Transcript">What is said in it, if that was worked out.</param>
+/// <param name="IsPicture">A picture file (PNG, JPEG, WebP, GIF): drawn by Skia, with its transparency, for as long as its clip lasts. An animated one's <see cref="Duration"/> is one time through.</param>
 public sealed record MediaAsset(
     string Id,
     string Path,
@@ -37,7 +38,8 @@ public sealed record MediaAsset(
     string? MetadataRelativePath = null,
     string? EmbeddedName = null,
     string? EmbeddedMetadataName = null,
-    MediaTranscript? Transcript = null)
+    MediaTranscript? Transcript = null,
+    bool IsPicture = false)
 {
     [JsonIgnore]
     public string Name => System.IO.Path.GetFileName(Path);
@@ -67,6 +69,9 @@ public enum TrackKind
 
     /// <summary>How the screen and the webcam share the canvas, stretch by stretch.</summary>
     Layout,
+
+    /// <summary>Pictures, colours and other videos over the screen: they aren't the screen, so zooms and layouts leave them where they are placed.</summary>
+    Media,
 }
 
 /// <summary>
@@ -89,7 +94,7 @@ public sealed record Track(
     CaptionStyle? Captions = null)
 {
     [JsonIgnore]
-    public bool HasPictures => Kind is TrackKind.Video or TrackKind.Webcam;
+    public bool HasPictures => Kind is TrackKind.Video or TrackKind.Webcam or TrackKind.Media;
 
     [JsonIgnore]
     public bool HasSound => Kind == TrackKind.Audio;
@@ -110,8 +115,8 @@ public sealed record Track(
 /// </summary>
 public sealed record VideoProject(int Version, ProjectCanvas Canvas, IReadOnlyList<MediaAsset> Assets, IReadOnlyList<Track> Tracks)
 {
-    /// <summary>1: to 1.1.1. 2: the canvas's background is a record (Phase 20). 3: media has transcripts (Phase 21). See <see cref="ProjectJson"/>'s migrations.</summary>
-    public const int CurrentVersion = 3;
+    /// <summary>1: to 1.1.1. 2: the canvas's background is a record (Phase 20). 3: media has transcripts (Phase 21). 4: any media, motion, transitions, templates, markers (Phase 22). See <see cref="ProjectJson"/>'s migrations.</summary>
+    public const int CurrentVersion = 4;
 
     /// <summary>Where the last item ends.</summary>
     [JsonIgnore]

@@ -288,4 +288,16 @@
     <value>The webcam's background can't be changed: {0}</value>
     <comment>{0}: what went wrong</comment>
   </data>
+  <data name="TrackMedia" xml:space="preserve">
+    <value>Media</value>
+  </data>
+  <data name="TrackMediaNumbered" xml:space="preserve">
+    <value>Media {0}</value>
+  </data>
+  <data name="SolidLabel" xml:space="preserve">
+    <value>Colour</value>
+  </data>
+  <data name="NotAPicture" xml:space="preserve">
+    <value>{0} isn't a picture this app can read.</value>
+  </data>
 </root>

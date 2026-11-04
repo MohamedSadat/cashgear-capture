@@ -1755,4 +1755,118 @@
   <data name="BurnWhichCaptions" xml:space="preserve">
     <value>دمج</value>
   </data>
+  <data name="MediaPanelTitle" xml:space="preserve">
+    <value>الوسائط</value>
+  </data>
+  <data name="MediaMenu" xml:space="preserve">
+    <value>الوسائط (_M)</value>
+  </data>
+  <data name="MediaButton" xml:space="preserve">
+    <value>الوسائط</value>
+  </data>
+  <data name="MediaTip" xml:space="preserve">
+    <value>إظهار وسائط المشروع لسحبها إلى المخطط الزمني (Ctrl+M)</value>
+  </data>
+  <data name="MediaSplitterName" xml:space="preserve">
+    <value>عرض لوحة الوسائط</value>
+  </data>
+  <data name="ImportMediaButton" xml:space="preserve">
+    <value>إضافة ملفات…</value>
+  </data>
+  <data name="ImportMediaTip" xml:space="preserve">
+    <value>إضافة صور أو فيديو أو صوت إلى المشروع</value>
+  </data>
+  <data name="ImportMediaTitle" xml:space="preserve">
+    <value>إضافة وسائط إلى المشروع</value>
+  </data>
+  <data name="AnyMediaFilter" xml:space="preserve">
+    <value>الصور والفيديو والصوت|*.png;*.jpg;*.jpeg;*.webp;*.gif;*.bmp;*.mp4;*.mkv;*.mov;*.webm;*.avi;*.m4v;*.wmv;*.mpg;*.mp3;*.m4a;*.wav;*.flac;*.ogg;*.opus;*.aac|كل الملفات|*.*</value>
+  </data>
+  <data name="AddToTimelineButton" xml:space="preserve">
+    <value>إضافة إلى المخطط الزمني</value>
+  </data>
+  <data name="AddToTimelineTip" xml:space="preserve">
+    <value>وضع الملف المختار على المخطط الزمني عند مؤشر التشغيل (Enter)</value>
+  </data>
+  <data name="RemoveMediaButton" xml:space="preserve">
+    <value>إزالة</value>
+  </data>
+  <data name="RemoveMediaTip" xml:space="preserve">
+    <value>إخراج الملف المختار من المشروع إذا لم يستخدمه شيء على المخطط الزمني (Delete). يبقى الملف نفسه كما هو.</value>
+  </data>
+  <data name="AddColourButton" xml:space="preserve">
+    <value>إضافة لون</value>
+  </data>
+  <data name="AddColourTip" xml:space="preserve">
+    <value>لون سادة عند مؤشر التشغيل لوضعه خلف العناصر أو بينها</value>
+  </data>
+  <data name="InsertMediaMenu" xml:space="preserve">
+    <value>صورة أو فيديو أو صوت… (_V)</value>
+  </data>
+  <data name="InsertMediaTip" xml:space="preserve">
+    <value>إضافة ملف إلى المشروع ووضعه على المخطط الزمني عند مؤشر التشغيل (Ctrl+I)</value>
+  </data>
+  <data name="InsertColourMenu" xml:space="preserve">
+    <value>لون</value>
+  </data>
+  <data name="MediaListName" xml:space="preserve">
+    <value>وسائط المشروع</value>
+  </data>
+  <data name="MediaNone" xml:space="preserve">
+    <value>يمكن سحب الملفات المضافة هنا إلى المخطط الزمني أو إفلاتها عليه من مستكشف الملفات.</value>
+  </data>
+  <data name="MediaPictureDetails" xml:space="preserve">
+    <value>صورة، {0} × {1}</value>
+  </data>
+  <data name="MediaAnimationDetails" xml:space="preserve">
+    <value>صورة متحركة، {0} × {1}، {2}</value>
+  </data>
+  <data name="MediaVideoDetails" xml:space="preserve">
+    <value>فيديو، {0} × {1}، {2}</value>
+  </data>
+  <data name="MediaSoundDetails" xml:space="preserve">
+    <value>صوت، {0}</value>
+  </data>
+  <data name="MediaMissingDetails" xml:space="preserve">
+    <value>تعذر العثور على الملف</value>
+  </data>
+  <data name="MediaUsedDetails" xml:space="preserve">
+    <value>{0}، على المخطط الزمني</value>
+  </data>
+  <data name="MediaItemName" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="MediaStillUsed" xml:space="preserve">
+    <value>{0} ما زال على المخطط الزمني.</value>
+  </data>
+  <data name="UndoAddMedia" xml:space="preserve">
+    <value>إضافة وسائط</value>
+  </data>
+  <data name="UndoAddColour" xml:space="preserve">
+    <value>إضافة لون</value>
+  </data>
+  <data name="UndoImportMedia" xml:space="preserve">
+    <value>إضافة ملفات</value>
+  </data>
+  <data name="UndoRemoveMedia" xml:space="preserve">
+    <value>إزالة وسائط</value>
+  </data>
+  <data name="UndoClipLength" xml:space="preserve">
+    <value>المدة</value>
+  </data>
+  <data name="UndoClipColour" xml:space="preserve">
+    <value>اللون</value>
+  </data>
+  <data name="KindMedia" xml:space="preserve">
+    <value>صور وفيديو</value>
+  </data>
+  <data name="PictureClip" xml:space="preserve">
+    <value>صورة</value>
+  </data>
+  <data name="ColourClip" xml:space="preserve">
+    <value>لون</value>
+  </data>
+  <data name="ClipLength" xml:space="preserve">
+    <value>المدة</value>
+  </data>
 </root>

@@ -231,16 +231,10 @@ public static class TrackEdits
             return project;
         }
 
+        // Media in the panel that was never on the timeline stays; what only this track used goes with it.
         var tracks = project.Tracks.Where(t => t.Id != trackId).ToList();
-        var used = tracks.SelectMany(t => t.Clips).Select(c => c.AssetId).ToHashSet();
-
-        // Pictures that show behind things are media too.
-        if (project.Canvas.Background.PictureAssetId is { } behind)
-        {
-            used.Add(behind);
-        }
-
-        used.UnionWith(tracks.SelectMany(t => t.Clips).Select(c => c.Background?.PictureAssetId).OfType<string>());
-        return project with { Tracks = tracks, Assets = [.. project.Assets.Where(a => used.Contains(a.Id))] };
+        var gone = project.Track(trackId)!.Clips.Select(c => c.AssetId).ToHashSet();
+        var after = project with { Tracks = tracks };
+        return after with { Assets = [.. project.Assets.Where(a => !gone.Contains(a.Id) || MediaEdits.IsUsed(after, a.Id))] };
     }
 }

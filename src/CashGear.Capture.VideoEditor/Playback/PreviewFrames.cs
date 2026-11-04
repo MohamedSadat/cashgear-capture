@@ -76,7 +76,7 @@ public sealed class PreviewFrames : IFrameProvider, IDisposable
         {
             foreach (var clip in track.Clips)
             {
-                if (clip.End < time - Behind || clip.Start > time + Ahead || project.Asset(clip.AssetId) is not { } asset)
+                if (clip.End < time - Behind || clip.Start > time + Ahead || project.Asset(clip.AssetId) is not { IsPicture: false } asset)
                 {
                     continue;
                 }

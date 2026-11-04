@@ -22,6 +22,7 @@ public partial class VideoEditorWindow : Window, IThemedWindow
     private bool _closeConfirmed;
     private bool _focusFromKeyboard;
     private double _transcriptWidth = 330;
+    private double _mediaWidth = 240;
 
     public VideoEditorWindow(VideoEditorViewModel viewModel, AppTheme theme, bool tryGpu, ILogger logger)
     {
@@ -36,6 +37,14 @@ public partial class VideoEditorWindow : Window, IThemedWindow
             if (e.PropertyName == nameof(TranscriptPanelViewModel.IsShown))
             {
                 ShowTranscript(viewModel.Transcript.IsShown);
+            }
+        };
+        ShowMedia(viewModel.Media.IsShown);
+        viewModel.Media.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MediaPanelViewModel.IsShown))
+            {
+                ShowMedia(viewModel.Media.IsShown);
             }
         };
         ApplyTheme(theme);
@@ -67,6 +76,9 @@ public partial class VideoEditorWindow : Window, IThemedWindow
 
     /// <summary>The transcript panel beside the preview.</summary>
     internal TranscriptPanel TranscriptArea2 => TranscriptPanelView;
+
+    /// <summary>The media panel beside the preview.</summary>
+    internal MediaPanel MediaArea2 => MediaPanelView;
 
     /// <summary>Whether the preview draws on the graphics card.</summary>
     public bool PreviewUsesGpu => Preview.UsesGpu;
@@ -179,6 +191,29 @@ public partial class VideoEditorWindow : Window, IThemedWindow
     }
 
     private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
+
+    /// <summary>The media panel's column takes its width back when it is shown, and all of it when it is hidden.</summary>
+    private void ShowMedia(bool shown)
+    {
+        if (shown)
+        {
+            MediaColumn.Width = new GridLength(Math.Max(_mediaWidth, 180));
+            MediaSplitterColumn.Width = new GridLength(5);
+        }
+        else
+        {
+            if (MediaColumn.ActualWidth > 0)
+            {
+                _mediaWidth = MediaColumn.ActualWidth;
+            }
+
+            MediaColumn.Width = new GridLength(0);
+            MediaSplitterColumn.Width = new GridLength(0);
+        }
+
+        MediaArea.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+        MediaSplitter.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+    }
 
     /// <summary>The transcript's column takes its width back when it is shown, and all of it when it is hidden.</summary>
     private void ShowTranscript(bool shown)

@@ -222,4 +222,16 @@
   <data name="MasksFailed" xml:space="preserve">
     <value>تعذر تغيير خلفية كاميرا الويب: {0}</value>
   </data>
+  <data name="TrackMedia" xml:space="preserve">
+    <value>الوسائط</value>
+  </data>
+  <data name="TrackMediaNumbered" xml:space="preserve">
+    <value>الوسائط {0}</value>
+  </data>
+  <data name="SolidLabel" xml:space="preserve">
+    <value>لون</value>
+  </data>
+  <data name="NotAPicture" xml:space="preserve">
+    <value>{0} ليس صورة يستطيع هذا التطبيق قراءتها.</value>
+  </data>
 </root>

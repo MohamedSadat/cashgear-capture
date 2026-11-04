@@ -2024,4 +2024,118 @@
   <data name="BurnWhichCaptions" xml:space="preserve">
     <value>Burn in</value>
   </data>
+  <data name="MediaPanelTitle" xml:space="preserve">
+    <value>Media</value>
+  </data>
+  <data name="MediaMenu" xml:space="preserve">
+    <value>_Media</value>
+  </data>
+  <data name="MediaButton" xml:space="preserve">
+    <value>Media</value>
+  </data>
+  <data name="MediaTip" xml:space="preserve">
+    <value>Show the project's media, to drag onto the timeline (Ctrl+M)</value>
+  </data>
+  <data name="MediaSplitterName" xml:space="preserve">
+    <value>Width of the media panel</value>
+  </data>
+  <data name="ImportMediaButton" xml:space="preserve">
+    <value>Add Files…</value>
+  </data>
+  <data name="ImportMediaTip" xml:space="preserve">
+    <value>Add pictures, videos or sound to the project</value>
+  </data>
+  <data name="ImportMediaTitle" xml:space="preserve">
+    <value>Add Media to the Project</value>
+  </data>
+  <data name="AnyMediaFilter" xml:space="preserve">
+    <value>Pictures, videos and sound|*.png;*.jpg;*.jpeg;*.webp;*.gif;*.bmp;*.mp4;*.mkv;*.mov;*.webm;*.avi;*.m4v;*.wmv;*.mpg;*.mp3;*.m4a;*.wav;*.flac;*.ogg;*.opus;*.aac|All files|*.*</value>
+  </data>
+  <data name="AddToTimelineButton" xml:space="preserve">
+    <value>Add to Timeline</value>
+  </data>
+  <data name="AddToTimelineTip" xml:space="preserve">
+    <value>Put the chosen file on the timeline at the playhead (Enter)</value>
+  </data>
+  <data name="RemoveMediaButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="RemoveMediaTip" xml:space="preserve">
+    <value>Take the chosen file out of the project, when nothing on the timeline uses it (Delete). The file itself stays.</value>
+  </data>
+  <data name="AddColourButton" xml:space="preserve">
+    <value>Add a Colour</value>
+  </data>
+  <data name="AddColourTip" xml:space="preserve">
+    <value>A plain colour at the playhead, to put behind or between things</value>
+  </data>
+  <data name="InsertMediaMenu" xml:space="preserve">
+    <value>Picture, _Video or Sound…</value>
+  </data>
+  <data name="InsertMediaTip" xml:space="preserve">
+    <value>Add a file to the project and put it on the timeline at the playhead (Ctrl+I)</value>
+  </data>
+  <data name="InsertColourMenu" xml:space="preserve">
+    <value>Colour</value>
+  </data>
+  <data name="MediaListName" xml:space="preserve">
+    <value>The project's media</value>
+  </data>
+  <data name="MediaNone" xml:space="preserve">
+    <value>Files added here can be dragged onto the timeline, or dropped on it from Explorer.</value>
+  </data>
+  <data name="MediaPictureDetails" xml:space="preserve">
+    <value>Picture, {0} × {1}</value>
+  </data>
+  <data name="MediaAnimationDetails" xml:space="preserve">
+    <value>Animated picture, {0} × {1}, {2}</value>
+  </data>
+  <data name="MediaVideoDetails" xml:space="preserve">
+    <value>Video, {0} × {1}, {2}</value>
+  </data>
+  <data name="MediaSoundDetails" xml:space="preserve">
+    <value>Sound, {0}</value>
+  </data>
+  <data name="MediaMissingDetails" xml:space="preserve">
+    <value>The file can't be found</value>
+  </data>
+  <data name="MediaUsedDetails" xml:space="preserve">
+    <value>{0}, on the timeline</value>
+  </data>
+  <data name="MediaItemName" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="MediaStillUsed" xml:space="preserve">
+    <value>{0} is still on the timeline.</value>
+  </data>
+  <data name="UndoAddMedia" xml:space="preserve">
+    <value>Add Media</value>
+  </data>
+  <data name="UndoAddColour" xml:space="preserve">
+    <value>Add a Colour</value>
+  </data>
+  <data name="UndoImportMedia" xml:space="preserve">
+    <value>Add Files</value>
+  </data>
+  <data name="UndoRemoveMedia" xml:space="preserve">
+    <value>Remove Media</value>
+  </data>
+  <data name="UndoClipLength" xml:space="preserve">
+    <value>Length</value>
+  </data>
+  <data name="UndoClipColour" xml:space="preserve">
+    <value>Colour</value>
+  </data>
+  <data name="KindMedia" xml:space="preserve">
+    <value>Pictures and video</value>
+  </data>
+  <data name="PictureClip" xml:space="preserve">
+    <value>Picture</value>
+  </data>
+  <data name="ColourClip" xml:space="preserve">
+    <value>Colour</value>
+  </data>
+  <data name="ClipLength" xml:space="preserve">
+    <value>Length</value>
+  </data>
 </root>

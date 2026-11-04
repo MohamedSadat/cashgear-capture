@@ -68,6 +68,9 @@ public sealed class TimelineSession(ProjectHistory history, TimelineView view)
 
     public bool IsDragging => _drag != Drag.None;
 
+    /// <summary>Where something dragged over the timeline would land (a line shows it), or null.</summary>
+    public double? DropAt { get; set; }
+
     /// <summary>The selected item, if it is still in the project.</summary>
     public TimelineItem? Selected => SelectedId is { } id ? History.Project.Find(id)?.Item : null;
 

@@ -64,6 +64,8 @@ public static class ItemProperties
             {
                 TrackKind.Webcam => VideoEditorText.WebcamClip,
                 TrackKind.Audio => VideoEditorText.SoundClip,
+                _ when clip.IsSolid => VideoEditorText.ColourClip,
+                _ when project.Asset(clip.AssetId) is { IsPicture: true } => VideoEditorText.PictureClip,
                 _ => VideoEditorText.VideoClip,
             },
             AnnotationItem annotation => ShapeName(annotation.Shape),
@@ -137,7 +139,29 @@ public static class ItemProperties
             Change(volume, "volume", VideoEditorText.UndoVolume, c => c with { Volume = Fraction(volume) });
         }
 
-        if (actions is not null)
+        // A picture or a colour lasts as long as it is given; nothing else moves for it.
+        var isStill = clip.IsSolid || project.Asset(clip.AssetId) is { IsPicture: true };
+        if (isStill)
+        {
+            if (clip.IsSolid)
+            {
+                var color = new ColorParameter(VideoEditorText.Colour, FrameCompositor.Color(clip.Solid, SKColors.Black));
+                Change(color, "solid", VideoEditorText.UndoClipColour, c => c with { Solid = Hex(color.Value.Value) });
+            }
+
+            var length = new NumberParameter(VideoEditorText.ClipLength, TimelineEdits.ShortestItem, Math.Max(60, clip.FreezeLength), clip.FreezeLength, 0.1, VideoEditorText.SecondsUnit);
+            length.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == "Value" && current().Find(clip.Id) is { Track: var track, Item: Clip now })
+                {
+                    var room = track.Items.Where(i => i.Id != now.Id && i.Start >= now.End - Times.Epsilon).Select(i => i.Start - now.Start).DefaultIfEmpty(double.MaxValue).Min();
+                    apply(now with { FreezeLength = Times.Round(Math.Min(length.Value, room)) }, VideoEditorText.UndoClipLength, $"property {clip.Id} length");
+                }
+            };
+            list.Add(length);
+        }
+
+        if (actions is not null && !isStill)
         {
             if (clip.IsFreeze)
             {

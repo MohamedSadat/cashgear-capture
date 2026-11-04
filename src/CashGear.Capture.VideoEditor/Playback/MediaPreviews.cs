@@ -165,6 +165,17 @@ public sealed partial class MediaPreviews : IDisposable
 
     private void MakeThumbnails(MediaAsset asset, int stream, string key)
     {
+        if (asset.IsPicture)
+        {
+            using var picture = Rendering.PictureFile.TryRead(asset.Path);
+            if (picture is not null)
+            {
+                Publish(key, new ThumbnailStrip([(0, Small(picture.At(0)))], true));
+            }
+
+            return;
+        }
+
         var file = Path.Combine(_folder, key + ".thumbs");
         if (LoadThumbnails(file) is { } cached)
         {
@@ -204,6 +215,17 @@ public sealed partial class MediaPreviews : IDisposable
 
         SaveThumbnails(file, made);
         Publish(key, new ThumbnailStrip(made, true));
+    }
+
+    /// <summary>A picture at the thumbnails' height, on a neutral grey so a transparent one can be seen.</summary>
+    private static SKImage Small(SKImage image)
+    {
+        var height = ThumbnailHeight;
+        var width = Math.Max(1, (int)Math.Round((double)image.Width * height / Math.Max(1, image.Height)));
+        using var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul));
+        surface.Canvas.Clear(new SKColor(0x70, 0x70, 0x70));
+        surface.Canvas.DrawImage(image, SKRect.Create(width, height), new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
+        return surface.Snapshot();
     }
 
     private void MakeWaveform(MediaAsset asset, int stream, string key)

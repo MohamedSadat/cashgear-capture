@@ -111,6 +111,7 @@ public sealed partial class TrackHeaderViewModel(VideoEditorViewModel owner, Tra
     {
         TrackKind.Video => VideoEditorText.KindPicture,
         TrackKind.Webcam => VideoEditorText.KindWebcam,
+        TrackKind.Media => VideoEditorText.KindMedia,
         TrackKind.Audio => VideoEditorText.KindSound,
         TrackKind.Annotation => VideoEditorText.KindAnnotations,
         TrackKind.Caption => VideoEditorText.KindCaptions,
@@ -220,7 +221,11 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         RefreshLook();
         MakeMasks();
         Transcript = new TranscriptPanelViewModel(this, services);
+        Media = new MediaPanelViewModel(this);
     }
+
+    /// <summary>The media panel beside the preview.</summary>
+    public MediaPanelViewModel Media { get; }
 
     /// <summary>The transcript panel beside the preview.</summary>
     public TranscriptPanelViewModel Transcript { get; }
@@ -624,6 +629,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         _closing.Cancel();
         _closing.Dispose();
         _services.Previews.Changed -= OnPreviewsChanged;
+        Media.Release();
         Engine.Dispose();
         Frames.Dispose();
     }
@@ -785,6 +791,116 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             MarkedRange(),
             _services.Gate);
         _dialogs.ShowExport(viewModel);
+    }
+
+    /// <summary>View › Media: shows or hides the panel beside the preview.</summary>
+    [RelayCommand]
+    private void ToggleMedia() => Media.IsShown = !Media.IsShown;
+
+    /// <summary>Insert › Picture, Video or Sound: a file added to the project and put on the timeline at the playhead.</summary>
+    [RelayCommand]
+    private async Task InsertMediaAsync()
+    {
+        if (PickMediaFile(VideoEditorText.ImportMediaTitle, VideoEditorText.AnyMediaFilter) is { } path)
+        {
+            await ImportFilesAsync([path], Position, null);
+        }
+    }
+
+    [RelayCommand]
+    private void InsertColour() => AddSolidAtPlayhead();
+
+    /// <summary>A media file chosen by the user, or null.</summary>
+    internal string? PickMediaFile(string title, string filter) => _dialogs.PickMedia(title, filter, Folder());
+
+    /// <summary>
+    /// Reads files into the project, each as one undo step, and (when <paramref name="at"/> is given) puts them on the
+    /// timeline one after another from there, on <paramref name="trackId"/> when it has room. Says which it couldn't read.
+    /// </summary>
+    public async Task ImportFilesAsync(IReadOnlyList<string> paths, double? at, string? trackId)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        StopPlaying();
+        foreach (var path in paths)
+        {
+            MediaAsset asset;
+            try
+            {
+                var known = Project.Assets.FirstOrDefault(a => string.Equals(a.Path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase) && a.Streams.Count > 0);
+                asset = known ?? await Task.Run(() => ProjectFactory.ReadMedia(path));
+            }
+            catch (Exception e) when (e is FfmpegException or IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                _dialogs.ShowError(VideoEditorText.CantBeOpened(Path.GetFileName(path), e.Message));
+                continue;
+            }
+
+            if (at is { } time)
+            {
+                var id = AddMediaAsset(asset, time, trackId);
+                if (id is not null && Project.Find(id)?.Item is { } added)
+                {
+                    at = added.End;
+                }
+            }
+            else if (Project.Asset(asset.Id) is null)
+            {
+                History.Apply(VideoEditorText.UndoImportMedia, Project.WithAsset(asset));
+            }
+        }
+    }
+
+    /// <summary>Media of the project on the timeline at <paramref name="at"/> (a row of the panel dragged there, or Enter on it).</summary>
+    public string? AddMediaAt(string assetId, double at, string? trackId) =>
+        Project.Asset(assetId) is { } asset ? AddMediaAsset(asset, at, trackId) : null;
+
+    private string? AddMediaAsset(MediaAsset asset, double at, string? trackId)
+    {
+        StopPlaying();
+        var (project, id) = MediaEdits.Add(Project, asset, at, trackId);
+        if (id is null)
+        {
+            _dialogs.ShowError(VideoEditorText.CantBeOpened(asset.Name, VideoEditorText.HasNoSound(asset.Name)));
+            return null;
+        }
+
+        History.Apply(VideoEditorText.UndoAddMedia, project);
+        Timeline.Select(id);
+        if (!Timeline.Selected!.Covers(Timeline.Playhead))
+        {
+            Seek(Timeline.Selected.Start);
+        }
+
+        return id;
+    }
+
+    /// <summary>A file out of the project, unless something on the timeline uses it.</summary>
+    public void RemoveMedia(string assetId)
+    {
+        if (Project.Asset(assetId) is not { } asset)
+        {
+            return;
+        }
+
+        if (MediaEdits.IsUsed(Project, assetId))
+        {
+            _dialogs.ShowError(VideoEditorText.MediaStillUsed(asset.Name));
+            return;
+        }
+
+        History.Apply(VideoEditorText.UndoRemoveMedia, MediaEdits.RemoveAsset(Project, assetId));
+    }
+
+    /// <summary>A plain colour over the marked range (else from the playhead for 5 s), selected so the panel shows it.</summary>
+    public string AddSolidAtPlayhead()
+    {
+        StopPlaying();
+        var (from, length) = Timeline.Range is { } range ? (range.From, range.To - range.From) : (Timeline.Playhead, MediaEdits.DefaultLength);
+        var (project, id) = MediaEdits.AddSolid(Project, MediaEdits.DefaultSolid, from, length);
+        History.Apply(VideoEditorText.UndoAddColour, project);
+        Timeline.SetRange(null);
+        Timeline.Select(id);
+        return id;
     }
 
     /// <summary>View › Transcript: shows or hides the panel beside the preview.</summary>
@@ -1589,6 +1705,7 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
         MakeMasks();
         Transcript.Refresh();
         Transcript.PlayheadMoved(Timeline.Playhead);
+        Media?.Refresh();
         OnPropertyChanged(nameof(Status));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(IsDirty));

@@ -46,6 +46,12 @@ public enum ProFeature
 
     /// <summary>Video editor: captions translated into another language.</summary>
     Translation,
+
+    /// <summary>Video editor: every transition but dissolve and dip, clip effects, text animations.</summary>
+    MotionEffects,
+
+    /// <summary>Video editor: templates, the brand kit and the library.</summary>
+    Templates,
 }
 
 /// <summary>A licence's content (signed into a <c>.cglicense</c> file).</summary>

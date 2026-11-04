@@ -83,6 +83,8 @@ public static class ProjectJson
     /// 2 → 3 (Phase 21): nothing to change: a transcript on an asset is new and optional, and whether a caption style's
     /// missing box means "the default box" stays as it was for what older versions wrote. Their caption words become a
     /// transcript only when the user takes up the offer (<see cref="Editing.TranscriptBuilder.FromCaptions"/>).
+    /// 3 → 4 (Phase 22): nothing to change: pictures, colours, motion, transitions, effects, templates, groups and
+    /// markers are all new and optional, and without them a project draws what it drew.
     /// </summary>
     internal static void Migrate(JsonObject document)
     {
@@ -101,6 +103,11 @@ public static class ProjectJson
         if (version < 3)
         {
             version = 3;
+        }
+
+        if (version < 4)
+        {
+            version = 4;
         }
 
         document["version"] = version;

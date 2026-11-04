@@ -33,6 +33,29 @@ public static class ProjectFactory
         return new MediaAsset(id ?? Ids.New(), path, duration, streams, MetadataPath: FindMetadata(path));
     }
 
+    /// <summary>The file extensions read as pictures, not by FFmpeg (their names, not text).</summary>
+    [Localizable(false)]
+    private static readonly HashSet<string> PictureExtensions = new(StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp" };
+
+    /// <summary>Whether a file is read as a picture, by its extension.</summary>
+    public static bool IsPictureFile(string path) => PictureExtensions.Contains(Path.GetExtension(path));
+
+    /// <summary>A picture file as media, with its size (and an animation's length): one video stream, at index 0.</summary>
+    /// <exception cref="InvalidDataException">It can't be read.</exception>
+    public static MediaAsset ReadPicture(string path, string? id = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        path = Path.GetFullPath(path);
+        using var picture = Rendering.PictureFile.TryRead(path) ?? throw new InvalidDataException(VideoEditorStrings.NotAPicture(Path.GetFileName(path)));
+        var rate = picture.Duration > 0 ? picture.FrameCount / picture.Duration : 0;
+        return new MediaAsset(id ?? Ids.New(), path, picture.Duration, [new AssetStream(0, StreamKind.Video, null, 0, picture.Duration, picture.Width, picture.Height, rate)], IsPicture: true);
+    }
+
+    /// <summary>Any media file: a picture by its extension, else what FFmpeg finds in it.</summary>
+    /// <exception cref="FfmpegException">It can't be read.</exception>
+    /// <exception cref="InvalidDataException">A picture that can't be read.</exception>
+    public static MediaAsset ReadMedia(string path, string? id = null) => IsPictureFile(path) ? ReadPicture(path, id) : ReadAsset(path, id);
+
     /// <summary>The metadata file of a recording (also for a later part, listed in the first part's file), or null.</summary>
     public static string? FindMetadata(string video)
     {

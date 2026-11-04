@@ -106,6 +106,13 @@ public sealed class TimelineRenderer : IDisposable
             canvas.DrawRect(SKRect.Create((float)view.X(range.From), (float)TimelineView.RulerHeight, (float)((range.To - range.From) * view.PixelsPerSecond), (float)view.Height), paint);
         }
 
+        if (session.DropAt is { } drop)
+        {
+            using var line = new SKPaint { Color = Colors.Selection, StrokeWidth = 2, IsAntialias = true };
+            var x = (float)view.X(drop);
+            canvas.DrawLine(x, (float)TimelineView.RulerHeight, x, (float)view.Height, line);
+        }
+
         canvas.Restore();
         DrawRuler(canvas, view, project.Canvas.Fps, session.Range);
         DrawPlayhead(canvas, view, session.Playhead);
@@ -194,7 +201,7 @@ public sealed class TimelineRenderer : IDisposable
         var track = row.Track;
         var color = track.Kind switch
         {
-            TrackKind.Video => Colors.Picture,
+            TrackKind.Video or TrackKind.Media => Colors.Picture,
             TrackKind.Webcam => Colors.Webcam,
             TrackKind.Audio => Colors.Sound,
             _ => Colors.Other,
@@ -213,7 +220,7 @@ public sealed class TimelineRenderer : IDisposable
             var isSelected = item.Id == selected;
             var fill = isSelected && Colors.SelectedItem.Alpha > 0 ? Colors.SelectedItem : dimmed ? color.WithAlpha(0x70) : color;
             var label = isSelected && Colors.SelectedItem.Alpha > 0 ? Colors.SelectedLabel : dimmed ? Colors.DimmedLabel : Colors.Label;
-            DrawItem(canvas, project, item, box, fill, label, view);
+            DrawItem(canvas, project, item, box, item is Clip { Solid: { } solid } && !isSelected ? Rendering.FrameCompositor.Color(solid, fill) : fill, label, view);
             if (isSelected)
             {
                 using var outline = new SKPaint { Color = Colors.Selection, Style = SKPaintStyle.Stroke, StrokeWidth = 2, IsAntialias = true };
@@ -241,6 +248,7 @@ public sealed class TimelineRenderer : IDisposable
         ArgumentNullException.ThrowIfNull(item);
         var label = item switch
         {
+            Clip { IsSolid: true } => VideoEditorStrings.SolidLabel,
             Clip clip => project.Asset(clip.AssetId)?.Name ?? VideoEditorStrings.MissingMedia,
             AnnotationItem { Shape: AnnotationShape.Text } written => written.Text.ReplaceLineEndings(" "),
             AnnotationItem annotation => ShapeLabel(annotation.Shape),
@@ -255,7 +263,11 @@ public sealed class TimelineRenderer : IDisposable
 
         if (item is Clip shaped)
         {
-            if (shaped.IsFreeze)
+            if (shaped.IsSolid || project.Asset(shaped.AssetId) is { IsPicture: true })
+            {
+                // A picture lasting a while is what it is, not a frozen moment.
+            }
+            else if (shaped.IsFreeze)
             {
                 label = VideoEditorStrings.FreezeLabel(label);
             }
