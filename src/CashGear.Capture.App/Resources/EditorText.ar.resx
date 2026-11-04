@@ -663,10 +663,4 @@
   <data name="ImageMenuName" xml:space="preserve">
     <value>الصورة</value>
   </data>
-  <data name="AnnotationCopied" xml:space="preserve">
-    <value>نُسخ التعليق. يلصقه Ctrl+V.</value>
-  </data>
-  <data name="PasteAnnotationMenu" xml:space="preserve">
-    <value>لصق التعليق (_P)</value>
-  </data>
 </root>

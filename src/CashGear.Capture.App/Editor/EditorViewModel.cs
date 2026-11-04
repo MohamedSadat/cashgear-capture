@@ -608,19 +608,14 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         Session.PasteCopied();
     }
 
-    /// <summary>Copies the selected annotation, or the image with the annotations burned in.</summary>
+    /// <summary>Copies the image with the annotations burned in, and remembers the selected annotation for pasting.</summary>
     [RelayCommand]
     private async Task CopyAsync()
     {
         FinishTextEdit();
 
-        // With an annotation selected, it is what is copied; Ctrl+V pastes it, in this window or another.
-        if (Session.CopySelection())
-        {
-            ShowMessage(EditorText.AnnotationCopied);
-            return;
-        }
-
+        // The image is what is copied, as ever; a selected annotation is also kept, for Ctrl+V in this window or another.
+        Session.CopySelection();
         try
         {
             using var image = Flatten();

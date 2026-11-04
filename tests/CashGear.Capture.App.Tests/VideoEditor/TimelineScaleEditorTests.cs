@@ -204,7 +204,7 @@ public sealed class TimelineScaleEditorTests : VideoEditorTestBase
         session.Undo();
         session.Document.Annotations.Should().ContainSingle();
 
-        // Nothing selected, nothing copied: Ctrl+C copies the image, as it did.
+        // Nothing selected: nothing to remember (Ctrl+C copies the image either way).
         session.Select(null);
         session.CopySelection().Should().BeFalse();
     }
