@@ -18,7 +18,7 @@ public sealed class TransitionPanelTests : VideoEditorTestBase
 
     private static ChoiceParameter Choice(VideoEditorViewModel vm, string label) => vm.Properties.OfType<ChoiceParameter>().First(p => p.Label == label);
 
-    private static void Pick(ChoiceParameter choice, object? value) => choice.Selected = choice.Choices.First(c => Equals(c.Value, value));
+    private static void Pick(ChoiceParameter choice, object value) => choice.Selected = choice.Choices.First(c => Equals(c.Value, value));
 
     /// <summary>A recording cut in two at 1 s.</summary>
     private VideoEditorViewModel Cut()
@@ -76,7 +76,8 @@ public sealed class TransitionPanelTests : VideoEditorTestBase
         clip.TransitionIn!.Kind.Should().Be(TransitionKind.Wipe);
         Pick(vm.Properties.OfType<ChoiceParameter>().First(p => p.Label == VideoEditorText.TransitionDirectionLabel), TransitionDirection.Up);
         ((Clip)vm.Project.Find(first.Id)!.Value.Item).TransitionIn!.Direction.Should().Be(TransitionDirection.Up);
-        Pick(Choice(vm, VideoEditorText.WayIn), null);
+        var wayIn = Choice(vm, VideoEditorText.WayIn);
+        wayIn.Selected = wayIn.Choices[0];
         ((Clip)vm.Project.Find(first.Id)!.Value.Item).TransitionIn.Should().BeNull();
     }
 

@@ -40,10 +40,13 @@ public static class ItemProperties
         public Func<string?>? PickLut { get; init; }
     }
 
+    /// <summary>The list's row for no transition.</summary>
+    private static readonly object NoTransition = new();
+
     /// <summary>The kinds of transition in the panel's lists.</summary>
     private static IReadOnlyList<Choice> TransitionChoices() =>
     [
-        new((TransitionKind?)null, VideoEditorText.TransitionNone),
+        new(NoTransition, VideoEditorText.TransitionNone),
         new(TransitionKind.Dissolve, VideoEditorText.TransitionDissolve),
         new(TransitionKind.DipToColor, VideoEditorText.TransitionDip),
         new(TransitionKind.Wipe, VideoEditorText.TransitionWipe),
@@ -336,14 +339,14 @@ public static class ItemProperties
     private static void AddTransition(Clip clip, ItemEdge edge, List<EditParameter> list, Func<VideoProject> current, Action<string, ItemEdge, ClipTransition?, string> set)
     {
         var way = edge == ItemEdge.Start ? clip.TransitionIn : clip.TransitionOut;
-        var kind = new ChoiceParameter(edge == ItemEdge.Start ? VideoEditorText.WayIn : VideoEditorText.WayOut, TransitionChoices(), way?.Kind);
+        var kind = new ChoiceParameter(edge == ItemEdge.Start ? VideoEditorText.WayIn : VideoEditorText.WayOut, TransitionChoices(), way is { } shown ? shown.Kind : NoTransition);
         var length = new NumberParameter(VideoEditorText.TransitionLength, 0.1, 5, way?.Length ?? 1, 0.1, VideoEditorText.SecondsUnit) { IsVisible = way is not null };
         var direction = new ChoiceParameter(VideoEditorText.TransitionDirectionLabel, [new(TransitionDirection.Left, VideoEditorText.DirectionLeft), new(TransitionDirection.Right, VideoEditorText.DirectionRight), new(TransitionDirection.Up, VideoEditorText.DirectionUp), new(TransitionDirection.Down, VideoEditorText.DirectionDown)], way?.Direction ?? TransitionDirection.Left) { IsVisible = way?.Kind is TransitionKind.Wipe or TransitionKind.Slide or TransitionKind.Push };
         var color = new ColorParameter(VideoEditorText.TransitionColour, FrameCompositor.Color(way?.Color, SKColors.Black)) { IsVisible = way?.Kind == TransitionKind.DipToColor };
         var pace = new ChoiceParameter(VideoEditorText.TransitionEasing, Paces(), way?.Easing ?? MotionEasing.EaseInOut) { IsVisible = way is not null };
         void Changed()
         {
-            var chosen = (TransitionKind?)kind.Selected.Value;
+            var chosen = kind.Selected.Value as TransitionKind?;
             length.IsVisible = pace.IsVisible = chosen is not null;
             direction.IsVisible = chosen is TransitionKind.Wipe or TransitionKind.Slide or TransitionKind.Push;
             color.IsVisible = chosen == TransitionKind.DipToColor;

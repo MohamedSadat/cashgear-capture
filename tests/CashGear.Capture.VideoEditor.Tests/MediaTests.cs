@@ -242,9 +242,11 @@ public sealed class MediaTests : IDisposable
     }
 
     [Fact]
-    public void Screen_webcam_two_pictures_and_another_video_export_where_the_preview_showed_them()
+    public Task Screen_webcam_two_pictures_and_another_video_export_where_the_preview_showed_them() =>
+        CashGear.Capture.Tests.MachineTurn.RunAsync(ExportedWhereShown);
+
+    private async Task<bool> ExportedWhereShown()
     {
-        using var turn = new CashGear.Capture.Tests.MachineTurn();
         var format = new VideoFormat(640, 360, 30);
         var recording = _files.Stamped("rec.mp4", 4, format, webcam: new VideoFormat(160, 120, 30));
         var other = _files.Stamped("other.mp4", 3, new VideoFormat(320, 180, 25));
@@ -262,8 +264,8 @@ public sealed class MediaTests : IDisposable
         project = project.WithItem((Clip)project.Find(video!)!.Value.Item with { Placement = new Placement(0.25, 0.7, 0.4) });
 
         var path = Path.Combine(_files.Root, "all.mp4");
-        var result = new ProjectExporter(new SoftwareEncoders(), NullLogger<ProjectExporter>.Instance)
-            .ExportAsync(new ExportRequest(project, ExportPresets.Mp4H264Project, QualityPreset.High, path)).GetAwaiter().GetResult();
+        var result = await new ProjectExporter(new SoftwareEncoders(), NullLogger<ProjectExporter>.Instance)
+            .ExportAsync(new ExportRequest(project, ExportPresets.Mp4H264Project, QualityPreset.High, path), ct: TestContext.Current.CancellationToken);
         result.Frames.Should().Be((long)Math.Ceiling(project.Duration * 30));
 
         using var reader = new VideoStreamReader(path, decoding: VideoDecoding.Software);
@@ -293,6 +295,7 @@ public sealed class MediaTests : IDisposable
 
         frames.Should().BeGreaterThan(9);
         worst.Should().BeLessThan(3, "the export shows every item where the preview did (only the encoder's loss differs)");
+        return true;
     }
 
     /// <summary>The preview's pictures, waited for: a frame here is compared whole.</summary>

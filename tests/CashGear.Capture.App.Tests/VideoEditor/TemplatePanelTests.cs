@@ -146,7 +146,7 @@ public sealed class TemplatePanelTests : VideoEditorTestBase
 
         // A file that isn't one says so.
         var wrong = Path.Combine(Root, "wrong.cgpack");
-        await File.WriteAllTextAsync(wrong, "no");
+        await File.WriteAllTextAsync(wrong, "no", TestContext.Current.CancellationToken);
         Dialogs.Media = wrong;
         vm.Media.ImportPackCommand.Execute(null);
         Dialogs.Errors.Should().Contain(e => e.Contains("no") || e.Length > 0);
