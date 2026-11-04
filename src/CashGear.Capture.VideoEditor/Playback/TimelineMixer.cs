@@ -21,6 +21,12 @@ public sealed class TimelineMixer : IDisposable
     /// <summary>Clips starting this soon are opened and positioned ahead, so the block that reaches them doesn't wait.</summary>
     private const double OpenAhead = 0.5;
 
+    /// <summary>
+    /// A clip with effects has seconds of sound to work through to get to its start: this far ahead, it does that beside the
+    /// mixing, with room to spare on a busy PC (the worst seek takes under a second, the sound mixed ahead lasts a quarter of one).
+    /// </summary>
+    private const double OpenAheadWithEffects = 2;
+
     private readonly Dictionary<string, Voice> _voices = [];
     private float[] _scratch = [];
     private int _block;
@@ -65,7 +71,7 @@ public sealed class TimelineMixer : IDisposable
                 var to = Math.Min(end, clipEnd);
                 if (to <= from)
                 {
-                    if (clipStart >= end && clipStart < end + (long)(OpenAhead * SampleRate))
+                    if (clipStart >= end && clipStart < end + (long)((clip.Sound is { HasChain: true } ? OpenAheadWithEffects : OpenAhead) * SampleRate))
                     {
                         Prepare(clip, asset, clipStart);
                     }
@@ -290,7 +296,8 @@ public sealed class TimelineMixer : IDisposable
             {
                 if (ahead)
                 {
-                    _seeking = Task.Run(() => worked.Seek(seek));
+                    // A thread of its own: the pool can be slow to get to it just when the PC is busy.
+                    _seeking = Task.Factory.StartNew(() => worked.Seek(seek), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 }
                 else
                 {
