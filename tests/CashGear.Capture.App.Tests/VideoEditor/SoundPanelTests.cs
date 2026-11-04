@@ -290,10 +290,27 @@ public sealed class SoundPanelTests : VideoEditorTestBase
 
         export.TracksOut = export.TracksOutChoices.Single(t => t.Value == SoundTracksOut.WavFiles);
         export.Loudness = export.Loudnesses.Single(l => l.Lufs == ExportLoudness.YouTube);
+
+        // The last line of progress can come in just after the words at the end, off the window's thread: any of them says it.
+        var said = new List<string>();
+        export.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ExportViewModel.ProgressText))
+            {
+                lock (said)
+                {
+                    said.Add(export.ProgressText);
+                }
+            }
+        };
         await export.StartCommand.ExecuteAsync(null);
         export.Error.Should().BeNull();
         export.Result.Should().NotBeNull();
-        export.ProgressText.Should().Contain("LUFS");
+        lock (said)
+        {
+            said.Should().Contain(s => s.Contains("LUFS", StringComparison.Ordinal));
+        }
+
         var sounds = vm.Project.Tracks.Where(t => t.HasSound).ToList();
         foreach (var track in sounds)
         {

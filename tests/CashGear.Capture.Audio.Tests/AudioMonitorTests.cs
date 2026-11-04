@@ -16,7 +16,9 @@ public sealed class AudioMonitorTests
 
         monitor.Start(new MonitorRequest("default", new MicrophoneProcessing(), SystemAudio: true));
         sources.System!.Deliver(0.5f, 480);
-        sources.Microphone!.Deliver(1.8f, 960); // limited by the processing to -1 dB
+
+        // Limited by the processing to -1 dB. More than the chain holds back, which with RNNoise there is 22 ms whether it is on or not.
+        sources.Microphone!.Deliver(1.8f, 2400);
 
         var levels = monitor.TakeLevels();
         levels.System.Peak.Should().Be(0.5f);
@@ -25,7 +27,7 @@ public sealed class AudioMonitorTests
         monitor.TakeLevels().System.Peak.Should().Be(0, "taken");
 
         monitor.SetProcessing(new MicrophoneProcessing(Limiter: false));
-        sources.Microphone.Deliver(1.8f, 960);
+        sources.Microphone.Deliver(1.8f, 2400);
         monitor.TakeLevels().Microphone.Clipped.Should().BeTrue("the limiter was switched off");
 
         monitor.Stop();

@@ -647,6 +647,7 @@ public sealed class SoundPostTests(ITestOutputHelper output) : IDisposable
         var longest = device.LongestSilence(4.2);
         output.WriteLine($"The longest silence, over two jumps: {longest * 1000:0.0} ms");
         longest.Should().BeLessThan(0.005, "the sound already mixed lasts while the next clip gets ready beside it");
+        device.Played.Should().BeGreaterThan(4 * Rate, "the device was playing all along");
     }
 
     [Fact]
