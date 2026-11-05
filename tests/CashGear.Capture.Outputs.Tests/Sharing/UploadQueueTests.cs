@@ -318,7 +318,7 @@ public sealed class UploadQueueTests : IAsyncLifetime
     /// for a while, then the PC says it woke), without starting over. A real sleep is by hand.
     /// </summary>
     [Fact]
-    public async Task A_1_GB_upload_survives_a_network_drop_and_a_sleep_without_starting_over()
+    public Task A_1_GB_upload_survives_a_network_drop_and_a_sleep_without_starting_over() => CashGear.Capture.Tests.MachineTurn.RunAsync(async () =>
     {
         const long size = 1024L * Mb;
         if (new DriveInfo(Path.GetPathRoot(_temp.Path)!).AvailableFreeSpace < 3 * size)
@@ -389,7 +389,9 @@ public sealed class UploadQueueTests : IAsyncLifetime
             _sharing.Server.BytesOnTheWire.Should().BeLessThan(size + (64L * Mb), "only what was lost went twice");
             states.Should().Contain(UploadState.Retrying).And.Contain(UploadState.Done);
         }
-    }
+
+        return true;
+    });
 
     private static void InterlockedMax(ref int target, int value)
     {

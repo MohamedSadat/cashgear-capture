@@ -469,9 +469,9 @@ internal sealed partial class WgcAreaStream : IPictureStream
     {
         if (_simulateLoss)
         {
+            // The device itself stays until Recover replaces it: a picture arriving this very moment, before the loss is
+            // noted, must find it there. A real lost device stays there too, failing with an error the arrival handles.
             _simulateLoss = false;
-            _resources?.Dispose(); // as gone as a removed device's
-            _resources = null;
             throw new SharpGen.Runtime.SharpGenException(new SharpGen.Runtime.Result(unchecked((int)0x887A0005)));
         }
     }

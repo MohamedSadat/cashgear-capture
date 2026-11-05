@@ -40,6 +40,7 @@ public sealed unsafe class BgraConverter : IDisposable
     private SwsContext* _context;
     private (int Width, int Height, int Format) _shape;
     private byte[] _buffer = [];
+    private byte[] _padded = [];
 
     public ReadOnlySpan<byte> Convert(AVFrame* frame)
     {
@@ -60,10 +61,11 @@ public sealed unsafe class BgraConverter : IDisposable
             var rgb = *(int4*)ffmpeg.sws_getCoefficients(ffmpeg.SWS_CS_DEFAULT);
             ffmpeg.sws_setColorspaceDetails(_context, in yuv, 0, in rgb, 1, 0, 1 << 16, 1 << 16);
             _shape = shape;
-            _buffer = new byte[(frame->width * frame->height * 4) + 256]; // room for what FFmpeg's scaler writes in blocks (see VideoStreamReader)
+            _buffer = new byte[frame->width * frame->height * 4];
+            _padded = new byte[_buffer.Length + 256]; // room for what FFmpeg's scaler writes in blocks (see VideoStreamReader)
         }
 
-        fixed (byte* destination = _buffer)
+        fixed (byte* destination = _padded)
         {
             _planes[0] = destination;
             _strides[0] = frame->width * 4;
@@ -78,6 +80,7 @@ public sealed unsafe class BgraConverter : IDisposable
             ffmpeg.sws_scale(_context, source, sourceStrides, 0, frame->height, _planes, _strides);
         }
 
+        _padded.AsSpan(0, _buffer.Length).CopyTo(_buffer);
         return _buffer;
     }
 
