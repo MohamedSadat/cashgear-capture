@@ -729,18 +729,15 @@ public sealed partial class SignInViewModel(string id, string name, Func<string,
     public bool IsSignedOut => IsAvailable && !IsSignedIn && !IsWaiting;
 
     /// <summary>Who is signed in, or that nobody is.</summary>
-    public string AccountText => find(id) switch
-    {
-        { IsSignedIn: true, Account: { Length: > 0 } account } => DestinationsText.SignedInAccount(account),
-        { IsSignedIn: true } => DestinationsText.SignedIn,
-        _ => IsWaiting ? DestinationsText.WaitingForBrowser : DestinationsText.NotSignedIn,
-    };
+    [ObservableProperty]
+    private string _accountText = DestinationsText.NotSignedIn;
 
     /// <summary>The browser is open, and the app waits for the service to come back.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(AccountText))]
     [NotifyPropertyChangedFor(nameof(IsSignedOut))]
     private bool _isWaiting;
+
+    partial void OnIsWaitingChanged(bool value) => Refresh();
 
     [ObservableProperty]
     private string _folder = string.Empty;
@@ -751,7 +748,12 @@ public sealed partial class SignInViewModel(string id, string name, Func<string,
     [ObservableProperty]
     private VideoPrivacy _privacy;
 
-    public IReadOnlyList<VideoPrivacy> Privacies { get; } = Enum.GetValues<VideoPrivacy>();
+    public IReadOnlyList<EnumChoice> Privacies { get; } =
+    [
+        new(VideoPrivacy.Private, DestinationsText.PrivacyPrivate),
+        new(VideoPrivacy.Unlisted, DestinationsText.PrivacyUnlisted),
+        new(VideoPrivacy.Public, DestinationsText.PrivacyPublic),
+    ];
 
     [ObservableProperty]
     private string _description = string.Empty;
@@ -827,7 +829,12 @@ public sealed partial class SignInViewModel(string id, string name, Func<string,
         OnPropertyChanged(nameof(IsAvailable));
         OnPropertyChanged(nameof(IsSignedIn));
         OnPropertyChanged(nameof(IsSignedOut));
-        OnPropertyChanged(nameof(AccountText));
+        AccountText = find(id) switch
+        {
+            { IsSignedIn: true, Account: { Length: > 0 } account } => DestinationsText.SignedInAccount(account),
+            { IsSignedIn: true } => DestinationsText.SignedIn,
+            _ => IsWaiting ? DestinationsText.WaitingForBrowser : DestinationsText.NotSignedIn,
+        };
     }
 
     public void Load(YouTubeSettings settings)

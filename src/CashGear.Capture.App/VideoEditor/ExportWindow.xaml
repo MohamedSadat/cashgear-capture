@@ -137,7 +137,7 @@
         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding YouTubeDescription, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinLines="3" MaxLines="5" VerticalScrollBarVisibility="Auto" Margin="0,0,0,6" AutomationProperties.LabeledBy="{Binding ElementName=YtDescriptionLabel}" />
         <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,0,6" Visibility="{Binding HasMarkers, Converter={StaticResource Visible}}">
           <CheckBox Content="{x:Static r:VideoEditorText.ChaptersInDescription}" IsChecked="{Binding ChaptersInDescription}" />
-          <TextBlock Text="{Binding ChaptersPreview}" TextWrapping="Wrap" Opacity="0.75" Margin="20,2,0,0" />
+          <TextBlock Text="{Binding ChaptersPreview}" TextWrapping="Wrap" Opacity="0.75" Margin="20,2,0,0" FlowDirection="LeftToRight" NumberSubstitution.Substitution="European" />
           <TextBlock Text="{Binding ChaptersNote}" TextWrapping="Wrap" Foreground="{p:Chrome Error}" Margin="20,2,0,0" />
         </StackPanel>
         <TextBlock x:Name="YtTagsLabel" Grid.Row="3" Text="{x:Static r:VideoEditorText.YouTubeTags}" VerticalAlignment="Center" Margin="0,0,12,6" />

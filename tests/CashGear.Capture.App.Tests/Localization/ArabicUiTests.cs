@@ -89,7 +89,7 @@ public sealed class ArabicUiTests : IDisposable
             pages: () =>
             [
                 .. tabs.Items.Cast<TabItem>().Select((tab, i) => ($"{i + 1:00}", (Action)(() => tabs.SelectedItem = tab))),
-                ("destinations-sharing", () => ShowSection(tabs, 1, DestinationsText.SharingSection)),
+                ("destinations-sharing", () => ShowInTemplate(tabs, 1, DestinationsText.YouTubeTags)),
                 ("recording-monitors", () => ShowSection(tabs, 3, SettingsText.SeveralMonitorsSection)),
                 ("overlays-webcam", () => ShowSection(tabs, 4, OverlaysText.LiveBackgroundLabel)),
             ]);
@@ -372,6 +372,27 @@ public sealed class ArabicUiTests : IDisposable
         public Task CopyToClipboardAsync(Core.Imaging.CapturedImage image, CancellationToken ct = default) => throw new NotSupportedException();
 
         public Task CopyFilesToClipboardAsync(IReadOnlyList<string> paths, CancellationToken ct = default) => throw new NotSupportedException();
+    }
+
+    /// <summary>A tab scrolled to a text inside a list's template, which only the visual tree reaches.</summary>
+    private static void ShowInTemplate(TabControl tabs, int tab, string text)
+    {
+        tabs.SelectedIndex = tab;
+        tabs.UpdateLayout();
+        static IEnumerable<DependencyObject> InTree(DependencyObject parent)
+        {
+            for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                yield return child;
+                foreach (var below in InTree(child))
+                {
+                    yield return below;
+                }
+            }
+        }
+
+        InTree(tabs).OfType<TextBlock>().FirstOrDefault(b => b.Text == text)?.BringIntoView();
     }
 
     /// <summary>A tab scrolled to the part of it that holds this text, to be looked at.</summary>

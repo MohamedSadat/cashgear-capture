@@ -436,7 +436,7 @@
                         <RowDefinition Height="Auto" />
                       </Grid.RowDefinitions>
                       <TextBlock Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.YouTubePrivacy}" />
-                      <ComboBox Grid.Column="1" Margin="0,3" ItemsSource="{Binding Privacies, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding Privacy}" AutomationProperties.Name="{x:Static r:DestinationsText.YouTubePrivacy}" />
+                      <ComboBox Grid.Column="1" Margin="0,3" ItemsSource="{Binding Privacies}" SelectedValuePath="Value" SelectedValue="{Binding Privacy}" AutomationProperties.Name="{x:Static r:DestinationsText.YouTubePrivacy}" />
                       <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.YouTubeDescription}" />
                       <TextBox Grid.Row="1" Grid.Column="1" Margin="0,3" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinLines="2" MaxLines="4" AutomationProperties.Name="{x:Static r:DestinationsText.YouTubeDescription}" />
                       <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.YouTubeTags}" />

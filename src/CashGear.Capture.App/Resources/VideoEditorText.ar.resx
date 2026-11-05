@@ -2788,7 +2788,7 @@
     <value>الإطار</value>
   </data>
   <data name="ThumbnailTitleLabel" xml:space="preserve">
-    <value>العنوان</value>
+    <value>قالب العنوان</value>
   </data>
   <data name="ThumbnailNoTitle" xml:space="preserve">
     <value>بلا عنوان: الإطار فقط</value>
@@ -2800,7 +2800,7 @@
     <value>استخدامها للرفع (_U)</value>
   </data>
   <data name="ThumbnailSave" xml:space="preserve">
-    <value>حفظ بتنسيق PNG… (_S)</value>
+    <value>حفظ بتنسيق PNG…‏ (_S)</value>
   </data>
   <data name="ThumbnailSaveTitle" xml:space="preserve">
     <value>حفظ الصورة المصغّرة</value>

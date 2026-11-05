@@ -3072,7 +3072,7 @@
     <value>Frame</value>
   </data>
   <data name="ThumbnailTitleLabel" xml:space="preserve">
-    <value>Title</value>
+    <value>Title template</value>
   </data>
   <data name="ThumbnailNoTitle" xml:space="preserve">
     <value>None: only the frame</value>

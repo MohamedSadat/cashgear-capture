@@ -199,9 +199,8 @@ public sealed partial class BackgroundWorkViewModel : ObservableObject, IDisposa
     /// <summary>There is nothing on the list.</summary>
     public bool IsEmpty => Rows.Count == 0;
 
-    public string SummaryText => _work.Summary is { IsBusy: true } summary
-        ? SharingText.GoingOn(summary.Active, Percent(summary.Fraction))
-        : SharingText.NothingGoingOn;
+    [ObservableProperty]
+    private string _summaryText = SharingText.NothingGoingOn;
 
     public void Dispose() => _work.Changed -= OnChanged;
 
@@ -262,7 +261,9 @@ public sealed partial class BackgroundWorkViewModel : ObservableObject, IDisposa
         }
 
         OnPropertyChanged(nameof(IsEmpty));
-        OnPropertyChanged(nameof(SummaryText));
+        SummaryText = _work.Summary is { IsBusy: true } summary
+            ? SharingText.GoingOn(summary.Active, Percent(summary.Fraction))
+            : SharingText.NothingGoingOn;
     }
 
     internal void Cancel(BackgroundRow row)
