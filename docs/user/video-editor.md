@@ -26,6 +26,8 @@ Tray › **Video Editor** › **Open a Recording or Project…**, or **Edit the 
 | **Undo** | `Ctrl+Z`, `Ctrl+Y` |
 | **Save the project** | `Ctrl+S` writes `name.cgcap`. **Save with Media…** puts the recordings inside |
 
+A recording with a video track for each monitor (see [Recording](recording.md#a-window-or-every-monitor)) opens showing the first. **Edit › Cut to Screen** shows another from the playhead on, and each monitor's parts are ordinary clips on its own track.
+
 ## Adding things
 
 - **Any media** (the Media tab, Insert › Picture, Video or Sound…, `Ctrl+I`, or dropped on the timeline from Explorer): pictures (PNG, JPEG, WebP, an animated GIF that goes round and round) for as long as you like, and any video FFmpeg reads, with its sound. They go on as many media tracks as they need, over the screen. Zooms and layouts leave them where they are placed. **Add a Colour** adds a plain colour.

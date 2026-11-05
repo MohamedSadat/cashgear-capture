@@ -31,6 +31,7 @@ The printer, Word and PowerPoint, PDF, FTP/FTPS/SFTP servers, HTTP uploads and o
 ## Recording
 
 - Frame rate, quality and encoder.
+- Several monitors: one picture (and its height) or a track each. Recording an HDR monitor as HDR.
 - Sound: system audio, one app, the output device and the microphone.
 - The microphone's clean-up, live meters and a microphone test.
 - Evening out loudness.

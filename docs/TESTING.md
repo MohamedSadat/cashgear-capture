@@ -1118,3 +1118,91 @@ Without anything of this phase in a project, the mix takes the paths it took, a 
 - **The installed app:** dragging a keyframe's diamond with a real mouse, View › Sound Output with the H5 and the speakers, unplugging one while playing.
 - **Narrator and a real high-contrast switch** on a sound clip's settings and the export window's new choices.
 - **A native reader's look** at the Arabic of the new settings.
+
+## Phase 24 results (2026-11-05)
+
+The reference PC of Phase 18: two monitors (1920 × 1080 + 1280 × 1024), a GTX 1650 on driver 457.51, so Windows' hardware encoder and no NVENC, no 10-bit encoder, no HDR monitor, no webcam. The desktop tests and SyncTest had the user's go-ahead. **How it was tested:**
+- **Real captures:** window and monitor recordings go through the real Windows.Graphics.Capture, encoders and files.
+- **A window's truth:** a test window of one colour and a covering window of another, so every sample of every frame is one of the window, a bar, or a failure.
+- **HDR's truth:** known float pixels, through a real 10-bit encoder (AV1 in software, the only one here), read back. The shader is compared with `HdrVideo`'s arithmetic, itself compared with BT.2100's and BT.2408's values.
+- **The webcam:** a stand-in camera and a stand-in person finder, since there is no camera here. The model's own speed and quality are Phase 20's.
+
+```bash
+dotnet test --project tests/CashGear.Capture.App.Tests --filter-class "*WindowRecordingTests" --filter-class "*SeveralMonitorsTests" --filter-class "*RecordingV3Tests" --output Detailed
+```
+
+```bash
+dotnet run --project tools/SyncTest -- run --minutes 30 --monitors tracks
+```
+
+`CASHGEAR_WINDOW_SECONDS=300` makes the window test the 5-minute acceptance, and `CASHGEAR_RESIZE_SECONDS=120` runs the resize stress test with Windows' own frames beside it.
+
+### Acceptance
+
+| Item | Automated (result) | By hand |
+|---|---|---|
+| A 5-minute recording of a window moved, covered and resized shows only the window, its size changes letterboxed, in one file | `A_window_moved_covered_and_resized_is_alone_in_one_file` at 300 s: 200 changes, 66 of them resizes, **one file**, 9039 frames, **0 dropped**, **0 foreign samples, 0 of the covering window**, 2996 frames letterboxed, 1 half painted by the window just after a resize (below) | A real app (a browser, a video player) |
+| Minimized: the last picture holds and the notification says from when to when | `A_minimized_window_holds…`: every frame the window; "minimized from 0:02 to 0:04" | |
+| Partly off screen | In the same test: 200 pixels past the left of the desktop, where no monitor is | Dragged across a real monitor edge |
+| Two monitors for 30 minutes: A/V drift < 40 ms on both (SyncTest) | `SyncTest run --minutes 30 --monitors tracks`: 54,001 frames, **0 dropped**, 900 beeps paired. **First monitor: drift 4.2 ms** fitted, 11.7 ms first to last stretch. **Second, its own track: 5.1 ms**, 13.5 ms. The offset, mean −35.5 ms and −36.0 ms, doesn't grow | |
+| The encoder load of two streams | Table below | |
+| A scheduled recording starts within 1 s of its time and stops at its length | `A_scheduled_recording_starts_on_its_second…`: clock **within 8 ms** of its time in every full run; **90 of 90 frames** for 3 s | Across a real sleep |
+| Stop at a time; when an app closes; from the command line | `A_recording_stops_at_a_time`, `A_recording_stops_when_the_app…`; `RecordingPlanTests` read every option, and they come through the pipe | `--record --duration` in the installed app |
+| Profiles from the toolbar | `A_profile_gives_its_settings_and_its_look…`: 30 frames for 15 fps × 2 s, the look in the metadata. `ScheduleAndProfileViewModelTests` | Right click and Shift+F10 on the real toolbar |
+| The webcam's background live when the card keeps up | `The_webcams_background_is_drawn_live…`, `It_stops_when_it_cant_keep_up…`, `Removed_the_person_stays…`, `Blurred_a_change…` | A real webcam and person |
+| A second camera as its own track | `A_second_camera_is_a_track_of_its_own`: titled "Webcam 2", and both let go | Two real cameras |
+| HDR: unit tests of the PQ conversion and a synthetic float frame round trip | `RecordingTargetTests`, `PqEncoderTests` (shader within 1 code of the arithmetic), `HdrTests`: tagged `yuv420p10le,bt2020nc,smpte2084,bt2020`; white, half white and red within 3 levels; 1000 nits read as 1000 ± 40, and ± 60 after an HDR export. `An_HDR_monitor_records_as_10_bit_PQ…` through the recorder | A real HDR monitor and an NVIDIA, Intel or AMD 10-bit encoder |
+| Without a 10-bit encoder | `Without_a_10_bit_encoder_an_HDR_monitor_is_tone_mapped…`: SDR, and the note says so | |
+| Old projects keep working | `GoldenFrameTests`: all byte for byte, and the Phase 22 project mixes the same samples. `.cgcap` didn't change | |
+| New windows: right to left, keyboard, UI Automation, high contrast | `ArabicUiTests.The_small_windows` (`schedule-recording.png`, `recording-profiles.png`) reaches every control by Tab, names each, closes with Esc; `Settings_on_every_tab` (`settings-recording-monitors.png`, `settings-overlays-webcam.png`), each picture looked at | Narrator, a real high-contrast switch |
+| The whole suite | with the desktop (the user's go-ahead) 2210 tests: 2196 pass, 14 skipped, 0 failed (19 min) in the last two full runs, on the final code. The skips are the 14 that run only when asked for, one of them this phase's resize stress test. Phase 23 had 2099. Of the five full runs before them: one had the preview test miss its frames beside this phase's HDR tests; one was clean; one crashed the test process on a Phase 23 bug (Fixed during development); and two failed only on `The_capture_callback_allocates_nothing_per_picture` (Known limitations). | |
+
+### What two encoders cost
+
+`What_two_encoders_cost_is_measured`, over the full runs: 10 s of each, recording what the desktop shows, through Windows' hardware encoder, at 30 fps, as a share of the 24 threads.
+
+| Recording | Processor | Written | Dropped |
+|---|---|---|---|
+| One monitor, 1920 × 1080 | 1.5 to 1.7 % | 331 | 0 |
+| Two monitors, a track each | 2.5 to 3.4 % | 331 and its track | 0 |
+| Two monitors on one canvas, 3200 × 1169 (the second sits 145 pixels lower) | 2.2 to 2.4 % | 331 | 0 |
+
+With SyncTest's flashing square for 30 minutes, a track each took 2.9 % (0.70 cores). A track each costs a second encoder; a canvas costs a larger picture. Both are easily within this PC's means. A graphics card with few encoder sessions may refuse the second, in which case its track says so and the recording goes on.
+
+### A window half painted
+
+The 5-minute test first failed on one frame in 9037: black in the middle of the picture, nothing foreign. It wasn't the recorder. `Resizing_over_and_over_keeps_the_picture`, 298 resizes with a plain capture of the same window beside the recording:
+
+| | Frames | Half painted |
+|---|---|---|
+| The recording | 3613 | 5 |
+| Windows' own frames, read straight | 7349 | 10, all `640x400` with the left half painted |
+
+The WPF test window shows half its picture for a frame before it has painted itself. The test allows that only within 0.5 s of a resize, and fails on any other colour.
+
+### An allocation not explained
+
+`The_capture_callback_allocates_nothing_per_picture` failed in two full runs at exactly 176 bytes over its 3 s: one allocation, not one per picture. The likely cause, a new texture landing in the stretch, wasn't confirmed:
+
+| Runs | Result |
+|---|---|
+| The last two full runs | Pass, 0 bytes, no new texture in the stretch |
+| 8 under 14 busy processes | Pass, 0 bytes |
+| 8 under 30 busy processes, twice | 11 pass, 0 bytes wherever measured. 5 failed: 1 "Windows sent no picture within 5 s", 1 with 0 pictures in a stretch (since fixed in the test), 3 whose messages weren't kept, though none was an assertion's |
+
+The test now measures a stretch with no new texture and logs what one costs, so if it fails again the 176 bytes are something else.
+
+### Export time
+
+| Project | Before (Phase 23) | After |
+|---|---|---|
+| **The reference project:** three cuts out of a 20-minute recording, 320 × 180, 30,885 frames, nothing of this phase in it (`ExportAcceptanceTests`) | 69 to 70 s run alone | 63 to 72 s, in the three runs right after the full suites. Nothing of this phase is in its path, a check of the file's colour apart. |
+
+### Pending: by hand
+- **HDR:** a real HDR monitor with an NVIDIA, Intel or AMD 10-bit encoder: a recording played on an HDR display beside the screen, SDR white against SDR windows, the editor's tone-mapping against the recording's own SDR path, an **MP4 HEVC HDR** export.
+- **The webcam:** a real camera with a real person, blurred and removed; whether the background keeps up on the GTX 1650 during a recording; the notification when it can't; two real cameras.
+- **Real windows:** a browser, a video player, a game; a window dragged across two monitors; Windows 11's rounded corners; the yellow border on Windows 10.
+- **Schedules:** across a real sleep, and across closing and starting the app; `--record --duration 00:30:00` in the installed app, to a running copy and with none running.
+- **Several monitors:** a monitor unplugged or changed in resolution during a recording; monitors of mixed DPI; Edit › Cut to Screen on a real two-monitor recording.
+- **Narrator and a real high-contrast switch** on the two new windows, the tray's new items and the record button's menu. A real keyboard on Shift+F10 there.
+- **A native reader's look** at the Arabic of the new windows and settings.

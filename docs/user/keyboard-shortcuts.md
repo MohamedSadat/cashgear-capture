@@ -16,7 +16,7 @@ Change them in Settings › Hotkeys. The ones with "—" have no key until you s
 | `Shift+PrintScreen` | Start a recording, or stop it |
 | `Ctrl+Alt+Shift+PrintScreen` | Repeat the last capture |
 | `Ctrl+Shift+D` | Draw on the screen (while recording) |
-| `Ctrl+Alt+Shift+T` | Use the capture or recording toolbar from the keyboard (Tab, Enter; Esc gives the focus back) |
+| `Ctrl+Alt+Shift+T` | Use the capture or recording toolbar from the keyboard (Tab, Enter; Esc gives the focus back). `Shift+F10` on its record button offers the profiles |
 | — | Capture a window, fixed-size, freehand, polygon or rounded region, object, open menu |
 | — | Show or hide the capture toolbar; the magnifier, colour picker, ruler, crosshair |
 | — | Push-to-talk (hold) |
