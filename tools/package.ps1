@@ -239,10 +239,11 @@ finally {
 if ($Channel -eq "stable") {
     $stableFeed = Join-Path $releases "releases.stable.json"
     $legacyFeed = Join-Path $releases "releases.win.json"
-    $assets = @((Get-Content $stableFeed -Raw | ConvertFrom-Json).Assets)
+    # Windows PowerShell reads a file without a BOM as ANSI unless told otherwise, which garbles the Arabic notes.
+    $assets = @((Get-Content $stableFeed -Raw -Encoding UTF8 | ConvertFrom-Json).Assets)
     if (Test-Path $legacyFeed) {
         $listed = @($assets | ForEach-Object FileName)
-        $assets += @((Get-Content $legacyFeed -Raw | ConvertFrom-Json).Assets | Where-Object { $_.FileName -notin $listed })
+        $assets += @((Get-Content $legacyFeed -Raw -Encoding UTF8 | ConvertFrom-Json).Assets | Where-Object { $_.FileName -notin $listed })
     }
     [IO.File]::WriteAllText($legacyFeed, (@{ Assets = $assets } | ConvertTo-Json -Depth 5 -Compress), (New-Object Text.UTF8Encoding $false))
 }
