@@ -1206,3 +1206,74 @@ The test now measures a stretch with no new texture and logs what one costs, so 
 - **Several monitors:** a monitor unplugged or changed in resolution during a recording; monitors of mixed DPI; Edit › Cut to Screen on a real two-monitor recording.
 - **Narrator and a real high-contrast switch** on the two new windows, the tray's new items and the record button's menu. A real keyboard on Shift+F10 there.
 - **A native reader's look** at the Arabic of the new windows and settings.
+
+## Phase 25 results (2026-11-05)
+
+The reference PC of Phase 18, with no registration with any of the services. Everything here runs against `FakeSharingServer`: a pretend Google, Microsoft and Dropbox on 127.0.0.1, written from the services' documentation and as strict as they are where it matters. PKCE is checked at the token endpoint, a token has to be good, chunks have to come where they should and in the sizes each service asks for, and a test can drop a connection mid-chunk or before the answer, answer 503 or 429, forget a session or stop answering at all. The desktop tests ran with the user's go-ahead. SyncTest and Bench weren't needed: nothing in the capture or recording path changed but a test-only line.
+
+```bash
+dotnet test --project tests/CashGear.Capture.Outputs.Tests --filter-class "*SignInDestinationTests" --filter-class "*UploadQueueTests" --output Detailed
+```
+
+```bash
+dotnet test --project tests/CashGear.Capture.App.Tests --filter-class "*BackgroundUploadTests" --filter-class "*SharingEditorTests" --output Detailed
+```
+
+### Acceptance
+
+| Item | Automated (result) | By hand |
+|---|---|---|
+| Each destination against the local fakes: sign-in | `Signing_in_goes_through_the_browser_with_PKCE…`, for each of the four: S256 checked by the server, only the refresh token kept. A declined sign-in, a wrong `state` turned away, the loopback address alone, cancelling | The real services, once registered ([SHARING.md](SHARING.md)) |
+| Token refresh | `A_token_that_expired_is_refreshed_without_asking`, for each. `A_new_refresh_token_replaces_the_old_one`, `A_revoked_sign_in_asks_for_a_new_one`, `A_token_that_ran_out_in_the_middle…` | The same |
+| An upload resumed after a dropped connection | `A_dropped_connection_resumes_without_starting_over`, for each: 40 MB, dropped mid-chunk, hash equal, under 20 MB sent twice. `A_connection_lost_before_the_answer_finds_its_place`, for each: not a byte twice. Also a bad moment (503, 429) and a forgotten session, for each | The same |
+| The link goes to Copy the link | `The_steps_on_this_PC_run_at_once…`, `A_group_finishes_once_with_every_outcome…`: copied once all have gone, in order | The same |
+| A 1 GB upload survives a network drop and a sleep, resuming without starting over | `A_1_GB_upload_survives_a_network_drop_and_a_sleep…`: 1024 MB, dropped at 300 MB, then nothing answering past 600 MB until the wake event. **One session throughout, SHA-256 equal, under 1088 MB on the wire,** about 18 s | A real sleep, and a real line |
+| Going on after quitting the app | `What_a_restart_finds_goes_on_from_where_it_was`: the same session, under 20 MB sent twice | In the installed app |
+| A capture taken during a slow upload starts at once | `A_capture_taken_during_a_slow_upload_starts_at_once`: two captures delivered in about 50 ms with the upload held | By hand with a real slow server |
+| Progress in the tray, Cancel, retry, a notification when done | `The_window_lists_what_is_going_on…`, `Cancel_stops_a_job…` (the service told to forget it), `A_failure_that_may_pass_is_tried_again…`, `A_failed_job_is_still_there_after_a_restart` | The real tray icon's tooltip and menu |
+| `ffprobe` lists the MP4 chapters, and the YouTube description has the same timestamps | `ffprobe_lists_the_chapters_and_a_description_has_the_same_times` for MP4, MKV and M4A, with an Arabic title; `A_WebM_file_says_what_it_keeps`. The real `ffprobe.exe` | The chapters on a real YouTube watch page |
+| A WebVTT chapters file | `The_chapters_file_is_written_beside_the_export`, `The_WebVTT_chapters_file_has_a_cue_per_chapter` | In a web player |
+| Three presets of one project export in one go, each the same as a single export with that preset | `Three_presets_of_one_project_export_in_one_go…`: every picture's MD5 equal, every sound sample equal, the GIF byte for byte | |
+| A queue of projects | `A_queue_of_projects_goes_one_after_another…`: one broken one doesn't stop the next | A real queue of long projects |
+| A thumbnail | `A_thumbnail_is_the_frame_asked_for…` (the stamp read back), `A_title_from_the_templates…` with Arabic, `A_thumbnail_saves_as_PNG_and_for_YouTube…` (noise goes to JPEG under 2 MB), `YouTube_also_gets_the_playlist_and_the_thumbnail` | A real channel |
+| `BatchExport` behind the gate, free in this version | `Batches_are_behind_the_gate_and_free_in_this_version`, `Single_exports_with_presets_stay_free` | |
+| Old projects keep working | `GoldenFrameTests`: all byte for byte, and the Phase 22 project mixes the same samples. `.cgcap` didn't change, so no fixture | |
+| New windows: right to left, keyboard, UI Automation, high contrast | `ArabicUiTests`: `uploads-and-exports.png`, `uploads-and-exports-ended.png`, `batch-export.png`, `export-youtube.png`, `thumbnail.png`, `settings-destinations-sharing.png`, each reached by Tab, named and closed with Esc. Colours through `{p:Chrome}`. **The pictures were looked at:** they caught a bracket moved by the bidi rules (Fixed during development) | Narrator, a real high-contrast switch |
+| The whole suite | with the desktop (the user's go-ahead) 2368 tests: 2354 pass, 14 skipped, 0 failed (19 to 20 min) in the last two full runs, on the final code, with the totals checked. The skips are the same 14 that run only when asked for. Phase 24 had 2210. The one full run before them had 5 failures: 2 from a fix of this phase (a longer buffer a caller copied whole), 1 a test counting the export window's boxes, 1 the race below, 1 the windows on the second monitor below. | |
+
+### Reading a video at a width of 8 past 16s
+
+`ReadingBoundsTests` read a video into memory with guard bytes after the picture.
+
+| Width | Past the end, before the fix |
+|---|---|
+| 320, 322, 484, 720, 1366, 1920 | 0 |
+| 1000, 1080 | **32 bytes** |
+
+FFmpeg's fast BGRA conversion works in blocks of 16 pixels. At a width of 16n + 8 it writes 8 pixels past the last row. Every width now passes, also 1016 and 1368, and a width that isn't whole blocks goes through a private buffer with room to spare.
+
+### A test that depends on what is on the screen
+
+`A_float_capture_tone_mapped_equals_the_8_bit_capture` failed at exactly 96.1 % every time, in a full run and alone, on this phase's code and on `phase-24-done` alike, and passed as soon as Windows Security and Settings were moved off the second monitor. The mismatches were all on those windows' text (8-bit 77 against float 105): translucent content is blended in linear light when Windows composes to float, and in gamma when to 8 bits. So translucent content on any monitor fails it. It isn't a fault of the HDR path, which only reads float on a monitor in HDR mode.
+
+### Export time
+
+| Project | Before (Phase 24) | After |
+|---|---|---|
+| **The reference project** (`ExportAcceptanceTests`) | 63 to 72 s | 64 and 66 s, run alone after the full suites. Nothing of this phase is in its path |
+
+### Pending: by hand
+- **The real services,** once registered, step by step in [SHARING.md](SHARING.md): each sign-in, Test, an upload with its link, a network drop, Sign Out. A new project's YouTube videos: whether they stay private, as YouTube's pages disagree.
+- **A real sleep** in the middle of an upload, and a 1 GB upload over a real line.
+- **Quitting the installed app** in the middle of an upload, and starting it again.
+- **YouTube:** the description's chapters on the watch page, a thumbnail on a phone-verified channel, a playlist.
+- **The tray:** its tooltip and menu item with an upload going, a notification's click opening the link.
+- **The browser:** signing in with Edge, Chrome and Firefox as the default, and the page they end on, in both languages.
+- **A real slow FTP or SFTP server,** cancelled and retried.
+- **A long batch** of real projects, and closing the app during one.
+- **Narrator and a real high-contrast switch** on the new windows and the Settings rows.
+- **A native reader's look** at the new Arabic.
+
+### A race in a test's simulation
+
+`A_lost_device_rebuilds_the_real_capture_and_the_recording_goes_on` failed about one run in three alone, also on `phase-24-done` (1 in 5 there), and stayed at 30 frames. The log showed a null reference in the capture's callback at the moment of the simulated loss: the simulation cleared the device before the loss was noted. A real lost device stays there. After the fix: 15 runs of 15, and `WindowRecordingTests`' own loss passes too.

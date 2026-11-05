@@ -2265,3 +2265,88 @@ A window can be recorded by itself, whatever happens to it: moved, covered, part
 - **The new strings** want a native reader's look.
 - **Still unexplained:** `The_capture_callback_allocates_nothing_per_picture` failed in two full runs of this phase at exactly 176 bytes over its 3 s, which is one allocation, not one per picture (it also failed once in Phase 22). The likely cause was a new texture landing in the stretch, the only thing the callback should allocate, so the test now measures a stretch with none and logs what a new texture costs. That wasn't confirmed: it passed in the last two full runs and in 19 of 24 runs under 14 and 30 busy processes, always at 0 bytes where it measured (the other 5, all under 30, failed in other ways: see TESTING.md), and no new texture landed in a measured stretch. If it fails again, the 176 bytes are something else.
 - **Also from Phase 23, not looked at again:** the first runs of `SoundPlayingAcceptanceTests` after a heavy load starts.
+
+## Phase 25 — Sharing (2026-11-05)
+
+YouTube, Google Drive, OneDrive and Dropbox are destinations with a sign-in, in the workflows and from the editor's export. Uploads go in the background with progress in the tray, Cancel, retry and a notification, and a capture never waits for one: a dropped connection, a sleep or quitting the app goes on from where it was. The export window's choices have names, several presets of a project or a queue of projects run in the background, the markers become chapters, and a thumbnail can be made from a frame and a title. Project files don't change. The real services need the owner's registrations ([SHARING.md](SHARING.md)), so everything was tested against local fake servers.
+
+### Added
+- **One OAuth client for installed apps** (`OAuthClient`; RFC 8252, no SDK): authorization code with PKCE (S256), in the user's own browser, coming back to `LoopbackRedirect`, a socket on the loopback address alone that turns away anything without the right `state`.
+  - **Tokens:** refresh tokens with DPAPI in `secrets.json`, at once, since signing in is its own act and not part of Settings' OK; access tokens only in memory, refreshed before they end or when the service refuses one. A new refresh token replaces the old. A refused one asks for a new sign-in, by name.
+  - **Registrations:** `-GoogleClientId`, `-GoogleClientSecret`, `-MicrosoftClientId`, `-DropboxAppKey` for `tools\package.ps1`, overridden by `destinations.sharing.clients` in settings.json. Without one, a service isn't offered and Settings says so.
+- **The destinations** (`YouTubeDestination`, `GoogleDriveDestination`, `OneDriveDestination`, `DropboxDestination`, all `IOutputDestination` with `SupportsVideo`), over `HttpClient`:
+  - **YouTube:** title, description, tags, privacy (private unless the user says otherwise), playlist, thumbnail. What YouTube refuses is cleaned up: angle brackets, over 100 characters, over 5000 bytes, over 500 of tags. The link is `https://youtu.be/id`, for Copy the link. It takes no pictures (`IOutputDestination.SupportsImages`).
+  - **Google Drive** with the `drive.file` scope: finds or makes the folder, level by level.
+  - **OneDrive** through Graph: chunks go without the token, as the session's address is the permission. A name that is taken gets a number.
+  - **Dropbox:** arguments in a header, with everything outside ASCII escaped, so Arabic names work. Adds without overwriting.
+  - **A link for anyone** is a setting of each drive, off by default.
+  - **Settings › Destinations:** Sign In, Cancel while the browser is open, Sign Out, Test, and each one's settings.
+- **Resumable uploads** (`ResumableUploader`, one `IUploadProtocol` per service): chunks of the size each service asks for, a watchdog that tells a dead connection from a slow one, waits that back off up to 60 s and end early when the PC wakes or the network changes (`UploadWake`), then asks the service how far it got and goes on from there. A session the service has forgotten starts a new one. An answer lost after the last chunk doesn't upload twice, and what follows a finished upload (a playlist, a thumbnail, a link) can fail without losing it: `IUploadCheckpoint`.
+- **Uploads in the background** (`UploadQueue`; Phase 14's limitation is gone): a couple of files at a time, each to its destinations in order, then Copy the link.
+  - **Everything that uploads goes there** (`IOutputDestination.IsUpload`): FTP, SFTP and HTTP too, which report their progress now and try again by themselves when the failure may pass (`OutputResult.Retryable`).
+  - **What is left is written down** (`uploads.json`; the sessions, which take a file without a token, with DPAPI) and goes on at the next start.
+  - **The workflow** (`OutputWorkflow`) runs the steps on this PC first, in order, then hands the rest over: the saved file, or a copy of a temporary one that the queue keeps. What comes after the editor still waits for Continue.
+  - **The tray:** **Uploads and Exports…** with how far they have got, in the menu and the tooltip. Its window has a line each with Cancel, Retry, Open Link, Copy Link, Show in Folder and Remove. A notification says when a file has gone everywhere it can, and a click opens the link.
+- **Export presets by name** (`ExportChoices`, `NamedExport`, `BuiltInExports`, saved in `presets.json`, with the settings' export and import): YouTube 1080p, Shorts 9:16, Docs GIF, and the user's. `ExportChoiceMapping` is the one way from choices to an `ExportRequest`, so a batch and the window make the same thing. An HDR preset on a project without HDR media exports as MP4 HEVC and says so.
+- **Batches** (`ExportQueue`, the Export Several window; File, and tray › Video Editor): each project or recording in each ticked preset, one at a time, in the background, named `Name - Preset.ext` and never over a file that is there. A preset can send on to a destination.
+- **Pro features:** `ProFeature.BatchExport` covers batches and queues, behind `IFeatureGate`. Uploads to the sign-in destinations and single exports with a preset are free, as Section 8 has it. Everything stays free in this version.
+- **Chapters** (`ProjectChapters`, `ExportWriter.Chapters`, `ExportRequest.Chapters`): from Phase 22's markers, in MP4, M4A, MKV and WebM files; a `name.chapters.vtt`; times in a YouTube description, from one list. The export window says when YouTube wouldn't show them.
+- **The export window** also has **When done, send to**, with what YouTube asks for when it goes there.
+- **Thumbnails** (`ThumbnailMaker`, the Thumbnail window; File › Make a Thumbnail…, or the export window): a frame, a title from the templates (the built-in ones and the library's) drawn settled by the export's own compositor, saved as a PNG or used for the upload, as a JPEG if the PNG is over YouTube's 2 MB.
+- **Diagnostics:** what is typed for YouTube, the folders and the client ids are left out of the zip's settings.
+- **Tests:** `FakeSharingServer` (a pretend Google, Microsoft and Dropbox as strict as the real ones where it matters: PKCE is checked, a token has to be good, chunks have to come where they should), `SignInDestinationTests`, `UploadQueueTests`, `SharingExportTests`, `BackgroundUploadTests`, `SharingEditorTests`, `SharingSettingsTests`, `ExportPresetLibraryTests`; the new windows and the Destinations section in `ArabicUiTests`.
+
+### Deviations from the spec
+- **`.cgcap` didn't change,** so there is no project version 6 and no new fixture: the chapters are the markers it has, and the rest is in the settings and the presets.
+- **The steps on this PC run before the uploads,** whatever their order in the workflow. A workflow of Upload then Save to file now uploads the saved file. Only Copy the link waits for the uploads.
+- **Links open only for the account's owner by default,** where the plan only says the link goes to Copy the link. An uploader making everything public by default isn't "local first". A setting of each drive turns it on, and YouTube stays private unless told otherwise.
+- **A chapter "Introduction" is added** when the first marker isn't at 0, in the file and the description alike: YouTube needs a first chapter at 0:00, and the two should say the same.
+- **Uploads and exports share one window,** where the plan asks for progress in the tray. The tray has the total, and the window the rest.
+- **Sign Out forgets the tokens on this PC,** and doesn't revoke them at the service: the plan doesn't ask for it, and the user can do it there.
+- **The scope for YouTube is `youtube`,** not the narrower `youtube.upload`, which can't add to a playlist. It needs Google's verification either way.
+- **The "sleep" of the 1 GB test is a stand-in:** the server answers nothing for a while, then the wake event comes. A real sleep is by hand.
+- **Exports in a queue don't outlast the app,** unlike uploads. Closing it asks first.
+
+### Fixed during development
+- **Reading a video wrote past its picture (since Phase 16):** FFmpeg's fast conversion to BGRA works in blocks of 16 pixels, and at a width of 16n + 8, such as **1080**, it writes 32 bytes past the last row. So any 1080 × 1920 video opened in the editor, the app's own Shorts exports included, overran its frame's memory. This phase found it because a batch test reads such a file back: its array was followed by other objects, and the process died with "Internal CLR error" a few pictures later, at a different place each time. Guard bytes then measured it (`ReadingBoundsTests`). A width that isn't whole blocks now goes through a private buffer.
+- **A simulated device loss failed a recording about one run in three (since Phase 24, on old code too):** the test's loss cleared the device before the loss was noted, so a picture arriving just then hit a null, which counted as a capture that had failed for good. The test stayed at 30 frames, and it passed twice in Phase 24's last runs by luck. A real lost device stays there, failing with an error the arrival handles, so this was never the product's. 15 runs of 15 pass now. The first guess, a new device taking over 2 s, was wrong: waiting for it changed nothing, and the log showed the null.
+- **Any upload that reported progress failed at once:** the time of the last report began at `TimeSpan.MinValue`, and subtracting it overflowed.
+- **Cancel didn't reach the service:** the session was forgotten before the job could tell the service to let go of it.
+- **A Retry that worked said nothing:** a job already told about wasn't told about again.
+- **A chapter's number** counted the list as it grew, so an unnamed marker could be "Chapter 5" of 3.
+- **The queue could reach the windows before there were any:** the host starts before the WPF application, and an upload going on from last time may finish at once. It now starts with the UI. An event raised as the app closes stops no upload or export.
+- **A circle in the services:** the export sender needs the destinations, which reach the video editor, which needs the sender. It finds them when first used, and `AppHostTests` builds it.
+- **A string overwritten:** `tools\strings.py` replaces a key that is there, and `FileGone` was taken, with other placeholders. The build's error caught it.
+- **The new 1 GB test ran beside the real-time tests** without taking the machine's turn. It does now, as Section 2 asks.
+- **The Arabic check's pictures found** a bracket moved by the bidi rules ("حفظ بتنسيق PNG… (S)", which needs a right-to-left mark), two labels saying "Title" in the thumbnail window, chapter times shown out of order and in Arabic digits where YouTube gets Latin ones, and words worked out during layout, on a thread without the window's language in the test.
+- **A note written from memory was out of date:** YouTube's revision history says unverified projects' videos stopped being locked as private on 2 November 2026. [SHARING.md](SHARING.md) says so, with the pages that still disagree.
+
+### Tested
+- **Automated tests:** with the desktop (the user's go-ahead) 2368 tests: 2354 pass, 14 skipped, 0 failed (19 to 20 min) in the last two full runs, on the final code, with the totals checked. The skips are the same 14 that run only when asked for. Phase 24 had 2210. The one full run before them had 5 failures: 2 from a fix of this phase (a longer buffer a caller copied whole), 1 a test counting the export window's boxes, 1 the race below, 1 the windows on the second monitor below. Non-desktop before that: 2358 tests, 0 failed.
+- **Acceptance** (all against local fake servers; the table is in TESTING.md):
+  - **Each destination:** sign-in with PKCE checked by the server, token refresh, and an upload resumed after a dropped connection, for all four, with the file's SHA-256 equal.
+  - **1 GB through a dropped connection and a stand-in sleep:** one session throughout, hash equal, under 1088 MB on the wire, about 18 s.
+  - **A capture during a slow upload:** two captures delivered in about 50 ms with the upload held.
+  - **`ffprobe`** lists the chapters of MP4, MKV, M4A and WebM files, Arabic titles too, and the description has the same times.
+  - **Three presets in one go,** each the same as a single export: every picture's MD5, every sound sample, the GIF byte for byte.
+- **Old projects:** `GoldenFrameTests` pass byte for byte, and the Phase 22 project mixes the same samples. `.cgcap` didn't change.
+- **Export time of the reference project:** 64 and 66 s, against 63 to 72 s for Phase 24. Writing chapters doesn't apply to it, and reading a 320-wide video is unchanged.
+- **The Arabic check's pictures** were looked at, twice: what they found is in Fixed during development.
+- **The desktop tests** ran with the user's go-ahead. SyncTest and Bench weren't run: the capture and recording path didn't change, but for one line of a test's simulation.
+- **Build:** `dotnet build --no-incremental` without warnings.
+- **Not run** (pending in TESTING.md): the real services, which need the owner's registrations; a real sleep; 1 GB over a real line; the app's tray and notifications by hand; Narrator and a real high-contrast switch; the Arabic by a native reader.
+
+### Known limitations
+- **The real services are by hand,** once registered ([SHARING.md](SHARING.md)). Everything here was tested against fakes written from the services' documentation, so a difference between the two shows only there. Until Google's verification, only test users can sign in, for 7 days at a time. YouTube's revision history says unverified projects' videos stopped being locked as private on 2 November 2026, while other pages of its documentation still describe the lock; that wants a real upload to confirm.
+- **A sleep** is tested as a stand-in, and a 1 GB upload over a real line by hand.
+- **Dropbox's sign-in needs port 53917 free,** which its app registration names. If something holds it, signing in says so.
+- **FTP, SFTP and HTTP uploads can't resume:** they start over. HTTP keeps its 2-minute limit per request, so a large file to a slow endpoint fails, now in the background.
+- **After a session is lost** (the services keep them for days, by their own rules), the file starts over. On OneDrive and Dropbox, an answer lost on the very last request can upload it twice, under a second name, since neither can be asked once the file is whole.
+- **Dropbox can't be asked where it is.** Within a run it goes on from the last answer. After a restart, the first request starts from the beginning of the file until the service gives the right place, sending at most one chunk for nothing.
+- **Upload jobs read the file when their turn comes.** A saved file moved or changed meanwhile fails with a message or is refused by the service.
+- **The thumbnail's title** is drawn as it stands halfway through the template, so a template with something that comes later or leaves early doesn't show that. A channel has to be phone-verified for YouTube to take one; the video goes up anyway and the note says why.
+- **Chapters aren't in** MP3, WAV, FLAC or GIF files. YouTube reads the description, not the file's chapters.
+- **Playlists** are listed from the first 50 of the account.
+- **The new strings** want a native reader's look.
+- **A test that depends on the screen:** `A_float_capture_tone_mapped_equals_the_8_bit_capture` fails while a translucent window, such as Windows Security or Settings, is on any monitor (see TESTING.md). It isn't this phase's, and it is left as it is.
+- **Still unexplained, not looked at again:** Phase 24's `The_capture_callback_allocates_nothing_per_picture` and Phase 23's first runs of `SoundPlayingAcceptanceTests`. Neither failed in this phase's full runs.
