@@ -59,6 +59,21 @@
 .PARAMETER NoFfmpeg
     Leaves FFmpeg's libraries out. Recording then explains that FFmpeg is missing.
 
+.PARAMETER GoogleClientId
+    The app's OAuth client id with Google (YouTube Data API v3 and the Drive API; an app of type Desktop). Empty (the
+    default): the build offers neither YouTube nor Google Drive, unless settings.json gives an id. docs\SHARING.md says how to
+    register. CASHGEAR_GOOGLE_CLIENT_ID does the same.
+
+.PARAMETER GoogleClientSecret
+    The "client secret" Google gives a Desktop client along with its id, which its token endpoint asks for. An installed
+    app can't keep it secret, and Google says so; PKCE is what protects the sign-in. CASHGEAR_GOOGLE_CLIENT_SECRET does the same.
+
+.PARAMETER MicrosoftClientId
+    The application id of the Entra app for OneDrive. CASHGEAR_MICROSOFT_CLIENT_ID does the same.
+
+.PARAMETER DropboxAppKey
+    The Dropbox app's key. CASHGEAR_DROPBOX_APP_KEY does the same.
+
 .PARAMETER NoRnnoise
     Leaves RNNoise out (rnnoise.dll needs Visual Studio's C++ compiler to build). Settings then offers no noise
     suppression.
@@ -78,6 +93,10 @@ param(
     [string]$UpdateFeedUrl = "",
     [string]$SentryDsn = $env:CASHGEAR_SENTRY_DSN,
     [string]$LicensePublicKey = $env:CASHGEAR_LICENSE_PUBLIC_KEY,
+    [string]$GoogleClientId = $env:CASHGEAR_GOOGLE_CLIENT_ID,
+    [string]$GoogleClientSecret = $env:CASHGEAR_GOOGLE_CLIENT_SECRET,
+    [string]$MicrosoftClientId = $env:CASHGEAR_MICROSOFT_CLIENT_ID,
+    [string]$DropboxAppKey = $env:CASHGEAR_DROPBOX_APP_KEY,
     [string]$OutputDir = (Join-Path $PSScriptRoot "..\artifacts"),
     [string]$SignParams = $env:CASHGEAR_SIGN_PARAMS,
     [string]$SignTemplate = $env:CASHGEAR_SIGN_TEMPLATE,
@@ -128,7 +147,8 @@ Write-Host "Publishing CashGear Capture $Version, channel $Channel (win-x64, sel
 if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
 dotnet publish $project -c Release -r win-x64 --self-contained true --nologo `
     -p:PublishSingleFile=true -p:PublishReadyToRun=$readyToRun -p:DebugType=None -p:DebugSymbols=false -p:Version=$Version `
-    "-p:UpdateFeedUrl=$UpdateFeedUrl" "-p:SentryDsn=$SentryDsn" "-p:LicensePublicKey=$LicensePublicKey" -o $publish
+    "-p:UpdateFeedUrl=$UpdateFeedUrl" "-p:SentryDsn=$SentryDsn" "-p:LicensePublicKey=$LicensePublicKey" `
+    "-p:GoogleClientId=$GoogleClientId" "-p:GoogleClientSecret=$GoogleClientSecret" "-p:MicrosoftClientId=$MicrosoftClientId" "-p:DropboxAppKey=$DropboxAppKey" -o $publish
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)." }
 
 if ($NoFfmpeg) {

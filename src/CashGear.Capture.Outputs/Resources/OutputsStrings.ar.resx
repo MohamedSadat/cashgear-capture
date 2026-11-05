@@ -342,4 +342,76 @@
   <data name="NoSuchFolder" xml:space="preserve">
     <value>لا يوجد مجلد كهذا على {0}: {1}</value>
   </data>
+  <data name="YouTube" xml:space="preserve">
+    <value>YouTube</value>
+  </data>
+  <data name="GoogleDrive" xml:space="preserve">
+    <value>Google Drive</value>
+  </data>
+  <data name="OneDrive" xml:space="preserve">
+    <value>OneDrive</value>
+  </data>
+  <data name="Dropbox" xml:space="preserve">
+    <value>Dropbox</value>
+  </data>
+  <data name="SignInNoBrowser" xml:space="preserve">
+    <value>تعذّر فتح المتصفح: {0}</value>
+  </data>
+  <data name="SignInTimedOut" xml:space="preserve">
+    <value>لم يكتمل تسجيل الدخول إلى {0} في المتصفح في الوقت المحدد. حاول مرة أخرى.</value>
+  </data>
+  <data name="SignInRefused" xml:space="preserve">
+    <value>لم تسجّل {0} دخولك: {1}</value>
+  </data>
+  <data name="SignInNoCode" xml:space="preserve">
+    <value>لا يحتوي ردّها على ما يلزم للمتابعة.</value>
+  </data>
+  <data name="SignInNoRefreshToken" xml:space="preserve">
+    <value>لم تمنح {0} إذنًا دائمًا. أزل وصول التطبيق من إعدادات حسابك ثم سجّل الدخول مرة أخرى.</value>
+  </data>
+  <data name="NotSignedIn" xml:space="preserve">
+    <value>لم يتم تسجيل الدخول إلى {0}. سجّل الدخول من الإعدادات › الوجهات.</value>
+  </data>
+  <data name="SignInAgain" xml:space="preserve">
+    <value>لم تعد {0} تقبل تسجيل الدخول هذا. سجّل الدخول مرة أخرى من الإعدادات › الوجهات.</value>
+  </data>
+  <data name="NoReply" xml:space="preserve">
+    <value>لم يردّ {0}.</value>
+  </data>
+  <data name="SignInPageDone" xml:space="preserve">
+    <value>تم تسجيل دخولك إلى CashGear Capture. يمكنك إغلاق هذه الصفحة.</value>
+  </data>
+  <data name="SignInPageFailed" xml:space="preserve">
+    <value>لم يتم تسجيل دخولك. ارجع إلى CashGear Capture لمعرفة السبب، وأغلق هذه الصفحة.</value>
+  </data>
+  <data name="SignedInAs" xml:space="preserve">
+    <value>تم تسجيل الدخول إلى {0} باسم {1}.</value>
+  </data>
+  <data name="FileIsEmpty" xml:space="preserve">
+    <value>الملف «{0}» فارغ.</value>
+  </data>
+  <data name="UploadFileGone" xml:space="preserve">
+    <value>الملف «{0}» لم يعد موجودًا.</value>
+  </data>
+  <data name="CantReadFile" xml:space="preserve">
+    <value>تعذّرت قراءة «{0}»: {1}</value>
+  </data>
+  <data name="UploadOutage" xml:space="preserve">
+    <value>لا يوجد اتصال منذ {0} د. تتابع إعادة المحاولة من حيث توقف الرفع.</value>
+  </data>
+  <data name="ServiceRefused" xml:space="preserve">
+    <value>رفض {0} الطلب (HTTP {1}): {2}</value>
+  </data>
+  <data name="NoPictures" xml:space="preserve">
+    <value>تقبل {0} مقاطع الفيديو فقط.</value>
+  </data>
+  <data name="PlaylistNotAdded" xml:space="preserve">
+    <value>لم تتم إضافته إلى قائمة التشغيل: {0}</value>
+  </data>
+  <data name="ThumbnailNotSent" xml:space="preserve">
+    <value>لم تُقبل الصورة المصغّرة: {0}</value>
+  </data>
+  <data name="LinkNotShared" xml:space="preserve">
+    <value>لا يفتح الرابط إلا لك: {0}</value>
+  </data>
 </root>

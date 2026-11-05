@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Outputs.Credentials;
+using CashGear.Capture.Outputs.Http;
 using CashGear.Capture.Outputs.Resources;
 using Renci.SshNet;
 using Renci.SshNet.Common;
@@ -22,6 +23,8 @@ public sealed class SftpDestination(ServerDestination server, ICredentialStore c
 
     public bool SupportsVideo => true;
 
+    public bool IsUpload => true;
+
     public async Task<OutputResult> SendAsync(OutputItem item, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(item);
@@ -39,8 +42,9 @@ public sealed class SftpDestination(ServerDestination server, ICredentialStore c
             await MakeFolderAsync(client, ct).ConfigureAwait(false);
             var name = await FreeNameAsync(client, Path.GetFileName(path), ct).ConfigureAwait(false);
             await using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true))
+            await using (var counted = new CountingReadStream(file, item.Progress))
             {
-                await client.UploadFileAsync(file, RemoteFiles.Combine(server.RemoteFolder, name), ct).ConfigureAwait(false);
+                await client.UploadFileAsync(counted, RemoteFiles.Combine(server.RemoteFolder, name), ct).ConfigureAwait(false);
             }
 
             client.Disconnect();
@@ -196,7 +200,7 @@ public sealed class SftpDestination(ServerDestination server, ICredentialStore c
             SftpPermissionDeniedException => OutputResult.Failed(OutputsStrings.NotAllowed(server.Host, ex.Message.Trim())),
             SftpPathNotFoundException => OutputResult.Failed(OutputsStrings.NoSuchFolder(server.Host, ex.Message.Trim())),
             SocketException or SshOperationTimeoutException or SshConnectionException or SshException or IOException or TimeoutException
-                => OutputResult.Failed(OutputsStrings.CouldNotReachPort(server.Host, server.EffectivePort, ex.Message.Trim())),
+                => OutputResult.Failed(OutputsStrings.CouldNotReachPort(server.Host, server.EffectivePort, ex.Message.Trim())) with { Retryable = true },
             _ => null,
         };
     }

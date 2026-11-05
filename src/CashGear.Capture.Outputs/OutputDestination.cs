@@ -16,6 +16,15 @@ public interface IOutputDestination
 
     bool SupportsVideo { get; }
 
+    /// <summary>Whether pictures can go there (YouTube takes videos only).</summary>
+    bool SupportsImages => true;
+
+    /// <summary>
+    /// Whether it sends the file over the network, which takes as long as it takes: it then waits in the background
+    /// queue instead of holding the next capture.
+    /// </summary>
+    bool IsUpload => false;
+
     /// <summary>
     /// Sends the item. Problems the user can do something about (a wrong password, a locked file) come back as a
     /// failed result with a message; only cancellation throws.
@@ -53,6 +62,9 @@ public sealed record OutputResult(bool Succeeded, string Message)
 
     /// <summary>The step didn't apply (nothing to do), which is neither a success nor a failure worth a warning.</summary>
     public bool Skipped { get; init; }
+
+    /// <summary>It failed for a reason that may pass (no connection, no answer): the background queue tries it again by itself.</summary>
+    public bool Retryable { get; init; }
 
     public static OutputResult Done([Localizable(true)] string message) => new(true, message);
 
@@ -109,6 +121,9 @@ public sealed class OutputItem : IDisposable
     }
 
     public OutputKind Kind { get; }
+
+    /// <summary>Told how many bytes of the file have gone, by a destination that can tell (the background queue listens).</summary>
+    public IProgress<long>? Progress { get; set; }
 
     /// <summary>The capture (null for a recording).</summary>
     public CapturedImage? Image { get; private init; }

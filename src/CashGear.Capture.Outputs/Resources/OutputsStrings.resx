@@ -407,4 +407,76 @@
     <value>{0} has no such folder: {1}</value>
     <comment>{0} is a server, {1} what it said (English)</comment>
   </data>
+  <data name="YouTube" xml:space="preserve">
+    <value>YouTube</value>
+  </data>
+  <data name="GoogleDrive" xml:space="preserve">
+    <value>Google Drive</value>
+  </data>
+  <data name="OneDrive" xml:space="preserve">
+    <value>OneDrive</value>
+  </data>
+  <data name="Dropbox" xml:space="preserve">
+    <value>Dropbox</value>
+  </data>
+  <data name="SignInNoBrowser" xml:space="preserve">
+    <value>The browser couldn't be opened: {0}</value>
+  </data>
+  <data name="SignInTimedOut" xml:space="preserve">
+    <value>Signing in to {0} wasn't finished in the browser in time. Try again.</value>
+  </data>
+  <data name="SignInRefused" xml:space="preserve">
+    <value>{0} didn't sign you in: {1}</value>
+  </data>
+  <data name="SignInNoCode" xml:space="preserve">
+    <value>its answer has nothing to go on with.</value>
+  </data>
+  <data name="SignInNoRefreshToken" xml:space="preserve">
+    <value>{0} gave no lasting permission. Remove the app's access in your account's settings and sign in again.</value>
+  </data>
+  <data name="NotSignedIn" xml:space="preserve">
+    <value>Not signed in to {0}. Sign in on Settings › Destinations.</value>
+  </data>
+  <data name="SignInAgain" xml:space="preserve">
+    <value>{0} no longer takes this sign-in. Sign in again on Settings › Destinations.</value>
+  </data>
+  <data name="NoReply" xml:space="preserve">
+    <value>{0} didn't answer.</value>
+  </data>
+  <data name="SignInPageDone" xml:space="preserve">
+    <value>You are signed in to CashGear Capture. You can close this page.</value>
+  </data>
+  <data name="SignInPageFailed" xml:space="preserve">
+    <value>You weren't signed in. Go back to CashGear Capture to see why, and close this page.</value>
+  </data>
+  <data name="SignedInAs" xml:space="preserve">
+    <value>Signed in to {0} as {1}.</value>
+  </data>
+  <data name="FileIsEmpty" xml:space="preserve">
+    <value>{0} is empty.</value>
+  </data>
+  <data name="UploadFileGone" xml:space="preserve">
+    <value>{0} isn't there any more.</value>
+  </data>
+  <data name="CantReadFile" xml:space="preserve">
+    <value>{0} can't be read: {1}</value>
+  </data>
+  <data name="UploadOutage" xml:space="preserve">
+    <value>No connection for {0} min. Retry goes on from where it was.</value>
+  </data>
+  <data name="ServiceRefused" xml:space="preserve">
+    <value>{0} refused it (HTTP {1}): {2}</value>
+  </data>
+  <data name="NoPictures" xml:space="preserve">
+    <value>{0} takes videos only.</value>
+  </data>
+  <data name="PlaylistNotAdded" xml:space="preserve">
+    <value>It wasn't added to the playlist: {0}</value>
+  </data>
+  <data name="ThumbnailNotSent" xml:space="preserve">
+    <value>The thumbnail wasn't taken: {0}</value>
+  </data>
+  <data name="LinkNotShared" xml:space="preserve">
+    <value>The link opens only for you: {0}</value>
+  </data>
 </root>

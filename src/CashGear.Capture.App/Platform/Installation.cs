@@ -142,6 +142,9 @@ public static class BuildInfo
     /// <summary>The key licence files are checked against (base64), from the packaging script (<c>-LicensePublicKey</c>); null without one.</summary>
     public static string? LicensePublicKey { get; } = Metadata("LicensePublicKey");
 
+    /// <summary>The app's registrations with the services that have a sign-in, from the packaging script (<c>-GoogleClientId</c>…); settings.json can override them.</summary>
+    public static Core.Settings.SharingClients SharingClients { get; } = new(Metadata("GoogleClientId"), Metadata("GoogleClientSecret"), Metadata("MicrosoftClientId"), Metadata("DropboxAppKey"));
+
     private static string? Metadata(string key) =>
         Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == key)?.Value is { Length: > 0 } value ? value : null;
 }

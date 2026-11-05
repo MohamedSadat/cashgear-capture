@@ -26,6 +26,12 @@ public static class DestinationIds
     public const string Pdf = "pdf";
     public const string CopyLink = "copy-link";
 
+    /// <summary>The destinations with a sign-in.</summary>
+    public const string YouTube = "youtube";
+    public const string GoogleDrive = "google-drive";
+    public const string OneDrive = "onedrive";
+    public const string Dropbox = "dropbox";
+
     public const string ServerPrefix = "server:";
     public const string UploadPrefix = "upload:";
     public const string AppPrefix = "app:";
@@ -54,6 +60,7 @@ public static class DestinationIds
 /// <param name="Uploads">HTTP upload endpoints.</param>
 /// <param name="Apps">Programs a capture can be opened with.</param>
 /// <param name="Pdf">PDF files.</param>
+/// <param name="Sharing">YouTube, Google Drive, OneDrive and Dropbox.</param>
 public sealed record DestinationSettings(
     IReadOnlyList<WorkflowStep>? Workflow = null,
     IReadOnlyList<WorkflowStep>? RecordingWorkflow = null,
@@ -63,7 +70,8 @@ public sealed record DestinationSettings(
     IReadOnlyList<ServerDestination>? Servers = null,
     IReadOnlyList<HttpDestination>? Uploads = null,
     IReadOnlyList<ExternalApp>? Apps = null,
-    PdfSettings? Pdf = null)
+    PdfSettings? Pdf = null,
+    SharingSettings? Sharing = null)
 {
     /// <summary>What a new install does: open the editor. Save and Copy are there to be switched on (as before the workflow).</summary>
     public static IReadOnlyList<WorkflowStep> DefaultWorkflow { get; } =
@@ -90,6 +98,8 @@ public sealed record DestinationSettings(
     public IReadOnlyList<ExternalApp>? Apps { get; init; } = Apps ?? [];
 
     public PdfSettings? Pdf { get; init; } = Pdf ?? new PdfSettings();
+
+    public SharingSettings? Sharing { get; init; } = Sharing ?? new SharingSettings();
 
     /// <summary>Whether a capture would go anywhere at all.</summary>
     [JsonIgnore]
@@ -135,6 +145,7 @@ public sealed record DestinationSettings(
             Uploads = uploads,
             Apps = apps,
             Pdf = (Pdf ?? new PdfSettings()).Normalize(),
+            Sharing = (Sharing ?? new SharingSettings()).Normalize(),
         };
     }
 
@@ -149,10 +160,11 @@ public sealed record DestinationSettings(
         && Same(Servers, other.Servers)
         && Same(Uploads, other.Uploads)
         && Same(Apps, other.Apps)
-        && Equals(Pdf, other.Pdf);
+        && Equals(Pdf, other.Pdf)
+        && Equals(Sharing, other.Sharing);
 
     public override int GetHashCode() =>
-        HashCode.Combine(HashCode.Combine((Workflow ?? []).Count, (RecordingWorkflow ?? []).Count, Print, Word, PowerPoint, (Servers ?? []).Count, (Uploads ?? []).Count, (Apps ?? []).Count), Pdf);
+        HashCode.Combine(HashCode.Combine((Workflow ?? []).Count, (RecordingWorkflow ?? []).Count, Print, Word, PowerPoint, (Servers ?? []).Count, (Uploads ?? []).Count, (Apps ?? []).Count), Pdf, Sharing);
 
     internal static bool Same<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) => (a ?? []).SequenceEqual(b ?? []);
 

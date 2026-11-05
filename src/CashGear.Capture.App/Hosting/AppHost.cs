@@ -55,6 +55,7 @@ internal static class AppHost
         builder.Services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
         builder.Services.AddSingleton<IAppLifetime, WpfAppLifetime>();
         builder.Services.AddSingleton<IOutputService, WpfOutputService>();
+        builder.Services.AddSingleton(new Outputs.Sharing.BuiltInClients(BuildInfo.SharingClients));
         builder.Services.AddOutputDestinations();
         builder.Services.AddSingleton<IPrinter, WpfPrinter>();
         builder.Services.AddSingleton<IDestinationSource, AppDestinations>();

@@ -31,6 +31,24 @@ public static class CredentialKeys
 
     public static string Token(HttpDestination upload) => $"{Prefix(upload)}token";
 
+    /// <summary>A sign-in's refresh token.</summary>
+    public static string SignIn(string service) => $"{SignInPrefix(service)}refresh";
+
+    /// <summary>The account a sign-in is of (an e-mail address, so not in the settings file).</summary>
+    public static string SignInAccount(string service) => $"{SignInPrefix(service)}account";
+
+    /// <summary>Every key of the sign-in starts with this.</summary>
+    public static string SignInPrefix(string service) => $"signin:{service}:";
+
+    /// <summary>An upload's session on the service, which takes the file without a token.</summary>
+    public static string UploadSession(string job) => $"{UploadPrefix(job)}session";
+
+    /// <summary>What the service answered when an upload's file had all arrived.</summary>
+    public static string UploadFinished(string job) => $"{UploadPrefix(job)}finished";
+
+    /// <summary>Every key of the upload job starts with this.</summary>
+    public static string UploadPrefix(string job) => $"upload-job:{job}:";
+
     /// <summary>Every key of the server starts with this.</summary>
     public static string Prefix(ServerDestination server) => DestinationIds.Server(server.Id) + ":";
 

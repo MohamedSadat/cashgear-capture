@@ -25,6 +25,8 @@ public sealed class FtpDestination(ServerDestination server, ICredentialStore cr
 
     public bool SupportsVideo => true;
 
+    public bool IsUpload => true;
+
     public async Task<OutputResult> SendAsync(OutputItem item, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(item);
@@ -36,7 +38,8 @@ public sealed class FtpDestination(ServerDestination server, ICredentialStore cr
             await client.Connect(ct).ConfigureAwait(false);
             await MakeFolderAsync(client, ct).ConfigureAwait(false);
             var name = await FreeNameAsync(client, Path.GetFileName(path), ct).ConfigureAwait(false);
-            var status = await client.UploadFile(path, RemoteFiles.Combine(server.RemoteFolder, name), FtpRemoteExists.NoCheck, createRemoteDir: false, token: ct).ConfigureAwait(false);
+            var progress = item.Progress is { } told ? new Progress<FtpProgress>(p => told.Report(p.TransferredBytes)) : null;
+            var status = await client.UploadFile(path, RemoteFiles.Combine(server.RemoteFolder, name), FtpRemoteExists.NoCheck, createRemoteDir: false, progress: progress, token: ct).ConfigureAwait(false);
             await client.Disconnect(ct).ConfigureAwait(false);
             if (status != FtpStatus.Success)
             {

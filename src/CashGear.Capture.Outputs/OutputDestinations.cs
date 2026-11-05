@@ -6,6 +6,7 @@ using CashGear.Capture.Outputs.Http;
 using CashGear.Capture.Outputs.Office;
 using CashGear.Capture.Outputs.Pdf;
 using CashGear.Capture.Outputs.Servers;
+using CashGear.Capture.Outputs.Sharing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -100,6 +101,16 @@ public static class OutputsServiceCollectionExtensions
         services.AddSingleton<IDestinationSource, ConfiguredDestinations>();
         services.TryAddSingleton<DestinationRegistry>();
         services.TryAddSingleton<WorkflowRunner>();
+        services.TryAddSingleton<SharingHttp>();
+        services.TryAddSingleton(SharingEndpoints.Real);
+        services.TryAddSingleton(new BuiltInClients(SharingClients.None));
+        services.TryAddSingleton<ISignInBrowser, SystemBrowser>();
+        services.TryAddSingleton(sp => new UploadWake(sp.GetService<Core.Recording.IPowerEvents>()));
+        services.TryAddSingleton(sp => new ResumableUploader(sp.GetRequiredService<UploadWake>(), sp.GetRequiredService<ILogger<ResumableUploader>>()));
+        services.TryAddSingleton(sp => new OAuthClient(sp.GetRequiredService<ICredentialStore>(), sp.GetRequiredService<SharingHttp>(), sp.GetRequiredService<ISignInBrowser>(), sp.GetRequiredService<ILogger<OAuthClient>>()));
+        services.TryAddSingleton<SharingContext>();
+        services.AddSingleton<IDestinationSource, SignInDestinations>();
+        services.TryAddSingleton(sp => new UploadQueue(sp.GetRequiredService<DestinationRegistry>(), sp.GetRequiredService<ICredentialStore>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<UploadWake>(), sp.GetRequiredService<ILogger<UploadQueue>>()));
         return services;
     }
 }

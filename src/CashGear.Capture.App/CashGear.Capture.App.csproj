@@ -45,6 +45,18 @@
     <AssemblyMetadata Include="LicensePublicKey" Value="$(LicensePublicKey)" />
   </ItemGroup>
 
+  <!-- The app's registrations with Google, Microsoft and Dropbox for the destinations with a sign-in: also from the packaging script. None of them is a secret an installed app could keep. -->
+  <ItemGroup Condition="'$(GoogleClientId)' != ''">
+    <AssemblyMetadata Include="GoogleClientId" Value="$(GoogleClientId)" />
+    <AssemblyMetadata Include="GoogleClientSecret" Value="$(GoogleClientSecret)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MicrosoftClientId)' != ''">
+    <AssemblyMetadata Include="MicrosoftClientId" Value="$(MicrosoftClientId)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DropboxAppKey)' != ''">
+    <AssemblyMetadata Include="DropboxAppKey" Value="$(DropboxAppKey)" />
+  </ItemGroup>
+
   <!-- This version's release notes, shown by Settings > What's new (the packaging script may pass others). -->
   <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\docs\release-notes\$(Version).md')">
     <None Include="$(MSBuildThisFileDirectory)..\..\docs\release-notes\$(Version).md" Link="RELEASE-NOTES.md" CopyToOutputDirectory="PreserveNewest" Visible="false" />

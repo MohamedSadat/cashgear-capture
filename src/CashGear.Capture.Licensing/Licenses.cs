@@ -58,6 +58,9 @@ public enum ProFeature
 
     /// <summary>Recording: several monitors at once, named profiles, and HDR recording.</summary>
     RecordingPro,
+
+    /// <summary>Export presets in a batch, and queues of projects.</summary>
+    BatchExport,
 }
 
 /// <summary>A licence's content (signed into a <c>.cglicense</c> file).</summary>

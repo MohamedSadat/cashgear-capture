@@ -59,6 +59,12 @@ public sealed partial class WorkflowRunner(DestinationRegistry registry, ILogger
                 continue;
             }
 
+            if (item.Kind == OutputKind.Image && !destination.SupportsImages)
+            {
+                outcomes.Add(new StepOutcome(destination.Id, destination.DisplayName, OutputResult.Skip(OutputsStrings.NoPictures(destination.DisplayName))));
+                continue;
+            }
+
             var isEditor = DestinationIds.Same(destination.Id, DestinationIds.Editor);
             if (isEditor)
             {

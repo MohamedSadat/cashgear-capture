@@ -40,12 +40,15 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
 
     public bool SupportsVideo => true;
 
+    public bool IsUpload => true;
+
     public async Task<OutputResult> SendAsync(OutputItem item, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(item);
         var path = await item.GetFileAsync(ct).ConfigureAwait(false);
         await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
-        var result = await PostAsync(file, Path.GetFileName(path), ct).ConfigureAwait(false);
+        await using var counted = new CountingReadStream(file, item.Progress);
+        var result = await PostAsync(counted, Path.GetFileName(path), ct).ConfigureAwait(false);
         return result.Succeeded ? result with { Message = OutputsStrings.UploadedTo(DisplayName, result.Link) } : result;
     }
 
@@ -103,11 +106,11 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
         }
         catch (HttpRequestException ex)
         {
-            return OutputResult.Failed(OutputsStrings.CouldNotReach(url.Host, ex.Message));
+            return OutputResult.Failed(OutputsStrings.CouldNotReach(url.Host, ex.Message)) with { Retryable = true };
         }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {
-            return OutputResult.Failed(OutputsStrings.NoAnswer((long)Math.Round(http.Client.Timeout.TotalMinutes, MidpointRounding.AwayFromZero), url.Host));
+            return OutputResult.Failed(OutputsStrings.NoAnswer((long)Math.Round(http.Client.Timeout.TotalMinutes, MidpointRounding.AwayFromZero), url.Host)) with { Retryable = true };
         }
 
         using (response)
@@ -168,10 +171,61 @@ public sealed class HttpUploadDestination(HttpDestination upload, ICredentialSto
         ".bmp" => "image/bmp",
         ".gif" => "image/gif",
         ".mp4" => "video/mp4",
+        ".mkv" => "video/x-matroska",
+        ".webm" => "video/webm",
+        ".m4a" => "audio/mp4",
+        ".mp3" => "audio/mpeg",
+        ".wav" => "audio/wav",
+        ".flac" => "audio/flac",
         _ => "application/octet-stream",
     };
 
     private static string HostOf(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.Host : OutputsStrings.HttpUpload;
+}
+
+/// <summary>A file on its way, telling how much has been read.</summary>
+internal sealed class CountingReadStream(Stream inner, IProgress<long>? progress) : Stream
+{
+    private long _read;
+
+    public override bool CanRead => true;
+
+    public override bool CanSeek => inner.CanSeek;
+
+    public override bool CanWrite => false;
+
+    public override long Length => inner.Length;
+
+    public override long Position
+    {
+        get => inner.Position;
+        set => inner.Position = value;
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => Count(inner.Read(buffer, offset, count));
+
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+        Count(await inner.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false));
+
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+        Count(await inner.ReadAsync(buffer, cancellationToken).ConfigureAwait(false));
+
+    public override void Flush()
+    {
+    }
+
+    public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
+
+    public override void SetLength(long value) => throw new NotSupportedException();
+
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+    private int Count(int read)
+    {
+        _read += read;
+        progress?.Report(_read);
+        return read;
+    }
 }
 
 /// <summary>A 1 × 1 transparent PNG, for tests of uploads.</summary>
