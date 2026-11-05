@@ -110,7 +110,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         PortableText = paths.PortableRoot is { } portable ? SettingsText.PortableFolder(Path.Combine(portable, PortableMode.DataFolder)) : null;
         HdrStatus = DescribeHdr(monitors?.GetMonitors() ?? []);
         _registry = destinations;
-        Destinations = new DestinationsViewModel(credentials, filePicker, printer) { Tester = TestDestinationAsync };
+        Destinations = new DestinationsViewModel(credentials, filePicker, printer) { Tester = TestDestinationAsync, SignIns = id => _registry?.Find(id, EditedDestinations(), Destinations!.Secrets) as Outputs.Sharing.ISignInDestination };
         CaptureWorkflow = new WorkflowListViewModel(() => Available(video: false));
         RecordingWorkflow = new WorkflowListViewModel(() => Available(video: true));
         CaptureWorkflow.Changed += (_, _) => Revalidate();
@@ -1107,7 +1107,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private IReadOnlyList<DestinationChoice> Available(bool video)
     {
         var settings = EditedDestinations();
-        var all = _registry?.All(settings, Destinations.Secrets).Select(d => (d.Id, Name: d.DisplayName, Video: d.SupportsVideo))
+        var all = _registry?.All(settings, Destinations.Secrets).Where(d => video || d.SupportsImages).Select(d => (d.Id, Name: d.DisplayName, Video: d.SupportsVideo))
             ?? BuiltInDestinations(settings);
         return [.. all
             .Where(d => !video || (d.Video && !DestinationIds.Same(d.Id, DestinationIds.File)))

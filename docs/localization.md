@@ -127,6 +127,10 @@ The messages of .NET's own exceptions (`ArgumentException`, `InvalidOperationExc
 | transcript / filler words / silences / cut (a word) / restore | نص الكلام / كلمات الحشو / فترات الصمت / اقتطاع / استعادة |
 | encoder / quality / frames per second | المرمّز / الجودة / إطارات في الثانية |
 | upload / server / link | رفع / خادم / رابط |
+| sign in / sign out / account | تسجيل الدخول / تسجيل الخروج / حساب |
+| preset (of the export window) / batch | إعداد مسبق / دفعة |
+| chapter / marker / thumbnail | فصل / علامة / صورة مصغّرة |
+| playlist / private / unlisted / public | قائمة التشغيل / خاص / غير مدرج / عام |
 | exit | خروج |
 
 ## Adding a language

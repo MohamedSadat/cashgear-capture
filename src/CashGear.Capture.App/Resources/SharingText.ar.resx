@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BackgroundTitle" xml:space="preserve">
+    <value>عمليات الرفع والتصدير</value>
+  </data>
+  <data name="ClearEnded" xml:space="preserve">
+    <value>مسح المنتهية (_C)</value>
+  </data>
+  <data name="EmptyList" xml:space="preserve">
+    <value>لا يجري شيء الآن. تظهر هنا الملفات المرسلة إلى وجهة رفع ودفعات التصدير.</value>
+  </data>
+  <data name="RowName" xml:space="preserve">
+    <value>{0} إلى {1}: {2}</value>
+  </data>
+  <data name="RowArrow" xml:space="preserve">
+    <value>←</value>
+  </data>
+  <data name="OpenLink" xml:space="preserve">
+    <value>فتح الرابط (_O)</value>
+  </data>
+  <data name="CopyLink" xml:space="preserve">
+    <value>نسخ الرابط (_L)</value>
+  </data>
+  <data name="ShowFile" xml:space="preserve">
+    <value>إظهار في المجلد (_S)</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>إعادة المحاولة (_R)</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>إزالة (_M)</value>
+  </data>
+  <data name="GoingOn_zero" xml:space="preserve">
+    <value>لا شيء قيد التنفيذ: {1}</value>
+  </data>
+  <data name="GoingOn_one" xml:space="preserve">
+    <value>عملية واحدة قيد التنفيذ: {1}</value>
+  </data>
+  <data name="GoingOn_two" xml:space="preserve">
+    <value>عمليتان قيد التنفيذ: {1}</value>
+  </data>
+  <data name="GoingOn_few" xml:space="preserve">
+    <value>{0} عمليات قيد التنفيذ: {1}</value>
+  </data>
+  <data name="GoingOn_many" xml:space="preserve">
+    <value>{0} عملية قيد التنفيذ: {1}</value>
+  </data>
+  <data name="GoingOn_other" xml:space="preserve">
+    <value>{0} عملية قيد التنفيذ: {1}</value>
+  </data>
+  <data name="NothingGoingOn" xml:space="preserve">
+    <value>لا يجري شيء الآن.</value>
+  </data>
+  <data name="StateWaiting" xml:space="preserve">
+    <value>في الانتظار</value>
+  </data>
+  <data name="StateSending" xml:space="preserve">
+    <value>جارٍ الإرسال: {0} ({1} من {2})</value>
+  </data>
+  <data name="StateRetrying" xml:space="preserve">
+    <value>انقطع الاتصال عند {0}؛ سيتابع الرفع تلقائيًا عند الإمكان</value>
+  </data>
+  <data name="StateCancelled" xml:space="preserve">
+    <value>أُلغي</value>
+  </data>
+  <data name="StateDone" xml:space="preserve">
+    <value>تم</value>
+  </data>
+  <data name="StateDoneLink" xml:space="preserve">
+    <value>تم: {0}</value>
+  </data>
+  <data name="StateFailed" xml:space="preserve">
+    <value>فشل</value>
+  </data>
+  <data name="StateExporting" xml:space="preserve">
+    <value>جارٍ التصدير: {0}</value>
+  </data>
+</root>

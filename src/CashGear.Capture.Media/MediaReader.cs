@@ -60,7 +60,7 @@ public sealed unsafe class BgraConverter : IDisposable
             var rgb = *(int4*)ffmpeg.sws_getCoefficients(ffmpeg.SWS_CS_DEFAULT);
             ffmpeg.sws_setColorspaceDetails(_context, in yuv, 0, in rgb, 1, 0, 1 << 16, 1 << 16);
             _shape = shape;
-            _buffer = new byte[frame->width * frame->height * 4];
+            _buffer = new byte[(frame->width * frame->height * 4) + 256]; // room for what FFmpeg's scaler writes in blocks (see VideoStreamReader)
         }
 
         fixed (byte* destination = _buffer)

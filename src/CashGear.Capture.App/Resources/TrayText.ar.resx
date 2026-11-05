@@ -192,4 +192,34 @@
   <data name="RecordProfile" xml:space="preserve">
     <value>التسجيل بملف تعريف</value>
   </data>
+  <data name="BackgroundWork" xml:space="preserve">
+    <value>عمليات الرفع والتصدير… (_X)</value>
+  </data>
+  <data name="BackgroundWorkBusy" xml:space="preserve">
+    <value>عمليات الرفع والتصدير ({0})… (_X)</value>
+  </data>
+  <data name="BackgroundWorkTip_zero" xml:space="preserve">
+    <value>CashGear Capture: لا شيء قيد التنفيذ، {1}</value>
+  </data>
+  <data name="BackgroundWorkTip_one" xml:space="preserve">
+    <value>CashGear Capture: عملية واحدة قيد التنفيذ، {1}</value>
+  </data>
+  <data name="BackgroundWorkTip_two" xml:space="preserve">
+    <value>CashGear Capture: عمليتان قيد التنفيذ، {1}</value>
+  </data>
+  <data name="BackgroundWorkTip_few" xml:space="preserve">
+    <value>CashGear Capture: {0} عمليات قيد التنفيذ، {1}</value>
+  </data>
+  <data name="BackgroundWorkTip_many" xml:space="preserve">
+    <value>CashGear Capture: {0} عملية قيد التنفيذ، {1}</value>
+  </data>
+  <data name="BackgroundWorkTip_other" xml:space="preserve">
+    <value>CashGear Capture: {0} عملية قيد التنفيذ، {1}</value>
+  </data>
+  <data name="BatchExport" xml:space="preserve">
+    <value>تصدير عدة ملفات… (_E)</value>
+  </data>
+  <data name="ExportsRunningExit" xml:space="preserve">
+    <value>لا تزال عمليات التصدير جارية، وسيوقفها إغلاق التطبيق. هل تريد الخروج على أي حال؟</value>
+  </data>
 </root>

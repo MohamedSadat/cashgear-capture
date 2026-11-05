@@ -20,6 +20,12 @@ Recordings have a workflow of their own. Also on this tab: the capture folder, t
 
 The printer, Word and PowerPoint, PDF, FTP/FTPS/SFTP servers, HTTP uploads and other apps, each with a **Test** button. Passwords are encrypted for your Windows account and never kept in settings.json.
 
+**YouTube, Google Drive, OneDrive and Dropbox.** **Sign In…** opens your browser, where you sign in and allow the app; it comes back to the app by itself, and the row shows the account. **Sign Out** forgets the tokens on this PC; to take the app's access away altogether, do it in your account's settings there. Each has a Test button, which uploads nothing.
+- **Google Drive, OneDrive, Dropbox:** the folder uploads go in, and whether anyone with the link can open what goes up. Off (the default), the link opens only for you.
+- **YouTube:** what a workflow's upload says: who can see it (private by default), its description, tags and playlist, and whether it is made for children. The video's title is the file's name.
+
+A copy that isn't registered with those services says so here instead, and they aren't offered.
+
 ## Capture
 
 - The delays (one for all captures, or one per kind).

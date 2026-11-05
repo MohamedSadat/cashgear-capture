@@ -8,7 +8,7 @@
 
   <!-- The icon itself is set in TrayIconHost (the app icon at the notification area's size). -->
   <tb:TaskbarIcon x:Key="TrayIcon"
-                  ToolTipText="{x:Static r:CommonText.ProductName}"
+                  ToolTipText="{Binding TrayTip, FallbackValue={x:Static r:CommonText.ProductName}}"
                   MenuActivation="LeftOrRightClick"
                   NoLeftClickDelay="True">
 
@@ -74,7 +74,9 @@
         <MenuItem Header="{x:Static r:TrayText.VideoEditor}">
           <MenuItem Header="{x:Static r:TrayText.OpenRecordingOrProject}" Command="{Binding OpenVideoEditorCommand}" />
           <MenuItem Header="{Binding EditLastRecordingText}" Command="{Binding EditLastRecordingCommand}" IsEnabled="{Binding HasLastRecording}" />
+          <MenuItem Header="{x:Static r:TrayText.BatchExport}" Command="{Binding BatchExportCommand}" Visibility="{Binding HasBatchExport, Converter={StaticResource TrayVisible}}" />
         </MenuItem>
+        <MenuItem Header="{Binding BackgroundHeader}" Command="{Binding OpenBackgroundWorkCommand}" />
         <MenuItem Header="{x:Static r:TrayText.SaveInterruptedRecordings}" Command="{Binding RecoverRecordingsCommand}"
                   Visibility="{Binding HasInterruptedRecordings, Converter={StaticResource TrayVisible}}" />
         <Separator />

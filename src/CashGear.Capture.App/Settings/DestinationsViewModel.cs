@@ -706,6 +706,152 @@ public sealed partial class ExternalAppViewModel(ExternalApp app, IFilePicker? p
 }
 
 /// <summary>
+/// A destination with a sign-in, in Settings › Destinations. Signing in and out is done at once (the browser has said so
+/// to the service already), unlike what is typed in the window, which waits for OK. Nothing else about it is secret.
+/// </summary>
+public sealed partial class SignInViewModel(string id, string name, Func<string, Outputs.Sharing.ISignInDestination?> find) : TestableViewModel
+{
+    private CancellationTokenSource? _signingIn;
+
+    public override string DestinationId => id;
+
+    public string Name => name;
+
+    public bool IsYouTube => DestinationIds.Same(id, DestinationIds.YouTube);
+
+    public bool IsCloudDrive => !IsYouTube;
+
+    /// <summary>This build (or settings.json) has the app's registration with the service.</summary>
+    public bool IsAvailable => find(id) is not null;
+
+    public bool IsSignedIn => find(id)?.IsSignedIn == true;
+
+    public bool IsSignedOut => IsAvailable && !IsSignedIn && !IsWaiting;
+
+    /// <summary>Who is signed in, or that nobody is.</summary>
+    public string AccountText => find(id) switch
+    {
+        { IsSignedIn: true, Account: { Length: > 0 } account } => DestinationsText.SignedInAccount(account),
+        { IsSignedIn: true } => DestinationsText.SignedIn,
+        _ => IsWaiting ? DestinationsText.WaitingForBrowser : DestinationsText.NotSignedIn,
+    };
+
+    /// <summary>The browser is open, and the app waits for the service to come back.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AccountText))]
+    [NotifyPropertyChangedFor(nameof(IsSignedOut))]
+    private bool _isWaiting;
+
+    [ObservableProperty]
+    private string _folder = string.Empty;
+
+    [ObservableProperty]
+    private bool _anyoneWithLink;
+
+    [ObservableProperty]
+    private VideoPrivacy _privacy;
+
+    public IReadOnlyList<VideoPrivacy> Privacies { get; } = Enum.GetValues<VideoPrivacy>();
+
+    [ObservableProperty]
+    private string _description = string.Empty;
+
+    /// <summary>Separated by commas.</summary>
+    [ObservableProperty]
+    private string _tags = string.Empty;
+
+    [ObservableProperty]
+    private string _playlist = string.Empty;
+
+    [ObservableProperty]
+    private bool _madeForKids;
+
+    [RelayCommand]
+    private async Task SignInAsync()
+    {
+        if (find(id) is not { } destination)
+        {
+            return;
+        }
+
+        IsWaiting = true;
+        TestFailed = false;
+        TestStatus = string.Empty;
+        _signingIn = new CancellationTokenSource();
+        try
+        {
+            await destination.SignInAsync(_signingIn.Token);
+        }
+        catch (Outputs.Sharing.SignInRequiredException e)
+        {
+            TestStatus = e.Message;
+            TestFailed = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // the user changed their mind
+        }
+        catch (Exception e) when (e is System.Net.Http.HttpRequestException or System.Net.Sockets.SocketException or IOException or System.Text.Json.JsonException)
+        {
+            TestStatus = DestinationsText.SignInFailed(name, e.Message);
+            TestFailed = true;
+        }
+        finally
+        {
+            _signingIn.Dispose();
+            _signingIn = null;
+            IsWaiting = false;
+            Refresh();
+        }
+    }
+
+    /// <summary>Stops waiting for the browser.</summary>
+    [RelayCommand]
+    private void CancelSignIn() => _signingIn?.Cancel();
+
+    [RelayCommand]
+    private void SignOut()
+    {
+        find(id)?.SignOut();
+        TestStatus = string.Empty;
+        TestFailed = false;
+        Refresh();
+    }
+
+    /// <summary>The window closed: stops waiting.</summary>
+    public void Stop() => _signingIn?.Cancel();
+
+    /// <summary>The destination's state may have changed.</summary>
+    public void Refresh()
+    {
+        OnPropertyChanged(nameof(IsAvailable));
+        OnPropertyChanged(nameof(IsSignedIn));
+        OnPropertyChanged(nameof(IsSignedOut));
+        OnPropertyChanged(nameof(AccountText));
+    }
+
+    public void Load(YouTubeSettings settings)
+    {
+        Privacy = settings.Privacy;
+        Description = settings.Description;
+        Tags = string.Join(", ", settings.Tags ?? []);
+        Playlist = settings.Playlist ?? string.Empty;
+        MadeForKids = settings.MadeForKids;
+    }
+
+    public void Load(CloudFolderSettings settings)
+    {
+        Folder = settings.Folder ?? string.Empty;
+        AnyoneWithLink = settings.AnyoneWithLink;
+    }
+
+    public YouTubeSettings BuildYouTube() =>
+        new YouTubeSettings(Privacy, Description, [.. Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)], Playlist, MadeForKids).Normalize();
+
+    public CloudFolderSettings BuildFolder() => new CloudFolderSettings(Folder, AnyoneWithLink).Normalize();
+}
+
+/// <summary>
 /// Settings › Destinations: the printer, Word, PowerPoint, servers, uploads and apps, each with a Test button.
 /// Secrets typed here wait in <see cref="Secrets"/> until OK or Apply.
 /// </summary>
@@ -721,7 +867,25 @@ public sealed partial class DestinationsViewModel : ObservableObject
         _printer = printer;
         Word = new OfficeViewModel(DestinationIds.Word, "Word", DestinationsText.WordFilter, picker);
         PowerPoint = new OfficeViewModel(DestinationIds.PowerPoint, "PowerPoint", DestinationsText.PowerPointFilter, picker);
+        Sharing =
+        [
+            new SignInViewModel(DestinationIds.YouTube, DestinationsText.YouTube, FindSignIn),
+            new SignInViewModel(DestinationIds.GoogleDrive, DestinationsText.GoogleDrive, FindSignIn),
+            new SignInViewModel(DestinationIds.OneDrive, DestinationsText.OneDrive, FindSignIn),
+            new SignInViewModel(DestinationIds.Dropbox, DestinationsText.Dropbox, FindSignIn),
+        ];
     }
+
+    /// <summary>The sign-in destinations: those this build has a registration for show themselves.</summary>
+    public IReadOnlyList<SignInViewModel> Sharing { get; }
+
+    /// <summary>This build has no registration with any of the services, so there is nothing to sign in to.</summary>
+    public bool NoSharing => !Sharing.Any(s => s.IsAvailable);
+
+    /// <summary>Finds a sign-in destination as the window has it (set by the owner).</summary>
+    internal Func<string, Outputs.Sharing.ISignInDestination?>? SignIns { get; set; }
+
+    private Outputs.Sharing.ISignInDestination? FindSignIn(string id) => SignIns?.Invoke(id);
 
     /// <summary>Raised when a destination is added, removed or renamed (the workflow lists follow).</summary>
     public event EventHandler? ListChanged;
@@ -777,6 +941,23 @@ public sealed partial class DestinationsViewModel : ObservableObject
         Word.Load(settings.Word ?? new OfficeSettings());
         PowerPoint.Load(settings.PowerPoint ?? new OfficeSettings());
         Pdf.Load(settings.Pdf ?? new PdfSettings());
+        var sharing = settings.Sharing ?? new SharingSettings();
+        Sharing[0].Load(sharing.YouTube ?? new YouTubeSettings());
+        Sharing[1].Load(sharing.GoogleDrive ?? new CloudFolderSettings());
+        Sharing[2].Load(sharing.OneDrive ?? new CloudFolderSettings());
+        Sharing[3].Load(sharing.Dropbox ?? new CloudFolderSettings());
+        foreach (var row in Sharing)
+        {
+            if (!_trackedSharing)
+            {
+                Track(row);
+            }
+
+            row.Refresh();
+        }
+
+        _trackedSharing = true;
+        OnPropertyChanged(nameof(NoSharing));
         Replace(Servers, (settings.Servers ?? []).Select(s => new ServerViewModel(s, Secrets, _picker)));
         Replace(Uploads, (settings.Uploads ?? []).Select(u => new UploadViewModel(u, Secrets)));
         Replace(Apps, (settings.Apps ?? []).Select(a => new ExternalAppViewModel(a, _picker)));
@@ -796,7 +977,16 @@ public sealed partial class DestinationsViewModel : ObservableObject
         Servers = [.. Servers.Select(s => s.Build())],
         Uploads = [.. Uploads.Select(u => u.Build())],
         Apps = [.. Apps.Select(a => a.Build())],
+        Sharing = (current.Sharing ?? new SharingSettings()) with
+        {
+            YouTube = Sharing[0].BuildYouTube(),
+            GoogleDrive = Sharing[1].BuildFolder(),
+            OneDrive = Sharing[2].BuildFolder(),
+            Dropbox = Sharing[3].BuildFolder(),
+        },
     };
+
+    private bool _trackedSharing;
 
     public IEnumerable<string> Problems() =>
         Servers.SelectMany(s => s.Problems()).Concat(Uploads.SelectMany(u => u.Problems())).Concat(Apps.SelectMany(a => a.Problems()));
@@ -879,7 +1069,7 @@ public sealed partial class DestinationsViewModel : ObservableObject
     private bool HasSelectedApp() => SelectedApp is not null;
 
     private IEnumerable<TestableViewModel> Testables() =>
-        new TestableViewModel[] { Printer, Word, PowerPoint, Pdf }.Concat(Servers).Concat(Uploads).Concat(Apps);
+        new TestableViewModel[] { Printer, Word, PowerPoint, Pdf }.Concat(Servers).Concat(Uploads).Concat(Apps).Concat(Sharing);
 
     private void Replace<T>(ObservableCollection<T> list, IEnumerable<T> items)
         where T : ObservableObject
@@ -895,7 +1085,8 @@ public sealed partial class DestinationsViewModel : ObservableObject
     /// <summary>An edit is checked again; a renamed destination is renamed in the workflow lists too.</summary>
     private void Track(ObservableObject item) => item.PropertyChanged += (_, e) =>
     {
-        if (e.PropertyName is nameof(TestableViewModel.TestStatus) or nameof(TestableViewModel.TestFailed) or nameof(TestableViewModel.Testing))
+        if (e.PropertyName is nameof(TestableViewModel.TestStatus) or nameof(TestableViewModel.TestFailed) or nameof(TestableViewModel.Testing)
+            or nameof(SignInViewModel.IsWaiting) or nameof(SignInViewModel.IsAvailable) or nameof(SignInViewModel.IsSignedIn) or nameof(SignInViewModel.IsSignedOut) or nameof(SignInViewModel.AccountText))
         {
             return;
         }

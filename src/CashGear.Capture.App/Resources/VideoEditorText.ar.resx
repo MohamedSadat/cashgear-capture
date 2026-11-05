@@ -2706,4 +2706,205 @@
   <data name="UndoCutToScreen" xml:space="preserve">
     <value>القص إلى الشاشة {0}</value>
   </data>
+  <data name="ExportPresetLabel" xml:space="preserve">
+    <value>الإعداد المسبق</value>
+  </data>
+  <data name="SaveExportPreset" xml:space="preserve">
+    <value>حفظ… (_S)</value>
+  </data>
+  <data name="DeleteExportPreset" xml:space="preserve">
+    <value>حذف (_D)</value>
+  </data>
+  <data name="SaveExportPresetTitle" xml:space="preserve">
+    <value>حفظ هذه الخيارات كإعداد مسبق</value>
+  </data>
+  <data name="ChaptersInFile" xml:space="preserve">
+    <value>فصول من العلامات، داخل الملف</value>
+  </data>
+  <data name="ChaptersVttFile" xml:space="preserve">
+    <value>حفظ الفصول بجانبه في ملف WebVTT</value>
+  </data>
+  <data name="WithChaptersFile" xml:space="preserve">
+    <value> حُفظت الفصول في {0}.</value>
+  </data>
+  <data name="SendToLabel" xml:space="preserve">
+    <value>عند الانتهاء، الإرسال إلى</value>
+  </data>
+  <data name="SendNowhere" xml:space="preserve">
+    <value>لا شيء: يبقى على هذا الكمبيوتر</value>
+  </data>
+  <data name="SentInBackground" xml:space="preserve">
+    <value> يجري إرساله إلى {0} في الخلفية.</value>
+  </data>
+  <data name="YouTubeTitle" xml:space="preserve">
+    <value>العنوان</value>
+  </data>
+  <data name="YouTubeDescription" xml:space="preserve">
+    <value>الوصف</value>
+  </data>
+  <data name="ChaptersInDescription" xml:space="preserve">
+    <value>إضافة أوقات الفصول إلى الوصف</value>
+  </data>
+  <data name="YouTubeTags" xml:space="preserve">
+    <value>العلامات (مفصولة بفواصل)</value>
+  </data>
+  <data name="YouTubePrivacy" xml:space="preserve">
+    <value>من يمكنه المشاهدة</value>
+  </data>
+  <data name="YouTubePlaylist" xml:space="preserve">
+    <value>قائمة التشغيل</value>
+  </data>
+  <data name="YouTubeThumbnail" xml:space="preserve">
+    <value>الصورة المصغّرة</value>
+  </data>
+  <data name="MakeThumbnail" xml:space="preserve">
+    <value>إنشاء… (_M)</value>
+  </data>
+  <data name="ThumbnailNone" xml:space="preserve">
+    <value>لا شيء: يختار YouTube صورة</value>
+  </data>
+  <data name="ThumbnailChosen" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="NoPlaylist" xml:space="preserve">
+    <value>بلا قائمة</value>
+  </data>
+  <data name="PrivacyPrivate" xml:space="preserve">
+    <value>خاص: أنت فقط</value>
+  </data>
+  <data name="PrivacyUnlisted" xml:space="preserve">
+    <value>غير مدرج: أي شخص لديه الرابط</value>
+  </data>
+  <data name="PrivacyPublic" xml:space="preserve">
+    <value>عام: الجميع</value>
+  </data>
+  <data name="ThumbnailMenu" xml:space="preserve">
+    <value>إنشاء صورة مصغّرة… (_T)</value>
+  </data>
+  <data name="ThumbnailTitle" xml:space="preserve">
+    <value>الصورة المصغّرة</value>
+  </data>
+  <data name="ThumbnailFrame" xml:space="preserve">
+    <value>الإطار</value>
+  </data>
+  <data name="ThumbnailTitleLabel" xml:space="preserve">
+    <value>العنوان</value>
+  </data>
+  <data name="ThumbnailNoTitle" xml:space="preserve">
+    <value>بلا عنوان: الإطار فقط</value>
+  </data>
+  <data name="ThumbnailPreview" xml:space="preserve">
+    <value>الصورة المصغّرة بحالتها الحالية</value>
+  </data>
+  <data name="ThumbnailUse" xml:space="preserve">
+    <value>استخدامها للرفع (_U)</value>
+  </data>
+  <data name="ThumbnailSave" xml:space="preserve">
+    <value>حفظ بتنسيق PNG… (_S)</value>
+  </data>
+  <data name="ThumbnailSaveTitle" xml:space="preserve">
+    <value>حفظ الصورة المصغّرة</value>
+  </data>
+  <data name="ThumbnailFilter" xml:space="preserve">
+    <value>صور PNG|*.png</value>
+  </data>
+  <data name="ThumbnailSaved" xml:space="preserve">
+    <value>حُفظت باسم {0}.</value>
+  </data>
+  <data name="BatchExportMenu" xml:space="preserve">
+    <value>تصدير عدة ملفات… (_V)</value>
+  </data>
+  <data name="BatchTitle" xml:space="preserve">
+    <value>تصدير عدة ملفات</value>
+  </data>
+  <data name="BatchProjects" xml:space="preserve">
+    <value>المشاريع والتسجيلات</value>
+  </data>
+  <data name="BatchAddProjects" xml:space="preserve">
+    <value>إضافة… (_A)</value>
+  </data>
+  <data name="BatchAddProjectsTitle" xml:space="preserve">
+    <value>إضافة مشاريع أو تسجيلات</value>
+  </data>
+  <data name="BatchRemoveProject" xml:space="preserve">
+    <value>إزالة (_R)</value>
+  </data>
+  <data name="BatchPresets" xml:space="preserve">
+    <value>الإعدادات المسبقة</value>
+  </data>
+  <data name="BatchFolder" xml:space="preserve">
+    <value>المجلد</value>
+  </data>
+  <data name="BatchFolderTitle" xml:space="preserve">
+    <value>مكان حفظ ملفات التصدير</value>
+  </data>
+  <data name="BatchStart" xml:space="preserve">
+    <value>بدء (_S)</value>
+  </data>
+  <data name="BatchCount_zero" xml:space="preserve">
+    <value>لن يتم إنشاء أي ملف.</value>
+  </data>
+  <data name="BatchCount_one" xml:space="preserve">
+    <value>سيتم إنشاء ملف واحد في الخلفية.</value>
+  </data>
+  <data name="BatchCount_two" xml:space="preserve">
+    <value>سيتم إنشاء ملفين، واحدًا تلو الآخر في الخلفية.</value>
+  </data>
+  <data name="BatchCount_few" xml:space="preserve">
+    <value>سيتم إنشاء {0} ملفات، واحدًا تلو الآخر في الخلفية.</value>
+  </data>
+  <data name="BatchCount_many" xml:space="preserve">
+    <value>سيتم إنشاء {0} ملفًا، واحدًا تلو الآخر في الخلفية.</value>
+  </data>
+  <data name="BatchCount_other" xml:space="preserve">
+    <value>سيتم إنشاء {0} ملف، واحدًا تلو الآخر في الخلفية.</value>
+  </data>
+  <data name="BatchMade" xml:space="preserve">
+    <value>{0}، {1}</value>
+  </data>
+  <data name="BatchMissingMedia" xml:space="preserve">
+    <value>وسائطه غير موجودة: {0}</value>
+  </data>
+  <data name="BatchDoneTitle" xml:space="preserve">
+    <value>اكتملت عمليات التصدير</value>
+  </data>
+  <data name="BatchFailedTitle" xml:space="preserve">
+    <value>التصدير: لم ينجح كل شيء</value>
+  </data>
+  <data name="BatchDone_zero" xml:space="preserve">
+    <value>لم يُنشأ أي ملف.</value>
+  </data>
+  <data name="BatchDone_one" xml:space="preserve">
+    <value>تم إنشاء ملف واحد. انقر لإظهاره.</value>
+  </data>
+  <data name="BatchDone_two" xml:space="preserve">
+    <value>تم إنشاء ملفين. انقر لإظهار الأول.</value>
+  </data>
+  <data name="BatchDone_few" xml:space="preserve">
+    <value>تم إنشاء {0} ملفات. انقر لإظهار الأول.</value>
+  </data>
+  <data name="BatchDone_many" xml:space="preserve">
+    <value>تم إنشاء {0} ملفًا. انقر لإظهار الأول.</value>
+  </data>
+  <data name="BatchDone_other" xml:space="preserve">
+    <value>تم إنشاء {0} ملف. انقر لإظهار الأول.</value>
+  </data>
+  <data name="BatchSomeFailed_zero" xml:space="preserve">
+    <value>لم يُنشأ أي ملف: {1}</value>
+  </data>
+  <data name="BatchSomeFailed_one" xml:space="preserve">
+    <value>تم إنشاء ملف واحد وفشل غيره: {1}</value>
+  </data>
+  <data name="BatchSomeFailed_two" xml:space="preserve">
+    <value>تم إنشاء ملفين وفشل غيرهما: {1}</value>
+  </data>
+  <data name="BatchSomeFailed_few" xml:space="preserve">
+    <value>تم إنشاء {0} ملفات وفشل غيرها: {1}</value>
+  </data>
+  <data name="BatchSomeFailed_many" xml:space="preserve">
+    <value>تم إنشاء {0} ملفًا وفشل غيرها: {1}</value>
+  </data>
+  <data name="BatchSomeFailed_other" xml:space="preserve">
+    <value>تم إنشاء {0} ملف وفشل غيرها: {1}</value>
+  </data>
 </root>

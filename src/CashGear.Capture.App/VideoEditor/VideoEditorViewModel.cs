@@ -49,6 +49,11 @@ public interface IVideoEditorDialogs
 
     /// <summary>Asks for a name (null: cancelled).</summary>
     string? AskName(string title, string suggested);
+
+    /// <summary>Shows the thumbnail window, until it is closed.</summary>
+    void ShowThumbnail(ThumbnailViewModel viewModel)
+    {
+    }
 }
 
 /// <summary>Where copied clips and annotations wait to be pasted: JSON, from any editor window to another.</summary>
@@ -126,7 +131,10 @@ public sealed record VideoEditorServices(
     TemplateLibrary? TemplateStore = null,
     ProxyStore? Proxies = null,
     IVideoClipboard? Clipboard = null,
-    CashGear.Capture.Core.Recording.IAudioDevices? AudioDevices = null)
+    CashGear.Capture.Core.Recording.IAudioDevices? AudioDevices = null,
+    IExportSender? Sender = null,
+    Action<BatchSource>? ShowBatch = null,
+    bool CanBatch = false)
 {
     /// <summary>Saved templates and media on this PC, in <c>%AppData%\CashGear\Capture\Library</c>.</summary>
     public TemplateLibrary Library => TemplateStore ?? new TemplateLibrary(Path.Combine(Paths.SettingsDirectory, "Library"));
@@ -1253,9 +1261,45 @@ public sealed partial class VideoEditorViewModel : ObservableObject, IDisposable
             _services.Shell,
             _services.Loggers.CreateLogger<ExportViewModel>(),
             MarkedRange(),
-            _services.Gate);
+            _services.Gate,
+            _services.Presets,
+            _services.Sender);
+        viewModel.AskName = _dialogs.AskName;
+        viewModel.PickThumbnail = () => ShowThumbnail(forUpload: true);
         _dialogs.ShowExport(viewModel);
     }
+
+    /// <summary>File › Make a Thumbnail: a frame and a title, saved as a picture.</summary>
+    [RelayCommand]
+    private void MakeThumbnail()
+    {
+        StopPlaying();
+        ShowThumbnail(forUpload: false);
+    }
+
+    /// <summary>The window; the picture it chose for an upload, if it did.</summary>
+    private string? ShowThumbnail(bool forUpload)
+    {
+        var templates = BuiltInTemplates.All.Concat(_services.Library.Templates());
+        using var viewModel = new ThumbnailViewModel(
+            Project,
+            Timeline.Playhead,
+            new ThumbnailMaker(_services.Masks),
+            templates,
+            _services.Library.AssetsFolder,
+            _dialogs,
+            Name,
+            Path.Combine(_services.Paths.DataDirectory, "outgoing"),
+            forUpload);
+        _dialogs.ShowThumbnail(viewModel);
+        return viewModel.Chosen;
+    }
+
+    /// <summary>File › Export Several: this project in several presets, with others in a queue. It runs in the background.</summary>
+    public bool CanBatchExport => _services.CanBatch && _services.Gate.IsEnabled(ProFeature.BatchExport);
+
+    [RelayCommand]
+    private void BatchExport() => _services.ShowBatch?.Invoke(new BatchSource(Name, null, Project));
 
     /// <summary>View › Media: shows or hides the panel beside the preview.</summary>
     [RelayCommand]

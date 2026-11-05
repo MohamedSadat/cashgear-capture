@@ -417,4 +417,33 @@
     <value>Webcam 2</value>
     <comment>Track name.</comment>
   </data>
+  <data name="ChapterFirst" xml:space="preserve">
+    <value>Introduction</value>
+    <comment>the chapter before the first marker</comment>
+  </data>
+  <data name="ChapterNumbered" xml:space="preserve">
+    <value>Chapter {0}</value>
+    <comment>a chapter whose marker has no name</comment>
+  </data>
+  <data name="ChaptersTooFew" xml:space="preserve">
+    <value>YouTube shows chapters only when there are at least {0}.</value>
+  </data>
+  <data name="ChaptersTooShort" xml:space="preserve">
+    <value>YouTube shows chapters only when each lasts at least {0} s.</value>
+  </data>
+  <data name="NoHdrMediaNote" xml:space="preserve">
+    <value>The project has no HDR media, so it was exported as MP4 HEVC.</value>
+  </data>
+  <data name="PresetNotInLicenceNote" xml:space="preserve">
+    <value>This licence doesn't include that kind of file, so it was exported as MP4 1080p.</value>
+  </data>
+  <data name="ExportYouTube1080" xml:space="preserve">
+    <value>YouTube 1080p</value>
+  </data>
+  <data name="ExportShorts" xml:space="preserve">
+    <value>Shorts 9:16</value>
+  </data>
+  <data name="ExportDocsGif" xml:space="preserve">
+    <value>Docs GIF</value>
+  </data>
 </root>

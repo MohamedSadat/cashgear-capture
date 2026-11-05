@@ -126,6 +126,15 @@ When the app draws the pointer (recordings made with "Keep the video clean"), it
 
 The panel's **Canvas** makes the video 16:9, 9:16 (Shorts, Reels, TikTok), 1:1 or 4:5. **Screen on the canvas** then says how the screen fills it: all of it on the background, filling it from the middle, or filling it and following the pointer. A webcam goes above or below the screen. The panel says at what times the pointer moves too fast to stay in the picture, and without the recording's metadata the picture stays on its middle.
 
+## Sharing
+
+- **Presets.** The top of the export window has presets by name: YouTube 1080p, Shorts 9:16 and Docs GIF, then yours. **Save…** keeps the window's choices under a name.
+- **Export Several** (File › Export Several…, or tray › Video Editor › Export Several…): add projects and recordings, tick presets, choose a folder and press Start. They are made one after another in the background; tray › **Uploads and Exports…** shows how far each has got, with Cancel and Retry. A notification says when all are done. Closing the app stops them, and it asks first.
+- **When done, send to:** at the bottom of the export window, any destination that uploads (Settings › Destinations). The window closes or not; the file goes in the background.
+- **YouTube** asks for a title, a description, tags, who can see it (private unless you say otherwise), a playlist and a thumbnail. A new app's videos stay private on YouTube until its owner has passed YouTube's audit.
+- **Chapters.** Your markers become chapters, inside MP4, M4A, MKV and WebM files, in a WebVTT file beside them if you tick it, and as times at the end of a YouTube description. They start at 0:00, so a first marker later than that gets a chapter called "Introduction" before it. An export of the marked range has the markers inside the range, on its own clock. YouTube shows chapters only when there are at least 3, each at least 10 s; the window tells you when these aren't.
+- **Thumbnail** (File › Make a Thumbnail…, or **Make…** in the export window): drag along the frames (arrows: a frame at a time), choose a title from the templates and type its text, then **Save as PNG…** or **Use for the Upload**. Captions aren't in it.
+
 ## Export
 
 `Ctrl+E`:

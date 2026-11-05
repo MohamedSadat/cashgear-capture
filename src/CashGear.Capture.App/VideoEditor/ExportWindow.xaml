@@ -9,14 +9,22 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ExportViewModel}"
         Title="{x:Static r:VideoEditorText.Export}"
-        Width="560" SizeToContent="Height" ResizeMode="NoResize"
+        Width="600" SizeToContent="Height" ResizeMode="NoResize" MaxHeight="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Height}"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         FocusManager.FocusedElement="{Binding ElementName=FormatBox}">
   <Window.Resources>
     <BooleanToVisibilityConverter x:Key="Visible" />
   </Window.Resources>
   <!-- Enter exports (the default button), Esc cancels a running export or closes (the cancel button); the buttons come last for Tab. -->
+  <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
   <StackPanel Margin="20">
+    <DockPanel IsEnabled="{Binding IsIdle}" Margin="0,0,0,8">
+      <TextBlock x:Name="NamedLabel" DockPanel.Dock="Left" Text="{x:Static r:VideoEditorText.ExportPresetLabel}" VerticalAlignment="Center" Margin="0,0,12,0" />
+      <Button DockPanel.Dock="Right" Content="{x:Static r:VideoEditorText.DeleteExportPreset}" Command="{Binding DeleteNamedExportCommand}" Margin="8,0,0,0" />
+      <Button DockPanel.Dock="Right" Content="{x:Static r:VideoEditorText.SaveExportPreset}" Command="{Binding SaveNamedExportCommand}" Margin="8,0,0,0" />
+      <ComboBox ItemsSource="{Binding NamedExports}" SelectedItem="{Binding SelectedNamedExport}" DisplayMemberPath="Name"
+                AutomationProperties.LabeledBy="{Binding ElementName=NamedLabel}" />
+    </DockPanel>
     <Grid IsEnabled="{Binding IsIdle}">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
@@ -85,6 +93,10 @@
 
       <StackPanel Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0">
         <CheckBox Content="{Binding RangeText}" IsChecked="{Binding OnlyRange}" Visibility="{Binding HasRange, Converter={StaticResource Visible}}" Margin="0,0,0,4" />
+        <StackPanel Visibility="{Binding HasMarkers, Converter={StaticResource Visible}}" Margin="0,0,0,4">
+          <CheckBox Content="{x:Static r:VideoEditorText.ChaptersInFile}" IsChecked="{Binding ChaptersInFile}" IsEnabled="{Binding CanHoldChapters}" Margin="0,0,0,4" />
+          <CheckBox Content="{x:Static r:VideoEditorText.ChaptersVttFile}" IsChecked="{Binding ChaptersVtt}" />
+        </StackPanel>
         <StackPanel Visibility="{Binding HasCaptions, Converter={StaticResource Visible}}">
           <CheckBox Content="{x:Static r:VideoEditorText.BurnCaptions}" IsChecked="{Binding BurnCaptions}" Margin="0,0,0,4" />
           <StackPanel Orientation="Horizontal" Margin="20,0,0,4" Visibility="{Binding ChoosesCaptionTrack, Converter={StaticResource Visible}}">
@@ -97,6 +109,50 @@
         </StackPanel>
       </StackPanel>
     </Grid>
+
+    <!-- Where the file goes when it is done. What YouTube asks for shows when it goes there. -->
+    <StackPanel IsEnabled="{Binding IsIdle}" Visibility="{Binding CanSend, Converter={StaticResource Visible}}" Margin="0,12,0,0">
+      <DockPanel>
+        <TextBlock x:Name="SendLabel" DockPanel.Dock="Left" Text="{x:Static r:VideoEditorText.SendToLabel}" VerticalAlignment="Center" Margin="0,0,12,0" />
+        <ComboBox ItemsSource="{Binding SendTargets}" SelectedItem="{Binding SendTo}" DisplayMemberPath="Name"
+                  AutomationProperties.LabeledBy="{Binding ElementName=SendLabel}" />
+      </DockPanel>
+      <Grid Margin="0,8,0,0" Visibility="{Binding IsYouTube, Converter={StaticResource Visible}}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="YtTitleLabel" Text="{x:Static r:VideoEditorText.YouTubeTitle}" VerticalAlignment="Center" Margin="0,0,12,6" />
+        <TextBox Grid.Column="1" Text="{Binding YouTubeTitle, UpdateSourceTrigger=PropertyChanged}" MaxLength="100" Margin="0,0,0,6" AutomationProperties.LabeledBy="{Binding ElementName=YtTitleLabel}" />
+        <TextBlock x:Name="YtDescriptionLabel" Grid.Row="1" Text="{x:Static r:VideoEditorText.YouTubeDescription}" Margin="0,0,12,6" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding YouTubeDescription, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinLines="3" MaxLines="5" VerticalScrollBarVisibility="Auto" Margin="0,0,0,6" AutomationProperties.LabeledBy="{Binding ElementName=YtDescriptionLabel}" />
+        <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,0,6" Visibility="{Binding HasMarkers, Converter={StaticResource Visible}}">
+          <CheckBox Content="{x:Static r:VideoEditorText.ChaptersInDescription}" IsChecked="{Binding ChaptersInDescription}" />
+          <TextBlock Text="{Binding ChaptersPreview}" TextWrapping="Wrap" Opacity="0.75" Margin="20,2,0,0" />
+          <TextBlock Text="{Binding ChaptersNote}" TextWrapping="Wrap" Foreground="{p:Chrome Error}" Margin="20,2,0,0" />
+        </StackPanel>
+        <TextBlock x:Name="YtTagsLabel" Grid.Row="3" Text="{x:Static r:VideoEditorText.YouTubeTags}" VerticalAlignment="Center" Margin="0,0,12,6" />
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding YouTubeTags, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6" AutomationProperties.LabeledBy="{Binding ElementName=YtTagsLabel}" />
+        <TextBlock x:Name="YtPrivacyLabel" Grid.Row="4" Text="{x:Static r:VideoEditorText.YouTubePrivacy}" VerticalAlignment="Center" Margin="0,0,12,6" />
+        <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding Privacies}" SelectedItem="{Binding Privacy}" DisplayMemberPath="Name" Margin="0,0,0,6" AutomationProperties.LabeledBy="{Binding ElementName=YtPrivacyLabel}" />
+        <TextBlock x:Name="YtPlaylistLabel" Grid.Row="5" Text="{x:Static r:VideoEditorText.YouTubePlaylist}" VerticalAlignment="Center" Margin="0,0,12,6" />
+        <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{Binding Playlists}" SelectedItem="{Binding Playlist}" DisplayMemberPath="Name" Margin="0,0,0,6" AutomationProperties.LabeledBy="{Binding ElementName=YtPlaylistLabel}" />
+        <TextBlock x:Name="YtThumbnailLabel" Grid.Row="6" Text="{x:Static r:VideoEditorText.YouTubeThumbnail}" VerticalAlignment="Center" Margin="0,0,12,0" />
+        <DockPanel Grid.Row="6" Grid.Column="1">
+          <Button DockPanel.Dock="Right" Content="{x:Static r:VideoEditorText.MakeThumbnail}" Command="{Binding ChooseThumbnailCommand}" Margin="8,0,0,0" AutomationProperties.LabeledBy="{Binding ElementName=YtThumbnailLabel}" />
+          <TextBlock Text="{Binding ThumbnailText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        </DockPanel>
+      </Grid>
+    </StackPanel>
 
     <ProgressBar Height="6" Margin="0,18,0,6" Minimum="0" Maximum="1" Value="{Binding Progress}"
                  AutomationProperties.Name="{x:Static r:VideoEditorText.ExportProgressName}" />
@@ -112,4 +168,5 @@
       <Button x:Name="CancelButton" Command="{Binding CancelCommand}" IsCancel="True" MinWidth="88" />
     </StackPanel>
   </StackPanel>
+  </ScrollViewer>
 </Window>

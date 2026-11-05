@@ -342,4 +342,31 @@
   <data name="TrackSecondWebcam" xml:space="preserve">
     <value>كاميرا الويب 2</value>
   </data>
+  <data name="ChapterFirst" xml:space="preserve">
+    <value>مقدمة</value>
+  </data>
+  <data name="ChapterNumbered" xml:space="preserve">
+    <value>الفصل {0}</value>
+  </data>
+  <data name="ChaptersTooFew" xml:space="preserve">
+    <value>لا يعرض YouTube الفصول إلا إذا كان عددها {0} على الأقل.</value>
+  </data>
+  <data name="ChaptersTooShort" xml:space="preserve">
+    <value>لا يعرض YouTube الفصول إلا إذا استمر كل منها {0} ث على الأقل.</value>
+  </data>
+  <data name="NoHdrMediaNote" xml:space="preserve">
+    <value>لا يحتوي المشروع على وسائط HDR، لذا تم تصديره بتنسيق MP4 HEVC.</value>
+  </data>
+  <data name="PresetNotInLicenceNote" xml:space="preserve">
+    <value>لا يشمل هذا الترخيص هذا النوع من الملفات، لذا تم تصديره بتنسيق MP4 بدقة 1080p.</value>
+  </data>
+  <data name="ExportYouTube1080" xml:space="preserve">
+    <value>YouTube بدقة 1080p</value>
+  </data>
+  <data name="ExportShorts" xml:space="preserve">
+    <value>Shorts بنسبة 9:16</value>
+  </data>
+  <data name="ExportDocsGif" xml:space="preserve">
+    <value>GIF للوثائق</value>
+  </data>
 </root>

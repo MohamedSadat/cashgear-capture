@@ -193,4 +193,23 @@
     <value>Record with a Profile</value>
     <comment>Tray submenu.</comment>
   </data>
+  <data name="BackgroundWork" xml:space="preserve">
+    <value>Uploads and E_xports…</value>
+  </data>
+  <data name="BackgroundWorkBusy" xml:space="preserve">
+    <value>Uploads and E_xports ({0})…</value>
+    <comment>{0} a percentage</comment>
+  </data>
+  <data name="BackgroundWorkTip_one" xml:space="preserve">
+    <value>CashGear Capture: 1 going on, {1}</value>
+  </data>
+  <data name="BackgroundWorkTip_other" xml:space="preserve">
+    <value>CashGear Capture: {0} going on, {1}</value>
+  </data>
+  <data name="BatchExport" xml:space="preserve">
+    <value>_Export Several…</value>
+  </data>
+  <data name="ExportsRunningExit" xml:space="preserve">
+    <value>Exports are still being made, and closing the app stops them. Exit anyway?</value>
+  </data>
 </root>

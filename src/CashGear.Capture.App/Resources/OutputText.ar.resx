@@ -162,4 +162,16 @@
   <data name="StepSeparator" xml:space="preserve">
     <value> ← </value>
   </data>
+  <data name="UploadingInBackground" xml:space="preserve">
+    <value>يجري الرفع في الخلفية؛ تعرض منطقة الإعلامات مقدار التقدم.</value>
+  </data>
+  <data name="ExportUploaded" xml:space="preserve">
+    <value>تم رفع الفيديو</value>
+  </data>
+  <data name="ExportNotSent" xml:space="preserve">
+    <value>لم يُرسل الفيديو</value>
+  </data>
+  <data name="ExportPartlyDone" xml:space="preserve">
+    <value>الفيديو: لم ينجح كل شيء</value>
+  </data>
 </root>

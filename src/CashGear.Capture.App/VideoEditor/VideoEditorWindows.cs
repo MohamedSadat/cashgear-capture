@@ -66,7 +66,9 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         SoundLevelStore? levels = null,
         CashGear.Capture.Inference.ITranslators? translators = null,
         ProxyStore? proxies = null,
-        CashGear.Capture.Core.Recording.IAudioDevices? audioDevices = null)
+        CashGear.Capture.Core.Recording.IAudioDevices? audioDevices = null,
+        IExportSender? sender = null,
+        Lazy<BatchExportWindowService>? batch = null)
     {
         _ui = ui;
         _settings = settings;
@@ -76,7 +78,7 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
         _notifier = notifier;
         _loggers = loggers;
         _logger = loggers.CreateLogger<VideoEditorWindows>();
-        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(state.Current.VideoEditor?.PreviewOutput), Transcriber: transcriber, Models: models, Features: features, Presets: presets, Masks: masks, Levels: levels, Translators: translators, Proxies: proxies, Clipboard: new WpfVideoClipboard(), AudioDevices: audioDevices);
+        _services = new VideoEditorServices(exporter, previews, settings, state, paths, shell, loggers, () => new WasapiAudioOutput(state.Current.VideoEditor?.PreviewOutput), Transcriber: transcriber, Models: models, Features: features, Presets: presets, Masks: masks, Levels: levels, Translators: translators, Proxies: proxies, Clipboard: new WpfVideoClipboard(), AudioDevices: audioDevices, Sender: sender, ShowBatch: batch is null ? null : source => batch.Value.Show(source), CanBatch: batch is not null);
     }
 
     public int OpenCount => _windows.Count;
@@ -256,6 +258,9 @@ public sealed partial class VideoEditorWindows : IVideoEditorLauncher
 
         public void ShowTranscribe(TranscribeViewModel viewModel) =>
             new TranscribeWindow(viewModel, theme) { Owner = owner() }.ShowDialog();
+
+        public void ShowThumbnail(ThumbnailViewModel viewModel) =>
+            new ThumbnailWindow(viewModel, theme) { Owner = Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? owner() }.ShowDialog();
 
         public void ShowTranslate(TranslateViewModel viewModel) =>
             new TranslateWindow(viewModel, theme) { Owner = owner() }.ShowDialog();

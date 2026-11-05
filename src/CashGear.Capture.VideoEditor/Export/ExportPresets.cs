@@ -24,6 +24,9 @@ public sealed record ExportPreset(string Id, string Name, ExportContainer Contai
     /// <summary>It has sound (not a GIF).</summary>
     public bool HasSound => !IsGif;
 
+    /// <summary>Its file can hold chapters.</summary>
+    public bool CanHoldChapters => Container is ExportContainer.Mp4 or ExportContainer.M4a or ExportContainer.Mkv or ExportContainer.WebM;
+
     /// <summary>Its file can hold each sound track as a stream of its own: a video's. A file of sound alone is one stream; its tracks go out as files.</summary>
     public bool CanHoldTracks => Codec is not null;
 

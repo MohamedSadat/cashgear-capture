@@ -392,6 +392,65 @@
               </ContentControl>
             </Grid>
 
+            <!-- The services with a sign-in -->
+            <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DestinationsText.SharingSection}" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:DestinationsText.SharingHint}" />
+            <TextBlock Style="{StaticResource Hint}" Text="{x:Static r:DestinationsText.SharingNotInBuild}" Visibility="{Binding NoSharing, Converter={StaticResource Visible}}" />
+            <ItemsControl ItemsSource="{Binding Sharing}" Focusable="False" IsTabStop="False">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type local:SignInViewModel}">
+                  <StackPanel Margin="0,10,0,0" Visibility="{Binding IsAvailable, Converter={StaticResource Visible}}">
+                    <DockPanel>
+                      <TextBlock DockPanel.Dock="Left" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" MinWidth="110" />
+                      <Button DockPanel.Dock="Right" Content="{x:Static r:DestinationsText.SignOut}" Command="{Binding SignOutCommand}" Margin="8,0,0,0" Visibility="{Binding IsSignedIn, Converter={StaticResource Visible}}"
+                              AutomationProperties.HelpText="{Binding Name}" />
+                      <Button DockPanel.Dock="Right" Content="{x:Static r:CommonText.Cancel}" Command="{Binding CancelSignInCommand}" Margin="8,0,0,0" Visibility="{Binding IsWaiting, Converter={StaticResource Visible}}"
+                              AutomationProperties.HelpText="{Binding Name}" />
+                      <Button DockPanel.Dock="Right" Content="{x:Static r:DestinationsText.SignIn}" Command="{Binding SignInCommand}" Margin="8,0,0,0" Visibility="{Binding IsSignedOut, Converter={StaticResource Visible}}"
+                              AutomationProperties.HelpText="{Binding Name}" />
+                      <TextBlock Text="{Binding AccountText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" p:LiveText.IsLive="True" />
+                    </DockPanel>
+                    <Grid Margin="0,4,0,0" Visibility="{Binding IsCloudDrive, Converter={StaticResource Visible}}">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                      </Grid.ColumnDefinitions>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                      </Grid.RowDefinitions>
+                      <TextBlock Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.CloudFolder}" />
+                      <TextBox Grid.Column="1" Margin="0,3" FlowDirection="LeftToRight" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.CloudFolder}" />
+                      <CheckBox Grid.Row="1" Grid.Column="1" Margin="0,3" Content="{x:Static r:DestinationsText.AnyoneWithLink}" IsChecked="{Binding AnyoneWithLink}" />
+                    </Grid>
+                    <Grid Margin="0,4,0,0" Visibility="{Binding IsYouTube, Converter={StaticResource Visible}}">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                      </Grid.ColumnDefinitions>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                      </Grid.RowDefinitions>
+                      <TextBlock Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.YouTubePrivacy}" />
+                      <ComboBox Grid.Column="1" Margin="0,3" ItemsSource="{Binding Privacies, Converter={StaticResource Choices}}" SelectedValuePath="Value" SelectedValue="{Binding Privacy}" AutomationProperties.Name="{x:Static r:DestinationsText.YouTubePrivacy}" />
+                      <TextBlock Grid.Row="1" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.YouTubeDescription}" />
+                      <TextBox Grid.Row="1" Grid.Column="1" Margin="0,3" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinLines="2" MaxLines="4" AutomationProperties.Name="{x:Static r:DestinationsText.YouTubeDescription}" />
+                      <TextBlock Grid.Row="2" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.YouTubeTags}" />
+                      <TextBox Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding Tags, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.YouTubeTags}" />
+                      <TextBlock Grid.Row="3" Style="{StaticResource FieldLabel}" Text="{x:Static r:DestinationsText.YouTubePlaylist}" />
+                      <TextBox Grid.Row="3" Grid.Column="1" Margin="0,3" FlowDirection="LeftToRight" Text="{Binding Playlist, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:DestinationsText.YouTubePlaylist}" />
+                      <CheckBox Grid.Row="4" Grid.Column="1" Margin="0,3" Content="{x:Static r:DestinationsText.MadeForKids}" IsChecked="{Binding MadeForKids}" />
+                    </Grid>
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TestRow}" Focusable="False" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
             <!-- Apps -->
             <TextBlock Style="{StaticResource Section}" Text="{x:Static r:DestinationsText.AppsSection}" />
             <Grid>

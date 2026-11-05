@@ -405,4 +405,76 @@
   <data name="PaperLegal" xml:space="preserve">
     <value>Legal</value>
   </data>
+  <data name="SharingSection" xml:space="preserve">
+    <value>YouTube, Google Drive, OneDrive and Dropbox</value>
+  </data>
+  <data name="SharingHint" xml:space="preserve">
+    <value>Sign in here, then add one to a workflow or send an export to it. Nothing leaves this PC unless you send it. The tokens are encrypted for your Windows account, and the sign-in itself happens in your browser.</value>
+  </data>
+  <data name="SharingNotInBuild" xml:space="preserve">
+    <value>This copy has no registration with those services yet, so none can be signed in to. See docs\SHARING.md.</value>
+  </data>
+  <data name="YouTube" xml:space="preserve">
+    <value>YouTube</value>
+  </data>
+  <data name="GoogleDrive" xml:space="preserve">
+    <value>Google Drive</value>
+  </data>
+  <data name="OneDrive" xml:space="preserve">
+    <value>OneDrive</value>
+  </data>
+  <data name="Dropbox" xml:space="preserve">
+    <value>Dropbox</value>
+  </data>
+  <data name="SignIn" xml:space="preserve">
+    <value>Sign _In…</value>
+  </data>
+  <data name="SignOut" xml:space="preserve">
+    <value>Sign _Out</value>
+  </data>
+  <data name="SignedIn" xml:space="preserve">
+    <value>Signed in</value>
+  </data>
+  <data name="SignedInAccount" xml:space="preserve">
+    <value>Signed in as {0}</value>
+  </data>
+  <data name="NotSignedIn" xml:space="preserve">
+    <value>Not signed in</value>
+  </data>
+  <data name="WaitingForBrowser" xml:space="preserve">
+    <value>Waiting for you to finish in the browser…</value>
+  </data>
+  <data name="SignInFailed" xml:space="preserve">
+    <value>Signing in to {0} failed: {1}</value>
+  </data>
+  <data name="CloudFolder" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="AnyoneWithLink" xml:space="preserve">
+    <value>Anyone with the link can open what is uploaded (off: only you)</value>
+  </data>
+  <data name="YouTubePrivacy" xml:space="preserve">
+    <value>Who can see it</value>
+  </data>
+  <data name="YouTubeDescription" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="YouTubeTags" xml:space="preserve">
+    <value>Tags (commas between)</value>
+  </data>
+  <data name="YouTubePlaylist" xml:space="preserve">
+    <value>Playlist (id or address)</value>
+  </data>
+  <data name="MadeForKids" xml:space="preserve">
+    <value>Made for children</value>
+  </data>
+  <data name="PrivacyPrivate" xml:space="preserve">
+    <value>Private: only you</value>
+  </data>
+  <data name="PrivacyUnlisted" xml:space="preserve">
+    <value>Unlisted: anyone with the link</value>
+  </data>
+  <data name="PrivacyPublic" xml:space="preserve">
+    <value>Public: everyone</value>
+  </data>
 </root>

@@ -85,6 +85,9 @@ public sealed partial class TrayViewModel : ObservableObject
     private readonly ITrayNotifier _notifier;
     private readonly IMonitorService _monitors;
     private readonly Licensing.IFeatureGate _features;
+    private readonly Output.BackgroundWork? _background;
+    private readonly Output.BackgroundWorkWindowService? _backgroundWindow;
+    private readonly VideoEditor.BatchExportWindowService? _batchWindow;
 
     public TrayViewModel(
         CaptureCoordinator coordinator,
@@ -113,8 +116,19 @@ public sealed partial class TrayViewModel : ObservableObject
         ITrayNotifier notifier,
         IMonitorService monitors,
         Licensing.IFeatureGate features,
-        Diagnostics.DiagnosticsService? diagnostics = null)
+        Diagnostics.DiagnosticsService? diagnostics = null,
+        Output.BackgroundWork? background = null,
+        Output.BackgroundWorkWindowService? backgroundWindow = null,
+        VideoEditor.BatchExportWindowService? batchWindow = null)
     {
+        _background = background;
+        _backgroundWindow = backgroundWindow;
+        _batchWindow = batchWindow;
+        if (_background is not null)
+        {
+            _background.Changed += (_, _) => _ = _ui?.InvokeAsync(RefreshBackground);
+        }
+
         _scheduler = scheduler;
         _scheduleWindow = scheduleWindow;
         _profilesWindow = profilesWindow;
@@ -228,6 +242,38 @@ public sealed partial class TrayViewModel : ObservableObject
 
     [ObservableProperty]
     private string _updateText = string.Empty;
+
+    /// <summary>The menu item for the uploads and exports going on in the background, with how far they have got.</summary>
+    [ObservableProperty]
+    private string _backgroundHeader = TrayText.BackgroundWork;
+
+    /// <summary>The icon's tooltip, which says when something is going on.</summary>
+    [ObservableProperty]
+    private string _trayTip = CommonText.ProductName;
+
+    /// <summary>Batches and queues of exports are in this licence.</summary>
+    public bool HasBatchExport => _batchWindow?.IsAllowed == true;
+
+    [RelayCommand]
+    private void OpenBackgroundWork() => _backgroundWindow?.Show();
+
+    /// <summary>Several presets of a project, or a queue of projects.</summary>
+    [RelayCommand]
+    private void BatchExport() => _batchWindow?.Show();
+
+    private void RefreshBackground()
+    {
+        if (_background?.Summary is not { IsBusy: true } summary)
+        {
+            BackgroundHeader = TrayText.BackgroundWork;
+            TrayTip = CommonText.ProductName;
+            return;
+        }
+
+        var percent = string.Create(System.Globalization.CultureInfo.CurrentCulture, $"{summary.Fraction:P0}");
+        BackgroundHeader = TrayText.BackgroundWorkBusy(percent);
+        TrayTip = TrayText.BackgroundWorkTip(summary.Active, percent);
+    }
 
     /// <summary>The recording menu item: start one, or stop the one running.</summary>
     public string RecordText => _recording.IsRecording ? TrayText.StopRecording : _recording.IsSaving ? TrayText.SavingRecording : TrayText.RecordScreen;
@@ -491,6 +537,16 @@ public sealed partial class TrayViewModel : ObservableObject
     private async Task<bool> PrepareExitAsync()
     {
         await _recording.StopAsync();
+        if (_background?.IsExporting == true)
+        {
+            var theme = _settings.Current.Appearance.Theme;
+            var answer = await _ui.InvokeAsync(() => Platform.AppDialog.Show(null, TrayText.ExportsRunningExit, CommonText.ProductName, Platform.DialogButtons.YesNo, Platform.DialogKind.Question, theme));
+            if (answer != Platform.DialogAnswer.Yes)
+            {
+                return false;
+            }
+        }
+
         return await _editors.CloseAllAsync() && await _videoEditors.CloseAllAsync();
     }
 

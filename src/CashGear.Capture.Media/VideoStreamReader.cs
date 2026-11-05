@@ -45,6 +45,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
     private (int Width, int Height, int Format, int OutWidth, int OutHeight, int Space, int Range) _scalerShape;
     private bool _flushed;
     private byte[] _wide = [];
+    private byte[] _padded = [];
 
     /// <param name="streamIndex">The stream among all the file's streams; -1 for the file's main video.</param>
     /// <param name="keyframesOnly">Decode only keyframes (thumbnails): every other picture is skipped.</param>
@@ -417,9 +418,9 @@ public sealed unsafe class VideoStreamReader : IDisposable
         }
 
         var bytes = width * height * 8;
-        if (_wide.Length < bytes)
+        if (_wide.Length < bytes + ScalerSlack)
         {
-            _wide = new byte[bytes];
+            _wide = new byte[bytes + ScalerSlack];
         }
 
         fixed (byte* wide = _wide, destination = target)
@@ -558,7 +559,16 @@ public sealed unsafe class VideoStreamReader : IDisposable
             _scalerShape = shape;
         }
 
-        fixed (byte* destination = bgra)
+        // FFmpeg's fast conversion to BGRA writes blocks of 16 pixels: at a width 8 past a whole number of them (1080,
+        // the commonest) it writes 32 bytes past the last row. Only a picture whose width is whole blocks goes straight in.
+        var padded = width % 16 != 0;
+        var bytes = width * height * 4;
+        if (padded && _padded.Length < bytes + ScalerSlack)
+        {
+            _padded = new byte[bytes + ScalerSlack];
+        }
+
+        fixed (byte* direct = bgra, through = _padded)
         {
             for (uint i = 0; i < 4; i++)
             {
@@ -568,7 +578,7 @@ public sealed unsafe class VideoStreamReader : IDisposable
                 _strides[i] = 0;
             }
 
-            _planes[0] = destination;
+            _planes[0] = padded ? through : direct;
             _strides[0] = width * 4;
             var rows = ffmpeg.sws_scale(_scaler, _sourcePlanes, _sourceStrides, 0, source->height, _planes, _strides);
             if (rows != height)
@@ -576,5 +586,13 @@ public sealed unsafe class VideoStreamReader : IDisposable
                 throw new FfmpegException(MediaStrings.ConvertingPicture, rows < 0 ? rows : ffmpeg.AVERROR_UNKNOWN);
             }
         }
+
+        if (padded)
+        {
+            _padded.AsSpan(0, bytes).CopyTo(bgra);
+        }
     }
+
+    /// <summary>Room past a picture for what FFmpeg's scaler writes in blocks.</summary>
+    private const int ScalerSlack = 256;
 }

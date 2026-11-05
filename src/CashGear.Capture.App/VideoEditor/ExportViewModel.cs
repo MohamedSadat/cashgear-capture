@@ -1,11 +1,14 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using CashGear.Capture.App.Platform;
 using CashGear.Capture.App.Resources;
 using CashGear.Capture.Core.Recording;
 using CashGear.Capture.Core.Settings;
+using CashGear.Capture.Editor.Presets;
 using CashGear.Capture.Licensing;
 using CashGear.Capture.Media;
+using CashGear.Capture.Outputs.Sharing;
 using CashGear.Capture.VideoEditor.Editing;
 using CashGear.Capture.VideoEditor.Export;
 using CashGear.Capture.VideoEditor.Model;
@@ -57,6 +60,24 @@ public sealed record TracksOutChoice(SoundTracksOut Value, string Name)
     public override string ToString() => Name;
 }
 
+/// <summary>A destination an export can go to (none: it stays here).</summary>
+public sealed record SendChoice(string? Id, string Name)
+{
+    public override string ToString() => Name;
+}
+
+/// <summary>A YouTube playlist (none: it joins no list).</summary>
+public sealed record PlaylistChoice(string Id, string Name)
+{
+    public override string ToString() => Name;
+}
+
+/// <summary>Who can see a video, as the export window lists it.</summary>
+public sealed record PrivacyChoice(VideoPrivacy Value, string Name)
+{
+    public override string ToString() => Name;
+}
+
 /// <summary>
 /// The export window: the kind of file and its quality, where it goes, only the marked range or not, the captions
 /// burned in and/or saved beside it, then the export running in the background with its progress and the time left
@@ -73,12 +94,21 @@ public sealed partial class ExportViewModel : ObservableObject
     private readonly IShell _shell;
     private readonly ILogger _logger;
     private readonly bool _soundPost;
+    private readonly IFeatureGate _gate;
+    private readonly IPresetStore? _presets;
+    private readonly IExportSender? _sender;
+    private readonly string _name;
+    private bool _applying;
     private CancellationTokenSource? _cancel;
     private string? _confirmed;
 
-    public ExportViewModel(VideoProject project, string name, string folder, ProjectExporter exporter, ISettingsService settings, IAppStateStore state, IShell shell, ILogger logger, TimeRange? range = null, IFeatureGate? features = null)
+    public ExportViewModel(VideoProject project, string name, string folder, ProjectExporter exporter, ISettingsService settings, IAppStateStore state, IShell shell, ILogger logger, TimeRange? range = null, IFeatureGate? features = null, IPresetStore? presets = null, IExportSender? sender = null)
     {
         var gate = features ?? FeatureGate.Open;
+        _gate = gate;
+        _presets = presets;
+        _sender = sender;
+        _name = name;
         var hdr = gate.IsEnabled(ProFeature.RecordingPro) && ProjectExporter.HasHdrMedia(project) ? ExportPresets.Hdr : [];
         Presets = [.. ExportPresets.All.Where(p => (!p.IsGif || gate.IsEnabled(ProFeature.GifExport)) && (!p.HasCanvas || gate.IsEnabled(ProFeature.StudioLook))), .. hdr];
         _project = project;
@@ -107,7 +137,268 @@ public sealed partial class ExportViewModel : ObservableObject
         _soundPost = gate.IsEnabled(ProFeature.AudioPost);
         _loudness = Loudnesses.FirstOrDefault(l => Math.Abs(l.Lufs - remembered.ExportLoudness) < 0.01) ?? Loudnesses[1];
         _tracksOut = TracksOutChoices.FirstOrDefault(t => t.Value.ToString() == remembered.ExportTracksOut) ?? TracksOutChoices[0];
+        _chaptersInFile = remembered.ExportChapters;
+        _chaptersVtt = remembered.ExportChaptersVtt;
+        NamedExports = [.. BuiltInExports.All.Concat(presets?.Current.SavedExports ?? [])];
+        SendTargets = [new SendChoice(null, VideoEditorText.SendNowhere), .. (sender?.Targets() ?? []).Select(t => new SendChoice(t.Id, t.Name))];
+        _sendTo = SendTargets.FirstOrDefault(t => t.Id == remembered.ExportSendTo) ?? SendTargets[0];
+        var youtube = sender?.YouTubeDefaults ?? new YouTubeSettings();
+        _youTubeTitle = name;
+        _youTubeDescription = youtube.Description;
+        _youTubeTags = string.Join(", ", youtube.Tags ?? []);
+        _privacy = Privacies.First(p => p.Value == youtube.Privacy);
+        Playlists = [new PlaylistChoice(string.Empty, VideoEditorText.NoPlaylist)];
+        _playlist = Playlists[0];
+        _defaultPlaylist = YouTubeDestination.PlaylistId(youtube.Playlist);
+        if (_defaultPlaylist is { } typed)
+        {
+            Playlists.Add(new PlaylistChoice(typed, typed));
+            _playlist = Playlists[1];
+        }
+
+        if (IsYouTube)
+        {
+            _ = LoadPlaylistsAsync();
+        }
     }
+
+    private readonly string? _defaultPlaylist;
+    private bool _playlistsLoaded;
+
+    /// <summary>Presets of this window's choices: those that come with the app, then the saved ones.</summary>
+    public ObservableCollection<NamedExport> NamedExports { get; }
+
+    /// <summary>The preset last chosen; changing a choice leaves it.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(DeleteNamedExportCommand))]
+    private NamedExport? _selectedNamedExport;
+
+    /// <summary>Asks for a preset's name (set by the owner; tests set their own).</summary>
+    public Func<string, string, string?>? AskName { get; set; }
+
+    /// <summary>Lets the user make a thumbnail and gives its file (set by the owner).</summary>
+    public Func<string?>? PickThumbnail { get; set; }
+
+    /// <summary>The project has markers, which can become chapters.</summary>
+    public bool HasMarkers => _project.Markers is { Count: > 0 };
+
+    /// <summary>This kind of file can hold chapters.</summary>
+    public bool CanHoldChapters => SelectedPreset.CanHoldChapters;
+
+    [ObservableProperty]
+    private bool _chaptersInFile;
+
+    [ObservableProperty]
+    private bool _chaptersVtt;
+
+    /// <summary>Where the file can go when done.</summary>
+    public IReadOnlyList<SendChoice> SendTargets { get; }
+
+    public bool CanSend => SendTargets.Count > 1;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsYouTube))]
+    private SendChoice _sendTo;
+
+    /// <summary>It goes to YouTube: what YouTube asks for.</summary>
+    public bool IsYouTube => SendTo.Id is { } id && DestinationIds.Same(id, DestinationIds.YouTube);
+
+    [ObservableProperty]
+    private string _youTubeTitle;
+
+    [ObservableProperty]
+    private string _youTubeDescription;
+
+    /// <summary>Separated by commas.</summary>
+    [ObservableProperty]
+    private string _youTubeTags;
+
+    public IReadOnlyList<PrivacyChoice> Privacies { get; } =
+    [
+        new(VideoPrivacy.Private, VideoEditorText.PrivacyPrivate),
+        new(VideoPrivacy.Unlisted, VideoEditorText.PrivacyUnlisted),
+        new(VideoPrivacy.Public, VideoEditorText.PrivacyPublic),
+    ];
+
+    [ObservableProperty]
+    private PrivacyChoice _privacy;
+
+    public ObservableCollection<PlaylistChoice> Playlists { get; }
+
+    [ObservableProperty]
+    private PlaylistChoice _playlist;
+
+    /// <summary>The chapters' times go at the end of the description.</summary>
+    [ObservableProperty]
+    private bool _chaptersInDescription = true;
+
+    /// <summary>The picture sent with the video.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThumbnailText))]
+    private string? _thumbnailPath;
+
+    public string ThumbnailText => ThumbnailPath is { } path ? VideoEditorText.ThumbnailChosen(System.IO.Path.GetFileName(path)) : VideoEditorText.ThumbnailNone;
+
+    /// <summary>The chapters as the description will have them, for the project as it is.</summary>
+    public string ChaptersPreview => HasMarkers ? ProjectChapters.Description(ProjectChapters.From(Chosen().Request.Prepared())) : string.Empty;
+
+    /// <summary>Why YouTube wouldn't show them, if it wouldn't.</summary>
+    public string ChaptersNote => HasMarkers ? ProjectChapters.YouTubeProblem(ProjectChapters.From(Chosen().Request.Prepared())) ?? string.Empty : string.Empty;
+
+    /// <summary>The window's choices as a preset keeps them.</summary>
+    public ExportChoices Choices => new(
+        SelectedPreset.Id,
+        Quality.Value,
+        Loudness.Lufs,
+        TracksOut.Value.ToString(),
+        BurnCaptions,
+        SaveSrt,
+        SaveVtt,
+        ChaptersInFile,
+        ChaptersVtt,
+        GifFps,
+        GifWidth,
+        GifLoop,
+        GifDithering.Value.ToString(),
+        GifLimit.Megabytes,
+        SendTo.Id);
+
+    /// <summary>Saves the choices under a name; a name that is taken among the saved ones is replaced.</summary>
+    [RelayCommand]
+    private async Task SaveNamedExportAsync()
+    {
+        if (AskName?.Invoke(VideoEditorText.SaveExportPresetTitle, SelectedNamedExport?.Name ?? string.Empty) is not { Length: > 0 } name || _presets is null)
+        {
+            return;
+        }
+
+        var saved = new NamedExport(Guid.NewGuid().ToString("N"), name.Trim(), Choices);
+        await _presets.UpdateAsync(p => p.WithExport(saved));
+        if (NamedExports.FirstOrDefault(e => string.Equals(e.Name, saved.Name, StringComparison.OrdinalIgnoreCase) && !BuiltInExports.All.Any(b => b.Id == e.Id)) is { } replaced)
+        {
+            NamedExports.Remove(replaced);
+        }
+
+        NamedExports.Add(saved);
+        _applying = true;
+        SelectedNamedExport = saved;
+        _applying = false;
+    }
+
+    private bool CanDeleteNamedExport() => _presets is not null && SelectedNamedExport is { } export && !BuiltInExports.All.Any(b => b.Id == export.Id);
+
+    [RelayCommand(CanExecute = nameof(CanDeleteNamedExport))]
+    private async Task DeleteNamedExportAsync()
+    {
+        if (SelectedNamedExport is not { } export || _presets is null)
+        {
+            return;
+        }
+
+        await _presets.UpdateAsync(p => p.WithoutExport(export.Name));
+        NamedExports.Remove(export);
+        SelectedNamedExport = null;
+    }
+
+    partial void OnSelectedNamedExportChanged(NamedExport? value)
+    {
+        if (value is not null && !_applying)
+        {
+            Apply(value.Choices);
+        }
+    }
+
+    /// <summary>Sets the window to a preset's choices. What this project or licence can't have stays as it was.</summary>
+    public void Apply(ExportChoices choices)
+    {
+        ArgumentNullException.ThrowIfNull(choices);
+        _applying = true;
+        try
+        {
+            var (preset, note) = choices.PresetFor(_project, Allowances());
+            Error = note;
+            SelectedPreset = Presets.FirstOrDefault(p => p == preset) ?? SelectedPreset;
+            Quality = Qualities.FirstOrDefault(q => q.Value == choices.Quality) ?? Quality;
+            Loudness = Loudnesses.FirstOrDefault(l => Math.Abs(l.Lufs - choices.LoudnessLufs) < 0.01) ?? Loudness;
+            TracksOut = TracksOutChoices.FirstOrDefault(t => t.Value.ToString() == choices.TracksOut) ?? TracksOutChoices[0];
+            BurnCaptions = choices.BurnCaptions;
+            SaveSrt = choices.SaveSrt;
+            SaveVtt = choices.SaveVtt;
+            ChaptersInFile = choices.Chapters;
+            ChaptersVtt = choices.ChaptersVtt;
+            GifFps = GifRates.Contains(choices.GifFps) ? choices.GifFps : GifFps;
+            GifWidth = GifWidths.Where(w => w <= choices.GifWidth).DefaultIfEmpty(GifWidths[0]).Max();
+            GifLoop = choices.GifLoop;
+            GifDithering = GifDithers.FirstOrDefault(d => d.Value.ToString() == choices.GifDither) ?? GifDithers[0];
+            GifLimit = GifLimits.FirstOrDefault(l => Math.Abs(l.Megabytes - choices.GifMaxMegabytes) < 0.01) ?? GifLimits[0];
+            SendTo = SendTargets.FirstOrDefault(t => t.Id == choices.SendTo) ?? SendTargets[0];
+        }
+        finally
+        {
+            _applying = false;
+        }
+    }
+
+    private ExportAllowances Allowances() => new(_gate.IsEnabled(ProFeature.RecordingPro), _gate.IsEnabled(ProFeature.GifExport), _gate.IsEnabled(ProFeature.StudioLook), _gate.IsEnabled(ProFeature.AudioPost));
+
+    private ChosenExport Chosen(string path = "") =>
+        Choices.ToRequest(_project, path, _settings.Current.Recording.Encoder, OnlyRange ? _range : null, ChoosesCaptionTrack ? BurnTrack?.TrackId : null, Allowances());
+
+    partial void OnSendToChanged(SendChoice value)
+    {
+        if (IsYouTube)
+        {
+            _ = LoadPlaylistsAsync();
+        }
+    }
+
+    [RelayCommand]
+    private void ChooseThumbnail()
+    {
+        if (PickThumbnail?.Invoke() is { } path)
+        {
+            ThumbnailPath = path;
+        }
+    }
+
+    /// <summary>The account's playlists, once: one that can't be read just isn't listed.</summary>
+    private async Task LoadPlaylistsAsync()
+    {
+        if (_playlistsLoaded || _sender is null)
+        {
+            return;
+        }
+
+        _playlistsLoaded = true;
+        try
+        {
+            var found = await _sender.PlaylistsAsync(CancellationToken.None);
+            foreach (var (id, title) in found)
+            {
+                var named = new PlaylistChoice(id, title);
+                if (Playlists.FirstOrDefault(p => p.Id == id) is { } typed)
+                {
+                    var wasChosen = Playlist == typed;
+                    Playlists[Playlists.IndexOf(typed)] = named;
+                    if (wasChosen)
+                    {
+                        Playlist = named;
+                    }
+                }
+                else
+                {
+                    Playlists.Add(named);
+                }
+            }
+        }
+        catch (Exception e) when (e is System.Net.Http.HttpRequestException or SignInRequiredException or UploadRefusedException or System.Text.Json.JsonException or OperationCanceledException or KeyNotFoundException or InvalidOperationException)
+        {
+            LogPlaylistsFailed(e.Message);
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "The playlists couldn't be read: {Reason}")]
+    private partial void LogPlaylistsFailed(string reason);
 
     /// <summary>What an export can do with sound here (a licence that has it, a kind of file with sound).</summary>
     public bool HasSoundChoices => _soundPost && SelectedPreset.HasSound;
@@ -214,6 +505,8 @@ public sealed partial class ExportViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SizeText))]
+    [NotifyPropertyChangedFor(nameof(ChaptersPreview))]
+    [NotifyPropertyChangedFor(nameof(ChaptersNote))]
     private bool _onlyRange;
 
     [ObservableProperty]
@@ -304,6 +597,7 @@ public sealed partial class ExportViewModel : ObservableObject
     {
         Path = System.IO.Path.ChangeExtension(Path, value.Extension);
         OnPropertyChanged(nameof(IsGif));
+        OnPropertyChanged(nameof(CanHoldChapters));
         OnPropertyChanged(nameof(HasQuality));
         OnPropertyChanged(nameof(HasSoundChoices));
         OnPropertyChanged(nameof(ChoosesTracks));
@@ -337,12 +631,11 @@ public sealed partial class ExportViewModel : ObservableObject
         var preset = SelectedPreset;
         var quality = Quality.Value;
         var (burn, srt, vtt) = (BurnCaptions, SaveSrt, SaveVtt);
+        var (chaptersInFile, chaptersVtt, sendTo) = (ChaptersInFile, ChaptersVtt, SendTo.Id);
         var gif = GifOptions;
         var gifLimit = GifLimit.Megabytes;
         var (loudness, tracksOut) = (Loudness.Lufs, TracksOut.Value);
         double? target = HasSoundChoices && loudness != 0 ? loudness : null;
-        var tracks = ChoosesTracks ? tracksOut : SoundTracksOut.Mix;
-        var range = OnlyRange ? _range : null;
         var path = System.IO.Path.GetFullPath(Path);
         if (File.Exists(path) && !string.Equals(path, _confirmed, StringComparison.OrdinalIgnoreCase))
         {
@@ -370,6 +663,9 @@ public sealed partial class ExportViewModel : ObservableObject
                     GifMaxMegabytes = preset.IsGif ? gifLimit : s.VideoEditor?.GifMaxMegabytes ?? 0,
                     ExportLoudness = loudness,
                     ExportTracksOut = tracksOut.ToString(),
+                    ExportChapters = chaptersInFile,
+                    ExportChaptersVtt = chaptersVtt,
+                    ExportSendTo = sendTo,
                 },
             });
             var progress = new Progress<ExportProgress>(p =>
@@ -379,11 +675,8 @@ public sealed partial class ExportViewModel : ObservableObject
                     ? VideoEditorText.ProgressTimeLeft(p.Fraction, TimeText(left))
                     : string.Create(CultureInfo.CurrentCulture, $"{p.Fraction:P0}");
             });
-            var files = (srt ? CaptionFiles.Srt : CaptionFiles.None) | (vtt ? CaptionFiles.Vtt : CaptionFiles.None);
-            var result = await _exporter.ExportAsync(
-                new ExportRequest(_project, preset, quality, path, _settings.Current.Recording.Encoder, range, burn, HasCaptions ? files : CaptionFiles.None, preset.IsGif ? gif : null, ChoosesCaptionTrack ? BurnTrack?.TrackId : null, target, tracks),
-                progress,
-                _cancel.Token);
+            var chosen = Chosen(path);
+            var result = await _exporter.ExportAsync(chosen.Request, progress, _cancel.Token);
             Progress = 1;
             var captions = result.CaptionPaths is { Count: > 0 } written
                 ? VideoEditorText.WithCaptionFiles(written.Select(System.IO.Path.GetFileName).Aggregate((list, next) => VideoEditorText.AndList(list, next)))
@@ -406,6 +699,22 @@ public sealed partial class ExportViewModel : ObservableObject
             if (result.MeasuredLufs is { } measured && target is { } met)
             {
                 captions += VideoEditorText.ExportLoudnessDone(measured, met);
+            }
+
+            if (result.ChaptersPath is { } chaptersFile)
+            {
+                captions += VideoEditorText.WithChaptersFile(System.IO.Path.GetFileName(chaptersFile));
+            }
+
+            if (chosen.Note is { } note)
+            {
+                captions += " " + note;
+            }
+
+            if (sendTo is not null && _sender is not null)
+            {
+                _sender.Send(result.Path, _name, sendTo, IsYouTube && ChaptersInDescription ? ProjectChapters.From(chosen.Request.Prepared()) : [], IsYouTube ? Details() : null);
+                captions += VideoEditorText.SentInBackground(SendTo.Name);
             }
 
             var encoder = result.Encoder is { } used ? $" ({used})" : "";
@@ -462,6 +771,15 @@ public sealed partial class ExportViewModel : ObservableObject
             _shell.ShowInFolder(file);
         }
     }
+
+    /// <summary>What was typed for YouTube.</summary>
+    private UploadDetails Details() => new(
+        YouTubeTitle,
+        YouTubeDescription,
+        [.. YouTubeTags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)],
+        Privacy.Value,
+        Playlist.Id,
+        ThumbnailPath);
 
     /// <summary>Stops a running export (the window is closing).</summary>
     public void Stop() => _cancel?.Cancel();

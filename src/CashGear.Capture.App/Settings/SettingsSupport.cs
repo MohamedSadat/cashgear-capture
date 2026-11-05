@@ -126,6 +126,9 @@ public sealed class EnumLabelConverter : IValueConverter
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value switch
     {
         ImageFileFormat.Png => SettingsText.FormatPng,
+        VideoPrivacy.Private => DestinationsText.PrivacyPrivate,
+        VideoPrivacy.Unlisted => DestinationsText.PrivacyUnlisted,
+        VideoPrivacy.Public => DestinationsText.PrivacyPublic,
         Core.Recording.QualityPreset.Small => SettingsText.QualitySmall,
         Core.Recording.QualityPreset.Balanced => SettingsText.QualityBalanced,
         Core.Recording.QualityPreset.High => SettingsText.QualityHigh,

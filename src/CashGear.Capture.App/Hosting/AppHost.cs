@@ -122,6 +122,16 @@ internal static class AppHost
             System.IO.Path.Combine(sp.GetRequiredService<AppPaths>().DataDirectory, "VideoEditor", "proxies"),
             sp.GetRequiredService<CashGear.Capture.Core.Recording.IRecordingEncoders>(),
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CashGear.Capture.VideoEditor.Playback.ProxyStore>>()));
+        builder.Services.AddSingleton<VideoEditor.IExportSender>(sp => new VideoEditor.ExportSender(
+            new Lazy<DestinationRegistry>(sp.GetRequiredService<DestinationRegistry>),
+            new Lazy<Outputs.Sharing.UploadQueue>(sp.GetRequiredService<Outputs.Sharing.UploadQueue>),
+            sp.GetRequiredService<ISettingsService>()));
+        builder.Services.AddSingleton<VideoEditor.ExportQueue>();
+        builder.Services.AddSingleton<BackgroundWork>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<BackgroundWork>());
+        builder.Services.AddSingleton<BackgroundWorkWindowService>();
+        builder.Services.AddSingleton<VideoEditor.BatchExportWindowService>();
+        builder.Services.AddSingleton(sp => new Lazy<VideoEditor.BatchExportWindowService>(sp.GetRequiredService<VideoEditor.BatchExportWindowService>));
         builder.Services.AddSingleton<VideoEditor.VideoEditorWindows>();
         builder.Services.AddSingleton<VideoEditor.IVideoEditorLauncher>(sp => sp.GetRequiredService<VideoEditor.VideoEditorWindows>());
         builder.Services.AddSingleton<InterruptedRecordings>();

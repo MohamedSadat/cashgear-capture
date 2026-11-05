@@ -30,6 +30,9 @@ public enum ExportContainer
     Flac,
 }
 
+/// <summary>A chapter of an export, in seconds on its clock.</summary>
+public sealed record ExportChapter(double Start, double End, string Title);
+
 /// <summary>
 /// Writes an export's encoded streams to one file, on the thread that encodes (an export encodes and writes on one
 /// thread). Each encoder is added before the first packet; packets are given in any order and interleaved by FFmpeg.
@@ -51,6 +54,9 @@ public sealed unsafe class ExportWriter : IDisposable
         _path = path;
         _container = container;
     }
+
+    /// <summary>Chapters to write (set before the first packet). MP4, M4A, MKV and WebM keep them.</summary>
+    public IReadOnlyList<ExportChapter>? Chapters { get; set; }
 
     /// <summary>The end of the last packet written, in seconds.</summary>
     public double End { get; private set; }
@@ -180,6 +186,7 @@ public sealed unsafe class ExportWriter : IDisposable
             entry.TimeBase = stream->time_base;
         }
 
+        AddChapters(output);
         FfmpegException.Check(ffmpeg.avio_open(&output->pb, _path, ffmpeg.AVIO_FLAG_WRITE), MediaStrings.Creating(_path));
         AVDictionary* options = null;
         if (_container is ExportContainer.Mp4 or ExportContainer.M4a)
@@ -209,6 +216,28 @@ public sealed unsafe class ExportWriter : IDisposable
         }
 
         _waiting.Clear();
+    }
+
+    /// <summary>As FFmpeg's own tool does: the muxer writes them, and avformat_free_context frees them.</summary>
+    private void AddChapters(AVFormatContext* output)
+    {
+        if (Chapters is not { Count: > 0 } chapters)
+        {
+            return;
+        }
+
+        output->chapters = (AVChapter**)ffmpeg.av_calloc((ulong)chapters.Count, (ulong)sizeof(AVChapter*));
+        for (var i = 0; i < chapters.Count; i++)
+        {
+            var chapter = (AVChapter*)ffmpeg.av_mallocz((ulong)sizeof(AVChapter));
+            chapter->id = i + 1;
+            chapter->time_base = new AVRational { num = 1, den = 1000 };
+            chapter->start = (long)Math.Round(chapters[i].Start * 1000);
+            chapter->end = (long)Math.Round(chapters[i].End * 1000);
+            ffmpeg.av_dict_set(&chapter->metadata, "title", chapters[i].Title, 0);
+            output->chapters[i] = chapter;
+            output->nb_chapters = (uint)(i + 1);
+        }
     }
 
     private void WritePacket(EncodedPacket packet)

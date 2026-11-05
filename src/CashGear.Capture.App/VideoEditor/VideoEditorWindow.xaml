@@ -105,6 +105,8 @@
         <MenuItem Header="{x:Static r:VideoEditorText.SaveCaptionsMenu}" Command="{Binding SaveCaptionsCommand}" ToolTip="{x:Static r:VideoEditorText.SaveCaptionsTip}" />
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.ExportMenu}" Command="{Binding ExportCommand}" InputGestureText="Ctrl+E" />
+        <MenuItem Header="{x:Static r:VideoEditorText.BatchExportMenu}" Command="{Binding BatchExportCommand}" Visibility="{Binding CanBatchExport, Converter={StaticResource Visible}}" />
+        <MenuItem Header="{x:Static r:VideoEditorText.ThumbnailMenu}" Command="{Binding MakeThumbnailCommand}" />
         <Separator />
         <MenuItem Header="{x:Static r:VideoEditorText.CloseMenu}" Click="OnCloseClick" />
       </MenuItem>

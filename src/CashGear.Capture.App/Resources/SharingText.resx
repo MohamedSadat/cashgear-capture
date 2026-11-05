@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BackgroundTitle" xml:space="preserve">
+    <value>Uploads and Exports</value>
+  </data>
+  <data name="ClearEnded" xml:space="preserve">
+    <value>_Clear Ended</value>
+  </data>
+  <data name="EmptyList" xml:space="preserve">
+    <value>Nothing is going on. Files sent to a destination that uploads, and batches of exports, show here.</value>
+  </data>
+  <data name="RowName" xml:space="preserve">
+    <value>{0} to {1}: {2}</value>
+    <comment>{0} a file, {1} where it goes, {2} how it stands</comment>
+  </data>
+  <data name="RowArrow" xml:space="preserve">
+    <value>→</value>
+  </data>
+  <data name="OpenLink" xml:space="preserve">
+    <value>_Open Link</value>
+  </data>
+  <data name="CopyLink" xml:space="preserve">
+    <value>Copy _Link</value>
+  </data>
+  <data name="ShowFile" xml:space="preserve">
+    <value>_Show in Folder</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>_Retry</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Re_move</value>
+  </data>
+  <data name="GoingOn_one" xml:space="preserve">
+    <value>1 going on: {1}</value>
+    <comment>{1} a percentage</comment>
+  </data>
+  <data name="GoingOn_other" xml:space="preserve">
+    <value>{0} going on: {1}</value>
+    <comment>{1} a percentage</comment>
+  </data>
+  <data name="NothingGoingOn" xml:space="preserve">
+    <value>Nothing is going on.</value>
+  </data>
+  <data name="StateWaiting" xml:space="preserve">
+    <value>Waiting</value>
+  </data>
+  <data name="StateSending" xml:space="preserve">
+    <value>Sending: {0} ({1} of {2})</value>
+  </data>
+  <data name="StateRetrying" xml:space="preserve">
+    <value>The connection went at {0}; it goes on by itself when it can</value>
+  </data>
+  <data name="StateCancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="StateDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="StateDoneLink" xml:space="preserve">
+    <value>Done: {0}</value>
+  </data>
+  <data name="StateFailed" xml:space="preserve">
+    <value>It failed</value>
+  </data>
+  <data name="StateExporting" xml:space="preserve">
+    <value>Exporting: {0}</value>
+  </data>
+</root>

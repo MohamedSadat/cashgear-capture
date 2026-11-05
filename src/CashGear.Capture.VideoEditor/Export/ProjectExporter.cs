@@ -40,6 +40,7 @@ public sealed class ExportException : Exception
 /// <param name="BurnTrack">The only caption track burned in, when there is one language to choose among several (null: all those shown).</param>
 /// <param name="LoudnessTarget">The loudness the sound is brought to, in LUFS (null: as mixed).</param>
 /// <param name="TracksOut">Whether the sound tracks are kept apart too.</param>
+/// <param name="Chapters">What the project's markers become.</param>
 public sealed record ExportRequest(
     VideoProject Project,
     ExportPreset Preset,
@@ -52,7 +53,8 @@ public sealed record ExportRequest(
     GifOptions? Gif = null,
     string? BurnTrack = null,
     double? LoudnessTarget = null,
-    SoundTracksOut TracksOut = SoundTracksOut.Mix)
+    SoundTracksOut TracksOut = SoundTracksOut.Mix,
+    ExportChapterFiles Chapters = ExportChapterFiles.None)
 {
     /// <summary>
     /// The project as the export makes it: the range only, on the preset's own canvas (the screen covering it and
@@ -85,7 +87,9 @@ public sealed record ExportProgress(double Fraction, TimeSpan Elapsed, TimeSpan?
 /// <param name="TrackPaths">The WAV files of the sound tracks written beside it.</param>
 /// <param name="MeasuredLufs">How loud the mix was before a loudness target was met.</param>
 /// <param name="LoudnessGainDb">What was done to the mix to meet it.</param>
-public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed, IReadOnlyList<string>? CaptionPaths = null, GifOptions? Gif = null, IReadOnlyList<TimeRange>? PointerOutOfView = null, IReadOnlyList<string>? TrackPaths = null, double? MeasuredLufs = null, double? LoudnessGainDb = null);
+/// <param name="Chapters">The chapters, as the file, its chapters file and a YouTube description have them.</param>
+/// <param name="ChaptersPath">The WebVTT chapters file written beside it.</param>
+public sealed record ExportResult(string Path, TimeSpan Duration, long Frames, long Bytes, string? Encoder, TimeSpan Elapsed, IReadOnlyList<string>? CaptionPaths = null, GifOptions? Gif = null, IReadOnlyList<TimeRange>? PointerOutOfView = null, IReadOnlyList<string>? TrackPaths = null, double? MeasuredLufs = null, double? LoudnessGainDb = null, IReadOnlyList<ExportChapter>? Chapters = null, string? ChaptersPath = null);
 
 /// <summary>
 /// Makes a file from a project on a background thread: each frame drawn by the same <see cref="FrameCompositor"/>
@@ -151,7 +155,15 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
             var outOfView = project.Canvas.Framing == ScreenFraming.FollowPointer && request.Preset.HasVideo
                 ? new ZoomCamera(new MetadataOverlays()).PointerOutOfView(project)
                 : null;
-            return result with { Path = request.Path, CaptionPaths = WriteCaptions(project, request.Path, request.CaptionFiles), PointerOutOfView = outOfView };
+            var chapters = request.Chapters != ExportChapterFiles.None ? ProjectChapters.From(project) : [];
+            string? chaptersPath = null;
+            if (request.Chapters.HasFlag(ExportChapterFiles.Vtt) && chapters.Count > 0)
+            {
+                chaptersPath = ProjectChapters.VttPath(request.Path);
+                ProjectChapters.SaveVtt(chaptersPath, chapters);
+            }
+
+            return result with { Path = request.Path, CaptionPaths = WriteCaptions(project, request.Path, request.CaptionFiles), PointerOutOfView = outOfView, Chapters = chapters, ChaptersPath = chaptersPath };
         }
         catch (FfmpegException e)
         {
@@ -248,6 +260,11 @@ public sealed partial class ProjectExporter(IRecordingEncoders encoders, ILogger
         var gain = loudness?.GainDb;
         var totalSamples = TimelineMixer.Sample(duration);
         using var writer = new ExportWriter(partial, preset.Container);
+        if (request.Chapters.HasFlag(ExportChapterFiles.InFile) && preset.CanHoldChapters)
+        {
+            writer.Chapters = ProjectChapters.From(project);
+        }
+
         var writers = new List<ExportWriter>();
         var streams = new List<ExportSoundStream>();
         var mainStreams = new List<ExportSoundStream>();

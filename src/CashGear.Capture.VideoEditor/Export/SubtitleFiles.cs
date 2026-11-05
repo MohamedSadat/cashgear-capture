@@ -25,6 +25,19 @@ public enum CaptionFiles
     Vtt = 2,
 }
 
+/// <summary>What an export makes of the project's markers.</summary>
+[Flags]
+public enum ExportChapterFiles
+{
+    None = 0,
+
+    /// <summary>Chapters inside the file.</summary>
+    InFile = 1,
+
+    /// <summary>A WebVTT chapters file beside it.</summary>
+    Vtt = 2,
+}
+
 /// <summary>A caption in a subtitle file: from <see cref="Start"/> to <see cref="End"/> seconds (lines separated by <c>\n</c>).</summary>
 public sealed record SubtitleCue(double Start, double End, string Text);
 

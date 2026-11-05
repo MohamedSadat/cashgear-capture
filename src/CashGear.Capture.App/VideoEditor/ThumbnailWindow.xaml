@@ -1,0 +1,69 @@
+<Window x:Class="CashGear.Capture.App.VideoEditor.ThumbnailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="clr-namespace:CashGear.Capture.App.Platform"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CashGear.Capture.App.VideoEditor"
+        xmlns:r="clr-namespace:CashGear.Capture.App.Resources"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:ThumbnailViewModel}"
+        Title="{x:Static r:VideoEditorText.ThumbnailTitle}"
+        Width="720" Height="660" MinWidth="520" MinHeight="480"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        FocusManager.FocusedElement="{Binding ElementName=TimeSlider}">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="Visible" />
+  </Window.Resources>
+  <DockPanel Margin="16">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+      <Button Content="{x:Static r:VideoEditorText.ThumbnailUse}" Command="{Binding UseForUploadCommand}" IsDefault="True" MinWidth="88" Margin="0,0,8,0" Visibility="{Binding ForUpload, Converter={StaticResource Visible}}" />
+      <Button Content="{x:Static r:VideoEditorText.ThumbnailSave}" Command="{Binding SaveAsCommand}" MinWidth="88" Margin="0,0,8,0" />
+      <Button Content="{x:Static r:CommonText.Close}" Command="{Binding CloseCommand}" IsCancel="True" MinWidth="88" />
+    </StackPanel>
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" TextWrapping="Wrap" Margin="0,8,0,0" p:LiveText.IsLive="True">
+      <TextBlock.Style>
+        <Style TargetType="TextBlock">
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding Failed}" Value="True">
+              <Setter Property="Foreground" Value="{p:Chrome Error}" />
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </TextBlock.Style>
+    </TextBlock>
+    <Grid DockPanel.Dock="Bottom" Margin="0,12,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <TextBlock x:Name="FrameLabel" Text="{x:Static r:VideoEditorText.ThumbnailFrame}" VerticalAlignment="Center" Margin="0,0,12,8" />
+      <!-- The timeline's direction stays left to right in every language, as the preview's does. -->
+      <Slider x:Name="TimeSlider" Grid.Column="1" FlowDirection="LeftToRight" Minimum="0" Maximum="{Binding Duration}" Value="{Binding Time}" SmallChange="{Binding FrameStep}" LargeChange="1" Margin="0,0,0,8"
+              AutomationProperties.LabeledBy="{Binding ElementName=FrameLabel}" />
+      <TextBlock Grid.Column="2" FlowDirection="LeftToRight" Text="{Binding TimeText}" VerticalAlignment="Center" Margin="12,0,0,8" />
+      <TextBlock x:Name="TitleLabel" Grid.Row="1" Text="{x:Static r:VideoEditorText.ThumbnailTitleLabel}" VerticalAlignment="Center" Margin="0,0,12,8" />
+      <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding Titles}" SelectedItem="{Binding SelectedTitle}" DisplayMemberPath="Name" Margin="0,0,0,8"
+                AutomationProperties.LabeledBy="{Binding ElementName=TitleLabel}" />
+      <ItemsControl Grid.Row="2" Grid.ColumnSpan="3" ItemsSource="{Binding Fields}" Focusable="False" IsTabStop="False">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="{x:Type local:ThumbnailField}">
+            <DockPanel Margin="0,0,0,8">
+              <TextBlock DockPanel.Dock="Left" Text="{Binding Label}" VerticalAlignment="Center" Margin="0,0,12,0" MinWidth="80" />
+              <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding Label}" />
+            </DockPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Grid>
+    <Border BorderThickness="1" BorderBrush="{p:Chrome Separator}">
+      <Image FlowDirection="LeftToRight" Source="{Binding Preview}" Stretch="Uniform" AutomationProperties.Name="{x:Static r:VideoEditorText.ThumbnailPreview}" />
+    </Border>
+  </DockPanel>
+</Window>

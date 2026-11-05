@@ -166,4 +166,16 @@
     <value> → </value>
     <comment>Between the steps of a workflow: points the way the steps run (to the left in Arabic)</comment>
   </data>
+  <data name="UploadingInBackground" xml:space="preserve">
+    <value>Uploading in the background; the tray shows how far it has got.</value>
+  </data>
+  <data name="ExportUploaded" xml:space="preserve">
+    <value>Video uploaded</value>
+  </data>
+  <data name="ExportNotSent" xml:space="preserve">
+    <value>Video not sent</value>
+  </data>
+  <data name="ExportPartlyDone" xml:space="preserve">
+    <value>Video: not everything worked</value>
+  </data>
 </root>

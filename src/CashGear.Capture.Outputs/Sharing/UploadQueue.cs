@@ -148,7 +148,7 @@ public sealed partial class UploadQueue : IDisposable
             }
         }
 
-        Changed?.Invoke(this, EventArgs.Empty);
+        Announce();
     }
 
     /// <summary>A copy of a temporary file for the queue, which outlasts the workflow that made it.</summary>
@@ -179,7 +179,7 @@ public sealed partial class UploadQueue : IDisposable
 
         LogQueued(group.Id, group.Jobs.Count);
         SaveSoon();
-        Changed?.Invoke(this, EventArgs.Empty);
+        Announce();
         Run(group);
         return group.Id;
     }
@@ -213,7 +213,7 @@ public sealed partial class UploadQueue : IDisposable
         }
 
         SaveSoon();
-        Changed?.Invoke(this, EventArgs.Empty);
+        Announce();
     }
 
     /// <summary>Goes on with a failed or cancelled job, from where it was if it can.</summary>
@@ -237,7 +237,7 @@ public sealed partial class UploadQueue : IDisposable
         }
 
         SaveSoon();
-        Changed?.Invoke(this, EventArgs.Empty);
+        Announce();
         Run(group!);
     }
 
@@ -274,7 +274,7 @@ public sealed partial class UploadQueue : IDisposable
         }
 
         SaveSoon();
-        Changed?.Invoke(this, EventArgs.Empty);
+        Announce();
     }
 
     /// <summary>Takes everything that has ended off the list.</summary>
@@ -308,6 +308,19 @@ public sealed partial class UploadQueue : IDisposable
         _stopping.Dispose();
         _slots.Dispose();
         _write.Dispose();
+    }
+
+    /// <summary>Tells who is listening. Their window or the app may be closing: that stops no upload.</summary>
+    private void Announce()
+    {
+        try
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+        catch (InvalidOperationException e)
+        {
+            LogListenerGone(e.Message);
+        }
     }
 
     private int RunningGroups()
@@ -358,11 +371,11 @@ public sealed partial class UploadQueue : IDisposable
                         break;
                     }
 
-                    Changed?.Invoke(this, EventArgs.Empty);
+                    Announce();
                     await SaveAsync().ConfigureAwait(false);
                     await RunJobAsync(group, job).ConfigureAwait(false);
                     await SaveAsync().ConfigureAwait(false);
-                    Changed?.Invoke(this, EventArgs.Empty);
+                    Announce();
                     _stopping.Token.ThrowIfCancellationRequested();
                 }
 
@@ -408,7 +421,7 @@ public sealed partial class UploadQueue : IDisposable
             if (watch.Elapsed - last >= ProgressEvery)
             {
                 last = watch.Elapsed;
-                Changed?.Invoke(this, EventArgs.Empty);
+                Announce();
             }
         });
         OutputResult result;
@@ -424,7 +437,7 @@ public sealed partial class UploadQueue : IDisposable
                 }
             }
 
-            Changed?.Invoke(this, EventArgs.Empty);
+            Announce();
         });
         try
         {
@@ -516,7 +529,7 @@ public sealed partial class UploadQueue : IDisposable
                 job.Message = result.Message;
             }
 
-            Changed?.Invoke(this, EventArgs.Empty);
+            Announce();
             await _wake.WaitAsync(_options.Wait * Math.Pow(2, attempt - 1), ct).ConfigureAwait(false);
             lock (_gate)
             {
@@ -525,7 +538,7 @@ public sealed partial class UploadQueue : IDisposable
             }
 
             job.Sent = 0;
-            Changed?.Invoke(this, EventArgs.Empty);
+            Announce();
         }
     }
 
@@ -571,7 +584,15 @@ public sealed partial class UploadQueue : IDisposable
             }
         }
 
-        GroupFinished?.Invoke(this, new UploadGroupFinished(group.Name, group.OwnsFile ? null : group.File, group.Kind, outcomes));
+        try
+        {
+            GroupFinished?.Invoke(this, new UploadGroupFinished(group.Name, group.OwnsFile ? null : group.File, group.Kind, outcomes));
+        }
+        catch (InvalidOperationException e)
+        {
+            LogListenerGone(e.Message);
+        }
+
         if (!failed)
         {
             DeleteFiles(group);
@@ -675,6 +696,9 @@ public sealed partial class UploadQueue : IDisposable
             return [];
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Nobody could be told about an upload: {Message}")]
+    private partial void LogListenerGone(string message);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Upload {Group} queued for {Count} destination(s)")]
     private partial void LogQueued(string group, int count);

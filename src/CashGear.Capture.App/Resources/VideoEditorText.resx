@@ -2990,4 +2990,169 @@
     <value>Cut to Screen {0}</value>
     <comment>Undo. {0} a number.</comment>
   </data>
+  <data name="ExportPresetLabel" xml:space="preserve">
+    <value>Preset</value>
+  </data>
+  <data name="SaveExportPreset" xml:space="preserve">
+    <value>_Save…</value>
+  </data>
+  <data name="DeleteExportPreset" xml:space="preserve">
+    <value>_Delete</value>
+  </data>
+  <data name="SaveExportPresetTitle" xml:space="preserve">
+    <value>Save these choices as a preset</value>
+  </data>
+  <data name="ChaptersInFile" xml:space="preserve">
+    <value>Chapters from the markers, in the file</value>
+  </data>
+  <data name="ChaptersVttFile" xml:space="preserve">
+    <value>Save the chapters beside it as a WebVTT file</value>
+  </data>
+  <data name="WithChaptersFile" xml:space="preserve">
+    <value> Chapters saved as {0}.</value>
+  </data>
+  <data name="SendToLabel" xml:space="preserve">
+    <value>When done, send to</value>
+  </data>
+  <data name="SendNowhere" xml:space="preserve">
+    <value>Nowhere: it stays on this PC</value>
+  </data>
+  <data name="SentInBackground" xml:space="preserve">
+    <value> Going to {0} in the background.</value>
+  </data>
+  <data name="YouTubeTitle" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="YouTubeDescription" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="ChaptersInDescription" xml:space="preserve">
+    <value>Add the chapters' times to the description</value>
+  </data>
+  <data name="YouTubeTags" xml:space="preserve">
+    <value>Tags (commas between)</value>
+  </data>
+  <data name="YouTubePrivacy" xml:space="preserve">
+    <value>Who can see it</value>
+  </data>
+  <data name="YouTubePlaylist" xml:space="preserve">
+    <value>Playlist</value>
+  </data>
+  <data name="YouTubeThumbnail" xml:space="preserve">
+    <value>Thumbnail</value>
+  </data>
+  <data name="MakeThumbnail" xml:space="preserve">
+    <value>_Make…</value>
+  </data>
+  <data name="ThumbnailNone" xml:space="preserve">
+    <value>None: YouTube picks one</value>
+  </data>
+  <data name="ThumbnailChosen" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="NoPlaylist" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="PrivacyPrivate" xml:space="preserve">
+    <value>Private: only you</value>
+  </data>
+  <data name="PrivacyUnlisted" xml:space="preserve">
+    <value>Unlisted: anyone with the link</value>
+  </data>
+  <data name="PrivacyPublic" xml:space="preserve">
+    <value>Public: everyone</value>
+  </data>
+  <data name="ThumbnailMenu" xml:space="preserve">
+    <value>Make a _Thumbnail…</value>
+  </data>
+  <data name="ThumbnailTitle" xml:space="preserve">
+    <value>Thumbnail</value>
+  </data>
+  <data name="ThumbnailFrame" xml:space="preserve">
+    <value>Frame</value>
+  </data>
+  <data name="ThumbnailTitleLabel" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="ThumbnailNoTitle" xml:space="preserve">
+    <value>None: only the frame</value>
+  </data>
+  <data name="ThumbnailPreview" xml:space="preserve">
+    <value>The thumbnail as it is now</value>
+  </data>
+  <data name="ThumbnailUse" xml:space="preserve">
+    <value>_Use for the Upload</value>
+  </data>
+  <data name="ThumbnailSave" xml:space="preserve">
+    <value>_Save as PNG…</value>
+  </data>
+  <data name="ThumbnailSaveTitle" xml:space="preserve">
+    <value>Save the thumbnail</value>
+  </data>
+  <data name="ThumbnailFilter" xml:space="preserve">
+    <value>PNG pictures|*.png</value>
+  </data>
+  <data name="ThumbnailSaved" xml:space="preserve">
+    <value>Saved as {0}.</value>
+  </data>
+  <data name="BatchExportMenu" xml:space="preserve">
+    <value>Export _Several…</value>
+  </data>
+  <data name="BatchTitle" xml:space="preserve">
+    <value>Export Several</value>
+  </data>
+  <data name="BatchProjects" xml:space="preserve">
+    <value>Projects and recordings</value>
+  </data>
+  <data name="BatchAddProjects" xml:space="preserve">
+    <value>_Add…</value>
+  </data>
+  <data name="BatchAddProjectsTitle" xml:space="preserve">
+    <value>Add projects or recordings</value>
+  </data>
+  <data name="BatchRemoveProject" xml:space="preserve">
+    <value>_Remove</value>
+  </data>
+  <data name="BatchPresets" xml:space="preserve">
+    <value>Presets</value>
+  </data>
+  <data name="BatchFolder" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="BatchFolderTitle" xml:space="preserve">
+    <value>Where the exports go</value>
+  </data>
+  <data name="BatchStart" xml:space="preserve">
+    <value>_Start</value>
+  </data>
+  <data name="BatchCount_one" xml:space="preserve">
+    <value>Makes 1 file, one after another in the background.</value>
+  </data>
+  <data name="BatchCount_other" xml:space="preserve">
+    <value>Makes {0} files, one after another in the background.</value>
+  </data>
+  <data name="BatchMade" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="BatchMissingMedia" xml:space="preserve">
+    <value>Its media isn't there: {0}</value>
+  </data>
+  <data name="BatchDoneTitle" xml:space="preserve">
+    <value>Exports done</value>
+  </data>
+  <data name="BatchFailedTitle" xml:space="preserve">
+    <value>Exports: not everything worked</value>
+  </data>
+  <data name="BatchDone_one" xml:space="preserve">
+    <value>1 file made. Click to show it.</value>
+  </data>
+  <data name="BatchDone_other" xml:space="preserve">
+    <value>{0} files made. Click to show the first.</value>
+  </data>
+  <data name="BatchSomeFailed_one" xml:space="preserve">
+    <value>1 file made, others failed: {1}</value>
+  </data>
+  <data name="BatchSomeFailed_other" xml:space="preserve">
+    <value>{0} files made, others failed: {1}</value>
+  </data>
 </root>

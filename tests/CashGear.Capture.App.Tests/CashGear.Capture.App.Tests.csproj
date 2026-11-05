@@ -39,4 +39,8 @@
     <None Include="$(MSBuildThisFileDirectory)..\..\tools\rnnoise\rnnoise.dll;$(MSBuildThisFileDirectory)..\..\tools\rnnoise\COPYING" Link="rnnoise\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\MachineTurn.cs" Link="MachineTurn.cs" />
+  </ItemGroup>
+
 </Project>

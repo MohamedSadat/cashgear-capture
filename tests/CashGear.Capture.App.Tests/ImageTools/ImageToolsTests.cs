@@ -89,7 +89,9 @@ public abstract class ImageToolTestBase : IDisposable
 
         public void ShowInFolder(string path) => Shown.Add(path);
 
-        public void OpenLink(string url) => throw new NotSupportedException();
+        public List<string> Links { get; } = [];
+
+        public void OpenLink(string url) => Links.Add(url);
 
         public void OpenFile(string path) => Opened.Add(path);
     }

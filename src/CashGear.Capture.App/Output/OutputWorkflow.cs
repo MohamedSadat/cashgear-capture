@@ -6,6 +6,7 @@ using CashGear.Capture.Core.Imaging;
 using CashGear.Capture.Core.Output;
 using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Outputs;
+using CashGear.Capture.Outputs.Sharing;
 using Microsoft.Extensions.Logging;
 
 namespace CashGear.Capture.App.Output;
@@ -19,6 +20,10 @@ public sealed record SendTarget(string Id, string Name);
 /// <param name="SavedPath">The file the File step saved the picture to, if it ran.</param>
 /// <param name="Message">One line for the editor's status bar.</param>
 public sealed record EditorSendResult(string? SavedPath, string Message, bool Succeeded);
+
+/// <summary>What a run did now, and how many uploads it left to the background queue.</summary>
+/// <param name="Queued">Destinations that are on their way in the background.</param>
+internal sealed record WorkflowRun(WorkflowSummary Summary, int Queued);
 
 /// <summary>What the capture workflow did, and the file the capture was saved to (null when it wasn't).</summary>
 public sealed record CaptureDelivery(WorkflowSummary Summary, string? SavedPath);
@@ -42,7 +47,8 @@ public interface IEditorOutputs
 /// <summary>
 /// Sends captures and recordings through their workflow (Settings › Output) and says what happened in one
 /// notification. Captures that need a file and haven't been saved get a temporary one in the format of Settings ›
-/// Output, deleted afterwards.
+/// Output, deleted afterwards. Uploads go to the background queue, so a slow one holds nothing: the steps on this PC
+/// run first, in order, and the queue says what became of the uploads when they are done.
 /// </summary>
 public sealed partial class OutputWorkflow(
     WorkflowRunner runner,
@@ -53,7 +59,8 @@ public sealed partial class OutputWorkflow(
     ICaptureCounter counter,
     ITrayNotifier notifier,
     IShell shell,
-    ILogger<OutputWorkflow> logger) : IEditorOutputs
+    ILogger<OutputWorkflow> logger,
+    UploadQueue? uploads = null) : IEditorOutputs
 {
     private int _cleaned;
 
@@ -63,9 +70,9 @@ public sealed partial class OutputWorkflow(
         ArgumentNullException.ThrowIfNull(primary);
         ArgumentNullException.ThrowIfNull(current);
         using var item = Item(primary, files, current.Output, distinguishMonitors: files.Count > 1);
-        var summary = await runner.RunAsync(item, current.Destinations.Workflow ?? [], ct, current).ConfigureAwait(false);
-        Notify(summary, recording: false);
-        return new CaptureDelivery(summary, item.SavedPath);
+        var run = await RunAsync(item, current.Destinations.Workflow ?? [], current, UploadKind.Capture, ct).ConfigureAwait(false);
+        Notify(run.Summary, UploadKind.Capture);
+        return new CaptureDelivery(run.Summary, item.SavedPath);
     }
 
     /// <summary>Runs the recording workflow on a saved recording (nothing when it has no steps on).</summary>
@@ -78,9 +85,64 @@ public sealed partial class OutputWorkflow(
         }
 
         using var item = OutputItem.ForVideo(path, recordedAt);
-        var summary = await runner.RunAsync(item, current.Destinations.RecordingWorkflow ?? [], ct, current).ConfigureAwait(false);
-        Notify(summary, recording: true);
+        var run = await RunAsync(item, current.Destinations.RecordingWorkflow ?? [], current, UploadKind.Recording, ct).ConfigureAwait(false);
+        Notify(run.Summary, UploadKind.Recording);
     }
+
+    /// <summary>The queue finished with a file: the notification for it, as for any other run.</summary>
+    public void WatchUploads()
+    {
+        if (uploads is not null)
+        {
+            uploads.GroupFinished += (_, finished) => Notify(new WorkflowSummary(finished.Outcomes, []), finished.Kind);
+        }
+    }
+
+    /// <summary>The steps of a workflow: those that upload to the queue, the others now.</summary>
+    private async Task<WorkflowRun> RunAsync(OutputItem item, IReadOnlyList<WorkflowStep> steps, AppSettings current, UploadKind kind, CancellationToken ct)
+    {
+        var enabled = steps.Where(s => s.Enabled).ToList();
+
+        // Everything after the editor waits for its Continue button, which comes back through here with those steps.
+        var editor = enabled.FindIndex(s => DestinationIds.Same(s.Destination, DestinationIds.Editor));
+        var now = editor >= 0 ? enabled.GetRange(0, editor) : enabled;
+        var later = editor >= 0 ? enabled.GetRange(editor, enabled.Count - editor) : [];
+        var background = uploads is null ? [] : now.Where(s => GoesToQueue(s, item, current)).ToList();
+        if (background.Count == 0)
+        {
+            return new WorkflowRun(await runner.RunAsync(item, enabled, ct, current).ConfigureAwait(false), 0);
+        }
+
+        // Copy the link waits for the links, when the uploads before it are what makes them.
+        var firstUpload = now.IndexOf(background[0]);
+        var copyLink = now.Skip(firstUpload).Any(s => DestinationIds.Same(s.Destination, DestinationIds.CopyLink));
+        var here = now.Where(s => !background.Contains(s) && !(copyLink && now.IndexOf(s) > firstUpload && DestinationIds.Same(s.Destination, DestinationIds.CopyLink))).ToList();
+        var first = await runner.RunAsync(item, here, ct, current).ConfigureAwait(false);
+        var outcomes = first.Steps.ToList();
+        var queued = 0;
+        try
+        {
+            var saved = item.SavedPath is { } path && File.Exists(path);
+            var file = saved ? item.SavedPath! : uploads!.TakeCopy(await item.GetFileAsync(ct).ConfigureAwait(false));
+            uploads!.Enqueue(new UploadRequest(file, !saved, item.Name, item.Title, item.CapturedAt, kind, [.. background.Select(s => new UploadStep(s.Destination))], copyLink));
+            queued = background.Count;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            outcomes.AddRange(background.Select(s => new StepOutcome(s.Destination, registry.NameOf(s.Destination, current), OutputResult.Failed(e.Message))));
+        }
+
+        if (later.Count == 0)
+        {
+            return new WorkflowRun(new WorkflowSummary(outcomes, []), queued);
+        }
+
+        var last = await runner.RunAsync(item, later, ct, current).ConfigureAwait(false);
+        return new WorkflowRun(new WorkflowSummary([.. outcomes, .. last.Steps], last.Pending), queued);
+    }
+
+    private bool GoesToQueue(WorkflowStep step, OutputItem item, AppSettings current) =>
+        registry.Find(step.Destination, current) is { IsUpload: true } destination && (item.Kind == OutputKind.Video ? destination.SupportsVideo : destination.SupportsImages);
 
     public IReadOnlyList<SendTarget> Targets() =>
         [.. registry.All()
@@ -106,11 +168,13 @@ public sealed partial class OutputWorkflow(
             item.SavedPath = savedPath;
         }
 
-        var summary = await runner.RunAsync(item, enabled, ct, current).ConfigureAwait(false);
-        Notify(summary, recording: false);
+        var run = await RunAsync(item, enabled, current, UploadKind.Capture, ct).ConfigureAwait(false);
+        var summary = run.Summary;
+        Notify(summary, UploadKind.Capture);
         var failed = summary.Steps.Where(s => !s.Result.Succeeded).Select(s => s.Name).ToList();
         var message = failed.Count > 0
             ? OutputText.StepsFailed(string.Join(OutputText.ListSeparator, failed))
+            : run.Queued > 0 ? OutputText.UploadingInBackground
             : summary.Links.Any() ? OutputText.SentWithLink : OutputText.Sent;
         var saved = summary.Steps.Any(s => DestinationIds.Same(s.Destination, DestinationIds.File) && s.Result.Succeeded) ? item.SavedPath : null;
         return new EditorSendResult(saved, message, failed.Count == 0);
@@ -145,7 +209,7 @@ public sealed partial class OutputWorkflow(
     /// One notification for the run: what was saved, sent and copied, and what failed. When the editor opened, only
     /// failures and links are worth one. A click shows the saved file (or document), else opens the link.
     /// </summary>
-    private void Notify(WorkflowSummary summary, bool recording)
+    private void Notify(WorkflowSummary summary, UploadKind kind)
     {
         var lines = summary.Lines.ToList();
         if (lines.Count == 0 || (summary.OpenedEditor && !summary.AnyFailed && !summary.Links.Any()))
@@ -160,24 +224,34 @@ public sealed partial class OutputWorkflow(
             : summary.Links.Any() ? Outcome.Uploaded
             : succeeded.All(s => DestinationIds.Same(s.Destination, DestinationIds.Clipboard) || DestinationIds.Same(s.Destination, DestinationIds.CopyLink)) ? Outcome.Copied
             : Outcome.Sent;
-        var title = Title(outcome, recording);
-        var kind = !summary.AnyFailed ? NotificationKind.Info : succeeded.Count == 0 ? NotificationKind.Error : NotificationKind.Warning;
+        var title = Title(outcome, kind);
+        var level = !summary.AnyFailed ? NotificationKind.Info : succeeded.Count == 0 ? NotificationKind.Error : NotificationKind.Warning;
         var file = summary.Steps.Select(s => s.Result.Path).OfType<string>().FirstOrDefault();
         var link = summary.Links.FirstOrDefault();
         Action? onClick = file is not null ? () => shell.ShowInFolder(file) : link is not null ? () => shell.OpenLink(link) : null;
-        LogDelivered(recording ? "Recording" : "Capture", summary.Steps.Count, summary.Steps.Count(s => !s.Result.Succeeded));
-        notifier.Notify(title, string.Join('\n', lines), kind, onClick);
+        LogDelivered(kind.ToString(), summary.Steps.Count, summary.Steps.Count(s => !s.Result.Succeeded));
+        notifier.Notify(title, string.Join('\n', lines), level, onClick);
     }
 
     /// <summary>"Capture saved", "Recording: not everything worked"…</summary>
-    private static string Title(Outcome outcome, bool recording) => outcome switch
+    private static string Title(Outcome outcome, UploadKind kind) => (outcome, kind) switch
     {
-        Outcome.NotSent => recording ? OutputText.RecordingNotSent : OutputText.CaptureNotSent,
-        Outcome.PartlyDone => recording ? OutputText.RecordingPartlyDone : OutputText.CapturePartlyDone,
-        Outcome.Saved => recording ? OutputText.RecordingSaved : OutputText.CaptureSaved,
-        Outcome.Uploaded => recording ? OutputText.RecordingUploaded : OutputText.CaptureUploaded,
-        Outcome.Copied => recording ? OutputText.RecordingCopied : OutputText.CaptureCopied,
-        _ => recording ? OutputText.RecordingSent : OutputText.CaptureSent,
+        (Outcome.NotSent, UploadKind.Recording) => OutputText.RecordingNotSent,
+        (Outcome.NotSent, UploadKind.Export) => OutputText.ExportNotSent,
+        (Outcome.NotSent, _) => OutputText.CaptureNotSent,
+        (Outcome.PartlyDone, UploadKind.Recording) => OutputText.RecordingPartlyDone,
+        (Outcome.PartlyDone, UploadKind.Export) => OutputText.ExportPartlyDone,
+        (Outcome.PartlyDone, _) => OutputText.CapturePartlyDone,
+        (Outcome.Saved, UploadKind.Recording) => OutputText.RecordingSaved,
+        (Outcome.Saved, _) => OutputText.CaptureSaved,
+        (Outcome.Uploaded or Outcome.Copied, UploadKind.Export) => OutputText.ExportUploaded,
+        (Outcome.Uploaded, UploadKind.Recording) => OutputText.RecordingUploaded,
+        (Outcome.Uploaded, _) => OutputText.CaptureUploaded,
+        (Outcome.Copied, UploadKind.Recording) => OutputText.RecordingCopied,
+        (Outcome.Copied, _) => OutputText.CaptureCopied,
+        (_, UploadKind.Export) => OutputText.ExportUploaded,
+        (_, UploadKind.Recording) => OutputText.RecordingSent,
+        _ => OutputText.CaptureSent,
     };
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{What} went through {Steps} step(s), {Failed} failed")]

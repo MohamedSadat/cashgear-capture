@@ -28,6 +28,10 @@ using CashGear.Capture.Core.Settings;
 using CashGear.Capture.Editor.Document;
 using CashGear.Capture.Editor.Model;
 using CashGear.Capture.Engine.Display;
+using CashGear.Capture.Media;
+using CashGear.Capture.Outputs;
+using CashGear.Capture.Outputs.Credentials;
+using CashGear.Capture.Outputs.Sharing;
 using CashGear.Capture.VideoEditor.Model;
 using CashGear.Capture.Engine.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -72,6 +76,8 @@ public sealed class ArabicUiTests : IDisposable
         using var registrar = new App.Hotkeys.HotkeyRegistrar(new FakeHotkeyService(), settings, new FakeNotifier(), new InlineUiDispatcher(), NullLogger<App.Hotkeys.HotkeyRegistrar>.Instance);
         registrar.Start();
         using var vm = new SettingsViewModel(settings, paths, registrar, new FakeStartupRegistration(), new FakeFolderPicker(), NullLogger<SettingsViewModel>.Instance);
+        vm.Destinations.SignIns = id => new NamedSignIn(id);
+        vm.Destinations.Load(settings.Current.Destinations);
         var window = new SettingsWindow(vm, AppTheme.Light);
         var tabs = (TabControl)TestLayoutFind<TabControl>(window);
 
@@ -79,10 +85,11 @@ public sealed class ArabicUiTests : IDisposable
             window,
             "settings",
             leftToRight: () => [(FrameworkElement)window.FindName("WebcamArea")],
-            data: text => text.Contains(paths.SettingsDirectory, StringComparison.OrdinalIgnoreCase) || text.Contains("Capture_", StringComparison.Ordinal),
+            data: text => text.Contains(paths.SettingsDirectory, StringComparison.OrdinalIgnoreCase) || text.Contains("Capture_", StringComparison.Ordinal) || text.Contains("me@example.test", StringComparison.Ordinal),
             pages: () =>
             [
                 .. tabs.Items.Cast<TabItem>().Select((tab, i) => ($"{i + 1:00}", (Action)(() => tabs.SelectedItem = tab))),
+                ("destinations-sharing", () => ShowSection(tabs, 1, DestinationsText.SharingSection)),
                 ("recording-monitors", () => ShowSection(tabs, 3, SettingsText.SeveralMonitorsSection)),
                 ("overlays-webcam", () => ShowSection(tabs, 4, OverlaysText.LiveBackgroundLabel)),
             ]);
@@ -196,6 +203,8 @@ public sealed class ArabicUiTests : IDisposable
 
         problems.AddRange(await ArabicUi.CheckAsync(new RecordingProfilesWindow(new RecordingProfilesViewModel(settings), AppTheme.Light), "recording-profiles", escCloses: true, data: IsData));
 
+        problems.AddRange(await SharingWindows(settings));
+
         Pass("Small windows", problems);
     });
 
@@ -219,6 +228,151 @@ public sealed class ArabicUiTests : IDisposable
 
         Pass("Toolbars", problems);
     });
+
+    /// <summary>The uploads and exports window with something on it, and the batch window.</summary>
+    private async Task<List<string>> SharingWindows(MutableSettings settings)
+    {
+        var problems = new List<string>();
+        var paths = new AppPaths(Path.Combine(_root, "settings"), Path.Combine(_root, "data", "logs"), Path.Combine(_root, "captures"));
+        var shell = new NoShell();
+        var exporter = new CashGear.Capture.VideoEditor.Export.ProjectExporter(new NoEncoders(), NullLogger<CashGear.Capture.VideoEditor.Export.ProjectExporter>.Instance);
+        var exports = new App.VideoEditor.ExportQueue(exporter, settings, new FakeNotifier(), shell, paths, NullLogger<App.VideoEditor.ExportQueue>.Instance);
+        var gate = new TaskCompletionSource();
+        var source = new SlowSource(gate);
+        var registry = new DestinationRegistry([source], settings, new NoSecrets());
+        using var wake = new UploadWake();
+        using var uploads = new UploadQueue(registry, new NoSecrets(), paths, wake, NullLogger<UploadQueue>.Instance);
+        var outputs = new NoOutputs();
+        var workflow = new App.Output.OutputWorkflow(new WorkflowRunner(registry, NullLogger<WorkflowRunner>.Instance), registry, settings, outputs, paths, new NoCounter(), new FakeNotifier(), shell, NullLogger<App.Output.OutputWorkflow>.Instance, uploads);
+        var work = new App.Output.BackgroundWork(uploads, exports, workflow);
+        Directory.CreateDirectory(_root);
+        var file = Path.Combine(_root, "تسجيل.mp4");
+        File.WriteAllBytes(file, new byte[1000]);
+        uploads.Enqueue(new UploadRequest(file, false, "تسجيل", null, DateTimeOffset.UtcNow, UploadKind.Recording, [new UploadStep("slow"), new UploadStep("bad")]));
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (uploads.Jobs[0].State != UploadState.Sending && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+        }
+
+        using var viewModel = new App.Output.BackgroundWorkViewModel(work, new InlineUiDispatcher(), outputs, shell);
+        problems.AddRange(await ArabicUi.CheckAsync(new App.Output.BackgroundWorkWindow(viewModel, AppTheme.Light), "uploads-and-exports", escCloses: true, data: text => IsData(text) || text.Contains("تسجيل.mp4", StringComparison.Ordinal) || text.Contains("slow", StringComparison.Ordinal) || text.Contains("bad", StringComparison.Ordinal)));
+        gate.SetResult();
+        await uploads.WhenIdleAsync(CancellationToken.None);
+
+        viewModel.Refresh();
+        problems.AddRange(await ArabicUi.CheckAsync(new App.Output.BackgroundWorkWindow(viewModel, AppTheme.Light), "uploads-and-exports-ended", escCloses: true, data: text => IsData(text) || text.Contains("تسجيل.mp4", StringComparison.Ordinal) || text.Contains("slow", StringComparison.Ordinal) || text.Contains("bad", StringComparison.Ordinal) || text.Contains("https://", StringComparison.Ordinal) || text.Contains("No", StringComparison.Ordinal)));
+
+        var batch = new App.VideoEditor.BatchExportViewModel(exports, null, [new App.VideoEditor.BatchSource("مشروع"), new App.VideoEditor.BatchSource("Another")], _root, null);
+        batch.Presets[0].IsChosen = true;
+        problems.AddRange(await ArabicUi.CheckAsync(new App.VideoEditor.BatchExportWindow(batch, AppTheme.Light), "batch-export", escCloses: true, data: text => IsData(text) || text.Contains(_root, StringComparison.OrdinalIgnoreCase) || text == "Another" || text == "مشروع"));
+        return problems;
+    }
+
+    /// <summary>Signed in for YouTube and Drive, not for the others: both sets of buttons show.</summary>
+    private sealed class NamedSignIn(string id) : ISignInDestination
+    {
+        public bool IsSignedIn => id is DestinationIds.YouTube or DestinationIds.GoogleDrive;
+
+        public string? Account => IsSignedIn ? "me@example.test" : null;
+
+        public string Id => id;
+
+        public string DisplayName => id;
+
+        public bool SupportsVideo => true;
+
+        public Task SignInAsync(CancellationToken ct) => Task.CompletedTask;
+
+        public void SignOut()
+        {
+        }
+
+        public Task<OutputResult> SendAsync(OutputItem item, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done("ok"));
+    }
+
+    private sealed class SlowSource(TaskCompletionSource gate) : IDestinationSource
+    {
+        public IEnumerable<IOutputDestination> Create(AppSettings settings, ICredentialStore credentials) => [new Slow("slow", gate, false), new Slow("bad", gate, true)];
+    }
+
+    private sealed class Slow(string id, TaskCompletionSource gate, bool fails) : IOutputDestination
+    {
+        public string Id => id;
+
+        public string DisplayName => id;
+
+        public bool SupportsVideo => true;
+
+        public bool IsUpload => true;
+
+        public async Task<OutputResult> SendAsync(OutputItem item, CancellationToken ct)
+        {
+            await gate.Task.WaitAsync(ct);
+            return fails ? OutputResult.Failed("No") : new OutputResult(true, "Sent") { Link = "https://example.test/video" };
+        }
+
+        public Task<OutputResult> TestAsync(CancellationToken ct) => Task.FromResult(OutputResult.Done("ok"));
+    }
+
+    private sealed class NoSecrets : ICredentialStore
+    {
+        public string? Get(string key) => null;
+
+        public void Set(string key, string? value)
+        {
+        }
+
+        public void RemoveAll(string prefix)
+        {
+        }
+    }
+
+    private sealed class NoShell : App.Platform.IShell
+    {
+        public void ShowInFolder(string path)
+        {
+        }
+
+        public void OpenLink(string url)
+        {
+        }
+
+        public void OpenFile(string path)
+        {
+        }
+    }
+
+    private sealed class NoCounter : Core.Output.ICaptureCounter
+    {
+        public int Next() => 1;
+    }
+
+    private sealed class NoEncoders : Core.Recording.IRecordingEncoders
+    {
+        public string? Problem => null;
+
+        public string? FfmpegVersion => "test";
+
+        public IReadOnlyList<Core.Recording.EncoderProbe>? Detected => [];
+
+        public Task<IReadOnlyList<Core.Recording.EncoderProbe>> DetectAsync(bool force = false, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Core.Recording.EncoderProbe>>([]);
+    }
+
+    private sealed class NoOutputs : Core.Output.IOutputService
+    {
+        public Task CopyTextToClipboardAsync(string text, CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task<string?> SaveAsync(Core.Imaging.CapturedImage image, Core.Output.SaveOptions options, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task SaveToFileAsync(Core.Imaging.CapturedImage image, string path, ImageFileFormat format, int jpegQuality, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task CopyToClipboardAsync(Core.Imaging.CapturedImage image, CancellationToken ct = default) => throw new NotSupportedException();
+
+        public Task CopyFilesToClipboardAsync(IReadOnlyList<string> paths, CancellationToken ct = default) => throw new NotSupportedException();
+    }
 
     /// <summary>A tab scrolled to the part of it that holds this text, to be looked at.</summary>
     private static void ShowSection(TabControl tabs, int tab, string text)
@@ -367,6 +521,44 @@ public sealed class ArabicVideoEditorUiTests : VideoEditorTestBase
         problems.AddRange(await ArabicUi.CheckAsync(new ExportWindow(Dialogs.Export!, AppTheme.Dark), "export-sound", data: Data, escCloses: true));
 
         problems.Should().BeEmpty(ArabicUi.Report("Sound", problems));
+    });
+
+    private sealed class YouTubeSender : IExportSender
+    {
+        public YouTubeSettings YouTubeDefaults { get; } = new(VideoPrivacy.Private, "", ["One", "two"]);
+
+        public IReadOnlyList<(string Id, string Name)> Targets() => [(DestinationIds.YouTube, "YouTube"), (DestinationIds.Dropbox, "Dropbox")];
+
+        public void Send(string path, string name, string destination, IReadOnlyList<ExportChapter> chapters, UploadDetails? details = null)
+        {
+        }
+
+        public Task<IReadOnlyList<(string Id, string Title)>> PlaylistsAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<(string, string)>>([]);
+    }
+
+    [Fact]
+    public Task The_export_window_with_YouTube_and_the_thumbnail_window() => StaDispatcher.RunAsync(async () =>
+    {
+        InteractiveDesktop.Require();
+        using var arabic = ArabicUi.InArabic();
+        var problems = new List<string>();
+        var project = ProjectFactory.FromRecording(ProjectFactory.ReadAsset(Recording()));
+        project = project with { Markers = [new TimelineMarker("a", 0, "مقدمة"), new TimelineMarker("b", 1, "Part 2")] };
+        bool Shown(string text) => text.Contains("مقدمة", StringComparison.Ordinal) || text.Contains("stamped", StringComparison.Ordinal) || text.Contains(Root, StringComparison.OrdinalIgnoreCase) || text.Contains("0:0", StringComparison.Ordinal) || text == "One, two";
+
+        var sender = new YouTubeSender();
+        var export = new ExportViewModel(project, "stamped", Root, Services.Exporter, Services.Settings, Services.State, Services.Shell, NullLogger.Instance, null, null, null, sender);
+        export.SendTo = export.SendTargets.First(t => t.Id == DestinationIds.YouTube);
+        problems.AddRange(await ArabicUi.CheckAsync(new ExportWindow(export, AppTheme.Light), "export-youtube", data: Shown, escCloses: true));
+
+        using var thumbnail = new ThumbnailViewModel(project, 1, new CashGear.Capture.VideoEditor.Export.ThumbnailMaker(), CashGear.Capture.VideoEditor.Editing.BuiltInTemplates.All, null, Dialogs, "stamped", Path.Combine(Root, "work"), forUpload: true);
+        thumbnail.SelectedTitle = thumbnail.Titles[1];
+        thumbnail.Fields[0].Text = "عنوان الفيديو";
+        await thumbnail.WhenDrawnAsync();
+        var window = new ThumbnailWindow(thumbnail, AppTheme.Light);
+        problems.AddRange(await ArabicUi.CheckAsync(window, "thumbnail", data: text => Shown(text) || text.Contains("عنوان الفيديو", StringComparison.Ordinal), escCloses: true));
+
+        problems.Should().BeEmpty(ArabicUi.Report("Sharing", problems));
     });
 
     [Fact]

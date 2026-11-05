@@ -80,6 +80,15 @@ public sealed record VideoEditorState
     /// <summary>Exports also save the captions as a WebVTT file.</summary>
     public bool ExportVtt { get; init; }
 
+    /// <summary>Exports make the markers into chapters in the file.</summary>
+    public bool ExportChapters { get; init; } = true;
+
+    /// <summary>Exports also save the markers as a WebVTT chapters file.</summary>
+    public bool ExportChaptersVtt { get; init; }
+
+    /// <summary>Where exports were last sent when done (a destination's id; null: nowhere).</summary>
+    public string? ExportSendTo { get; init; }
+
     /// <summary>The speech model last used for captions (its id; null: the default).</summary>
     public string? TranscriptionModel { get; init; }
 

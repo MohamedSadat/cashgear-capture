@@ -76,6 +76,7 @@ Change them in Settings › Hotkeys. The ones with "—" have no key until you s
 | `Ctrl+Z`, `Ctrl+Y` | Undo, redo |
 | `Ctrl+S`, `Ctrl+Shift+S` | Save the project, save as |
 | `Ctrl+E` | Export |
+| `←` / `→`, in the thumbnail window's Frame slider (`Page Up`, `Page Down`: a second) | A frame back or on |
 | `Ctrl++`, `Ctrl+-`, `Ctrl+0` | Zoom the timeline in, out, to fit |
 | `Ctrl+T` | Show or hide the transcript |
 | `Ctrl+M` | Show or hide the media panel (media, transitions, titles, markers, brand) |

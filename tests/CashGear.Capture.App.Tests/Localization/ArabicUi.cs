@@ -36,7 +36,7 @@ internal static partial class ArabicUi
         "PNG", "JPEG", "JPG", "BMP", "GIF", "PDF", "MP4", "MP3", "M4A", "WebM", "WebP", "SRT", "WebVTT", "VTT", "JSON", "CSV",
         "H", "HEVC", "AV1", "VP9", "AAC", "Opus", "NVENC", "AMF", "QSV", "QuickSync", "Media", "Foundation", "Direct3D", "Vulkan", "CPU", "GPU",
         "FTP", "FTPS", "SFTP", "HTTP", "HTTPS", "URL", "DPI", "HDR", "SDR", "OCR", "UI", "RNNoise", "RGB", "HEX", "HSL", "HSV", "CSS", "C#", "WGC", "GDI",
-        "Word", "PowerPoint", "Office", "Explorer", "Imgur",
+        "Word", "PowerPoint", "Office", "Explorer", "Imgur", "YouTube", "Google", "Drive", "OneDrive", "Dropbox", "Shorts",
         "px", "pt", "ms", "fps", "dB", "Hz", "kHz", "kbps", "Mbps", "KB", "MB", "GB", "x", "cm", "mm", "in",
         "Ctrl", "Alt", "Shift", "Win", "Tab", "Esc", "Enter", "Space", "PrintScreen", "Delete", "Del", "Home", "End",
         "PageUp", "PageDown", "Insert", "Backspace", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",

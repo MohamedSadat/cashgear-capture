@@ -31,5 +31,10 @@ public sealed class AppHostTests : IDisposable
         host.Services.GetRequiredService<IOverlayRenderer>().Should().NotBeNull();
         host.Services.GetRequiredService<AddOverlaysController>().IsBusy.Should().BeFalse();
         host.Services.GetRequiredService<TrayViewModel>().AddOverlaysCommand.Should().NotBeNull();
+
+        // What reaches the destinations through the video editor is found only when it is used: no circle.
+        host.Services.GetRequiredService<App.VideoEditor.BatchExportWindowService>().IsAllowed.Should().BeTrue();
+        host.Services.GetRequiredService<App.VideoEditor.IExportSender>().Targets().Should().BeEmpty("this build has no registration with any service, and no server is set up");
+        host.Services.GetRequiredService<App.Output.BackgroundWork>().Summary.IsBusy.Should().BeFalse();
     }
 }

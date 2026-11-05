@@ -35,6 +35,8 @@ No GPL or AGPL component ships.
 | FluentFTP (55.0.0) | MIT | FTP and FTPS uploads |
 | SSH.NET (2026.0.0) | MIT | SFTP uploads |
 
+YouTube, Google Drive, OneDrive and Dropbox use no SDK: their REST APIs over .NET's `HttpClient`.
+
 Only the tests and build use these, and none ships:
 - xunit.v3 (Apache 2.0);
 - AwesomeAssertions (Apache 2.0);
